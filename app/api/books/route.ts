@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
 import { BookInput } from '@/lib/types';
 
+// See app/api/export/route.ts for why this is required.
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   const supabase = supabaseServer();
   const { data, error } = await supabase

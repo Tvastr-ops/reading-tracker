@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
 
+// See app/api/export/route.ts for why this is required.
+export const dynamic = 'force-dynamic';
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const ALLOWED_FIELDS = [
@@ -8,8 +11,12 @@ const ALLOWED_FIELDS = [
   'genre_tags', 'source_link', 'date_started', 'date_finished', 'notes',
 ];
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!UUID_RE.test(params.id)) {
+// Next.js 15+ made dynamic route `params` a Promise (was a plain object in 14).
+type RouteContext = { params: Promise<{ id: string }> };
+
+export async function PATCH(req: NextRequest, { params }: RouteContext) {
+  const { id } = await params;
+  if (!UUID_RE.test(id)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
 
@@ -36,7 +43,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { data, error } = await supabase
     .from('books')
     .update(update)
-    .eq('id', params.id)
+    .eq('id', id)
     .select()
     .single();
 
@@ -44,13 +51,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json({ book: data });
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  if (!UUID_RE.test(params.id)) {
+export async function DELETE(_req: NextRequest, { params }: RouteContext) {
+  const { id } = await params;
+  if (!UUID_RE.test(id)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
 
   const supabase = supabaseServer();
-  const { error } = await supabase.from('books').delete().eq('id', params.id);
+  const { error } = await supabase.from('books').delete().eq('id', id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
