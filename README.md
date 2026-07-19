@@ -41,4 +41,3 @@ npm run dev
 ## License
 
 MIT — see [`LICENSE`](./LICENSE).
-# reading-tracker

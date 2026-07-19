@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
 
+// Next.js 14 caches server-side fetch() calls by default, and the Supabase
+// client uses fetch internally — without this, the first export would get
+// cached forever and every later export would serve that same stale data.
+export const dynamic = 'force-dynamic';
+
 const COLUMNS = [
   'title', 'type', 'author', 'status', 'rating', 'progress', 'total_units',
   'genre_tags', 'source_link', 'date_started', 'date_finished', 'notes',
