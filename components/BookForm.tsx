@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Book, BookInput, STATUSES } from '@/lib/types';
 import { RatingSelect } from './RatingInput';
+import ReadingLog from './ReadingLog';
 
 const TYPES = ['Web Novel', 'Light Novel', 'Novel', 'Essay', 'Short Story', 'Fanfiction', 'Other'];
 
@@ -27,15 +28,30 @@ export default function BookForm({
     total_units: initial?.total_units ?? null,
     genre_tags: initial?.genre_tags || '',
     source_link: initial?.source_link || '',
+    cover_url: initial?.cover_url || '',
     date_started: initial?.date_started || '',
     date_finished: initial?.date_finished || '',
     notes: initial?.notes || '',
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [coverResults, setCoverResults] = useState<{ title: string; author: string | null; cover_url: string }[]>([]);
+  const [coverSearching, setCoverSearching] = useState(false);
 
   function set<K extends keyof BookInput>(key: K, val: BookInput[K]) {
     setForm((f) => ({ ...f, [key]: val }));
+  }
+
+  async function searchCover() {
+    if (!form.title.trim()) return;
+    setCoverSearching(true);
+    setCoverResults([]);
+    const res = await fetch(`/api/covers?title=${encodeURIComponent(form.title.trim())}`);
+    setCoverSearching(false);
+    if (res.ok) {
+      const data = await res.json();
+      setCoverResults(data.results || []);
+    }
   }
 
   async function submit(e: React.FormEvent) {
@@ -106,6 +122,41 @@ export default function BookForm({
             <input value={form.source_link || ''} onChange={(e) => set('source_link', e.target.value)} placeholder="royalroad.com" />
           </div>
 
+          <div className="full">
+            <label>Cover image</label>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              {form.cover_url ? (
+                <img src={form.cover_url} alt="" width={32} height={46} style={{ objectFit: 'cover', borderRadius: 3 }} />
+              ) : (
+                <div style={{ width: 32, height: 46, background: '#eeece6', borderRadius: 3, flexShrink: 0 }} />
+              )}
+              <input
+                value={form.cover_url || ''}
+                onChange={(e) => set('cover_url', e.target.value)}
+                placeholder="Paste an image URL, or search below"
+                style={{ flex: 1 }}
+              />
+              <button type="button" className="btn secondary" onClick={searchCover} disabled={coverSearching || !form.title.trim()}>
+                {coverSearching ? 'Searching...' : 'Search'}
+              </button>
+            </div>
+            {coverResults.length > 0 && (
+              <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                {coverResults.map((r) => (
+                  <button
+                    type="button"
+                    key={r.cover_url}
+                    onClick={() => { set('cover_url', r.cover_url); setCoverResults([]); }}
+                    title={`${r.title}${r.author ? ' — ' + r.author : ''}`}
+                    style={{ border: '1px solid #d8d6d0', borderRadius: 4, padding: 2, background: '#fff', cursor: 'pointer' }}
+                  >
+                    <img src={r.cover_url} alt="" width={40} height={58} style={{ objectFit: 'cover', display: 'block' }} />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div>
             <label>Date started</label>
             <input type="date" value={form.date_started || ''} onChange={(e) => set('date_started', e.target.value)} />
@@ -120,6 +171,14 @@ export default function BookForm({
             <label>Notes</label>
             <textarea value={form.notes || ''} onChange={(e) => set('notes', e.target.value)} />
           </div>
+
+          {initial?.id && (
+            <ReadingLog
+              bookId={initial.id}
+              currentProgress={form.progress ?? 0}
+              onProgressUpdated={(p) => set('progress', p)}
+            />
+          )}
         </div>
 
         {error && <div className="error-text">{error}</div>}

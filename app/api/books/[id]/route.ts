@@ -9,7 +9,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 const ALLOWED_FIELDS = [
   'title', 'type', 'author', 'status', 'rating', 'progress', 'total_units',
-  'genre_tags', 'source_link', 'date_started', 'date_finished', 'notes',
+  'genre_tags', 'source_link', 'cover_url', 'date_started', 'date_finished', 'notes',
 ];
 
 // Next.js 15+ made dynamic route `params` a Promise (was a plain object in 14).
@@ -31,9 +31,16 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
   }
 
   const update: Record<string, unknown> = {};
-  for (const key of ALLOWED_FIELDS) {
-    if (key in body) update[key] = body[key];
+
+  // Restore-from-trash is a special-cased update, not a free-form field.
+  if (body.restore === true) {
+    update.deleted_at = null;
+  } else {
+    for (const key of ALLOWED_FIELDS) {
+      if (key in body) update[key] = body[key];
+    }
   }
+
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
   }
@@ -56,6 +63,8 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
   return NextResponse.json({ book: data });
 }
 
+// Soft delete by default (sets deleted_at). Pass ?permanent=1 to actually
+// remove the row — used only from the trash view, after a confirm dialog.
 export async function DELETE(req: NextRequest, { params }: RouteContext) {
   if (!(await requireAuthenticatedRequest(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -66,8 +75,19 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
 
+  const permanent = req.nextUrl.searchParams.get('permanent') === '1';
   const supabase = supabaseServer();
-  const { error } = await supabase.from('books').delete().eq('id', id);
+
+  if (permanent) {
+    const { error } = await supabase.from('books').delete().eq('id', id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
+  const { error } = await supabase
+    .from('books')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

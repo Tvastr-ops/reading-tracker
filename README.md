@@ -8,11 +8,17 @@ export to CSV any time.
 ## Features
 
 - Title, type, author, status, rating, progress, genre/tags, source link,
-  dates, and notes
+  cover image, dates, and notes
 - Live-computed % complete (never goes out of sync with progress)
 - Half-star or decimal rating display, switchable per user
-- Status filtering, text search, and a summary dashboard
-- CSV export for backups / portability
+- Sortable columns, status filtering, text search
+- Summary dashboard: per-status counts, average rating, completed-per-month
+  and rating-distribution charts, and a yearly reading goal with progress bar
+- Per-book reading log — timestamped progress entries, not just one number
+- Soft-delete with a Trash view (restore or permanently delete)
+- Cover image search (Open Library) — stores only the image URL, not the file
+- CSV export and bulk CSV import for backups / migration
+- Installable as a home-screen app (PWA)
 - Password-protected, single-user by design
 
 ## Stack
@@ -22,7 +28,7 @@ export to CSV any time.
 - [Supabase](https://supabase.com) Postgres — free tier, no persistent
   disk needed since it's serverless
 - No third-party auth — a single app password gates access via a signed,
-  HttpOnly session cookie
+  HttpOnly session cookie, independently re-checked in every API route
 
 ## Getting started
 
@@ -33,6 +39,7 @@ Quick version, if you've done this before:
 
 ```bash
 # 1. Run supabase/schema.sql in your Supabase project's SQL editor
+#    (already deployed before? run supabase/migration_v2.sql instead)
 # 2. Copy .env.example -> .env.local and fill in your values
 npm install
 npm run dev

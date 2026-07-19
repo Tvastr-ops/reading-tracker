@@ -1,6 +1,6 @@
 'use client';
 
-import { Book } from '@/lib/types';
+import { Book, SortField, SortDir } from '@/lib/types';
 import { RatingDisplay } from './RatingInput';
 
 const STATUS_CLASS: Record<string, string> = {
@@ -11,19 +11,53 @@ const STATUS_CLASS: Record<string, string> = {
   Dropped: 'dropped',
 };
 
+const SORTABLE: { field: SortField; label: string }[] = [
+  { field: 'title', label: 'Title' },
+  { field: 'status', label: 'Status' },
+  { field: 'rating', label: 'Rating' },
+  { field: 'date_finished', label: 'Finished' },
+  { field: 'updated_at', label: 'Updated' },
+];
+
 export default function BookTable({
   books,
   ratingMode,
+  sortField,
+  sortDir,
+  onSort,
+  trashMode = false,
   onEdit,
   onDelete,
+  onRestore,
+  onPermanentDelete,
 }: {
   books: Book[];
   ratingMode: 'stars' | 'decimal';
+  sortField: SortField;
+  sortDir: SortDir;
+  onSort: (field: SortField) => void;
+  trashMode?: boolean;
   onEdit: (b: Book) => void;
   onDelete: (b: Book) => void;
+  onRestore?: (b: Book) => void;
+  onPermanentDelete?: (b: Book) => void;
 }) {
   if (books.length === 0) {
-    return <p className="subtitle">No entries match your filters.</p>;
+    return <p className="subtitle">{trashMode ? 'Trash is empty.' : 'No entries match your filters.'}</p>;
+  }
+
+  function headerFor(field: SortField, label: string) {
+    const active = sortField === field;
+    return (
+      <th
+        key={field}
+        onClick={() => onSort(field)}
+        style={{ cursor: 'pointer', userSelect: 'none' }}
+        title={`Sort by ${label}`}
+      >
+        {label}{active ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+      </th>
+    );
   }
 
   return (
@@ -31,13 +65,15 @@ export default function BookTable({
       <table>
         <thead>
           <tr>
-            <th>Title</th>
+            <th style={{ width: 36 }}></th>
+            {headerFor('title', 'Title')}
             <th>Type</th>
             <th>Author</th>
-            <th>Status</th>
-            <th>Rating</th>
+            {headerFor('status', 'Status')}
+            {headerFor('rating', 'Rating')}
             <th>Progress</th>
             <th>Genre / Tags</th>
+            {headerFor('date_finished', 'Finished')}
             <th></th>
           </tr>
         </thead>
@@ -46,6 +82,13 @@ export default function BookTable({
             const pct = b.total_units ? Math.min(100, Math.round(((b.progress || 0) / b.total_units) * 100)) : null;
             return (
               <tr key={b.id}>
+                <td>
+                  {b.cover_url ? (
+                    <img src={b.cover_url} alt="" width={28} height={40} style={{ objectFit: 'cover', borderRadius: 3 }} />
+                  ) : (
+                    <div style={{ width: 28, height: 40, background: '#eeece6', borderRadius: 3 }} />
+                  )}
+                </td>
                 <td>
                   <strong>{b.title}</strong>
                   {b.source_link && (
@@ -69,10 +112,20 @@ export default function BookTable({
                   )}
                 </td>
                 <td style={{ fontSize: 12, color: '#6b6b6b' }}>{b.genre_tags || '—'}</td>
+                <td style={{ fontSize: 12, color: '#6b6b6b' }}>{b.date_finished || '—'}</td>
                 <td>
                   <div className="row-actions">
-                    <button className="btn secondary" onClick={() => onEdit(b)}>Edit</button>
-                    <button className="btn danger" onClick={() => onDelete(b)}>Delete</button>
+                    {trashMode ? (
+                      <>
+                        <button className="btn secondary" onClick={() => onRestore?.(b)}>Restore</button>
+                        <button className="btn danger" onClick={() => onPermanentDelete?.(b)}>Delete forever</button>
+                      </>
+                    ) : (
+                      <>
+                        <button className="btn secondary" onClick={() => onEdit(b)}>Edit</button>
+                        <button className="btn danger" onClick={() => onDelete(b)}>Delete</button>
+                      </>
+                    )}
                   </div>
                 </td>
               </tr>

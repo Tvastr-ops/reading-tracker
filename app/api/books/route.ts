@@ -11,11 +11,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const showTrash = req.nextUrl.searchParams.get('trash') === '1';
+
   const supabase = supabaseServer();
-  const { data, error } = await supabase
-    .from('books')
-    .select('*')
-    .order('updated_at', { ascending: false });
+  let query = supabase.from('books').select('*');
+  query = showTrash ? query.not('deleted_at', 'is', null) : query.is('deleted_at', null);
+  const { data, error } = await query.order('updated_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ books: data });
@@ -26,7 +27,7 @@ function sanitize(input: Partial<BookInput>) {
   // straight into the database.
   const {
     title, type, author, status, rating, progress, total_units,
-    genre_tags, source_link, date_started, date_finished, notes,
+    genre_tags, source_link, cover_url, date_started, date_finished, notes,
   } = input;
 
   if (!title || typeof title !== 'string' || !title.trim()) {
@@ -46,6 +47,7 @@ function sanitize(input: Partial<BookInput>) {
     total_units: total_units ?? null,
     genre_tags: genre_tags || null,
     source_link: source_link || null,
+    cover_url: cover_url || null,
     date_started: date_started || null,
     date_finished: date_finished || null,
     notes: notes || null,
