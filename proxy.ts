@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
-// Edge middleware can't import Node's `crypto`, so session verification is
-// inlined here with the `jose` (edge-compatible) library.
+// IMPORTANT: as of Next.js 16, this file (proxy.ts, formerly middleware.ts)
+// is NOT the security boundary. It only exists to redirect signed-out users
+// away from page routes for a smoother UX (avoids a flash of the app before
+// bouncing to /login). Every API route independently re-verifies the
+// session itself via requireAuthenticatedRequest() in lib/auth.ts — so even
+// if this file were skipped or bypassed entirely, no data route is exposed.
 async function isValidSession(token: string | undefined): Promise<boolean> {
   if (!token) return false;
   try {
@@ -14,7 +18,7 @@ async function isValidSession(token: string | undefined): Promise<boolean> {
   }
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   const isPublic =
@@ -30,6 +34,7 @@ export async function middleware(req: NextRequest) {
 
   if (!valid) {
     if (pathname.startsWith('/api')) {
+      // Fast-path only. The route handler itself enforces this too.
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const loginUrl = new URL('/login', req.url);

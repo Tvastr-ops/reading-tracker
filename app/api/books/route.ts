@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
 import { BookInput } from '@/lib/types';
+import { requireAuthenticatedRequest } from '@/lib/auth';
 
 // See app/api/export/route.ts for why this is required.
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  if (!(await requireAuthenticatedRequest(req))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const supabase = supabaseServer();
   const { data, error } = await supabase
     .from('books')
@@ -48,6 +53,10 @@ function sanitize(input: Partial<BookInput>) {
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await requireAuthenticatedRequest(req))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
 
