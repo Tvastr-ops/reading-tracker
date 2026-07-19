@@ -1,0 +1,63 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { supabaseServer } from '@/lib/supabase';
+import { BookInput } from '@/lib/types';
+
+export async function GET() {
+  const supabase = supabaseServer();
+  const { data, error } = await supabase
+    .from('books')
+    .select('*')
+    .order('updated_at', { ascending: false });
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ books: data });
+}
+
+function sanitize(input: Partial<BookInput>) {
+  // Only allow known fields through — never trust the raw request body
+  // straight into the database.
+  const {
+    title, type, author, status, rating, progress, total_units,
+    genre_tags, source_link, date_started, date_finished, notes,
+  } = input;
+
+  if (!title || typeof title !== 'string' || !title.trim()) {
+    throw new Error('Title is required');
+  }
+  if (rating != null && (rating < 0 || rating > 5)) {
+    throw new Error('Rating must be between 0 and 5');
+  }
+
+  return {
+    title: title.trim(),
+    type: type || 'Novel',
+    author: author || null,
+    status: status || 'Plan to Read',
+    rating: rating ?? null,
+    progress: progress ?? 0,
+    total_units: total_units ?? null,
+    genre_tags: genre_tags || null,
+    source_link: source_link || null,
+    date_started: date_started || null,
+    date_finished: date_finished || null,
+    notes: notes || null,
+  };
+}
+
+export async function POST(req: NextRequest) {
+  const body = await req.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+
+  let clean;
+  try {
+    clean = sanitize(body);
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 400 });
+  }
+
+  const supabase = supabaseServer();
+  const { data, error } = await supabase.from('books').insert(clean).select().single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ book: data }, { status: 201 });
+}
