@@ -1,77 +1,100 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
-import { BookInput } from '@/lib/types';
 import { requireAuthenticatedRequest } from '@/lib/auth';
 
 // See app/api/export/route.ts for why this is required.
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: NextRequest) {
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const ALLOWED_FIELDS = [
+  'title', 'type', 'author', 'status', 'rating', 'progress', 'total_units',
+  'genre_tags', 'source_link', 'cover_url', 'date_started', 'date_finished', 'notes',
+];
+
+// Next.js 15+ made dynamic route `params` a Promise (was a plain object in 14).
+type RouteContext = { params: Promise<{ id: string }> };
+
+export async function PATCH(req: NextRequest, { params }: RouteContext) {
   if (!(await requireAuthenticatedRequest(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const showTrash = req.nextUrl.searchParams.get('trash') === '1';
-
-  const supabase = supabaseServer();
-  let query = supabase.from('books').select('*');
-  query = showTrash ? query.not('deleted_at', 'is', null) : query.is('deleted_at', null);
-  const { data, error } = await query.order('updated_at', { ascending: false });
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ books: data });
-}
-
-function sanitize(input: Partial<BookInput>) {
-  // Only allow known fields through — never trust the raw request body
-  // straight into the database.
-  const {
-    title, type, author, status, rating, progress, total_units,
-    genre_tags, source_link, cover_url, date_started, date_finished, notes,
-  } = input;
-
-  if (!title || typeof title !== 'string' || !title.trim()) {
-    throw new Error('Title is required');
-  }
-  if (rating != null && (rating < 0 || rating > 5)) {
-    throw new Error('Rating must be between 0 and 5');
-  }
-
-  return {
-    title: title.trim(),
-    type: type || 'Novel',
-    author: author || null,
-    status: status || 'Plan to Read',
-    rating: rating ?? null,
-    progress: progress ?? 0,
-    total_units: total_units ?? null,
-    genre_tags: genre_tags || null,
-    source_link: source_link || null,
-    cover_url: cover_url || null,
-    date_started: date_started || null,
-    date_finished: date_finished || null,
-    notes: notes || null,
-  };
-}
-
-export async function POST(req: NextRequest) {
-  if (!(await requireAuthenticatedRequest(req))) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { id } = await params;
+  if (!UUID_RE.test(id)) {
+    return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
 
   const body = await req.json().catch(() => null);
-  if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  if (!body || typeof body !== 'object') {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
 
-  let clean;
-  try {
-    clean = sanitize(body);
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 400 });
+  const update: Record<string, unknown> = {};
+
+  // Restore-from-trash is a special-cased update, not a free-form field.
+  if (body.restore === true) {
+    update.deleted_at = null;
+  } else {
+    for (const key of ALLOWED_FIELDS) {
+      if (key in body) {
+        const val = body[key];
+        // Postgres rejects "" for date/numeric columns — it wants null.
+        // The create endpoint already normalizes this (see sanitize() in
+        // app/api/books/route.ts); this was missing here.
+        update[key] = val === '' ? null : val;
+      }
+    }
+  }
+
+  if (Object.keys(update).length === 0) {
+    return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+  }
+  if ('rating' in update) {
+    const r = update.rating as number | null;
+    if (r != null && (r < 0 || r > 5)) {
+      return NextResponse.json({ error: 'Rating must be between 0 and 5' }, { status: 400 });
+    }
   }
 
   const supabase = supabaseServer();
-  const { data, error } = await supabase.from('books').insert(clean).select().single();
+  const { data, error } = await supabase
+    .from('books')
+    .update(update)
+    .eq('id', id)
+    .select()
+    .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ book: data }, { status: 201 });
+  return NextResponse.json({ book: data });
+}
+
+// Soft delete by default (sets deleted_at). Pass ?permanent=1 to actually
+// remove the row — used only from the trash view, after a confirm dialog.
+export async function DELETE(req: NextRequest, { params }: RouteContext) {
+  if (!(await requireAuthenticatedRequest(req))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { id } = await params;
+  if (!UUID_RE.test(id)) {
+    return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
+  }
+
+  const permanent = req.nextUrl.searchParams.get('permanent') === '1';
+  const supabase = supabaseServer();
+
+  if (permanent) {
+    const { error } = await supabase.from('books').delete().eq('id', id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
+  const { error } = await supabase
+    .from('books')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
 }
