@@ -1,13 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const router = useRouter();
+
+  useEffect(() => {
+    const current = document.documentElement.getAttribute('data-theme');
+    setTheme(current === 'dark' ? 'dark' : 'light');
+  }, []);
+
+  function toggleTheme() {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    document.documentElement.setAttribute('data-theme', next);
+    window.localStorage.setItem('theme', next);
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -30,6 +43,15 @@ export default function LoginPage() {
 
   return (
     <div className="login-wrap">
+      <button
+        className="theme-toggle"
+        onClick={toggleTheme}
+        title="Toggle dark mode"
+        aria-label="Toggle dark mode"
+        style={{ position: 'fixed', top: 16, right: 16 }}
+      >
+        {theme === 'dark' ? '☀️' : '🌙'}
+      </button>
       <form className="card login-card" onSubmit={submit}>
         <h1>Reading Tracker</h1>
         <p className="subtitle">Enter your password to continue.</p>
@@ -39,7 +61,7 @@ export default function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
-          style={{ width: '100%', padding: '9px 10px', border: '1px solid #d8d6d0', borderRadius: 6 }}
+          className="login-input"
         />
         {error && <div className="error-text">{error}</div>}
         <button className="btn" type="submit" disabled={loading} style={{ marginTop: 12, width: '100%' }}>
@@ -49,3 +71,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

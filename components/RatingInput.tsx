@@ -1,7 +1,7 @@
 'use client';
 
 export function RatingDisplay({ rating, mode }: { rating: number | null; mode: 'stars' | 'decimal' }) {
-  if (rating == null) return <span style={{ color: '#b7b5ae' }}>—</span>;
+  if (rating == null) return <span style={{ color: 'var(--text-faint)' }}>—</span>;
   if (mode === 'decimal') return <span>{rating.toFixed(1)} / 5</span>;
 
   const stars = [];

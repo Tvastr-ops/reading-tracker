@@ -12,7 +12,15 @@ export function BarChart({
 
   return (
     <div>
-      <svg viewBox={`0 0 100 ${height}`} width="100%" height={height} preserveAspectRatio="none">
+      {/* currentColor picks up the CSS `color` set below, so bars/labels
+          automatically follow light/dark theme without hardcoded hex. */}
+      <svg
+        viewBox={`0 0 100 ${height}`}
+        width="100%"
+        height={height}
+        preserveAspectRatio="none"
+        style={{ color: 'var(--text)' }}
+      >
         {data.map((d, i) => {
           const h = (d.value / max) * (height - 16);
           const x = i * barWidth;
@@ -23,7 +31,7 @@ export function BarChart({
                 y={height - 16 - h}
                 width={barWidth * 0.7}
                 height={h}
-                fill="#1c1c1c"
+                fill="currentColor"
                 rx={1}
               />
               {d.value > 0 && (
@@ -32,7 +40,7 @@ export function BarChart({
                   y={height - 18 - h}
                   fontSize="4"
                   textAnchor="middle"
-                  fill="#6b6b6b"
+                  fill="var(--text-muted)"
                 >
                   {d.value}
                 </text>
@@ -41,7 +49,7 @@ export function BarChart({
           );
         })}
       </svg>
-      <div style={{ display: 'flex', fontSize: 10, color: '#8a8880' }}>
+      <div className="label" style={{ display: 'flex' }}>
         {data.map((d) => (
           <div key={d.label} style={{ flex: 1, textAlign: 'center' }}>{d.label}</div>
         ))}
