@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { Book, BookInput, STATUSES } from '@/lib/types';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Book, BookInput, STATUSES, SortField, SortDir } from '@/lib/types';
 import BookTable from '@/components/BookTable';
 import BookForm from '@/components/BookForm';
 import StatsSummary from '@/components/StatsSummary';
@@ -15,18 +15,25 @@ export default function HomePage() {
   const [search, setSearch] = useState('');
   const [ratingMode, setRatingMode] = useState<'stars' | 'decimal'>('stars');
   const [editing, setEditing] = useState<Partial<Book> | null | undefined>(undefined);
+  const [sortField, setSortField] = useState<SortField>('updated_at');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [showTrash, setShowTrash] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   useEffect(() => {
     const saved = window.localStorage.getItem('ratingMode');
     if (saved === 'decimal' || saved === 'stars') setRatingMode(saved);
-    load();
   }, []);
+
+  useEffect(() => { load(); }, [showTrash]);
 
   async function load() {
     setLoading(true);
     setError('');
-    const res = await fetch('/api/books');
+    const res = await fetch(`/api/books${showTrash ? '?trash=1' : ''}`);
     if (res.status === 401) { router.push('/login'); return; }
     const data = await res.json();
     if (!res.ok) { setError(data.error || 'Failed to load'); setLoading(false); return; }
@@ -38,6 +45,15 @@ export default function HomePage() {
     const next = ratingMode === 'stars' ? 'decimal' : 'stars';
     setRatingMode(next);
     window.localStorage.setItem('ratingMode', next);
+  }
+
+  function handleSort(field: SortField) {
+    if (field === sortField) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
   }
 
   async function saveBook(data: BookInput) {
@@ -54,8 +70,23 @@ export default function HomePage() {
   }
 
   async function deleteBook(b: Book) {
-    if (!confirm(`Delete "${b.title}"? This can't be undone.`)) return;
+    if (!confirm(`Move "${b.title}" to trash?`)) return;
     const res = await fetch(`/api/books/${b.id}`, { method: 'DELETE' });
+    if (res.ok) load();
+  }
+
+  async function restoreBook(b: Book) {
+    const res = await fetch(`/api/books/${b.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ restore: true }),
+    });
+    if (res.ok) load();
+  }
+
+  async function permanentlyDeleteBook(b: Book) {
+    if (!confirm(`Permanently delete "${b.title}"? This can't be undone.`)) return;
+    const res = await fetch(`/api/books/${b.id}?permanent=1`, { method: 'DELETE' });
     if (res.ok) load();
   }
 
@@ -64,9 +95,36 @@ export default function HomePage() {
     router.push('/login');
   }
 
+  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setImportMsg('');
+    try {
+      const text = await file.text();
+      const res = await fetch('/api/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csv: text }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        setImportMsg(result.error || 'Import failed');
+      } else {
+        setImportMsg(`Imported ${result.imported} entries${result.skippedRows?.length ? `, skipped ${result.skippedRows.length} row(s) without a title` : ''}.`);
+        load();
+      }
+    } catch {
+      setImportMsg('Could not read that file.');
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
   const filtered = useMemo(() => {
-    return books.filter((b) => {
-      if (statusFilter !== 'All' && b.status !== statusFilter) return false;
+    let list = books.filter((b) => {
+      if (!showTrash && statusFilter !== 'All' && b.status !== statusFilter) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
         const hay = `${b.title} ${b.author || ''} ${b.genre_tags || ''}`.toLowerCase();
@@ -74,7 +132,30 @@ export default function HomePage() {
       }
       return true;
     });
-  }, [books, statusFilter, search]);
+
+    list = [...list].sort((a, b) => {
+      let cmp = 0;
+      switch (sortField) {
+        case 'title':
+          cmp = a.title.localeCompare(b.title);
+          break;
+        case 'rating':
+          cmp = (a.rating ?? -1) - (b.rating ?? -1);
+          break;
+        case 'status':
+          cmp = a.status.localeCompare(b.status);
+          break;
+        case 'date_finished':
+          cmp = (a.date_finished || '').localeCompare(b.date_finished || '');
+          break;
+        default:
+          cmp = a.updated_at.localeCompare(b.updated_at);
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+
+    return list;
+  }, [books, statusFilter, search, sortField, sortDir, showTrash]);
 
   return (
     <div className="container">
@@ -83,20 +164,28 @@ export default function HomePage() {
           <h1>Reading Tracker</h1>
           <p className="subtitle">Web novels, light novels, novels, essays, short stories, fanfiction, and more.</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <input ref={fileInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportFile} />
+          <button className="btn secondary" onClick={() => fileInputRef.current?.click()} disabled={importing}>
+            {importing ? 'Importing...' : 'Import CSV'}
+          </button>
           <a className="btn secondary" href="/api/export">Export CSV</a>
           <button className="btn secondary" onClick={logout}>Log out</button>
         </div>
       </div>
 
-      <StatsSummary books={books} />
+      {importMsg && <div className="card" style={{ padding: 10, fontSize: 13 }}>{importMsg}</div>}
+
+      {!showTrash && <StatsSummary books={books} />}
 
       <div className="card">
         <div className="filters">
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="All">All statuses</option>
-            {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
+          {!showTrash && (
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value="All">All statuses</option>
+              {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          )}
           <input
             type="text"
             placeholder="Search title, author, tags..."
@@ -106,8 +195,11 @@ export default function HomePage() {
           <button className="btn secondary" onClick={toggleRatingMode}>
             Rating: {ratingMode === 'stars' ? '★ stars' : '#.# decimal'}
           </button>
+          <button className="btn secondary" onClick={() => setShowTrash((v) => !v)}>
+            {showTrash ? '← Back to library' : 'Trash'}
+          </button>
           <div style={{ flex: 1 }} />
-          <button className="btn" onClick={() => setEditing(null)}>+ Add entry</button>
+          {!showTrash && <button className="btn" onClick={() => setEditing(null)}>+ Add entry</button>}
         </div>
 
         {error && <div className="error-text">{error}</div>}
@@ -117,8 +209,14 @@ export default function HomePage() {
           <BookTable
             books={filtered}
             ratingMode={ratingMode}
+            sortField={sortField}
+            sortDir={sortDir}
+            onSort={handleSort}
+            trashMode={showTrash}
             onEdit={(b) => setEditing(b)}
             onDelete={deleteBook}
+            onRestore={restoreBook}
+            onPermanentDelete={permanentlyDeleteBook}
           />
         )}
       </div>

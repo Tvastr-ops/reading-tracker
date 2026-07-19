@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await supabase
     .from('books')
     .select(COLUMNS.join(','))
+    .is('deleted_at', null)
     .order('updated_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
