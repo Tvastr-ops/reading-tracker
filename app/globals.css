@@ -1,61 +1,71 @@
 :root {
-  --bg: #f7f6f3;
-  --card-bg: #ffffff;
-  --border: #e6e4de;
-  --border-soft: #eeece6;
-  --text: #1c1c1c;
-  --text-muted: #6b6b6b;
-  --text-faint: #8a8880;
-  --accent-bg: #1c1c1c;
-  --accent-bg-hover: #333333;
-  --accent-text: #ffffff;
-  --input-bg: #ffffff;
-  --input-border: #d8d6d0;
-  --secondary-hover: #efeee9;
-  --danger: #b3261e;
-  --danger-hover: #8f1e18;
-  --row-hover: #faf9f6;
-  --progress-track: #eeece6;
-  --star-empty: #d8d6d0;
-  --star-filled: #e0a30e;
-  --shadow: 0 1px 2px rgba(20, 18, 14, 0.04);
-  --shadow-modal: 0 12px 40px rgba(20, 18, 14, 0.18);
+  color-scheme: light;
 
-  --badge-reading-bg: #e3edff; --badge-reading-text: #1d4ed8;
-  --badge-completed-bg: #e2f5e9; --badge-completed-text: #12795a;
-  --badge-plan-bg: #f1f0eb; --badge-plan-text: #56534b;
-  --badge-hold-bg: #fff2df; --badge-hold-text: #9a5b00;
-  --badge-dropped-bg: #fde3e3; --badge-dropped-text: #b3261e;
+  /* Paper + ink + book-cloth palette — not the generic cream/terracotta or
+     slate defaults. Warm paper background, warm ink text, a single oxblood
+     accent used sparingly (ratings, the active-status spine, focus states). */
+  --bg: #f1ebdd;
+  --card-bg: #fbf8f1;
+  --border: #ddd2b8;
+  --border-soft: #e8dfc9;
+  --text: #24201a;
+  --text-muted: #6f6553;
+  --text-faint: #938970;
+  --accent-bg: #24201a;
+  --accent-bg-hover: #3c362b;
+  --accent-text: #f1ebdd;
+  --input-bg: #fbf8f1;
+  --input-border: #ddd2b8;
+  --secondary-hover: #e9e0c9;
+  --danger: #8a3b30;
+  --danger-hover: #6e2f27;
+  --row-hover: #ece2c8;
+  --progress-track: #e2d7bd;
+  --star-empty: #d3c6a3;
+  --star-filled: #8a3b30;
+  --shadow: 0 1px 2px rgba(40, 30, 10, 0.08);
+  --shadow-modal: 0 16px 44px rgba(30, 22, 8, 0.24);
+  --font-serif: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+
+  /* Status colors double as "spine" colors and replace pill badges. */
+  --status-reading: #8a3b30;
+  --status-completed: #3f6b4f;
+  --status-plan: #8a8168;
+  --status-hold: #a6752f;
+  --status-dropped: #857a63;
 }
 
 [data-theme='dark'] {
-  --bg: #17161a;
-  --card-bg: #201f24;
-  --border: #322f37;
-  --border-soft: #2a282e;
-  --text: #ece9e4;
-  --text-muted: #a5a2ab;
-  --text-faint: #7d7a83;
-  --accent-bg: #ece9e4;
-  --accent-bg-hover: #ffffff;
-  --accent-text: #17161a;
-  --input-bg: #201f24;
-  --input-border: #3a3740;
-  --secondary-hover: #2a282e;
-  --danger: #e5534b;
-  --danger-hover: #f0736c;
-  --row-hover: #26242a;
-  --progress-track: #322f37;
-  --star-empty: #3a3740;
-  --star-filled: #f0b429;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-modal: 0 12px 40px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
 
-  --badge-reading-bg: rgba(59, 130, 246, 0.16); --badge-reading-text: #93c5fd;
-  --badge-completed-bg: rgba(16, 185, 129, 0.16); --badge-completed-text: #6ee7b7;
-  --badge-plan-bg: rgba(255, 255, 255, 0.07); --badge-plan-text: #cbc8c2;
-  --badge-hold-bg: rgba(245, 158, 11, 0.16); --badge-hold-text: #fbbf24;
-  --badge-dropped-bg: rgba(239, 68, 68, 0.16); --badge-dropped-text: #fca5a5;
+  /* "Reading lamp at night" — warm brown-black, not generic slate. */
+  --bg: #1b1712;
+  --card-bg: #241f17;
+  --border: #3d3527;
+  --border-soft: #2d271c;
+  --text: #ece4d3;
+  --text-muted: #b1a68c;
+  --text-faint: #8a7f68;
+  --accent-bg: #ece4d3;
+  --accent-bg-hover: #ffffff;
+  --accent-text: #1b1712;
+  --input-bg: #241f17;
+  --input-border: #453c2c;
+  --secondary-hover: #2d271c;
+  --danger: #d68276;
+  --danger-hover: #e2988d;
+  --row-hover: #29241a;
+  --progress-track: #3d3527;
+  --star-empty: #453c2c;
+  --star-filled: #d18a72;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-modal: 0 16px 44px rgba(0, 0, 0, 0.55);
+
+  --status-reading: #cf7a67;
+  --status-completed: #74b189;
+  --status-plan: #ab9f80;
+  --status-hold: #d3a355;
+  --status-dropped: #93876c;
 }
 
 * { box-sizing: border-box; }
@@ -65,6 +75,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
+  font-variant-numeric: tabular-nums;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
@@ -74,9 +85,17 @@ body {
   padding: 20px 16px 64px;
 }
 
-h1 { font-size: 22px; margin: 0 0 4px; }
+h1 {
+  font-family: var(--font-serif);
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  letter-spacing: 0.01em;
+}
 h2 { font-size: 16px; margin: 0 0 12px; }
 .subtitle { color: var(--text-muted); font-size: 13px; margin: 0 0 20px; }
+
+.book-title { font-family: var(--font-serif); font-weight: 600; }
 
 .topbar {
   display: flex;
@@ -110,6 +129,12 @@ button, input, select, textarea {
 .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .btn.icon { padding: 8px 10px; font-size: 15px; line-height: 1; }
 
+.btn:focus-visible, .theme-toggle:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible, a:focus-visible {
+  outline: 2px solid var(--star-filled);
+  outline-offset: 2px;
+}
+
 .card {
   background: var(--card-bg);
   border: 1px solid var(--border);
@@ -137,24 +162,36 @@ button, input, select, textarea {
 }
 
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
 th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.02em; }
-tr { transition: background-color 0.12s ease; }
+tr { transition: background-color 0.12s ease, border-color 0.2s ease; }
 tr:hover td { background: var(--row-hover); }
 
-.badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
+/* Spine indicator replaces pill badges — a colored bar per row, like a
+   shelf of color-coded book spines, with the status name as plain colored
+   text rather than a background pill. */
+th.spine-col, td.spine-cell { padding: 0; width: 4px; }
+.spine {
+  display: block;
+  width: 4px;
+  height: 100%;
+  min-height: 28px;
+  border-radius: 0 2px 2px 0;
+  background: var(--row-status-color, var(--border));
 }
-.badge.reading { background: var(--badge-reading-bg); color: var(--badge-reading-text); }
-.badge.completed { background: var(--badge-completed-bg); color: var(--badge-completed-text); }
-.badge.plan { background: var(--badge-plan-bg); color: var(--badge-plan-text); }
-.badge.hold { background: var(--badge-hold-bg); color: var(--badge-hold-text); }
-.badge.dropped { background: var(--badge-dropped-bg); color: var(--badge-dropped-text); }
+.status-text {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--row-status-color, var(--text-muted));
+}
+
+.book-cover, .placeholder-box {
+  border-radius: 2px;
+  box-shadow: 1.5px 1.5px 0 var(--card-bg), 3px 3px 0 var(--border);
+}
+.placeholder-box { background: var(--progress-track); }
 
 .progress-bar {
   width: 100px;
@@ -169,7 +206,7 @@ tr:hover td { background: var(--row-hover); }
 .rating-stars .filled { color: var(--star-filled); }
 
 .modal-backdrop {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  position: fixed; inset: 0; background: rgba(20, 15, 5, 0.45);
   display: flex; align-items: flex-start; justify-content: center;
   padding: 24px 16px; overflow-y: auto; z-index: 50;
   animation: fadeIn 0.15s ease both;
@@ -208,6 +245,8 @@ tr:hover td { background: var(--row-hover); }
 .label { font-size: 12px; color: var(--text-muted); }
 .summary-tile .label { font-size: 12px; color: var(--text-muted); }
 
+.empty-state { color: var(--text-muted); font-size: 13px; padding: 12px 0; }
+
 .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
 .login-card { width: 100%; max-width: 320px; padding: 24px; }
 .login-input {
@@ -218,7 +257,6 @@ tr:hover td { background: var(--row-hover); }
 .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .row-actions button { padding: 4px 8px; font-size: 12px; }
 .mono-btn { background: none; border: none; cursor: pointer; padding: 2px; color: inherit; }
-.placeholder-box { background: var(--progress-track); border-radius: 3px; }
 
 .theme-toggle {
   background: var(--card-bg);
@@ -256,7 +294,7 @@ tr:hover td { background: var(--row-hover); }
 /* ---------- Responsive: phones ---------- */
 @media (max-width: 720px) {
   .container { padding: 16px 12px 48px; }
-  h1 { font-size: 19px; }
+  h1 { font-size: 21px; }
   .topbar { flex-direction: column; align-items: stretch; }
   .topbar > div:last-child { display: flex; flex-wrap: wrap; }
   .topbar > div:last-child .btn,
@@ -271,8 +309,9 @@ tr:hover td { background: var(--row-hover); }
   .modal-backdrop { padding: 0; align-items: flex-end; }
   .form-grid { grid-template-columns: 1fr; }
 
-  /* Card-style table: cover + title share the top row, everything else
-     stacks as label/value pairs, actions get their own full-width row. */
+  /* Card-style table: the spine bar becomes the card's left border (still
+     the book-on-a-shelf metaphor), cover + title share the top row,
+     everything else stacks as label/value pairs. */
   table, thead, tbody { display: block; width: 100%; }
   thead { display: none; }
   tr {
@@ -281,6 +320,7 @@ tr:hover td { background: var(--row-hover); }
     align-items: center;
     gap: 2px 10px;
     border: 1px solid var(--border);
+    border-left: 4px solid var(--row-status-color, var(--border));
     border-radius: 10px;
     padding: 10px;
     margin-bottom: 10px;
@@ -288,16 +328,17 @@ tr:hover td { background: var(--row-hover); }
   }
   tr:hover td { background: transparent; }
   td { border: none; padding: 3px 0; font-size: 13px; }
-  td:nth-child(1) { flex: 0 0 auto; }
-  td:nth-child(2) { flex: 1 1 60%; min-width: 0; }
-  td:nth-child(n+3):not(:last-child) {
+  td.spine-cell { display: none; }
+  td:nth-child(2) { flex: 0 0 auto; }
+  td:nth-child(3) { flex: 1 1 60%; min-width: 0; }
+  td:nth-child(n+4):not(:last-child) {
     flex: 1 1 45%;
     display: flex;
     justify-content: space-between;
     gap: 6px;
     font-size: 12px;
   }
-  td:nth-child(n+3):not(:last-child)::before {
+  td:nth-child(n+4):not(:last-child)::before {
     content: attr(data-label);
     font-weight: 600;
     color: var(--text-muted);
