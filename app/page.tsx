@@ -229,6 +229,7 @@ export default function HomePage() {
             sortDir={sortDir}
             onSort={handleSort}
             trashMode={showTrash}
+            hasAnyBooks={books.length > 0}
             onEdit={(b) => setEditing(b)}
             onDelete={deleteBook}
             onRestore={restoreBook}
