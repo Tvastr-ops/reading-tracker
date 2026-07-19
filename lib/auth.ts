@@ -40,3 +40,17 @@ export async function verifySessionToken(token: string): Promise<boolean> {
 
 export const SESSION_COOKIE = COOKIE_NAME;
 export const SESSION_MAX_AGE = SESSION_TTL_SECONDS;
+
+// Route handlers call this themselves rather than relying solely on
+// proxy.ts. Next.js 16 explicitly discourages treating the proxy layer as
+// the authoritative security boundary (following a 2025 CVE where edge
+// middleware auth checks could be bypassed) — proxy.ts should only do
+// best-effort UX redirects, and each server-side handler must verify the
+// session independently. This is that independent check.
+export async function requireAuthenticatedRequest(req: {
+  cookies: { get(name: string): { value: string } | undefined };
+}): Promise<boolean> {
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  if (!token) return false;
+  return verifySessionToken(token);
+}

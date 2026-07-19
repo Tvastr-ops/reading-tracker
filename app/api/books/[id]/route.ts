@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
+import { requireAuthenticatedRequest } from '@/lib/auth';
 
 // See app/api/export/route.ts for why this is required.
 export const dynamic = 'force-dynamic';
@@ -15,6 +16,10 @@ const ALLOWED_FIELDS = [
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
+  if (!(await requireAuthenticatedRequest(req))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { id } = await params;
   if (!UUID_RE.test(id)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
@@ -51,7 +56,11 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
   return NextResponse.json({ book: data });
 }
 
-export async function DELETE(_req: NextRequest, { params }: RouteContext) {
+export async function DELETE(req: NextRequest, { params }: RouteContext) {
+  if (!(await requireAuthenticatedRequest(req))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { id } = await params;
   if (!UUID_RE.test(id)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });

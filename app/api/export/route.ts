@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
+import { requireAuthenticatedRequest } from '@/lib/auth';
 
 // Next.js 14 caches server-side fetch() calls by default, and the Supabase
 // client uses fetch internally — without this, the first export would get
@@ -18,7 +19,11 @@ function csvEscape(val: unknown): string {
   return s;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  if (!(await requireAuthenticatedRequest(req))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const supabase = supabaseServer();
   const { data, error } = await supabase
     .from('books')
