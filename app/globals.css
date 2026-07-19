@@ -305,8 +305,13 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 
   .summary-grid { grid-template-columns: repeat(2, 1fr); }
 
-  .modal { padding: 16px; border-radius: 12px 12px 0 0; }
-  .modal-backdrop { padding: 0; align-items: flex-end; }
+  .modal {
+    padding: 16px;
+    border-radius: 12px;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .modal-backdrop { padding: 12px; align-items: center; }
   .form-grid { grid-template-columns: 1fr; }
 
   /* Card-style table: the spine bar becomes the card's left border (still
