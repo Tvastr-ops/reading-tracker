@@ -116,7 +116,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
               placeholder="e.g. 30"
               value={goalInput}
               onChange={(e) => setGoalInput(e.target.value)}
-              style={{ width: 100, padding: '6px 8px', border: '1px solid #d8d6d0', borderRadius: 6 }}
+              style={{ width: 100, padding: '6px 8px', border: '1px solid var(--input-border)', borderRadius: 6, background: 'var(--input-bg)', color: 'var(--text)' }}
             />
             <button className="btn" disabled={savingGoal} onClick={saveGoal}>Save</button>
             <button className="btn secondary" onClick={() => setEditingGoal(false)}>Cancel</button>

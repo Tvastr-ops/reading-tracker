@@ -20,13 +20,26 @@ export default function HomePage() {
   const [showTrash, setShowTrash] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState('');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   useEffect(() => {
     const saved = window.localStorage.getItem('ratingMode');
     if (saved === 'decimal' || saved === 'stars') setRatingMode(saved);
+    // layout.tsx already set the real data-theme attribute before paint
+    // (avoids a flash); this just syncs React state to match it so the
+    // toggle button shows the right icon.
+    const current = document.documentElement.getAttribute('data-theme');
+    setTheme(current === 'dark' ? 'dark' : 'light');
   }, []);
+
+  function toggleTheme() {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    document.documentElement.setAttribute('data-theme', next);
+    window.localStorage.setItem('theme', next);
+  }
 
   useEffect(() => { load(); }, [showTrash]);
 
@@ -165,6 +178,9 @@ export default function HomePage() {
           <p className="subtitle">Web novels, light novels, novels, essays, short stories, fanfiction, and more.</p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button className="theme-toggle" onClick={toggleTheme} title="Toggle dark mode" aria-label="Toggle dark mode">
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
           <input ref={fileInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportFile} />
           <button className="btn secondary" onClick={() => fileInputRef.current?.click()} disabled={importing}>
             {importing ? 'Importing...' : 'Import CSV'}
@@ -198,7 +214,7 @@ export default function HomePage() {
           <button className="btn secondary" onClick={() => setShowTrash((v) => !v)}>
             {showTrash ? '← Back to library' : 'Trash'}
           </button>
-          <div style={{ flex: 1 }} />
+          <div className="filter-spacer" style={{ flex: 1 }} />
           {!showTrash && <button className="btn" onClick={() => setEditing(null)}>+ Add entry</button>}
         </div>
 

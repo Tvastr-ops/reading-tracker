@@ -89,17 +89,17 @@ export default function ReadingLog({
       ) : entries.length === 0 ? (
         <p className="subtitle">No log entries yet.</p>
       ) : (
-        <div style={{ maxHeight: 140, overflowY: 'auto', border: '1px solid #eeece6', borderRadius: 6 }}>
+        <div style={{ maxHeight: 140, overflowY: 'auto', border: '1px solid var(--border-soft)', borderRadius: 6 }}>
           {entries.map((e) => (
             <div
               key={e.id}
-              style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', fontSize: 12, borderBottom: '1px solid #f2f0eb' }}
+              style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', fontSize: 12, borderBottom: '1px solid var(--border-soft)' }}
             >
               <span>
                 {e.from_progress != null ? `${e.from_progress} → ` : ''}{e.to_progress}
-                {e.note ? <span style={{ color: '#8a8880' }}> — {e.note}</span> : null}
+                {e.note ? <span className="label"> — {e.note}</span> : null}
               </span>
-              <span style={{ color: '#8a8880' }}>{new Date(e.logged_at).toLocaleDateString()}</span>
+              <span className="label">{new Date(e.logged_at).toLocaleDateString()}</span>
             </div>
           ))}
         </div>

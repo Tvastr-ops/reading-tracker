@@ -86,24 +86,24 @@ export default function BookTable({
                   {b.cover_url ? (
                     <img src={b.cover_url} alt="" width={28} height={40} style={{ objectFit: 'cover', borderRadius: 3 }} />
                   ) : (
-                    <div style={{ width: 28, height: 40, background: '#eeece6', borderRadius: 3 }} />
+                    <div className="placeholder-box" style={{ width: 28, height: 40 }} />
                   )}
                 </td>
                 <td>
                   <strong>{b.title}</strong>
                   {b.source_link && (
-                    <div style={{ fontSize: 11, color: '#8a8880' }}>{b.source_link}</div>
+                    <div className="label" style={{ fontSize: 11 }}>{b.source_link}</div>
                   )}
                 </td>
-                <td>{b.type}</td>
-                <td>{b.author || '—'}</td>
-                <td><span className={`badge ${STATUS_CLASS[b.status] || 'plan'}`}>{b.status}</span></td>
-                <td><RatingDisplay rating={b.rating} mode={ratingMode} /></td>
-                <td>
+                <td data-label="Type">{b.type}</td>
+                <td data-label="Author">{b.author || '—'}</td>
+                <td data-label="Status"><span className={`badge ${STATUS_CLASS[b.status] || 'plan'}`}>{b.status}</span></td>
+                <td data-label="Rating"><RatingDisplay rating={b.rating} mode={ratingMode} /></td>
+                <td data-label="Progress">
                   {b.total_units ? (
                     <>
                       <div className="progress-bar"><div style={{ width: `${pct}%` }} /></div>
-                      <div style={{ fontSize: 11, color: '#8a8880', marginTop: 2 }}>
+                      <div className="label" style={{ fontSize: 11, marginTop: 2 }}>
                         {b.progress ?? 0}/{b.total_units} ({pct}%)
                       </div>
                     </>
@@ -111,8 +111,8 @@ export default function BookTable({
                     <span style={{ fontSize: 12 }}>{b.progress ?? 0} units</span>
                   )}
                 </td>
-                <td style={{ fontSize: 12, color: '#6b6b6b' }}>{b.genre_tags || '—'}</td>
-                <td style={{ fontSize: 12, color: '#6b6b6b' }}>{b.date_finished || '—'}</td>
+                <td data-label="Genre / Tags" className="label" style={{ fontSize: 12 }}>{b.genre_tags || '—'}</td>
+                <td data-label="Finished" className="label" style={{ fontSize: 12 }}>{b.date_finished || '—'}</td>
                 <td>
                   <div className="row-actions">
                     {trashMode ? (

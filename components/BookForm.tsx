@@ -128,7 +128,7 @@ export default function BookForm({
               {form.cover_url ? (
                 <img src={form.cover_url} alt="" width={32} height={46} style={{ objectFit: 'cover', borderRadius: 3 }} />
               ) : (
-                <div style={{ width: 32, height: 46, background: '#eeece6', borderRadius: 3, flexShrink: 0 }} />
+                <div className="placeholder-box" style={{ width: 32, height: 46, flexShrink: 0 }} />
               )}
               <input
                 value={form.cover_url || ''}
@@ -148,7 +148,7 @@ export default function BookForm({
                     key={r.cover_url}
                     onClick={() => { set('cover_url', r.cover_url); setCoverResults([]); }}
                     title={`${r.title}${r.author ? ' — ' + r.author : ''}`}
-                    style={{ border: '1px solid #d8d6d0', borderRadius: 4, padding: 2, background: '#fff', cursor: 'pointer' }}
+                    style={{ border: '1px solid var(--input-border)', borderRadius: 4, padding: 2, background: 'var(--card-bg)', cursor: 'pointer' }}
                   >
                     <img src={r.cover_url} alt="" width={40} height={58} style={{ objectFit: 'cover', display: 'block' }} />
                   </button>
