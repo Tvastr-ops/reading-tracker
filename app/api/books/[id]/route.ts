@@ -37,7 +37,13 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     update.deleted_at = null;
   } else {
     for (const key of ALLOWED_FIELDS) {
-      if (key in body) update[key] = body[key];
+      if (key in body) {
+        const val = body[key];
+        // Postgres rejects "" for date/numeric columns — it wants null.
+        // The create endpoint already normalizes this (see sanitize() in
+        // app/api/books/route.ts); this was missing here.
+        update[key] = val === '' ? null : val;
+      }
     }
   }
 
