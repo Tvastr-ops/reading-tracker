@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Book, BookInput, STATUSES } from '@/lib/types';
 import { RatingSelect } from './RatingInput';
 import ReadingLog from './ReadingLog';
@@ -10,11 +10,13 @@ const TYPES = ['Web Novel', 'Light Novel', 'Novel', 'Essay', 'Short Story', 'Fan
 export default function BookForm({
   initial,
   ratingMode,
+  existingBooks,
   onCancel,
   onSave,
 }: {
   initial: Partial<Book> | null;
   ratingMode: 'stars' | 'decimal';
+  existingBooks: Book[];
   onCancel: () => void;
   onSave: (data: BookInput) => Promise<void>;
 }) {
@@ -37,6 +39,12 @@ export default function BookForm({
   const [error, setError] = useState('');
   const [coverResults, setCoverResults] = useState<{ title: string; author: string | null; cover_url: string }[]>([]);
   const [coverSearching, setCoverSearching] = useState(false);
+
+  const isDuplicate = useMemo(() => {
+    const t = form.title.trim().toLowerCase();
+    if (!t) return false;
+    return existingBooks.some((b) => b.id !== initial?.id && b.title.trim().toLowerCase() === t);
+  }, [form.title, existingBooks, initial?.id]);
 
   function set<K extends keyof BookInput>(key: K, val: BookInput[K]) {
     setForm((f) => ({ ...f, [key]: val }));
@@ -76,6 +84,11 @@ export default function BookForm({
           <div className="full">
             <label>Title *</label>
             <input value={form.title} onChange={(e) => set('title', e.target.value)} autoFocus />
+            {isDuplicate && (
+              <div className="label" style={{ color: 'var(--status-hold)', marginTop: 4 }}>
+                You already have an entry with this title — saving will create a duplicate.
+              </div>
+            )}
           </div>
 
           <div>
@@ -176,6 +189,7 @@ export default function BookForm({
             <ReadingLog
               bookId={initial.id}
               currentProgress={form.progress ?? 0}
+              totalUnits={form.total_units ?? null}
               onProgressUpdated={(p) => set('progress', p)}
             />
           )}
