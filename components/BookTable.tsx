@@ -1,6 +1,6 @@
 'use client';
 
-import { Book, SortField, SortDir } from '@/lib/types';
+import { Book, SortField, SortDir, STATUSES } from '@/lib/types';
 import { RatingDisplay } from './RatingInput';
 
 const STATUS_VAR: Record<string, string> = {
@@ -11,14 +11,6 @@ const STATUS_VAR: Record<string, string> = {
   Dropped: 'var(--status-dropped)',
 };
 
-const SORTABLE: { field: SortField; label: string }[] = [
-  { field: 'title', label: 'Title' },
-  { field: 'status', label: 'Status' },
-  { field: 'rating', label: 'Rating' },
-  { field: 'date_finished', label: 'Finished' },
-  { field: 'updated_at', label: 'Updated' },
-];
-
 export default function BookTable({
   books,
   ratingMode,
@@ -27,10 +19,13 @@ export default function BookTable({
   onSort,
   trashMode = false,
   hasAnyBooks = true,
+  selected,
+  onToggleSelect,
   onEdit,
   onDelete,
   onRestore,
   onPermanentDelete,
+  onQuickStatus,
 }: {
   books: Book[];
   ratingMode: 'stars' | 'decimal';
@@ -39,10 +34,13 @@ export default function BookTable({
   onSort: (field: SortField) => void;
   trashMode?: boolean;
   hasAnyBooks?: boolean;
+  selected: Set<string>;
+  onToggleSelect: (id: string) => void;
   onEdit: (b: Book) => void;
   onDelete: (b: Book) => void;
   onRestore?: (b: Book) => void;
   onPermanentDelete?: (b: Book) => void;
+  onQuickStatus: (b: Book) => void;
 }) {
   if (books.length === 0) {
     let message = 'No entries match your filters.';
@@ -70,6 +68,7 @@ export default function BookTable({
       <table>
         <thead>
           <tr>
+            <th style={{ width: 24 }}></th>
             <th className="spine-col"></th>
             <th style={{ width: 36 }}></th>
             {headerFor('title', 'Title')}
@@ -87,8 +86,17 @@ export default function BookTable({
           {books.map((b) => {
             const pct = b.total_units ? Math.min(100, Math.round(((b.progress || 0) / b.total_units) * 100)) : null;
             const statusColor = STATUS_VAR[b.status] || 'var(--border)';
+            const nextStatus = STATUSES[(STATUSES.indexOf(b.status) + 1) % STATUSES.length];
             return (
               <tr key={b.id} style={{ '--row-status-color': statusColor } as React.CSSProperties}>
+                <td className="checkbox-cell">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(b.id)}
+                    onChange={() => onToggleSelect(b.id)}
+                    aria-label={`Select ${b.title}`}
+                  />
+                </td>
                 <td className="spine-cell"><span className="spine" /></td>
                 <td>
                   {b.cover_url ? (
@@ -105,7 +113,15 @@ export default function BookTable({
                 </td>
                 <td data-label="Type">{b.type}</td>
                 <td data-label="Author">{b.author || '—'}</td>
-                <td data-label="Status"><span className="status-text">{b.status}</span></td>
+                <td data-label="Status">
+                  <span
+                    className="status-text"
+                    onClick={() => !trashMode && onQuickStatus(b)}
+                    title={trashMode ? undefined : `Click to mark as "${nextStatus}"`}
+                  >
+                    {b.status}
+                  </span>
+                </td>
                 <td data-label="Rating"><RatingDisplay rating={b.rating} mode={ratingMode} /></td>
                 <td data-label="Progress">
                   {b.total_units ? (
