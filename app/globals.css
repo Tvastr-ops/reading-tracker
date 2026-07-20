@@ -359,6 +359,52 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 
 .empty-state { color: var(--text-muted); font-size: 13px; padding: 12px 0; }
 
+.book-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 14px;
+}
+.grid-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--row-status-color, var(--border));
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.grid-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.grid-tile:focus-visible { outline: 2px solid var(--star-filled); outline-offset: 2px; }
+.grid-cover {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  margin-bottom: 8px;
+}
+.grid-tile-title {
+  font-size: 13px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.grid-tile-author { font-size: 11px; margin-top: 2px; }
+.grid-tile-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 6px;
+  gap: 6px;
+}
+
 .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
 .login-card { width: 100%; max-width: 320px; padding: 24px; }
 .login-input {
