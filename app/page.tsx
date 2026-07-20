@@ -86,14 +86,21 @@ export default function HomePage() {
     const result = await res.json();
     if (!res.ok) throw new Error(result.error || 'Save failed');
     setEditing(undefined);
-    load();
+    // The response already contains the saved row — no need for a second
+    // full-list GET just to reflect a change we already know about.
+    setBooks((prev) => {
+      const exists = prev.some((b) => b.id === result.book.id);
+      return exists
+        ? prev.map((b) => (b.id === result.book.id ? result.book : b))
+        : [result.book, ...prev];
+    });
   }
 
   async function deleteBook(b: Book) {
     if (!confirm(`Move "${b.title}" to trash?`)) return;
     const res = await fetch(`/api/books/${b.id}`, { method: 'DELETE' });
     if (res.ok) {
-      load();
+      setBooks((prev) => prev.filter((x) => x.id !== b.id));
       setToast({
         message: `Moved "${b.title}" to trash`,
         actionLabel: 'Undo',
@@ -108,13 +115,17 @@ export default function HomePage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ restore: true }),
     });
+    // Restoring can be undone from either the active list (undo toast) or
+    // the trash view — the correct resulting list differs either way, and
+    // it's a rare enough action that a full reload is the simplest correct
+    // option here rather than replicating that branching logic twice.
     if (res.ok) load();
   }
 
   async function permanentlyDeleteBook(b: Book) {
     if (!confirm(`Permanently delete "${b.title}"? This can't be undone.`)) return;
     const res = await fetch(`/api/books/${b.id}?permanent=1`, { method: 'DELETE' });
-    if (res.ok) load();
+    if (res.ok) setBooks((prev) => prev.filter((x) => x.id !== b.id));
   }
 
   async function quickStatusChange(b: Book) {
