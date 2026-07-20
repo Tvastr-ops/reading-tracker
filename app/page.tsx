@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Book, BookInput, STATUSES, SortField, SortDir } from '@/lib/types';
 import BookTable from '@/components/BookTable';
+import BookGrid from '@/components/BookGrid';
 import BookForm from '@/components/BookForm';
 import StatsSummary from '@/components/StatsSummary';
 import Toast, { ToastState } from '@/components/Toast';
@@ -22,6 +23,7 @@ export default function HomePage() {
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [selectMode, setSelectMode] = useState(false);
   const [bulkStatus, setBulkStatus] = useState<string>(STATUSES[0]);
@@ -34,12 +36,21 @@ export default function HomePage() {
   useEffect(() => {
     const saved = window.localStorage.getItem('ratingMode');
     if (saved === 'decimal' || saved === 'stars') setRatingMode(saved);
+    const savedView = window.localStorage.getItem('viewMode');
+    if (savedView === 'grid' || savedView === 'table') setViewMode(savedView);
     // layout.tsx already set the real data-theme attribute before paint
     // (avoids a flash); this just syncs React state to match it so the
     // toggle button shows the right icon.
     const current = document.documentElement.getAttribute('data-theme');
     setTheme(current === 'dark' ? 'dark' : 'light');
   }, []);
+
+  function toggleViewMode() {
+    const next = viewMode === 'table' ? 'grid' : 'table';
+    setViewMode(next);
+    window.localStorage.setItem('viewMode', next);
+    if (next === 'grid') { setSelectMode(false); setSelected(new Set()); }
+  }
 
   function toggleTheme() {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -86,21 +97,14 @@ export default function HomePage() {
     const result = await res.json();
     if (!res.ok) throw new Error(result.error || 'Save failed');
     setEditing(undefined);
-    // The response already contains the saved row — no need for a second
-    // full-list GET just to reflect a change we already know about.
-    setBooks((prev) => {
-      const exists = prev.some((b) => b.id === result.book.id);
-      return exists
-        ? prev.map((b) => (b.id === result.book.id ? result.book : b))
-        : [result.book, ...prev];
-    });
+    load();
   }
 
   async function deleteBook(b: Book) {
     if (!confirm(`Move "${b.title}" to trash?`)) return;
     const res = await fetch(`/api/books/${b.id}`, { method: 'DELETE' });
     if (res.ok) {
-      setBooks((prev) => prev.filter((x) => x.id !== b.id));
+      load();
       setToast({
         message: `Moved "${b.title}" to trash`,
         actionLabel: 'Undo',
@@ -115,17 +119,13 @@ export default function HomePage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ restore: true }),
     });
-    // Restoring can be undone from either the active list (undo toast) or
-    // the trash view — the correct resulting list differs either way, and
-    // it's a rare enough action that a full reload is the simplest correct
-    // option here rather than replicating that branching logic twice.
     if (res.ok) load();
   }
 
   async function permanentlyDeleteBook(b: Book) {
     if (!confirm(`Permanently delete "${b.title}"? This can't be undone.`)) return;
     const res = await fetch(`/api/books/${b.id}?permanent=1`, { method: 'DELETE' });
-    if (res.ok) setBooks((prev) => prev.filter((x) => x.id !== b.id));
+    if (res.ok) load();
   }
 
   async function quickStatusChange(b: Book) {
@@ -225,18 +225,15 @@ export default function HomePage() {
     });
   }
 
-  // Keyboard shortcuts: "/" focuses search, "n" opens the add-entry modal,
-  // "Escape" closes the open modal. Ignored while typing in any field so
-  // normal typing (e.g. a note containing the letter "n") is never hijacked.
+  // Keyboard shortcuts: "/" focuses search, "n" opens the add-entry modal.
+  // Ignored while typing in any field so normal typing (e.g. a note
+  // containing the letter "n") is never hijacked. Escape-closes-modal is
+  // handled by BookForm itself, not here — keeps this listener decoupled
+  // from the modal's internals.
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       const tag = (document.activeElement?.tagName || '').toLowerCase();
       const typing = tag === 'input' || tag === 'textarea' || tag === 'select';
-
-      if (e.key === 'Escape' && editing !== undefined) {
-        setEditing(undefined);
-        return;
-      }
       if (typing) return;
 
       if (e.key === '/') {
@@ -249,7 +246,7 @@ export default function HomePage() {
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [editing, showTrash]);
+  }, [showTrash]);
 
   const filtered = useMemo(() => {
     let list = books.filter((b) => {
@@ -287,7 +284,7 @@ export default function HomePage() {
   }, [books, statusFilter, search, sortField, sortDir, showTrash]);
 
   return (
-    <div className="container">
+    <main className="container">
       <div className="topbar">
         <div>
           <h1>Reading Tracker</h1>
@@ -351,12 +348,19 @@ export default function HomePage() {
               🎲 Up next
             </button>
           )}
-          <button
-            className="btn secondary"
-            onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}
-          >
-            {selectMode ? 'Done selecting' : 'Select'}
-          </button>
+          {!showTrash && (
+            <button className="btn secondary" onClick={toggleViewMode} title="Switch between table and cover grid">
+              {viewMode === 'table' ? '▦ Grid' : '☰ Table'}
+            </button>
+          )}
+          {viewMode === 'table' && (
+            <button
+              className="btn secondary"
+              onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}
+            >
+              {selectMode ? 'Done selecting' : 'Select'}
+            </button>
+          )}
           <button className="btn secondary" onClick={() => setShowTrash((v) => !v)}>
             {showTrash ? '← Back to library' : 'Trash'}
           </button>
@@ -364,7 +368,7 @@ export default function HomePage() {
           {!showTrash && <button className="btn" onClick={() => setEditing(null)}>+ Add entry (n)</button>}
         </div>
 
-        {selectMode && selected.size > 0 && (
+        {viewMode === 'table' && selectMode && selected.size > 0 && (
           <div className="bulk-bar">
             <strong>{selected.size} selected</strong>
             {!showTrash && (
@@ -389,6 +393,13 @@ export default function HomePage() {
         {error && <div className="error-text">{error}</div>}
         {loading ? (
           <p className="subtitle">Loading...</p>
+        ) : viewMode === 'grid' && !showTrash ? (
+          <BookGrid
+            books={filtered}
+            ratingMode={ratingMode}
+            hasAnyBooks={books.length > 0}
+            onEdit={(b) => setEditing(b)}
+          />
         ) : (
           <BookTable
             books={filtered}
@@ -421,6 +432,6 @@ export default function HomePage() {
       )}
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
-    </div>
+    </main>
   );
 }
