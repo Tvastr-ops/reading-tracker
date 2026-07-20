@@ -127,11 +127,11 @@ export default function StatsSummary({ books }: { books: Book[] }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
         <div>
           <div className="label" style={{ marginBottom: 6 }}>Completed per month ({thisYear})</div>
-          <BarChart data={perMonth} />
+          <BarChart title={`Books completed per month, ${thisYear}`} data={perMonth} />
         </div>
         <div>
           <div className="label" style={{ marginBottom: 6 }}>Rating distribution</div>
-          <BarChart data={ratingBuckets} />
+          <BarChart title="Rating distribution" data={ratingBuckets} />
         </div>
       </div>
     </div>
