@@ -5,6 +5,7 @@ import { Book, BookInput, STATUSES, SortField, SortDir } from '@/lib/types';
 import BookTable from '@/components/BookTable';
 import BookForm from '@/components/BookForm';
 import StatsSummary from '@/components/StatsSummary';
+import Toast, { ToastState } from '@/components/Toast';
 import { useRouter } from 'next/navigation';
 
 export default function HomePage() {
@@ -21,7 +22,12 @@ export default function HomePage() {
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState<string>(STATUSES[0]);
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const [upNext, setUpNext] = useState<Book | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -41,7 +47,7 @@ export default function HomePage() {
     window.localStorage.setItem('theme', next);
   }
 
-  useEffect(() => { load(); }, [showTrash]);
+  useEffect(() => { load(); setSelected(new Set()); }, [showTrash]);
 
   async function load() {
     setLoading(true);
@@ -85,7 +91,14 @@ export default function HomePage() {
   async function deleteBook(b: Book) {
     if (!confirm(`Move "${b.title}" to trash?`)) return;
     const res = await fetch(`/api/books/${b.id}`, { method: 'DELETE' });
-    if (res.ok) load();
+    if (res.ok) {
+      load();
+      setToast({
+        message: `Moved "${b.title}" to trash`,
+        actionLabel: 'Undo',
+        onAction: () => restoreBook(b),
+      });
+    }
   }
 
   async function restoreBook(b: Book) {
@@ -101,6 +114,18 @@ export default function HomePage() {
     if (!confirm(`Permanently delete "${b.title}"? This can't be undone.`)) return;
     const res = await fetch(`/api/books/${b.id}?permanent=1`, { method: 'DELETE' });
     if (res.ok) load();
+  }
+
+  async function quickStatusChange(b: Book) {
+    const next = STATUSES[(STATUSES.indexOf(b.status) + 1) % STATUSES.length];
+    // Optimistic update so the click feels instant.
+    setBooks((prev) => prev.map((x) => (x.id === b.id ? { ...x, status: next } : x)));
+    const res = await fetch(`/api/books/${b.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: next }),
+    });
+    if (!res.ok) load(); // revert to server truth if it failed
   }
 
   async function logout() {
@@ -124,7 +149,10 @@ export default function HomePage() {
       if (!res.ok) {
         setImportMsg(result.error || 'Import failed');
       } else {
-        setImportMsg(`Imported ${result.imported} entries${result.skippedRows?.length ? `, skipped ${result.skippedRows.length} row(s) without a title` : ''}.`);
+        const parts = [`Imported ${result.imported} entries`];
+        if (result.skippedRows?.length) parts.push(`skipped ${result.skippedRows.length} row(s) without a title`);
+        if (result.skippedDuplicates) parts.push(`skipped ${result.skippedDuplicates} duplicate title(s)`);
+        setImportMsg(parts.join(', ') + '.');
         load();
       }
     } catch {
@@ -134,6 +162,82 @@ export default function HomePage() {
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   }
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  async function bulkAction(action: 'status' | 'delete' | 'restore' | 'delete_permanent') {
+    if (selected.size === 0) return;
+    if (action === 'delete_permanent' && !confirm(`Permanently delete ${selected.size} entries? This can't be undone.`)) return;
+    const body: Record<string, unknown> = { action, ids: Array.from(selected) };
+    if (action === 'status') body.status = bulkStatus;
+    const res = await fetch('/api/books/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) {
+      const count = selected.size;
+      setSelected(new Set());
+      load();
+      if (action === 'delete') {
+        setToast({ message: `Moved ${count} entries to trash`, actionLabel: undefined, onAction: undefined });
+      }
+    }
+  }
+
+  function pickUpNext() {
+    const candidates = books.filter((b) => b.status === 'Plan to Read');
+    if (candidates.length === 0) return;
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    setUpNext(pick);
+  }
+
+  async function startReadingUpNext() {
+    if (!upNext) return;
+    await quickStatusChangeById(upNext.id, 'Reading');
+    setUpNext(null);
+    load();
+  }
+
+  async function quickStatusChangeById(id: string, status: string) {
+    await fetch(`/api/books/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  // Keyboard shortcuts: "/" focuses search, "n" opens the add-entry modal,
+  // "Escape" closes the open modal. Ignored while typing in any field so
+  // normal typing (e.g. a note containing the letter "n") is never hijacked.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const tag = (document.activeElement?.tagName || '').toLowerCase();
+      const typing = tag === 'input' || tag === 'textarea' || tag === 'select';
+
+      if (e.key === 'Escape' && editing !== undefined) {
+        setEditing(undefined);
+        return;
+      }
+      if (typing) return;
+
+      if (e.key === '/') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (e.key.toLowerCase() === 'n' && !showTrash) {
+        e.preventDefault();
+        setEditing(null);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [editing, showTrash]);
 
   const filtered = useMemo(() => {
     let list = books.filter((b) => {
@@ -194,6 +298,24 @@ export default function HomePage() {
 
       {!showTrash && <StatsSummary books={books} />}
 
+      {!showTrash && upNext && (
+        <div className="card up-next-card">
+          {upNext.cover_url ? (
+            <img src={upNext.cover_url} alt="" width={32} height={46} className="book-cover" style={{ objectFit: 'cover' }} />
+          ) : (
+            <div className="placeholder-box" style={{ width: 32, height: 46 }} />
+          )}
+          <div style={{ flex: 1 }}>
+            <div className="label">Up next</div>
+            <strong className="book-title">{upNext.title}</strong>
+            {upNext.author && <span className="label"> — {upNext.author}</span>}
+          </div>
+          <button className="btn secondary" onClick={pickUpNext}>Pick another</button>
+          <button className="btn" onClick={startReadingUpNext}>Start reading</button>
+          <button className="mono-btn" onClick={() => setUpNext(null)} aria-label="Dismiss">×</button>
+        </div>
+      )}
+
       <div className="card">
         <div className="filters">
           {!showTrash && (
@@ -203,20 +325,48 @@ export default function HomePage() {
             </select>
           )}
           <input
+            ref={searchInputRef}
             type="text"
-            placeholder="Search title, author, tags..."
+            placeholder="Search title, author, tags... (/)"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <button className="btn secondary" onClick={toggleRatingMode}>
             Rating: {ratingMode === 'stars' ? '★ stars' : '#.# decimal'}
           </button>
+          {!showTrash && (
+            <button className="btn secondary" onClick={pickUpNext} title="Randomly pick from Plan to Read">
+              🎲 Up next
+            </button>
+          )}
           <button className="btn secondary" onClick={() => setShowTrash((v) => !v)}>
             {showTrash ? '← Back to library' : 'Trash'}
           </button>
           <div className="filter-spacer" style={{ flex: 1 }} />
-          {!showTrash && <button className="btn" onClick={() => setEditing(null)}>+ Add entry</button>}
+          {!showTrash && <button className="btn" onClick={() => setEditing(null)}>+ Add entry (n)</button>}
         </div>
+
+        {selected.size > 0 && (
+          <div className="bulk-bar">
+            <strong>{selected.size} selected</strong>
+            {!showTrash && (
+              <>
+                <select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)}>
+                  {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <button className="btn secondary" onClick={() => bulkAction('status')}>Set status</button>
+                <button className="btn danger" onClick={() => bulkAction('delete')}>Delete selected</button>
+              </>
+            )}
+            {showTrash && (
+              <>
+                <button className="btn secondary" onClick={() => bulkAction('restore')}>Restore selected</button>
+                <button className="btn danger" onClick={() => bulkAction('delete_permanent')}>Delete forever</button>
+              </>
+            )}
+            <button className="mono-btn" style={{ marginLeft: 'auto' }} onClick={() => setSelected(new Set())}>Clear</button>
+          </div>
+        )}
 
         {error && <div className="error-text">{error}</div>}
         {loading ? (
@@ -230,10 +380,13 @@ export default function HomePage() {
             onSort={handleSort}
             trashMode={showTrash}
             hasAnyBooks={books.length > 0}
+            selected={selected}
+            onToggleSelect={toggleSelect}
             onEdit={(b) => setEditing(b)}
             onDelete={deleteBook}
             onRestore={restoreBook}
             onPermanentDelete={permanentlyDeleteBook}
+            onQuickStatus={quickStatusChange}
           />
         )}
       </div>
@@ -242,10 +395,13 @@ export default function HomePage() {
         <BookForm
           initial={editing}
           ratingMode={ratingMode}
+          existingBooks={books}
           onCancel={() => setEditing(undefined)}
           onSave={saveBook}
         />
       )}
+
+      <Toast toast={toast} onDismiss={() => setToast(null)} />
     </div>
   );
 }
