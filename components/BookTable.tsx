@@ -19,6 +19,7 @@ export default function BookTable({
   onSort,
   trashMode = false,
   hasAnyBooks = true,
+  selectMode = false,
   selected,
   onToggleSelect,
   onEdit,
@@ -34,6 +35,7 @@ export default function BookTable({
   onSort: (field: SortField) => void;
   trashMode?: boolean;
   hasAnyBooks?: boolean;
+  selectMode?: boolean;
   selected: Set<string>;
   onToggleSelect: (id: string) => void;
   onEdit: (b: Book) => void;
@@ -68,7 +70,7 @@ export default function BookTable({
       <table>
         <thead>
           <tr>
-            <th style={{ width: 24 }}></th>
+            <th className={`checkbox-cell${selectMode ? '' : ' collapsed'}`} style={{ width: 24 }}></th>
             <th className="spine-col"></th>
             <th style={{ width: 36 }}></th>
             {headerFor('title', 'Title')}
@@ -89,9 +91,10 @@ export default function BookTable({
             const nextStatus = STATUSES[(STATUSES.indexOf(b.status) + 1) % STATUSES.length];
             return (
               <tr key={b.id} style={{ '--row-status-color': statusColor } as React.CSSProperties}>
-                <td className="checkbox-cell">
+                <td className={`checkbox-cell${selectMode ? '' : ' collapsed'}`}>
                   <input
                     type="checkbox"
+                    className="row-checkbox"
                     checked={selected.has(b.id)}
                     onChange={() => onToggleSelect(b.id)}
                     aria-label={`Select ${b.title}`}
