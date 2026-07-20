@@ -1,0 +1,60 @@
+'use client';
+
+import { Book } from '@/lib/types';
+import { RatingDisplay } from './RatingInput';
+
+const STATUS_VAR: Record<string, string> = {
+  Reading: 'var(--status-reading)',
+  Completed: 'var(--status-completed)',
+  'Plan to Read': 'var(--status-plan)',
+  'On Hold': 'var(--status-hold)',
+  Dropped: 'var(--status-dropped)',
+};
+
+export default function BookGrid({
+  books,
+  ratingMode,
+  hasAnyBooks = true,
+  onEdit,
+}: {
+  books: Book[];
+  ratingMode: 'stars' | 'decimal';
+  hasAnyBooks?: boolean;
+  onEdit: (b: Book) => void;
+}) {
+  if (books.length === 0) {
+    const message = !hasAnyBooks
+      ? 'Nothing on the shelf yet — add your first book to get started.'
+      : 'No entries match your filters.';
+    return <p className="empty-state">{message}</p>;
+  }
+
+  return (
+    <div className="book-grid">
+      {books.map((b) => {
+        const statusColor = STATUS_VAR[b.status] || 'var(--border)';
+        return (
+          <button
+            key={b.id}
+            className="grid-tile"
+            onClick={() => onEdit(b)}
+            style={{ '--row-status-color': statusColor } as React.CSSProperties}
+            title={b.title}
+          >
+            {b.cover_url ? (
+              <img src={b.cover_url} alt="" className="grid-cover book-cover" />
+            ) : (
+              <div className="grid-cover placeholder-box" />
+            )}
+            <div className="grid-tile-title book-title">{b.title}</div>
+            {b.author && <div className="grid-tile-author label">{b.author}</div>}
+            <div className="grid-tile-meta">
+              <span className="status-text" style={{ fontSize: 10 }}>{b.status}</span>
+              <RatingDisplay rating={b.rating} mode={ratingMode} />
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
