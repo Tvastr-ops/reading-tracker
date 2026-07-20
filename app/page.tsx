@@ -23,6 +23,7 @@ export default function HomePage() {
   const [importMsg, setImportMsg] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selectMode, setSelectMode] = useState(false);
   const [bulkStatus, setBulkStatus] = useState<string>(STATUSES[0]);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [upNext, setUpNext] = useState<Book | null>(null);
@@ -47,7 +48,7 @@ export default function HomePage() {
     window.localStorage.setItem('theme', next);
   }
 
-  useEffect(() => { load(); setSelected(new Set()); }, [showTrash]);
+  useEffect(() => { load(); setSelected(new Set()); setSelectMode(false); }, [showTrash]);
 
   async function load() {
     setLoading(true);
@@ -339,6 +340,12 @@ export default function HomePage() {
               🎲 Up next
             </button>
           )}
+          <button
+            className="btn secondary"
+            onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}
+          >
+            {selectMode ? 'Done selecting' : 'Select'}
+          </button>
           <button className="btn secondary" onClick={() => setShowTrash((v) => !v)}>
             {showTrash ? '← Back to library' : 'Trash'}
           </button>
@@ -346,7 +353,7 @@ export default function HomePage() {
           {!showTrash && <button className="btn" onClick={() => setEditing(null)}>+ Add entry (n)</button>}
         </div>
 
-        {selected.size > 0 && (
+        {selectMode && selected.size > 0 && (
           <div className="bulk-bar">
             <strong>{selected.size} selected</strong>
             {!showTrash && (
@@ -380,6 +387,7 @@ export default function HomePage() {
             onSort={handleSort}
             trashMode={showTrash}
             hasAnyBooks={books.length > 0}
+            selectMode={selectMode}
             selected={selected}
             onToggleSelect={toggleSelect}
             onEdit={(b) => setEditing(b)}
