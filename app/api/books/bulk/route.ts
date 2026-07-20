@@ -1,1 +1,68 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { supabaseServer } from '@/lib/supabase';
+import { requireAuthenticatedRequest } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const VALID_STATUSES = ['Plan to Read', 'Reading', 'On Hold', 'Completed', 'Dropped'];
+const MAX_IDS = 500;
+
+// A single endpoint for all bulk row-selection actions, rather than looping
+// N individual requests from the client — fewer round trips, and it's one
+// atomic-ish operation server-side instead of N separate ones.
+export async function POST(req: NextRequest) {
+  if (!(await requireAuthenticatedRequest(req))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const body = await req.json().catch(() => null);
+  const action = body?.action;
+  const ids: unknown = body?.ids;
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return NextResponse.json({ error: 'ids must be a non-empty array' }, { status: 400 });
+  }
+  if (ids.length > MAX_IDS) {
+    return NextResponse.json({ error: `Too many ids (max ${MAX_IDS})` }, { status: 400 });
+  }
+  const cleanIds = ids.filter((id) => typeof id === 'string' && UUID_RE.test(id));
+  if (cleanIds.length === 0) {
+    return NextResponse.json({ error: 'No valid ids provided' }, { status: 400 });
+  }
+
+  const supabase = supabaseServer();
+
+  if (action === 'status') {
+    const status = body?.status;
+    if (!VALID_STATUSES.includes(status)) {
+      return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+    }
+    const { error } = await supabase.from('books').update({ status }).in('id', cleanIds);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ updated: cleanIds.length });
+  }
+
+  if (action === 'delete') {
+    const { error } = await supabase
+      .from('books')
+      .update({ deleted_at: new Date().toISOString() })
+      .in('id', cleanIds);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ updated: cleanIds.length });
+  }
+
+  if (action === 'restore') {
+    const { error } = await supabase.from('books').update({ deleted_at: null }).in('id', cleanIds);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ updated: cleanIds.length });
+  }
+
+  if (action === 'delete_permanent') {
+    const { error } = await supabase.from('books').delete().in('id', cleanIds);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ updated: cleanIds.length });
+  }
+
+  return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
+}
