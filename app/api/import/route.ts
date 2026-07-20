@@ -119,12 +119,41 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = supabaseServer();
-  const { data, error } = await supabase.from('books').insert(toInsert).select('id');
+
+  // Skip rows whose title already matches an existing (non-deleted) book,
+  // case-insensitively, so re-importing an export doesn't create dupes.
+  const { data: existing, error: existingError } = await supabase
+    .from('books')
+    .select('title')
+    .is('deleted_at', null);
+  if (existingError) return NextResponse.json({ error: existingError.message }, { status: 500 });
+
+  const existingTitles = new Set((existing || []).map((b: any) => String(b.title).trim().toLowerCase()));
+  const seenInBatch = new Set<string>();
+  const deduped: typeof toInsert = [];
+  let skippedDuplicates = 0;
+
+  for (const row of toInsert) {
+    const key = String(row.title).trim().toLowerCase();
+    if (existingTitles.has(key) || seenInBatch.has(key)) {
+      skippedDuplicates++;
+      continue;
+    }
+    seenInBatch.add(key);
+    deduped.push(row);
+  }
+
+  if (deduped.length === 0) {
+    return NextResponse.json({ imported: 0, skippedRows: skipped, skippedDuplicates });
+  }
+
+  const { data, error } = await supabase.from('books').insert(deduped).select('id');
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({
     imported: data?.length ?? 0,
     skippedRows: skipped,
+    skippedDuplicates,
   });
 }
