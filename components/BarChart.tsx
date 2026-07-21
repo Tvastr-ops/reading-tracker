@@ -31,13 +31,22 @@ export function BarChart({
         aria-label={summary}
       >
         {data.map((d, i) => {
-          const h = (d.value / max) * (height - 16);
+          // Reserve fixed space at the top for the count label, separate
+          // from the bar-height calculation — otherwise the tallest bar's
+          // own label has nowhere to go and ends up above y=0, clipped
+          // outside the SVG entirely (this was happening to whichever bar
+          // was tallest, silently, since it's invisible rather than an
+          // error).
+          const topMargin = 10;
+          const usableHeight = height - 16 - topMargin;
+          const h = (d.value / max) * usableHeight;
           const x = i * barWidth;
+          const barTop = height - 16 - h;
           return (
             <g key={d.label}>
               <rect
                 x={x + barWidth * 0.15}
-                y={height - 16 - h}
+                y={barTop}
                 width={barWidth * 0.7}
                 height={h}
                 fill="currentColor"
@@ -46,7 +55,7 @@ export function BarChart({
               {d.value > 0 && (
                 <text
                   x={x + barWidth / 2}
-                  y={height - 18 - h}
+                  y={barTop - 3}
                   fontSize="5"
                   textAnchor="middle"
                   fill="var(--text)"
