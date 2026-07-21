@@ -44,7 +44,7 @@ export default function LoginPage() {
   return (
     <div className="login-wrap">
       <button
-        className="theme-toggle"
+        className="btn icon-only"
         onClick={toggleTheme}
         title="Toggle dark mode"
         aria-label="Toggle dark mode"
@@ -71,4 +71,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

@@ -144,13 +144,13 @@ export default function BookTable({
                   <div className="row-actions">
                     {trashMode ? (
                       <>
-                        <button className="btn secondary" onClick={() => onRestore?.(b)}>Restore</button>
-                        <button className="btn danger" onClick={() => onPermanentDelete?.(b)}>Delete forever</button>
+                        <button className="btn secondary compact" onClick={() => onRestore?.(b)}>Restore</button>
+                        <button className="btn danger compact" onClick={() => onPermanentDelete?.(b)}>Delete forever</button>
                       </>
                     ) : (
                       <>
-                        <button className="btn secondary" onClick={() => onEdit(b)}>Edit</button>
-                        <button className="btn danger" onClick={() => onDelete(b)}>Delete</button>
+                        <button className="btn secondary compact" onClick={() => onEdit(b)}>Edit</button>
+                        <button className="btn danger compact" onClick={() => onDelete(b)}>Delete</button>
                       </>
                     )}
                   </div>
