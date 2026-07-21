@@ -291,7 +291,7 @@ export default function HomePage() {
           <p className="subtitle">Web novels, light novels, novels, essays, short stories, fanfiction, and more.</p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="theme-toggle" onClick={toggleTheme} title="Toggle dark mode" aria-label="Toggle dark mode">
+          <button className="btn icon-only" onClick={toggleTheme} title="Toggle dark mode" aria-label="Toggle dark mode">
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
           <input ref={fileInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportFile} />
@@ -305,7 +305,23 @@ export default function HomePage() {
 
       {importMsg && <div className="card" style={{ padding: 10, fontSize: 13 }}>{importMsg}</div>}
 
-      {!showTrash && <StatsSummary books={books} />}
+      {!showTrash && (
+        loading ? (
+          <div className="card">
+            <h2>Summary</h2>
+            <div className="summary-grid">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} className="summary-tile">
+                  <div className="skeleton" style={{ height: 20, width: '55%', marginBottom: 6 }} />
+                  <div className="skeleton" style={{ height: 11, width: '80%' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <StatsSummary books={books} />
+        )
+      )}
 
       {!showTrash && upNext && (
         <div className="card up-next-card">
@@ -392,7 +408,11 @@ export default function HomePage() {
 
         {error && <div className="error-text">{error}</div>}
         {loading ? (
-          <p className="subtitle">Loading...</p>
+          <div>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="skeleton skeleton-row" />
+            ))}
+          </div>
         ) : viewMode === 'grid' && !showTrash ? (
           <BookGrid
             books={filtered}

@@ -34,6 +34,31 @@
   --status-plan: #8a8168;
   --status-hold: #a6752f;
   --status-dropped: #857a63;
+
+  /* ---------- Design tokens (Visual Polish Phase 1) ----------
+     A real spacing/radius/timing scale, replacing 13 ad-hoc padding
+     values, 8 ad-hoc radii, and 7 ad-hoc transition durations that had
+     accumulated as features were added independently over time. Applied
+     to structural/UI-chrome elements (cards, buttons, inputs, surfaces).
+     Deliberately NOT applied to a few decorative micro-details called out
+     inline below (spine-bar corner, book-cover corner, checkbox corner) —
+     those are doing a specific visual job tied to the book/shelf metaphor,
+     not part of the generic component rhythm. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+
+  --radius-sm: 6px;  /* buttons, inputs, small chips */
+  --radius-md: 10px; /* cards, tiles, modal, toast, bulk-bar — all "surfaces" */
+  --radius-lg: 12px; /* mobile modal sheet, mobile row-cards */
+
+  --duration-fast: 0.1s;   /* immediate press/tap feedback */
+  --duration-base: 0.15s;  /* hover states, most transitions */
+  --duration-slow: 0.3s;   /* larger movements: fades, fills, theme switch */
 }
 
 [data-theme='dark'] {
@@ -78,24 +103,26 @@ body {
   background: var(--bg);
   color: var(--text);
   font-variant-numeric: tabular-nums;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color var(--duration-slow) ease, color var(--duration-slow) ease;
 }
 
 .container {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 20px 16px 64px;
+  /* Bottom value is deliberately not a rhythm step — it's scroll clearance
+     for the last row, not spacing between elements. */
+  padding: var(--space-6) var(--space-4) 64px;
 }
 
 h1 {
   font-family: var(--font-serif);
   font-size: 24px;
   font-weight: 600;
-  margin: 0 0 4px;
+  margin: 0 0 var(--space-1);
   letter-spacing: 0.01em;
 }
-h2 { font-size: 16px; margin: 0 0 12px; }
-.subtitle { color: var(--text-muted); font-size: 13px; margin: 0 0 20px; }
+h2 { font-size: 16px; margin: 0 0 var(--space-3); }
+.subtitle { color: var(--text-muted); font-size: 13px; margin: 0 0 var(--space-5); }
 
 .book-title { font-family: var(--font-serif); font-weight: 600; }
 
@@ -103,9 +130,9 @@ h2 { font-size: 16px; margin: 0 0 12px; }
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
+  gap: var(--space-3);
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
 }
 
 button, input, select, textarea {
@@ -113,14 +140,21 @@ button, input, select, textarea {
   color: inherit;
 }
 
+/* ---------- Buttons ----------
+   One sizing system instead of each button family inventing its own
+   padding. Three sizes: standard (.btn), compact (.btn.compact — replaces
+   the old implicit ".row-actions button" descendant-selector override),
+   and icon-only (.btn.icon-only — theme toggle, dismiss buttons). Color
+   variants (secondary/danger) layer on top of whichever size is used. */
 .btn {
   background: var(--accent-bg);
   color: var(--accent-text);
   border: none;
-  border-radius: 6px;
-  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-4);
+  font-size: 13px;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.08s ease, opacity 0.15s ease;
+  transition: background-color var(--duration-base) ease, transform var(--duration-fast) ease, opacity var(--duration-base) ease;
 }
 .btn:hover { background: var(--accent-bg-hover); }
 .btn:active { transform: scale(0.97); }
@@ -129,9 +163,21 @@ button, input, select, textarea {
 .btn.danger { background: var(--danger); color: #fff; }
 .btn.danger:hover { background: var(--danger-hover); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-.btn.icon { padding: 8px 10px; font-size: 15px; line-height: 1; }
 
-.btn:focus-visible, .theme-toggle:focus-visible, input:focus-visible,
+.btn.compact { padding: var(--space-1) var(--space-3); font-size: 13px; }
+
+.btn.icon-only {
+  background: var(--card-bg);
+  color: var(--text);
+  border: 1px solid var(--btn-border);
+  padding: var(--space-2) var(--space-3);
+  font-size: 15px;
+  line-height: 1;
+  transition: background-color var(--duration-base) ease, transform var(--duration-base) ease;
+}
+.btn.icon-only:hover { background: var(--secondary-hover); transform: rotate(12deg); }
+
+.btn:focus-visible, .btn.icon-only:focus-visible, input:focus-visible,
 select:focus-visible, textarea:focus-visible, a:focus-visible {
   outline: 2px solid var(--star-filled);
   outline-offset: 2px;
@@ -140,38 +186,40 @@ select:focus-visible, textarea:focus-visible, a:focus-visible {
 .card {
   background: var(--card-bg);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 16px;
-  margin-bottom: 16px;
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
   box-shadow: var(--shadow);
-  animation: fadeInUp 0.25s ease both;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  animation: fadeInUp var(--duration-slow) ease both;
+  transition: background-color var(--duration-slow) ease, border-color var(--duration-slow) ease;
 }
 
 .filters {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   flex-wrap: wrap;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .filters select, .filters input[type=text] {
-  padding: 7px 10px;
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--input-border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--input-bg);
   color: var(--text);
 }
 
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
+th, td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
 th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.02em; }
-tr { transition: background-color 0.12s ease, border-color 0.2s ease; }
+tr { transition: background-color var(--duration-base) ease, border-color var(--duration-slow) ease; }
 tr:hover td { background: var(--row-hover); }
 
 /* Spine indicator replaces pill badges — a colored bar per row, like a
    shelf of color-coded book spines, with the status name as plain colored
-   text rather than a background pill. */
+   text rather than a background pill. Its 2px corner radius is a
+   decorative exception (see note in :root) — it reads as a rounded shelf
+   tab, not a generic UI radius. */
 th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 .spine {
   display: block;
@@ -188,7 +236,7 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   letter-spacing: 0.03em;
   color: var(--row-status-color, var(--text-muted));
   cursor: pointer;
-  transition: opacity 0.1s ease;
+  transition: opacity var(--duration-fast) ease;
 }
 .status-text:hover { opacity: 0.7; }
 .status-text:active { opacity: 0.5; }
@@ -204,12 +252,15 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   width: 17px;
   height: 17px;
   border: 1.5px solid var(--input-border);
+  /* Intentionally its own small radius, not --radius-sm — at 17px square,
+     the standard 6px radius reads too heavy; this is a decorative
+     exception like the spine/cover corners above. */
   border-radius: 4px;
   background: var(--input-bg);
   cursor: pointer;
   position: relative;
   vertical-align: middle;
-  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  transition: background-color var(--duration-base) ease, border-color var(--duration-base) ease, transform var(--duration-fast) ease;
 }
 .row-checkbox:hover { border-color: var(--star-filled); }
 .row-checkbox:active { transform: scale(0.9); }
@@ -231,28 +282,28 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 
 .toast {
   position: fixed;
-  bottom: 20px;
+  bottom: var(--space-5);
   left: 50%;
   transform: translateX(-50%);
   background: var(--accent-bg);
   color: var(--accent-text);
-  padding: 10px 12px 10px 16px;
-  border-radius: 8px;
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   font-size: 13px;
   box-shadow: var(--shadow-modal);
   z-index: 100;
-  animation: toastIn 0.2s ease both;
+  animation: toastIn var(--duration-base) ease both;
   max-width: calc(100vw - 32px);
 }
 .toast-action {
   background: none;
   border: 1px solid var(--accent-text);
   color: var(--accent-text);
-  border-radius: 5px;
-  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-3);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -266,7 +317,7 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   cursor: pointer;
   font-size: 16px;
   line-height: 1;
-  padding: 0 2px;
+  padding: 0 var(--space-1);
 }
 @keyframes toastIn {
   from { opacity: 0; transform: translateX(-50%) translateY(8px); }
@@ -276,20 +327,20 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 .bulk-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
   flex-wrap: wrap;
   background: var(--row-hover);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin-bottom: 12px;
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
   font-size: 13px;
-  animation: fadeIn 0.15s ease both;
+  animation: fadeIn var(--duration-base) ease both;
 }
 .bulk-bar select {
-  padding: 5px 8px;
+  padding: var(--space-1) var(--space-2);
   border: 1px solid var(--input-border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--input-bg);
   color: var(--text);
 }
@@ -297,10 +348,13 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 .up-next-card {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   flex-wrap: wrap;
 }
 
+/* Book cover corner radius is intentionally tighter than the UI-chrome
+   scale — a small crisp radius reads like a photograph/book cover, not a
+   generic rounded card. Decorative exception, see note in :root. */
 .book-cover, .placeholder-box {
   border-radius: 2px;
   box-shadow: 1.5px 1.5px 0 var(--card-bg), 3px 3px 0 var(--border);
@@ -311,10 +365,12 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   width: 100px;
   height: 6px;
   background: var(--progress-track);
-  border-radius: 3px;
+  /* Equal to its own height — fully pill-shaped rather than a slightly
+     rounded rectangle. */
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
-.progress-bar > div { height: 100%; background: var(--accent-bg); transition: width 0.4s ease; }
+.progress-bar > div { height: 100%; background: var(--accent-bg); transition: width var(--duration-slow) ease; }
 
 .rating-stars { color: var(--star-empty); font-size: 15px; letter-spacing: 1px; white-space: nowrap; }
 .rating-stars .filled { color: var(--star-filled); }
@@ -322,49 +378,72 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 .modal-backdrop {
   position: fixed; inset: 0; background: rgba(20, 15, 5, 0.45);
   display: flex; align-items: flex-start; justify-content: center;
-  padding: 24px 16px; overflow-y: auto; z-index: 50;
-  animation: fadeIn 0.15s ease both;
+  padding: var(--space-6) var(--space-4); overflow-y: auto; z-index: 50;
+  animation: fadeIn var(--duration-base) ease both;
 }
 .modal {
-  background: var(--card-bg); border-radius: 10px; padding: 20px;
+  background: var(--card-bg); border-radius: var(--radius-md); padding: var(--space-5);
   width: 100%; max-width: 560px;
   box-shadow: var(--shadow-modal);
+  /* Kept at its own speed + custom easing curve rather than a token — this
+     is a deliberately snappy "pop" for the modal's entrance, not a generic
+     fade; tying it to --duration-slow would blunt that character. */
   animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px 12px;
+  gap: var(--space-3);
 }
 .form-grid .full { grid-column: 1 / -1; }
-.form-grid label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+.form-grid label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: var(--space-1); }
 .form-grid input, .form-grid select, .form-grid textarea {
-  width: 100%; padding: 7px 9px; border: 1px solid var(--input-border); border-radius: 6px;
+  width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--input-border); border-radius: var(--radius-sm);
   background: var(--input-bg); color: var(--text);
 }
 .form-grid textarea { resize: vertical; min-height: 60px; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
 
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 10px;
+  gap: var(--space-2);
 }
 .summary-tile {
-  background: var(--row-hover); border: 1px solid var(--border-soft); border-radius: 8px; padding: 10px 12px;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  background: var(--row-hover); border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: var(--space-3);
+  transition: transform var(--duration-base) ease, box-shadow var(--duration-base) ease;
 }
 .summary-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
 .summary-tile .num { font-size: 20px; font-weight: 700; }
 .label { font-size: 12px; color: var(--text-muted); }
 .summary-tile .label { font-size: 12px; color: var(--text-muted); }
 
-.empty-state { color: var(--text-muted); font-size: 13px; padding: 12px 0; }
+.empty-state { color: var(--text-muted); font-size: 13px; padding: var(--space-3) 0; }
+
+/* ---------- Loading skeleton (Visual Polish Phase 2 / H3) ----------
+   Replaces a plain "Loading..." text placeholder, which caused a visible
+   layout jump once real content arrived. Shapes roughly match where the
+   summary tiles and table rows will land, so the page's structure is
+   stable from first paint. */
+.skeleton {
+  background: var(--border-soft);
+  border-radius: var(--radius-sm);
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+.skeleton-row {
+  height: 44px;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-2);
+}
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
 
 .book-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 14px;
+  gap: var(--space-3);
 }
 .grid-tile {
   display: flex;
@@ -374,12 +453,12 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-left: 3px solid var(--row-status-color, var(--border));
-  border-radius: 8px;
-  padding: 8px;
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
   cursor: pointer;
   font: inherit;
   color: inherit;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  transition: transform var(--duration-base) ease, box-shadow var(--duration-base) ease;
 }
 .grid-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
 .grid-tile:focus-visible { outline: 2px solid var(--star-filled); outline-offset: 2px; }
@@ -387,7 +466,7 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   width: 100%;
   aspect-ratio: 2 / 3;
   object-fit: cover;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 }
 .grid-tile-title {
   font-size: 13px;
@@ -397,39 +476,25 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.grid-tile-author { font-size: 11px; margin-top: 2px; }
+.grid-tile-author { font-size: 11px; margin-top: var(--space-1); }
 .grid-tile-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  margin-top: 6px;
-  gap: 6px;
+  margin-top: var(--space-2);
+  gap: var(--space-2);
 }
 
-.login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
-.login-card { width: 100%; max-width: 320px; padding: 24px; }
+.login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--space-4); }
+.login-card { width: 100%; max-width: 320px; padding: var(--space-6); }
 .login-input {
-  width: 100%; padding: 9px 10px; border: 1px solid var(--input-border); border-radius: 6px;
+  width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--input-border); border-radius: var(--radius-sm);
   background: var(--input-bg); color: var(--text);
 }
-.error-text { color: var(--danger); font-size: 13px; margin-top: 8px; }
-.row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-.row-actions button { padding: 4px 8px; font-size: 12px; }
-.mono-btn { background: none; border: none; cursor: pointer; padding: 2px; color: inherit; }
-
-.theme-toggle {
-  background: var(--card-bg);
-  border: 1px solid var(--btn-border);
-  color: var(--text);
-  border-radius: 6px;
-  padding: 8px 10px;
-  cursor: pointer;
-  font-size: 15px;
-  line-height: 1;
-  transition: background-color 0.15s ease, transform 0.15s ease;
-}
-.theme-toggle:hover { background: var(--secondary-hover); transform: rotate(12deg); }
+.error-text { color: var(--danger); font-size: 13px; margin-top: var(--space-2); }
+.row-actions { display: flex; gap: var(--space-1); flex-wrap: wrap; }
+.mono-btn { background: none; border: none; cursor: pointer; padding: var(--space-1); color: inherit; }
 
 @keyframes fadeIn {
   from { opacity: 0; }
@@ -453,7 +518,7 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 
 /* ---------- Responsive: phones ---------- */
 @media (max-width: 720px) {
-  .container { padding: 16px 12px 48px; }
+  .container { padding: var(--space-4) var(--space-3) 48px; }
   h1 { font-size: 21px; }
   .topbar { flex-direction: column; align-items: stretch; }
   .topbar > div:last-child { display: flex; flex-wrap: wrap; }
@@ -466,12 +531,12 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   .summary-grid { grid-template-columns: repeat(2, 1fr); }
 
   .modal {
-    padding: 16px;
-    border-radius: 12px;
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
     max-height: 85vh;
     overflow-y: auto;
   }
-  .modal-backdrop { padding: 12px; align-items: center; }
+  .modal-backdrop { padding: var(--space-3); align-items: center; }
   .form-grid { grid-template-columns: 1fr; }
 
   /* Card-style table: the spine bar becomes the card's left border (still
@@ -483,12 +548,12 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 2px 10px;
+    gap: 2px var(--space-3);
     border: 1px solid var(--border);
     border-left: 4px solid var(--row-status-color, var(--border));
-    border-radius: 10px;
-    padding: 10px;
-    margin-bottom: 10px;
+    border-radius: var(--radius-lg);
+    padding: var(--space-3);
+    margin-bottom: var(--space-3);
     background: var(--card-bg);
   }
   tr:hover td { background: transparent; }
@@ -501,7 +566,7 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
     flex: 1 1 45%;
     display: flex;
     justify-content: space-between;
-    gap: 6px;
+    gap: var(--space-2);
     font-size: 12px;
   }
   td:nth-child(n+5):not(:last-child)::before {
@@ -514,8 +579,8 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   }
   td:last-child {
     flex: 1 1 100%;
-    padding-top: 8px;
-    margin-top: 4px;
+    padding-top: var(--space-2);
+    margin-top: var(--space-1);
     border-top: 1px solid var(--border-soft);
   }
   .row-actions { width: 100%; }
