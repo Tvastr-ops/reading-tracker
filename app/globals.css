@@ -16,6 +16,7 @@
   --accent-text: #f1ebdd;
   --input-bg: #fbf8f1;
   --input-border: #ddd2b8;
+  --btn-border: #ddd2b8;
   --secondary-hover: #e9e0c9;
   --danger: #8a3b30;
   --danger-hover: #6e2f27;
@@ -51,6 +52,7 @@
   --accent-text: #1b1712;
   --input-bg: #241f17;
   --input-border: #453c2c;
+  --btn-border: #5c503a;
   --secondary-hover: #2d271c;
   --danger: #d68276;
   --danger-hover: #e2988d;
@@ -122,7 +124,7 @@ button, input, select, textarea {
 }
 .btn:hover { background: var(--accent-bg-hover); }
 .btn:active { transform: scale(0.97); }
-.btn.secondary { background: var(--card-bg); color: var(--text); border: 1px solid var(--input-border); }
+.btn.secondary { background: var(--card-bg); color: var(--text); border: 1px solid var(--btn-border); }
 .btn.secondary:hover { background: var(--secondary-hover); }
 .btn.danger { background: var(--danger); color: #fff; }
 .btn.danger:hover { background: var(--danger-hover); }
@@ -391,7 +393,7 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   font-size: 13px;
   line-height: 1.3;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -418,7 +420,7 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 
 .theme-toggle {
   background: var(--card-bg);
-  border: 1px solid var(--input-border);
+  border: 1px solid var(--btn-border);
   color: var(--text);
   border-radius: 6px;
   padding: 8px 10px;
