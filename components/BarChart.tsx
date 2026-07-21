@@ -47,9 +47,9 @@ export function BarChart({
                 <text
                   x={x + barWidth / 2}
                   y={height - 18 - h}
-                  fontSize="4"
+                  fontSize="5"
                   textAnchor="middle"
-                  fill="var(--text-muted)"
+                  fill="var(--text)"
                 >
                   {d.value}
                 </text>
