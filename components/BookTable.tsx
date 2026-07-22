@@ -111,7 +111,7 @@ export default function BookTable({
                 <td>
                   <strong className="book-title">{b.title}</strong>
                   {b.source_link && (
-                    <div className="label" style={{ fontSize: 11 }}>{b.source_link}</div>
+                    <div className="label source-link" style={{ fontSize: 11 }}>{b.source_link}</div>
                   )}
                 </td>
                 <td data-label="Type">{b.type}</td>
