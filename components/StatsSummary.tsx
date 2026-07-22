@@ -124,7 +124,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border-soft)' }}>
         <div>
           <div className="label" style={{ marginBottom: 6 }}>Completed per month ({thisYear})</div>
           <BarChart title={`Books completed per month, ${thisYear}`} data={perMonth} />

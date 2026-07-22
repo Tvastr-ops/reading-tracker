@@ -33,6 +33,7 @@ export default function BookGrid({
     <div className="book-grid">
       {books.map((b) => {
         const statusColor = STATUS_VAR[b.status] || 'var(--border)';
+        const pct = b.total_units ? Math.min(100, Math.round(((b.progress || 0) / b.total_units) * 100)) : null;
         return (
           <button
             key={b.id}
@@ -52,6 +53,11 @@ export default function BookGrid({
               <span className="status-text" style={{ fontSize: 10 }}>{b.status}</span>
               <RatingDisplay rating={b.rating} mode={ratingMode} />
             </div>
+            {pct != null && (
+              <div className="progress-bar" style={{ width: '100%', marginTop: 6 }}>
+                <div className={pct >= 90 ? 'near-complete' : ''} style={{ width: `${pct}%` }} />
+              </div>
+            )}
           </button>
         );
       })}
