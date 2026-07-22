@@ -12,6 +12,7 @@ export interface Book {
   genre_tags: string | null;
   source_link: string | null;
   cover_url: string | null;
+  reading_pace: number | null;
   date_started: string | null;
   date_finished: string | null;
   notes: string | null;
@@ -20,7 +21,7 @@ export interface Book {
   updated_at: string;
 }
 
-export type BookInput = Omit<Book, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>;
+export type BookInput = Omit<Book, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'reading_pace'>;
 
 export const STATUSES: Status[] = ['Plan to Read', 'Reading', 'On Hold', 'Completed', 'Dropped'];
 
