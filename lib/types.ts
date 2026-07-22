@@ -24,6 +24,16 @@ export type BookInput = Omit<Book, 'id' | 'created_at' | 'updated_at' | 'deleted
 
 export const STATUSES: Status[] = ['Plan to Read', 'Reading', 'On Hold', 'Completed', 'Dropped'];
 
+// Was defined identically in both BookTable.tsx and BookGrid.tsx — one
+// shared source so the two views can't silently drift apart.
+export const STATUS_COLOR_VAR: Record<string, string> = {
+  Reading: 'var(--status-reading)',
+  Completed: 'var(--status-completed)',
+  'Plan to Read': 'var(--status-plan)',
+  'On Hold': 'var(--status-hold)',
+  Dropped: 'var(--status-dropped)',
+};
+
 export type SortField = 'updated_at' | 'title' | 'rating' | 'date_finished' | 'status';
 export type SortDir = 'asc' | 'desc';
 

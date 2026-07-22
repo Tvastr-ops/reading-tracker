@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
 import { BookInput } from '@/lib/types';
-import { requireAuthenticatedRequest } from '@/lib/auth';
+import { withAuth } from '@/lib/auth';
 
 // See app/api/export/route.ts for why this is required.
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: NextRequest) {
-  if (!(await requireAuthenticatedRequest(req))) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export const GET = withAuth(async (req: NextRequest) => {
 
   const showTrash = req.nextUrl.searchParams.get('trash') === '1';
 
@@ -20,7 +17,7 @@ export async function GET(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ books: data });
-}
+});
 
 function sanitize(input: Partial<BookInput>) {
   // Only allow known fields through — never trust the raw request body
@@ -54,10 +51,7 @@ function sanitize(input: Partial<BookInput>) {
   };
 }
 
-export async function POST(req: NextRequest) {
-  if (!(await requireAuthenticatedRequest(req))) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export const POST = withAuth(async (req: NextRequest) => {
 
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
@@ -74,4 +68,4 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ book: data }, { status: 201 });
-}
+});

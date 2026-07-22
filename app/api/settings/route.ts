@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
-import { requireAuthenticatedRequest } from '@/lib/auth';
+import { withAuth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 const GOAL_KEY = 'yearly_goal';
 
-export async function GET(req: NextRequest) {
-  if (!(await requireAuthenticatedRequest(req))) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export const GET = withAuth(async (req: NextRequest) => {
 
   const supabase = supabaseServer();
   const { data, error } = await supabase
@@ -20,12 +17,9 @@ export async function GET(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ yearlyGoal: (data?.value as any)?.count ?? null });
-}
+});
 
-export async function PATCH(req: NextRequest) {
-  if (!(await requireAuthenticatedRequest(req))) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export const PATCH = withAuth(async (req: NextRequest) => {
 
   const body = await req.json().catch(() => null);
   const count = Number(body?.yearlyGoal);
@@ -40,4 +34,4 @@ export async function PATCH(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ yearlyGoal: count });
-}
+});

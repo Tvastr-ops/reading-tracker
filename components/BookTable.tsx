@@ -1,15 +1,7 @@
 'use client';
 
-import { Book, SortField, SortDir, STATUSES } from '@/lib/types';
+import { Book, SortField, SortDir, STATUSES, STATUS_COLOR_VAR } from '@/lib/types';
 import { RatingDisplay } from './RatingInput';
-
-const STATUS_VAR: Record<string, string> = {
-  Reading: 'var(--status-reading)',
-  Completed: 'var(--status-completed)',
-  'Plan to Read': 'var(--status-plan)',
-  'On Hold': 'var(--status-hold)',
-  Dropped: 'var(--status-dropped)',
-};
 
 // The full URL/path was always shown, unconditionally — a long path could
 // take two lines every row just for a secondary field. Showing only the
@@ -107,7 +99,7 @@ export default function BookTable({
         <tbody>
           {books.map((b) => {
             const pct = b.total_units ? Math.min(100, Math.round(((b.progress || 0) / b.total_units) * 100)) : null;
-            const statusColor = STATUS_VAR[b.status] || 'var(--border)';
+            const statusColor = STATUS_COLOR_VAR[b.status] || 'var(--border)';
             const nextStatus = STATUSES[(STATUSES.indexOf(b.status) + 1) % STATUSES.length];
             return (
               <tr key={b.id} style={{ '--row-status-color': statusColor } as React.CSSProperties}>

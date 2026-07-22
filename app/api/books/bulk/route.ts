@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
-import { requireAuthenticatedRequest } from '@/lib/auth';
+import { withAuth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,10 +11,7 @@ const MAX_IDS = 500;
 // A single endpoint for all bulk row-selection actions, rather than looping
 // N individual requests from the client — fewer round trips, and it's one
 // atomic-ish operation server-side instead of N separate ones.
-export async function POST(req: NextRequest) {
-  if (!(await requireAuthenticatedRequest(req))) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export const POST = withAuth(async (req: NextRequest) => {
 
   const body = await req.json().catch(() => null);
   const action = body?.action;
@@ -65,4 +62,4 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
-}
+});

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
-import { requireAuthenticatedRequest } from '@/lib/auth';
+import { withAuth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,10 +58,7 @@ function toNullableNumber(v: string | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-export async function POST(req: NextRequest) {
-  if (!(await requireAuthenticatedRequest(req))) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export const POST = withAuth(async (req: NextRequest) => {
 
   const body = await req.json().catch(() => null);
   const csvText = typeof body?.csv === 'string' ? body.csv : null;
@@ -156,4 +153,4 @@ export async function POST(req: NextRequest) {
     skippedRows: skipped,
     skippedDuplicates,
   });
-}
+});
