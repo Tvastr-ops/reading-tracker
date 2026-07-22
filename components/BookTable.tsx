@@ -129,7 +129,7 @@ export default function BookTable({
                 <td data-label="Progress">
                   {b.total_units ? (
                     <>
-                      <div className="progress-bar"><div style={{ width: `${pct}%` }} /></div>
+                      <div className="progress-bar"><div className={pct != null && pct >= 90 ? 'near-complete' : ''} style={{ width: `${pct}%` }} /></div>
                       <div className="label" style={{ fontSize: 11, marginTop: 2 }}>
                         {b.progress ?? 0}/{b.total_units} ({pct}%)
                       </div>
