@@ -214,6 +214,10 @@ th, td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom
 th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.02em; }
 tr { transition: background-color var(--duration-base) ease, border-color var(--duration-slow) ease; }
 tr:hover td { background: var(--row-hover); }
+/* Keyboard row navigation (Up/Down + Enter) — a visible cursor since
+   there's no native browser focus ring for a non-interactive <tr>. */
+tr.row-focused td { background: var(--row-hover); }
+tr.row-focused { box-shadow: inset 0 0 0 2px var(--star-filled); }
 
 /* Spine indicator replaces pill badges — a colored bar per row, like a
    shelf of color-coded book spines, with the status name as plain colored
