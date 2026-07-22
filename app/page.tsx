@@ -25,6 +25,7 @@ export default function HomePage() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [focusedIndex, setFocusedIndex] = useState(-1);
   const [selectMode, setSelectMode] = useState(false);
   const [bulkStatus, setBulkStatus] = useState<string>(STATUSES[0]);
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -246,23 +247,8 @@ export default function HomePage() {
   // containing the letter "n") is never hijacked. Escape-closes-modal is
   // handled by BookForm itself, not here — keeps this listener decoupled
   // from the modal's internals.
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      const tag = (document.activeElement?.tagName || '').toLowerCase();
-      const typing = tag === 'input' || tag === 'textarea' || tag === 'select';
-      if (typing) return;
-
-      if (e.key === '/') {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      } else if (e.key.toLowerCase() === 'n' && !showTrash) {
-        e.preventDefault();
-        setEditing(null);
-      }
-    }
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [showTrash]);
+  // (keyboard shortcut effect moved below, after `filtered` is defined —
+  // row navigation needs to read the current filtered/sorted list)
 
   const filtered = useMemo(() => {
     let list = books.filter((b) => {
@@ -298,6 +284,55 @@ export default function HomePage() {
 
     return list;
   }, [books, statusFilter, search, sortField, sortDir, showTrash]);
+
+  // Reset the keyboard-nav cursor whenever the visible list changes shape
+  // (new filter/search/sort, or switching library/trash) — an old index
+  // could otherwise point at the wrong row after the list reorders.
+  useEffect(() => { setFocusedIndex(-1); }, [filtered.length, statusFilter, search, sortField, sortDir, showTrash]);
+
+  useEffect(() => {
+    if (focusedIndex < 0) return;
+    document
+      .querySelector(`[data-row-id="${filtered[focusedIndex]?.id}"]`)
+      ?.scrollIntoView({ block: 'nearest' });
+  }, [focusedIndex, filtered]);
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const tag = (document.activeElement?.tagName || '').toLowerCase();
+      const typing = tag === 'input' || tag === 'textarea' || tag === 'select';
+      if (typing) return;
+
+      // Table-only row navigation: Up/Down moves a highlighted row, Enter
+      // opens it for editing. Disabled in grid view (no row concept there),
+      // trash (different action set), and while the modal is open.
+      const rowNavActive = viewMode === 'table' && !showTrash && editing === undefined;
+      if (rowNavActive && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+        e.preventDefault();
+        setFocusedIndex((i) => {
+          const delta = e.key === 'ArrowDown' ? 1 : -1;
+          const next = i + delta;
+          return Math.max(0, Math.min(filtered.length - 1, next < 0 ? 0 : next));
+        });
+        return;
+      }
+      if (rowNavActive && e.key === 'Enter' && focusedIndex >= 0 && filtered[focusedIndex]) {
+        e.preventDefault();
+        setEditing(filtered[focusedIndex]);
+        return;
+      }
+
+      if (e.key === '/') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (e.key.toLowerCase() === 'n' && !showTrash) {
+        e.preventDefault();
+        setEditing(null);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [showTrash, viewMode, editing, filtered, focusedIndex]);
 
   return (
     <main className="container">
@@ -448,6 +483,7 @@ export default function HomePage() {
             selectMode={selectMode}
             selected={selected}
             onToggleSelect={toggleSelect}
+            focusedId={focusedIndex >= 0 ? filtered[focusedIndex]?.id ?? null : null}
             onEdit={(b) => setEditing(b)}
             onDelete={deleteBook}
             onRestore={restoreBook}
