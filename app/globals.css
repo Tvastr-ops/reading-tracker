@@ -420,7 +420,13 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 .summary-tile .num { font-size: 20px; font-weight: 700; }
 .label { font-size: 12px; color: var(--text-muted); }
 .summary-tile .label { font-size: 12px; color: var(--text-muted); }
-.source-link { overflow-wrap: break-word; word-break: break-all; }
+.source-link {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: block;
+}
 
 .empty-state { color: var(--text-muted); font-size: 13px; padding: var(--space-3) 0; }
 
