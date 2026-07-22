@@ -11,6 +11,26 @@ const STATUS_VAR: Record<string, string> = {
   Dropped: 'var(--status-dropped)',
 };
 
+// The full URL/path was always shown, unconditionally — a long path could
+// take two lines every row just for a secondary field. Showing only the
+// hostname is enough to recognize the source at a glance.
+function hostnameOf(url: string): string {
+  try {
+    const u = new URL(url.startsWith('http') ? url : `https://${url}`);
+    return u.hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
+}
+
+// Same idea for genre/tag lists — some entries have 5-6 tags, all shown in
+// full on every row regardless of how many. Cap the visible count.
+function truncateTags(tags: string, max = 3): string {
+  const list = tags.split(',').map((t) => t.trim()).filter(Boolean);
+  if (list.length <= max) return list.join(', ');
+  return `${list.slice(0, max).join(', ')} +${list.length - max} more`;
+}
+
 export default function BookTable({
   books,
   ratingMode,
@@ -111,7 +131,7 @@ export default function BookTable({
                 <td>
                   <strong className="book-title">{b.title}</strong>
                   {b.source_link && (
-                    <div className="label source-link" style={{ fontSize: 11 }}>{b.source_link}</div>
+                    <div className="label source-link" style={{ fontSize: 11 }}>{hostnameOf(b.source_link)}</div>
                   )}
                 </td>
                 <td data-label="Type">{b.type}</td>
@@ -138,7 +158,9 @@ export default function BookTable({
                     <span style={{ fontSize: 12 }}>{b.progress ?? 0} units</span>
                   )}
                 </td>
-                <td data-label="Genre / Tags" className="label" style={{ fontSize: 12 }}>{b.genre_tags || '—'}</td>
+                <td data-label="Genre / Tags" className="label" style={{ fontSize: 12 }} title={b.genre_tags || undefined}>
+                  {b.genre_tags ? truncateTags(b.genre_tags) : '—'}
+                </td>
                 <td data-label="Finished" className="label" style={{ fontSize: 12 }}>{b.date_finished || '—'}</td>
                 <td>
                   <div className="row-actions">
