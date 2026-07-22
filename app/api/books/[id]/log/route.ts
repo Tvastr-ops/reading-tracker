@@ -47,9 +47,31 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
 
   if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
 
+  // Recompute pace from the full log history and store it on the book
+  // itself — this is what lets the main table/grid show pace without an
+  // extra fetch per row (would otherwise be an N+1 query across the list).
+  const { data: allEntries, error: historyError } = await supabase
+    .from('reading_log')
+    .select('to_progress, logged_at')
+    .eq('book_id', id)
+    .order('logged_at', { ascending: true });
+
+  let readingPace: number | null = null;
+  if (!historyError && allEntries && allEntries.length >= 2) {
+    const oldest = allEntries[0];
+    const newest = allEntries[allEntries.length - 1];
+    const deltaProgress = newest.to_progress - oldest.to_progress;
+    const deltaDays = Math.max(
+      1,
+      (new Date(newest.logged_at).getTime() - new Date(oldest.logged_at).getTime()) / 86400000
+    );
+    const perWeek = (deltaProgress / deltaDays) * 7;
+    if (perWeek > 0) readingPace = Math.round(perWeek * 10) / 10;
+  }
+
   const { error: updateError } = await supabase
     .from('books')
-    .update({ progress: toProgress })
+    .update({ progress: toProgress, reading_pace: readingPace })
     .eq('id', id);
 
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
