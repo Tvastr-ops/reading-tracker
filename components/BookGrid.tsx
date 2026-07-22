@@ -50,6 +50,9 @@ export default function BookGrid({
                 <div className={pct >= 90 ? 'near-complete' : ''} style={{ width: `${pct}%` }} />
               </div>
             )}
+            {b.status === 'Reading' && b.reading_pace != null && (
+              <div className="label" style={{ fontSize: 10, marginTop: 3 }}>~{b.reading_pace}/wk</div>
+            )}
           </button>
         );
       })}

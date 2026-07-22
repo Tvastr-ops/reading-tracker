@@ -39,6 +39,7 @@ export default function BookTable({
   onRestore,
   onPermanentDelete,
   onQuickStatus,
+  focusedId = null,
 }: {
   books: Book[];
   ratingMode: 'stars' | 'decimal';
@@ -55,6 +56,7 @@ export default function BookTable({
   onRestore?: (b: Book) => void;
   onPermanentDelete?: (b: Book) => void;
   onQuickStatus: (b: Book) => void;
+  focusedId?: string | null;
 }) {
   if (books.length === 0) {
     let message = 'No entries match your filters.';
@@ -102,7 +104,12 @@ export default function BookTable({
             const statusColor = STATUS_COLOR_VAR[b.status] || 'var(--border)';
             const nextStatus = STATUSES[(STATUSES.indexOf(b.status) + 1) % STATUSES.length];
             return (
-              <tr key={b.id} style={{ '--row-status-color': statusColor } as React.CSSProperties}>
+              <tr
+                key={b.id}
+                data-row-id={b.id}
+                className={b.id === focusedId ? 'row-focused' : ''}
+                style={{ '--row-status-color': statusColor } as React.CSSProperties}
+              >
                 <td className={`checkbox-cell${selectMode ? '' : ' collapsed'}`}>
                   <input
                     type="checkbox"
@@ -144,6 +151,7 @@ export default function BookTable({
                       <div className="progress-bar"><div className={pct != null && pct >= 90 ? 'near-complete' : ''} style={{ width: `${pct}%` }} /></div>
                       <div className="label" style={{ fontSize: 11, marginTop: 2 }}>
                         {b.progress ?? 0}/{b.total_units} ({pct}%)
+                        {b.status === 'Reading' && b.reading_pace != null && ` · ~${b.reading_pace}/wk`}
                       </div>
                     </>
                   ) : (
