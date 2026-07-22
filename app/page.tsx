@@ -38,12 +38,28 @@ export default function HomePage() {
     if (saved === 'decimal' || saved === 'stars') setRatingMode(saved);
     const savedView = window.localStorage.getItem('viewMode');
     if (savedView === 'grid' || savedView === 'table') setViewMode(savedView);
+    // Status filter, search, and sort used to reset every visit — habitual
+    // preferences (e.g. always sorting by rating) meant redoing the same
+    // clicks every session.
+    const savedStatus = window.localStorage.getItem('statusFilter');
+    if (savedStatus) setStatusFilter(savedStatus);
+    const savedSearch = window.localStorage.getItem('search');
+    if (savedSearch != null) setSearch(savedSearch);
+    const savedSortField = window.localStorage.getItem('sortField');
+    if (savedSortField) setSortField(savedSortField as SortField);
+    const savedSortDir = window.localStorage.getItem('sortDir');
+    if (savedSortDir === 'asc' || savedSortDir === 'desc') setSortDir(savedSortDir);
     // layout.tsx already set the real data-theme attribute before paint
     // (avoids a flash); this just syncs React state to match it so the
     // toggle button shows the right icon.
     const current = document.documentElement.getAttribute('data-theme');
     setTheme(current === 'dark' ? 'dark' : 'light');
   }, []);
+
+  useEffect(() => { window.localStorage.setItem('statusFilter', statusFilter); }, [statusFilter]);
+  useEffect(() => { window.localStorage.setItem('search', search); }, [search]);
+  useEffect(() => { window.localStorage.setItem('sortField', sortField); }, [sortField]);
+  useEffect(() => { window.localStorage.setItem('sortDir', sortDir); }, [sortDir]);
 
   function toggleViewMode() {
     const next = viewMode === 'table' ? 'grid' : 'table';

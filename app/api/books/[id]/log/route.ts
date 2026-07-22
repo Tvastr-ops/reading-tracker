@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
-import { requireAuthenticatedRequest } from '@/lib/auth';
+import { withAuth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(req: NextRequest, { params }: RouteContext) {
-  if (!(await requireAuthenticatedRequest(req))) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export const GET = withAuth(async (req: NextRequest, { params }: RouteContext) => {
   const { id } = await params;
   if (!UUID_RE.test(id)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
 
@@ -23,15 +20,12 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ entries: data });
-}
+});
 
 // Adding a log entry also updates the book's own `progress` field to match
 // the latest entry, so the progress bar elsewhere in the app stays in sync
 // without the user having to update it twice.
-export async function POST(req: NextRequest, { params }: RouteContext) {
-  if (!(await requireAuthenticatedRequest(req))) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) => {
   const { id } = await params;
   if (!UUID_RE.test(id)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
 
@@ -61,4 +55,4 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
 
   return NextResponse.json({ entry }, { status: 201 });
-}
+});

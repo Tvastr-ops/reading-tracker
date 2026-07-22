@@ -1,15 +1,7 @@
 'use client';
 
-import { Book } from '@/lib/types';
+import { Book, STATUS_COLOR_VAR } from '@/lib/types';
 import { RatingDisplay } from './RatingInput';
-
-const STATUS_VAR: Record<string, string> = {
-  Reading: 'var(--status-reading)',
-  Completed: 'var(--status-completed)',
-  'Plan to Read': 'var(--status-plan)',
-  'On Hold': 'var(--status-hold)',
-  Dropped: 'var(--status-dropped)',
-};
 
 export default function BookGrid({
   books,
@@ -32,7 +24,7 @@ export default function BookGrid({
   return (
     <div className="book-grid">
       {books.map((b) => {
-        const statusColor = STATUS_VAR[b.status] || 'var(--border)';
+        const statusColor = STATUS_COLOR_VAR[b.status] || 'var(--border)';
         const pct = b.total_units ? Math.min(100, Math.round(((b.progress || 0) / b.total_units) * 100)) : null;
         return (
           <button

@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuthenticatedRequest } from '@/lib/auth';
+import { withAuth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 // Open Library is free, keyless, and has no rate-limit issues at personal-use
 // volume. We only ever store the resulting *URL* string on a book (a few
 // dozen bytes), never the image itself — keeps DB storage negligible.
-export async function GET(req: NextRequest) {
-  if (!(await requireAuthenticatedRequest(req))) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export const GET = withAuth(async (req: NextRequest) => {
 
   const title = req.nextUrl.searchParams.get('title')?.trim();
   if (!title) {
@@ -41,4 +38,4 @@ export async function GET(req: NextRequest) {
     }));
 
   return NextResponse.json({ results });
-}
+});

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
-import { requireAuthenticatedRequest } from '@/lib/auth';
+import { withAuth } from '@/lib/auth';
 
 // See app/api/export/route.ts for why this is required.
 export const dynamic = 'force-dynamic';
@@ -15,10 +15,7 @@ const ALLOWED_FIELDS = [
 // Next.js 15+ made dynamic route `params` a Promise (was a plain object in 14).
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function PATCH(req: NextRequest, { params }: RouteContext) {
-  if (!(await requireAuthenticatedRequest(req))) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export const PATCH = withAuth(async (req: NextRequest, { params }: RouteContext) => {
 
   const { id } = await params;
   if (!UUID_RE.test(id)) {
@@ -67,14 +64,11 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ book: data });
-}
+});
 
 // Soft delete by default (sets deleted_at). Pass ?permanent=1 to actually
 // remove the row — used only from the trash view, after a confirm dialog.
-export async function DELETE(req: NextRequest, { params }: RouteContext) {
-  if (!(await requireAuthenticatedRequest(req))) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export const DELETE = withAuth(async (req: NextRequest, { params }: RouteContext) => {
 
   const { id } = await params;
   if (!UUID_RE.test(id)) {
@@ -97,4 +91,4 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
-}
+});
