@@ -1,19 +1,33 @@
 'use client';
 
+import { useRef, useState } from 'react';
 import { Book, STATUS_COLOR_VAR } from '@/lib/types';
 import { RatingDisplay } from './RatingInput';
+
+const DOUBLE_TAP_MS = 350;
 
 export default function BookGrid({
   books,
   ratingMode,
   hasAnyBooks = true,
   onEdit,
+  onDelete,
 }: {
   books: Book[];
   ratingMode: 'stars' | 'decimal';
   hasAnyBooks?: boolean;
   onEdit: (b: Book) => void;
+  onDelete: (b: Book) => void;
 }) {
+  // Which tile is currently showing its Edit/⋮ row instead of its normal
+  // metadata. Tapping a tile toggles this rather than opening the modal
+  // directly — a tiny always-visible corner button turned out to be a
+  // precision problem on touch; making the whole tile the tap target and
+  // revealing clearly-labeled buttons is more forgiving.
+  const [activeTileId, setActiveTileId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const lastTap = useRef<{ id: string; time: number } | null>(null);
+
   if (books.length === 0) {
     const message = !hasAnyBooks
       ? 'Nothing on the shelf yet — add your first book to get started.'
@@ -21,39 +35,107 @@ export default function BookGrid({
     return <p className="empty-state">{message}</p>;
   }
 
+  function handleTileTap(b: Book) {
+    const now = Date.now();
+    const last = lastTap.current;
+    // Double-tap the tile itself as a shortcut straight to editing —
+    // bypasses the reveal step for anyone who knows the gesture. The
+    // visible "Edit" button (below) is the reliable, discoverable path;
+    // this is just a bonus.
+    if (last && last.id === b.id && now - last.time < DOUBLE_TAP_MS) {
+      lastTap.current = null;
+      setActiveTileId(null);
+      onEdit(b);
+      return;
+    }
+    lastTap.current = { id: b.id, time: now };
+    setActiveTileId((cur) => (cur === b.id ? null : b.id));
+  }
+
   return (
     <div className="book-grid">
+      {/* Closes the active tile's action row, or an open ⋮ menu, on
+          outside tap. Lower priority than the tiles themselves so tapping
+          a different tile still switches directly to it. */}
+      {(activeTileId || openMenuId) && (
+        <div
+          className="grid-menu-backdrop"
+          onClick={() => { setActiveTileId(null); setOpenMenuId(null); }}
+        />
+      )}
       {books.map((b) => {
         const statusColor = STATUS_COLOR_VAR[b.status] || 'var(--border)';
         const pct = b.total_units ? Math.min(100, Math.round(((b.progress || 0) / b.total_units) * 100)) : null;
+        const isActive = activeTileId === b.id;
+        const menuOpen = openMenuId === b.id;
+
         return (
-          <button
-            key={b.id}
-            className="grid-tile"
-            onClick={() => onEdit(b)}
-            style={{ '--row-status-color': statusColor } as React.CSSProperties}
-            title={b.title}
-          >
-            {b.cover_url ? (
-              <img src={b.cover_url} alt="" className="grid-cover book-cover" />
-            ) : (
-              <div className="grid-cover placeholder-box" />
-            )}
-            <div className="grid-tile-title book-title">{b.title}</div>
-            {b.author && <div className="grid-tile-author label">{b.author}</div>}
-            <div className="grid-tile-meta">
-              <span className="status-text" style={{ fontSize: 10 }}>{b.status}</span>
-              <RatingDisplay rating={b.rating} mode={ratingMode} />
+          <div key={b.id} className="grid-tile-wrap">
+            <div
+              className={`grid-tile${isActive ? ' action-mode' : ''}`}
+              role="button"
+              tabIndex={0}
+              onClick={() => handleTileTap(b)}
+              onKeyDown={(e) => {
+                // Keyboard users get the direct behavior (no reveal step —
+                // there's no touch precision problem to solve for them).
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(b); }
+              }}
+              style={{ '--row-status-color': statusColor } as React.CSSProperties}
+              title={b.title}
+            >
+              {b.cover_url ? (
+                <img src={b.cover_url} alt="" className="grid-cover book-cover" />
+              ) : (
+                <div className="grid-cover placeholder-box" />
+              )}
+
+              {isActive ? (
+                <div className="grid-tile-actions-inline">
+                  <button
+                    type="button"
+                    className="btn secondary compact"
+                    onClick={(e) => { e.stopPropagation(); setActiveTileId(null); onEdit(b); }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="grid-tile-menu-btn"
+                    onClick={(e) => { e.stopPropagation(); setOpenMenuId(menuOpen ? null : b.id); }}
+                    aria-label={`More actions for ${b.title}`}
+                    aria-expanded={menuOpen}
+                  >
+                    ⋮
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="grid-tile-title book-title">{b.title}</div>
+                  {b.author && <div className="grid-tile-author label">{b.author}</div>}
+                  <div className="grid-tile-meta">
+                    <span className="status-text" style={{ fontSize: 10 }}>{b.status}</span>
+                    <RatingDisplay rating={b.rating} mode={ratingMode} />
+                  </div>
+                  {pct != null && (
+                    <div className="progress-bar" style={{ width: '100%', marginTop: 6 }}>
+                      <div className={pct >= 90 ? 'near-complete' : ''} style={{ width: `${pct}%` }} />
+                    </div>
+                  )}
+                  {b.status === 'Reading' && b.reading_pace != null && (
+                    <div className="label" style={{ fontSize: 10, marginTop: 3 }}>~{b.reading_pace}/wk</div>
+                  )}
+                </>
+              )}
             </div>
-            {pct != null && (
-              <div className="progress-bar" style={{ width: '100%', marginTop: 6 }}>
-                <div className={pct >= 90 ? 'near-complete' : ''} style={{ width: `${pct}%` }} />
+
+            {menuOpen && (
+              <div className="grid-tile-dropdown" onClick={(e) => e.stopPropagation()}>
+                <button type="button" onClick={() => { setOpenMenuId(null); setActiveTileId(null); onEdit(b); }}>Edit</button>
+                <button type="button" className="danger-text" onClick={() => { setOpenMenuId(null); setActiveTileId(null); onDelete(b); }}>Delete</button>
               </div>
             )}
-            {b.status === 'Reading' && b.reading_pace != null && (
-              <div className="label" style={{ fontSize: 10, marginTop: 3 }}>~{b.reading_pace}/wk</div>
-            )}
-          </button>
+          </div>
         );
       })}
     </div>
