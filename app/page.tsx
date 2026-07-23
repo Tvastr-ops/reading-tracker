@@ -470,6 +470,7 @@ export default function HomePage() {
             ratingMode={ratingMode}
             hasAnyBooks={books.length > 0}
             onEdit={(b) => setEditing(b)}
+            onDelete={deleteBook}
           />
         ) : (
           <BookTable
