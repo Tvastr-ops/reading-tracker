@@ -458,7 +458,58 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
   gap: var(--space-3);
+  position: relative;
 }
+.grid-tile-wrap { position: relative; }
+/* Always visible rather than hover-only — hover doesn't reliably reveal on
+   touch devices, which is the primary way this app gets used. */
+.grid-tile-actions-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-1);
+}
+.grid-tile-actions-inline .btn { flex: 1; }
+.grid-tile-menu-btn {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--btn-border);
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.grid-tile-menu-btn:hover { background: var(--secondary-hover); }
+.grid-tile-dropdown {
+  position: absolute;
+  bottom: 42px;
+  right: var(--space-2);
+  z-index: 3;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-modal);
+  display: flex;
+  flex-direction: column;
+  min-width: 100px;
+  overflow: hidden;
+}
+.grid-tile-dropdown button {
+  background: none;
+  border: none;
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+.grid-tile-dropdown button:hover { background: var(--row-hover); }
+.grid-tile-dropdown button.danger-text { color: var(--danger); }
+.grid-menu-backdrop { position: fixed; inset: 0; z-index: 1; }
 .grid-tile {
   display: flex;
   flex-direction: column;
@@ -476,6 +527,7 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   transition: transform var(--duration-base) ease, box-shadow var(--duration-base) ease;
 }
 .grid-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.grid-tile.action-mode { background: var(--row-hover); }
 .grid-tile:focus-visible { outline: 2px solid var(--star-filled); outline-offset: 2px; }
 .grid-cover {
   width: 100%;
