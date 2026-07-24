@@ -90,12 +90,18 @@ export default function StatsSummary({ books }: { books: Book[] }) {
       return { monthName: MONTH_NAMES[m], label: MONTH_LABELS[m], count };
     });
   }, [books, thisYear]);
-
-  const currentMonthIdx = new Date().getMonth() + 1;
-  const avgPacePerMonth = (completedThisYear / Math.max(currentMonthIdx, 1)).toFixed(1);
+  const now = new Date();
+  const currentMonthIdx = now.getMonth() + 1; // 1 to 12
   const targetGoal = goal ?? 30;
-  const requiredPace = (targetGoal / 12).toFixed(1);
-  const isOnTrack = Number(avgPacePerMonth) >= Number(requiredPace);
+
+  // Your actual average pace so far this year
+  const avgPacePerMonth = (completedThisYear / Math.max(currentMonthIdx, 1)).toFixed(1);
+
+  // Dynamic required pace based on remaining months in the year
+  const remainingMonths = Math.max(1, 12 - currentMonthIdx + 1);
+  const remainingBooksNeeded = Math.max(0, targetGoal - completedThisYear);
+  const requiredPace = (remainingBooksNeeded / remainingMonths).toFixed(1);
+  const isOnTrack = completedThisYear >= targetGoal || Number(avgPacePerMonth) >= Number(requiredPace);
 
   const goalPct = goal ? Math.min(100, Math.round((completedThisYear / goal) * 100)) : 0;
 
