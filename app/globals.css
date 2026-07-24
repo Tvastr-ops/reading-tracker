@@ -604,7 +604,7 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 }
 
 /* ==========================================
-   Dashboard & Summary Section (Clean Fluid Grid)
+   Dashboard & Summary Section (System Status Sync)
    ========================================== */
 
 .summary-dashboard-card {
@@ -694,6 +694,7 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   text-transform: uppercase;
 }
 
+/* Stacked Progress Bar using System Variables */
 .stacked-progress-bar {
   display: flex;
   height: 38px;
@@ -709,14 +710,14 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   justify-content: center;
   font-size: 13px;
   font-weight: 700;
-  color: #1b1712;
+  color: #ffffff;
   transition: width var(--duration-slow) ease;
 }
 
-.seg-completed { background: #62a373; }
-.seg-reading { background: #e28e46; }
-.seg-hold { background: #9275b2; }
-.seg-plan { background: #7c8892; }
+.seg-completed { background: var(--status-completed); }
+.seg-reading { background: var(--status-reading); }
+.seg-hold { background: var(--status-hold); }
+.seg-plan { background: var(--status-plan); }
 
 .stacked-pct-labels {
   display: flex;
@@ -749,10 +750,10 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   flex-shrink: 0;
 }
 
-.dot-completed { background: #62a373; }
-.dot-reading { background: #e28e46; }
-.dot-hold { background: #9275b2; }
-.dot-plan { background: #7c8892; }
+.dot-completed { background: var(--status-completed); }
+.dot-reading { background: var(--status-reading); }
+.dot-hold { background: var(--status-hold); }
+.dot-plan { background: var(--status-plan); }
 
 .dash-card-footer {
   border-top: 1px solid var(--border-soft);
@@ -765,14 +766,14 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 }
 
 /* ==========================================
-   Card 2: Monthly Pace & Goal Radial Ring
+   Card 2: Mini Bookshelf Viewport & Goal Ring
    ========================================== */
 
 .dash-card-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
 }
 
 .pace-badge {
@@ -783,45 +784,41 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 }
 
 .pace-badge.on-track {
-  background: rgba(98, 163, 115, 0.2);
-  color: #3f6b4f;
-}
-
-[data-theme='dark'] .pace-badge.on-track {
-  color: #74b189;
+  background: rgba(63, 107, 79, 0.2);
+  color: var(--status-completed);
 }
 
 .pace-badge.behind {
-  background: rgba(226, 142, 70, 0.2);
+  background: rgba(138, 59, 48, 0.2);
   color: var(--status-reading);
 }
 
-.monthly-chart-wrap {
+.mini-shelf-container {
   width: 100%;
-  height: 90px;
   margin-bottom: var(--space-3);
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
 }
 
-.monthly-bars-flex {
+.shelf-grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 3px;
+  gap: 2px;
   width: 100%;
-  height: 100%;
+  height: 90px;
   align-items: flex-end;
 }
 
-.monthly-col {
+.shelf-month-col {
   display: flex;
   flex-direction: column;
   align-items: center;
   height: 100%;
   justify-content: flex-end;
+  min-width: 0;
 }
 
-.bar-track-vert {
+.shelf-space {
   width: 100%;
   height: 70px;
   display: flex;
@@ -829,26 +826,54 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   justify-content: center;
 }
 
-.bar-fill-vert {
-  width: 100%;
-  max-width: 14px;
+.shelf-empty-book {
+  width: 3px;
+  height: 14px;
+  border-radius: 1px;
   background: var(--border-soft);
-  border-radius: 3px 3px 2px 2px;
+  opacity: 0.4;
+}
+
+.spine-stack {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: center;
-  padding-top: 2px;
-  transition: height var(--duration-slow) ease, background-color var(--duration-slow) ease;
+  gap: 1.5px;
+  width: 100%;
+  height: 100%;
+  position: relative;
 }
 
-.bar-fill-vert.has-value {
-  background: var(--status-reading);
+.mini-book-spine {
+  flex: 1;
+  max-width: 7px;
+  border-radius: 2px 2px 0 0;
+  box-shadow: inset -1px 0 2px rgba(0, 0, 0, 0.25), 1px 0 2px rgba(0, 0, 0, 0.15);
+  position: relative;
+  transition: transform var(--duration-fast) ease, filter var(--duration-fast) ease;
+  cursor: pointer;
 }
 
-.bar-num {
-  font-size: 9px;
-  font-weight: 700;
-  color: #fff;
+.mini-book-spine:hover {
+  transform: translateY(-3px) scaleX(1.1);
+  filter: brightness(1.15);
+}
+
+.spine-rib {
+  position: absolute;
+  top: 20%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.spine-overflow-badge {
+  position: absolute;
+  top: -2px;
+  font-size: 8px;
+  font-weight: 800;
+  color: var(--text-muted);
 }
 
 .month-tag {
@@ -857,7 +882,20 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   margin-top: 4px;
 }
 
-/* Radial Ring & Goal Section */
+.bookshelf-ledge {
+  width: 100%;
+  height: 5px;
+  background: var(--border);
+  border-radius: 2px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+  margin-top: 1px;
+}
+
+[data-theme='dark'] .bookshelf-ledge {
+  background: #3d3527;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
 .goal-velocity-row {
   border-top: 1px solid var(--border-soft);
   padding-top: var(--space-3);
@@ -919,7 +957,6 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   justify-content: space-between;
   font-size: 12px;
   color: var(--text-muted);
-
 }
 
 .goal-edit-btn {
@@ -966,7 +1003,7 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 }
 
 /* ==========================================
-   Rating Distribution Bar Fixes
+   Rating Distribution Pill & Zero State Fixes
    ========================================== */
 
 .rating-dist-list {
@@ -984,6 +1021,10 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   font-size: 13px;
 }
 
+.rating-dist-row.zero-count {
+  opacity: 0.5;
+}
+
 .star-label {
   font-weight: 600;
 }
@@ -998,30 +1039,28 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 
 .bar-fill {
   height: 24px;
-  background: #ede6d6;
+  background: var(--row-hover);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-right: 8px;
-  min-width: 28px;
+  padding-right: 10px;
+  min-width: 32px;
   transition: width var(--duration-slow) ease;
-}
-
-[data-theme='dark'] .bar-fill {
-  background: #3d3527;
-  color: #ece4d3;
 }
 
 .bar-count-tag {
   font-size: 11px;
   font-weight: 700;
-  color: #24201a;
+  color: var(--text);
   white-space: nowrap;
 }
 
-[data-theme='dark'] .bar-count-tag {
-  color: #ece4d3;
+.no-bar-tag {
+  font-size: 11px;
+  color: var(--text-faint);
+  padding-left: 2px;
 }
 
 .dist-pct-text {
