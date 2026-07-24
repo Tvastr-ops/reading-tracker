@@ -1,4 +1,4 @@
-use client';
+'use client';
 
 import { useRef, useState } from 'react';
 import { Book, STATUS_COLOR_VAR } from '@/lib/types';
