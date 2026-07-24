@@ -20,7 +20,6 @@ export default function BookGrid({
   onDelete: (b: Book) => void;
 }) {
   const [activeTileId, setActiveTileId] = useState<string | null>(null);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const lastTap = useRef<{ id: string; time: number } | null>(null);
 
   if (books.length === 0) {
@@ -38,38 +37,32 @@ export default function BookGrid({
     if (last && last.id === b.id && now - last.time < DOUBLE_TAP_MS) {
       lastTap.current = null;
       setActiveTileId(null);
-      setOpenMenuId(null);
       onEdit(b);
       return;
     }
     lastTap.current = { id: b.id, time: now };
 
-    // ALWAYS close any open menu dropdown when tapping a tile or switching cards
-    setOpenMenuId(null);
-
     // Toggle active card overlay
     setActiveTileId((cur) => (cur === b.id ? null : b.id));
   }
 
-  function closeAll() {
+  function closeOverlay() {
     setActiveTileId(null);
-    setOpenMenuId(null);
   }
 
   return (
     <div className="book-grid">
-      {/* Tap backdrop to dismiss any active card overlay or open dropdown menu */}
-      {(activeTileId || openMenuId) && (
+      {/* Tap backdrop to dismiss active card overlay */}
+      {activeTileId && (
         <div
           className="grid-menu-backdrop"
-          onClick={closeAll}
+          onClick={closeOverlay}
         />
       )}
       {books.map((b) => {
         const statusColor = STATUS_COLOR_VAR[b.status] || 'var(--border)';
         const pct = b.total_units ? Math.min(100, Math.round(((b.progress || 0) / b.total_units) * 100)) : null;
         const isActive = activeTileId === b.id;
-        const menuOpen = openMenuId === b.id;
 
         return (
           <div key={b.id} className="grid-tile-wrap">
@@ -91,59 +84,34 @@ export default function BookGrid({
                   <div className="grid-cover placeholder-box" />
                 )}
 
-                {/* Active Tile Overlay */}
+                {/* Active Tile Overlay with Direct Action Buttons */}
                 {isActive && (
                   <div className="grid-cover-overlay">
-                    {!menuOpen ? (
-                      <div className="pill-action-bar">
-                        <button
-                          type="button"
-                          className="pill-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            closeAll();
-                            onEdit(b);
-                          }}
-                        >
-                          Edit
-                        </button>
-                        <div className="pill-divider" />
-                        <button
-                          type="button"
-                          className="pill-btn pill-menu-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuId(b.id);
-                          }}
-                          aria-label={`More actions for ${b.title}`}
-                        >
-                          ⋮
-                        </button>
-                      </div>
-                    ) : (
-                      /* When ⋮ is clicked, replace the overlay buttons with the clear menu */
-                      <div className="grid-tile-dropdown" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            closeAll();
-                            onEdit(b);
-                          }}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          className="danger-text"
-                          onClick={() => {
-                            closeAll();
-                            onDelete(b);
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    )}
+                    <div className="pill-action-bar">
+                      <button
+                        type="button"
+                        className="pill-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          closeOverlay();
+                          onEdit(b);
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <div className="pill-divider" />
+                      <button
+                        type="button"
+                        className="pill-btn danger"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          closeOverlay();
+                          onDelete(b);
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
