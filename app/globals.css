@@ -604,7 +604,7 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 }
 
 /* ==========================================
-   Dashboard & Summary Section (System Status Sync)
+   Dashboard & Summary Section (Clean Fluid Grid)
    ========================================== */
 
 .summary-dashboard-card {
@@ -694,7 +694,6 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   text-transform: uppercase;
 }
 
-/* Stacked Progress Bar using System Variables */
 .stacked-progress-bar {
   display: flex;
   height: 38px;
@@ -1003,69 +1002,63 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 }
 
 /* ==========================================
-   Rating Distribution Pill & Zero State Fixes
+   Card 3: Rating Distribution Progress Tracks
    ========================================== */
 
 .rating-dist-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   margin-top: var(--space-3);
 }
 
 .rating-dist-row {
   display: grid;
-  grid-template-columns: 24px 1fr 38px;
+  grid-template-columns: 28px 1fr 64px;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 13px;
 }
 
 .rating-dist-row.zero-count {
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
 .star-label {
   font-weight: 600;
+  color: var(--text);
 }
 
 .bar-track {
   width: 100%;
-  height: 28px;
-  background: transparent;
-  display: flex;
-  align-items: center;
+  height: 8px;
+  background: var(--border-soft);
+  border-radius: 999px;
+  overflow: hidden;
 }
 
 .bar-fill {
-  height: 24px;
-  background: var(--row-hover);
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
+  height: 100%;
+  background: var(--star-filled);
+  border-radius: 999px;
+  transition: width var(--duration-slow) ease-in-out;
+}
+
+.rating-metrics {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-right: 10px;
-  min-width: 32px;
-  transition: width var(--duration-slow) ease;
+  gap: 4px;
+  font-size: 11px;
+  font-family: monospace;
 }
 
-.bar-count-tag {
-  font-size: 11px;
+.count-tag {
   font-weight: 700;
   color: var(--text);
-  white-space: nowrap;
 }
 
-.no-bar-tag {
-  font-size: 11px;
-  color: var(--text-faint);
-  padding-left: 2px;
-}
-
-.dist-pct-text {
-  text-align: right;
-  font-size: 12px;
+.pct-tag {
   color: var(--text-muted);
 }
 
@@ -1134,7 +1127,6 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   .modal-backdrop { padding: var(--space-3); align-items: center; }
   .form-grid { grid-template-columns: 1fr; }
 
-  /* Mobile Table View */
   table, thead, tbody { display: block; width: 100%; }
   thead { display: none; }
   
