@@ -460,33 +460,38 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   gap: var(--space-3);
   position: relative;
 }
-.grid-tile-wrap { position: relative; }
+.grid-tile-wrap { position: relative; z-index: 2; }
 /* Always visible rather than hover-only — hover doesn't reliably reveal on
    touch devices, which is the primary way this app gets used. */
-.grid-tile-actions-inline {
+.grid-cover-wrap { position: relative; width: 100%; }
+.grid-cover-overlay {
+  position: absolute;
+  inset: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
+  justify-content: center;
   gap: var(--space-2);
-  width: 100%;
-  margin-top: var(--space-1);
+  padding: var(--space-2);
+  background: linear-gradient(to top, rgba(15, 10, 5, 0.75), rgba(15, 10, 5, 0.1) 65%);
+  border-radius: 2px; /* matches .book-cover's own corner radius */
 }
-.grid-tile-actions-inline .btn { flex: 1; }
+.grid-cover-overlay .btn { flex: 1; }
 .grid-tile-menu-btn {
   width: 30px;
   height: 30px;
   flex-shrink: 0;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--btn-border);
-  background: var(--card-bg);
-  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
   font-size: 14px;
   line-height: 1;
   cursor: pointer;
 }
-.grid-tile-menu-btn:hover { background: var(--secondary-hover); }
+.grid-tile-menu-btn:hover { background: rgba(0, 0, 0, 0.5); }
 .grid-tile-dropdown {
   position: absolute;
-  bottom: 42px;
+  bottom: 40px;
   right: var(--space-2);
   z-index: 3;
   background: var(--card-bg);
