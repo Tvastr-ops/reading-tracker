@@ -95,10 +95,10 @@ export default function BookGrid({
                 {isActive && (
                   <div className="grid-cover-overlay">
                     {!menuOpen ? (
-                      <>
+                      <div className="pill-action-bar">
                         <button
                           type="button"
-                          className="btn secondary compact"
+                          className="pill-btn"
                           onClick={(e) => {
                             e.stopPropagation();
                             closeAll();
@@ -107,9 +107,10 @@ export default function BookGrid({
                         >
                           Edit
                         </button>
+                        <div className="pill-divider" />
                         <button
                           type="button"
-                          className="grid-tile-menu-btn"
+                          className="pill-btn pill-menu-btn"
                           onClick={(e) => {
                             e.stopPropagation();
                             setOpenMenuId(b.id);
@@ -118,7 +119,7 @@ export default function BookGrid({
                         >
                           ⋮
                         </button>
-                      </>
+                      </div>
                     ) : (
                       /* When ⋮ is clicked, replace the overlay buttons with the clear menu */
                       <div className="grid-tile-dropdown" onClick={(e) => e.stopPropagation()}>
