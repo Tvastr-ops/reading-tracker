@@ -1,7 +1,6 @@
 :root {
   color-scheme: light;
 
-  /* Paper + ink + book-cloth palette — warm paper background, warm ink text, oxblood accent */
   --bg: #f1ebdd;
   --card-bg: #fbf8f1;
   --border: #ddd2b8;
@@ -405,7 +404,7 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   50% { opacity: 1; }
 }
 
-/* ---------- Grid Layout ---------- */
+/* ---------- Grid Layout & Overlay Rules ---------- */
 .book-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
@@ -420,7 +419,22 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   flex-direction: column;
   height: 100%;
 }
-.grid-cover-wrap { position: relative; width: 100%; flex-shrink: 0; }
+.grid-cover-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 2px;
+  margin-bottom: var(--space-2);
+  flex-shrink: 0;
+}
+.grid-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .grid-cover-overlay {
   position: absolute;
   inset: 0;
@@ -429,49 +443,57 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   justify-content: center;
   gap: var(--space-2);
   padding: var(--space-2);
-  background: linear-gradient(to top, rgba(15, 10, 5, 0.75), rgba(15, 10, 5, 0.1) 65%);
-  border-radius: 2px;
+  background: rgba(15, 10, 5, 0.65);
+  backdrop-filter: blur(2px);
+  z-index: 2;
 }
 .grid-cover-overlay .btn { flex: 1; }
+
 .grid-tile-menu-btn {
   width: 30px;
   height: 30px;
   flex-shrink: 0;
   border-radius: var(--radius-sm);
   border: 1px solid rgba(255, 255, 255, 0.4);
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.45);
   color: #fff;
   font-size: 14px;
   line-height: 1;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.grid-tile-menu-btn:hover { background: rgba(0, 0, 0, 0.5); }
+.grid-tile-menu-btn:hover { background: rgba(0, 0, 0, 0.7); }
+
 .grid-tile-dropdown {
-  position: absolute;
-  bottom: 40px;
-  right: var(--space-2);
-  z-index: 3;
+  width: 100%;
   background: var(--card-bg);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-modal);
   display: flex;
   flex-direction: column;
-  min-width: 100px;
   overflow: hidden;
+  animation: fadeIn 0.15s ease both;
 }
 .grid-tile-dropdown button {
   background: none;
   border: none;
-  text-align: left;
+  text-align: center;
   padding: var(--space-2) var(--space-3);
   font-size: 13px;
+  font-weight: 600;
   color: var(--text);
   cursor: pointer;
+  border-bottom: 1px solid var(--border-soft);
 }
+.grid-tile-dropdown button:last-child { border-bottom: none; }
 .grid-tile-dropdown button:hover { background: var(--row-hover); }
 .grid-tile-dropdown button.danger-text { color: var(--danger); }
+
 .grid-menu-backdrop { position: fixed; inset: 0; z-index: 1; }
+
 .grid-tile {
   display: flex;
   flex-direction: column;
@@ -493,13 +515,7 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 .grid-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
 .grid-tile.action-mode { background: var(--row-hover); }
 .grid-tile:focus-visible { outline: 2px solid var(--star-filled); outline-offset: 2px; }
-.grid-cover {
-  width: 100%;
-  aspect-ratio: 2 / 3;
-  object-fit: cover;
-  margin-bottom: var(--space-2);
-  flex-shrink: 0;
-}
+
 .grid-tile-title {
   font-size: 13px;
   line-height: 1.35;
@@ -588,7 +604,7 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   .modal-backdrop { padding: var(--space-3); align-items: center; }
   .form-grid { grid-template-columns: 1fr; }
 
-  /* ---------- Mobile Table Card Transformation (Matching 1000321330.jpg) ---------- */
+  /* Mobile Table View (Matching 1000321330.jpg) */
   table, thead, tbody { display: block; width: 100%; }
   thead { display: none; }
   
@@ -615,7 +631,6 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   td.spine-cell { display: none; }
   td.checkbox-cell { flex: 0 0 auto; }
 
-  /* Cover Thumbnail (3rd child) + Title & Domain Header (4th child) */
   td:nth-child(3) {
     flex: 0 0 36px;
     margin-right: var(--space-1);
@@ -641,7 +656,6 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
     margin-top: 2px;
   }
 
-  /* 2-Column Key/Value Grid for remaining metadata fields */
   td:nth-child(n+5):not(:last-child) {
     flex: 1 1 calc(50% - var(--space-2));
     display: flex;
@@ -651,7 +665,6 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
     padding-top: var(--space-1);
   }
 
-  /* Capitalized Field Labels (TYPE, AUTHOR, STATUS, RATING, PROGRESS, etc.) */
   td:nth-child(n+5):not(:last-child)::before {
     content: attr(data-label);
     font-size: 10px;
@@ -661,7 +674,6 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
     letter-spacing: 0.04em;
   }
 
-  /* Full Width Action Buttons (Edit / Delete side-by-side at card base) */
   td:last-child {
     flex: 1 1 100%;
     padding-top: var(--space-3);
