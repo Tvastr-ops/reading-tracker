@@ -92,7 +92,6 @@ export default function StatsSummary({ books }: { books: Book[] }) {
     const weeks: Array<Array<{ dateStr: string; count: number; books: Book[]; isCurrentYear: boolean }>> = [];
     const startDate = new Date(thisYear, 0, 1);
     
-    // Align to nearest Sunday
     const startDayOfWeek = startDate.getDay();
     const currentDate = new Date(startDate);
     currentDate.setDate(currentDate.getDate() - startDayOfWeek);
@@ -177,24 +176,24 @@ export default function StatsSummary({ books }: { books: Book[] }) {
 
             <div className="stacked-progress-bar">
               <div className="segment seg-completed" style={{ width: `${compPct}%` }}>
-                {completedCount > 0 && <span>{completedCount}</span>}
+                {compPct >= 8 && <span>{completedCount}</span>}
               </div>
               <div className="segment seg-reading" style={{ width: `${readPct}%` }}>
-                {readingCount > 0 && <span>{readingCount}</span>}
+                {readPct >= 8 && <span>{readingCount}</span>}
               </div>
               <div className="segment seg-hold" style={{ width: `${holdPct}%` }}>
-                {onHoldCount > 0 && <span>{onHoldCount}</span>}
+                {holdPct >= 8 && <span>{onHoldCount}</span>}
               </div>
               <div className="segment seg-plan" style={{ width: `${planPct}%` }}>
-                {planToReadCount > 0 && <span>{planToReadCount}</span>}
+                {planPct >= 8 && <span>{planToReadCount}</span>}
               </div>
             </div>
 
             <div className="stacked-pct-labels">
-              <span>{compPct}%</span>
-              <span>{readPct}%</span>
-              <span>{holdPct}%</span>
-              <span>{planPct}%</span>
+              <span style={{ width: `${compPct}%`, textAlign: 'center' }}>{compPct > 0 ? `${compPct}%` : ''}</span>
+              <span style={{ width: `${readPct}%`, textAlign: 'center' }}>{readPct > 0 ? `${readPct}%` : ''}</span>
+              <span style={{ width: `${holdPct}%`, textAlign: 'center' }}>{holdPct > 0 ? `${holdPct}%` : ''}</span>
+              <span style={{ width: `${planPct}%`, textAlign: 'center' }}>{planPct > 0 ? `${planPct}%` : ''}</span>
             </div>
 
             <div className="status-legend">
@@ -353,14 +352,15 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                     <div
                       className="bar-fill"
                       style={{
-                        width: `${Math.max(percentage, count > 0 ? 15 : 0)}%`,
+                        width: `${count > 0 ? Math.max(percentage, 22) : 22}%`,
+                        opacity: count > 0 ? 1 : 0.35,
                       }}
                     >
-                      {count > 0 && <span className="bar-count-tag">{count}x</span>}
+                      <span className="bar-count-tag">{count}x</span>
                     </div>
                   </div>
                   <span className="dist-pct-text">
-                    {count > 0 ? `${percentage}%` : '0%'}
+                    {percentage}%
                   </span>
                 </div>
               ))}
