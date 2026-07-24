@@ -48,10 +48,16 @@ export default function BookGrid({
     if (last && last.id === b.id && now - last.time < DOUBLE_TAP_MS) {
       lastTap.current = null;
       setActiveTileId(null);
+      setOpenMenuId(null);
       onEdit(b);
       return;
     }
     lastTap.current = { id: b.id, time: now };
+    // Any tap on a tile body closes a lingering dropdown from any tile —
+    // otherwise tapping "elsewhere" only hid the Edit/⋮ row (via
+    // activeTileId below) while the dropdown itself, having no trigger
+    // button left to toggle it, stayed stuck open indefinitely.
+    setOpenMenuId(null);
     setActiveTileId((cur) => (cur === b.id ? null : b.id));
   }
 
