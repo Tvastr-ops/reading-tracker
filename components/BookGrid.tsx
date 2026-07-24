@@ -19,14 +19,6 @@ export default function BookGrid({
   onEdit: (b: Book) => void;
   onDelete: (b: Book) => void;
 }) {
-  // Which tile is currently showing its Edit/⋮ overlay. Tapping a tile
-  // toggles this rather than opening the modal directly — a tiny
-  // always-visible corner button was a precision problem on touch, so the
-  // whole tile is the tap target instead. The overlay sits on top of the
-  // cover art (not in place of the title/author/rating/progress below it)
-  // so a tile's height never changes between states — an earlier version
-  // replaced the metadata with the overlay, which made the grid's rows
-  // jump/misalign whenever a tile was active.
   const [activeTileId, setActiveTileId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const lastTap = useRef<{ id: string; time: number } | null>(null);
@@ -41,33 +33,18 @@ export default function BookGrid({
   function handleTileTap(b: Book) {
     const now = Date.now();
     const last = lastTap.current;
-    // Double-tap the tile itself as a shortcut straight to editing —
-    // bypasses the reveal step for anyone who knows the gesture. The
-    // visible "Edit" button (below) is the reliable, discoverable path;
-    // this is just a bonus.
     if (last && last.id === b.id && now - last.time < DOUBLE_TAP_MS) {
       lastTap.current = null;
       setActiveTileId(null);
-      setOpenMenuId(null);
       onEdit(b);
       return;
     }
     lastTap.current = { id: b.id, time: now };
-    // Any tap on a tile body closes a lingering dropdown from any tile —
-    // otherwise tapping "elsewhere" only hid the Edit/⋮ row (via
-    // activeTileId below) while the dropdown itself, having no trigger
-    // button left to toggle it, stayed stuck open indefinitely.
-    setOpenMenuId(null);
     setActiveTileId((cur) => (cur === b.id ? null : b.id));
   }
 
   return (
     <div className="book-grid">
-      {/* Closes the active tile's overlay, or an open ⋮ menu, on outside
-          tap. Every tile sits above this in z-index (see .grid-tile-wrap
-          in globals.css) — without that, this backdrop would intercept
-          taps meant for a tile's own buttons instead of the tile getting
-          them, since it's the only element here with an explicit z-index. */}
       {(activeTileId || openMenuId) && (
         <div
           className="grid-menu-backdrop"
@@ -88,8 +65,6 @@ export default function BookGrid({
               tabIndex={0}
               onClick={() => handleTileTap(b)}
               onKeyDown={(e) => {
-                // Keyboard users get the direct behavior (no reveal step —
-                // there's no touch precision problem to solve for them).
                 if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(b); }
               }}
               style={{ '--row-status-color': statusColor } as React.CSSProperties}
@@ -131,18 +106,21 @@ export default function BookGrid({
 
               <div className="grid-tile-title book-title">{b.title}</div>
               {b.author && <div className="grid-tile-author label">{b.author}</div>}
-              <div className="grid-tile-meta">
-                <span className="status-text" style={{ fontSize: 10 }}>{b.status}</span>
-                <RatingDisplay rating={b.rating} mode={ratingMode} />
-              </div>
-              {pct != null && (
-                <div className="progress-bar" style={{ width: '100%', marginTop: 6 }}>
-                  <div className={pct >= 90 ? 'near-complete' : ''} style={{ width: `${pct}%` }} />
+
+              <div className="grid-tile-footer">
+                <div className="grid-tile-meta">
+                  <span className="status-text" style={{ fontSize: 10 }}>
+                    {b.status}
+                    {b.status === 'Reading' && b.reading_pace != null ? ` • ~${b.reading_pace}/wk` : ''}
+                  </span>
+                  <RatingDisplay rating={b.rating} mode={ratingMode} />
                 </div>
-              )}
-              {b.status === 'Reading' && b.reading_pace != null && (
-                <div className="label" style={{ fontSize: 10, marginTop: 3 }}>~{b.reading_pace}/wk</div>
-              )}
+                {pct != null && (
+                  <div className="progress-bar" style={{ width: '100%', marginTop: 2 }}>
+                    <div className={pct >= 90 ? 'near-complete' : ''} style={{ width: `${pct}%` }} />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         );
