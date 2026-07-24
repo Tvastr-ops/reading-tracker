@@ -1,3 +1,4 @@
+```react
 'use client';
 
 import { useRef, useState } from 'react';
@@ -33,22 +34,36 @@ export default function BookGrid({
   function handleTileTap(b: Book) {
     const now = Date.now();
     const last = lastTap.current;
+
+    // Double tap direct edit shortcut
     if (last && last.id === b.id && now - last.time < DOUBLE_TAP_MS) {
       lastTap.current = null;
       setActiveTileId(null);
+      setOpenMenuId(null);
       onEdit(b);
       return;
     }
     lastTap.current = { id: b.id, time: now };
+
+    // ALWAYS close any open menu dropdown when tapping a tile or switching cards
+    setOpenMenuId(null);
+
+    // Toggle active card overlay
     setActiveTileId((cur) => (cur === b.id ? null : b.id));
+  }
+
+  function closeAll() {
+    setActiveTileId(null);
+    setOpenMenuId(null);
   }
 
   return (
     <div className="book-grid">
+      {/* Tap backdrop to dismiss any active card overlay or open dropdown menu */}
       {(activeTileId || openMenuId) && (
         <div
           className="grid-menu-backdrop"
-          onClick={() => { setActiveTileId(null); setOpenMenuId(null); }}
+          onClick={closeAll}
         />
       )}
       {books.map((b) => {
@@ -76,30 +91,59 @@ export default function BookGrid({
                 ) : (
                   <div className="grid-cover placeholder-box" />
                 )}
+
+                {/* Active Tile Overlay */}
                 {isActive && (
                   <div className="grid-cover-overlay">
-                    <button
-                      type="button"
-                      className="btn secondary compact"
-                      onClick={(e) => { e.stopPropagation(); setActiveTileId(null); onEdit(b); }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      className="grid-tile-menu-btn"
-                      onClick={(e) => { e.stopPropagation(); setOpenMenuId(menuOpen ? null : b.id); }}
-                      aria-label={`More actions for ${b.title}`}
-                      aria-expanded={menuOpen}
-                    >
-                      ⋮
-                    </button>
-                  </div>
-                )}
-                {menuOpen && (
-                  <div className="grid-tile-dropdown" onClick={(e) => e.stopPropagation()}>
-                    <button type="button" onClick={() => { setOpenMenuId(null); setActiveTileId(null); onEdit(b); }}>Edit</button>
-                    <button type="button" className="danger-text" onClick={() => { setOpenMenuId(null); setActiveTileId(null); onDelete(b); }}>Delete</button>
+                    {!menuOpen ? (
+                      <>
+                        <button
+                          type="button"
+                          className="btn secondary compact"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            closeAll();
+                            onEdit(b);
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="grid-tile-menu-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId(b.id);
+                          }}
+                          aria-label={`More actions for ${b.title}`}
+                        >
+                          ⋮
+                        </button>
+                      </>
+                    ) : (
+                      /* When ⋮ is clicked, replace the overlay buttons with the clear menu */
+                      <div className="grid-tile-dropdown" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            closeAll();
+                            onEdit(b);
+                          }}
+                        >
+                          Edit Entry
+                        </button>
+                        <button
+                          type="button"
+                          className="danger-text"
+                          onClick={() => {
+                            closeAll();
+                            onDelete(b);
+                          }}
+                        >
+                          Delete Entry
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -128,3 +172,5 @@ export default function BookGrid({
     </div>
   );
 }
+
+```
