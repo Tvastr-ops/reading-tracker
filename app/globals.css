@@ -409,7 +409,7 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   50% { opacity: 1; }
 }
 
-/* ---------- Rigid Grid Layout Fix ---------- */
+/* ---------- Grid Layout ---------- */
 .book-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
@@ -592,13 +592,13 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   .modal-backdrop { padding: var(--space-3); align-items: center; }
   .form-grid { grid-template-columns: 1fr; }
 
+  /* Cleaner Mobile Table Card Transformation */
   table, thead, tbody { display: block; width: 100%; }
   thead { display: none; }
   tr {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 2px var(--space-3);
+    flex-direction: column;
+    gap: var(--space-2);
     border: 1px solid var(--border);
     border-left: 4px solid var(--row-status-color, var(--border));
     border-radius: var(--radius-lg);
@@ -608,17 +608,26 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
     overflow: hidden;
   }
   tr:hover td { background: transparent; }
-  td { border: none; padding: 3px 0; font-size: 13px; }
+  td { border: none; padding: 2px 0; font-size: 13px; width: 100%; }
   td.spine-cell { display: none; }
-  td.checkbox-cell { flex: 0 0 auto; }
-  td:nth-child(3) { flex: 0 0 auto; }
-  td:nth-child(4) { flex: 1 1 60%; min-width: 0; }
+  td.checkbox-cell { display: none; }
+
+  /* Title Row */
+  td:nth-child(4) {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  /* Key/Value Data Layout */
   td:nth-child(n+5):not(:last-child) {
-    flex: 1 1 45%;
     display: flex;
+    align-items: center;
     justify-content: space-between;
     gap: var(--space-2);
     font-size: 12px;
+    border-bottom: 1px dashed var(--border-soft);
+    padding-bottom: 4px;
   }
   td:nth-child(n+5):not(:last-child)::before {
     content: attr(data-label);
@@ -626,14 +635,16 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
     color: var(--text-muted);
     font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
   }
+
+  /* Full Width Action Buttons */
   td:last-child {
-    flex: 1 1 100%;
     padding-top: var(--space-2);
     margin-top: var(--space-1);
     border-top: 1px solid var(--border-soft);
   }
-  .row-actions { width: 100%; }
-  .row-actions .btn { flex: 1; }
+  .row-actions { display: flex; gap: var(--space-2); width: 100%; }
+  .row-actions .btn { flex: 1; text-align: center; justify-content: center; }
 }
