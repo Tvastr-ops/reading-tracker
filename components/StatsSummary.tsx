@@ -6,6 +6,16 @@ import { Book } from '@/lib/types';
 const MONTH_LABELS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+// Literary spine palette
+const SPINE_COLORS = [
+  '#8a3b30', // Terracotta
+  '#3f6b4f', // Sage
+  '#a6752f', // Amber
+  '#4a6fa5', // Slate Blue
+  '#7c5295', // Violet
+  '#994e36', // Rust
+];
+
 export default function StatsSummary({ books }: { books: Book[] }) {
   const [goal, setGoal] = useState<number | null>(null);
   const [goalInput, setGoalInput] = useState('');
@@ -82,14 +92,12 @@ export default function StatsSummary({ books }: { books: Book[] }) {
         const d = new Date(b.date_finished);
         return d.getFullYear() === thisYear && d.getMonth() === m;
       }).length;
-      return { month: MONTH_NAMES[m], label: MONTH_LABELS[m], count };
+      return { monthName: MONTH_NAMES[m], label: MONTH_LABELS[m], count };
     });
   }, [books, thisYear]);
 
-  const maxMonthlyCount = Math.max(...monthlyData.map((d) => d.count), 1);
-
   // Velocity & Pace Calculations
-  const currentMonthIdx = new Date().getMonth() + 1; // 1-indexed (e.g. July = 7)
+  const currentMonthIdx = new Date().getMonth() + 1;
   const avgPacePerMonth = (completedThisYear / Math.max(currentMonthIdx, 1)).toFixed(1);
   const targetGoal = goal ?? 30;
   const requiredPace = (targetGoal / 12).toFixed(1);
@@ -97,7 +105,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
 
   const goalPct = goal ? Math.min(100, Math.round((completedThisYear / goal) * 100)) : 0;
 
-  // SVG Radial Ring stroke math
+  // SVG Radial Ring stroke calculations
   const radius = 32;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (goalPct / 100) * circumference;
@@ -178,42 +186,64 @@ export default function StatsSummary({ books }: { books: Book[] }) {
             </div>
           </div>
 
-          {/* CARD 2: MONTHLY PACE & YTD PROGRESS */}
+          {/* CARD 2: FLUID MINI BOOKSHELF & GOAL */}
           <div className="dash-card">
             <div className="dash-card-header-row">
-              <div className="dash-card-title">READING ACTIVITY ({thisYear})</div>
+              <div className="dash-card-title">MINI SHELF ({thisYear})</div>
               <span className={`pace-badge ${isOnTrack ? 'on-track' : 'behind'}`}>
                 {isOnTrack ? '⚡ On Track' : '📈 Pace Push'}
               </span>
             </div>
 
-            {/* Monthly Bar Visualizer */}
-            <div className="monthly-chart-wrap">
-              <div className="monthly-bars-flex">
-                {monthlyData.map((d, idx) => {
-                  const heightPct = d.count > 0 ? Math.max((d.count / maxMonthlyCount) * 100, 20) : 0;
+            <div className="mini-shelf-container">
+              <div className="shelf-grid">
+                {monthlyData.map((d, mIdx) => {
+                  const visibleSpinesCount = Math.min(d.count, 4);
+
                   return (
                     <div
-                      key={idx}
-                      className="monthly-col"
-                      title={`${d.month}: ${d.count} ${d.count === 1 ? 'book' : 'books'} completed`}
+                      key={mIdx}
+                      className="shelf-month-col"
+                      title={`${d.monthName}: ${d.count} ${d.count === 1 ? 'book' : 'books'} completed`}
                     >
-                      <div className="bar-track-vert">
-                        <div
-                          className={`bar-fill-vert ${d.count > 0 ? 'has-value' : ''}`}
-                          style={{ height: `${heightPct}%` }}
-                        >
-                          {d.count > 0 && <span className="bar-num">{d.count}</span>}
-                        </div>
+                      <div className="shelf-space">
+                        {d.count === 0 ? (
+                          <div className="shelf-empty-book" />
+                        ) : (
+                          <div className="spine-stack">
+                            {Array.from({ length: visibleSpinesCount }).map((_, spineIdx) => {
+                              const spineColor =
+                                SPINE_COLORS[(mIdx + spineIdx * 2) % SPINE_COLORS.length];
+                              const heightPct = 68 + ((mIdx * 11 + spineIdx * 17) % 28);
+
+                              return (
+                                <div
+                                  key={spineIdx}
+                                  className="mini-book-spine"
+                                  style={{
+                                    height: `${heightPct}%`,
+                                    backgroundColor: spineColor,
+                                  }}
+                                >
+                                  <span className="spine-rib" />
+                                </div>
+                              );
+                            })}
+                            {d.count > 4 && (
+                              <span className="spine-overflow-badge">+{d.count - 4}</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <span className="month-tag">{d.label}</span>
                     </div>
                   );
                 })}
               </div>
+
+              <div className="bookshelf-ledge" />
             </div>
 
-            {/* Goal Ring & Velocity Stats */}
             <div className="goal-velocity-row">
               <div className="ring-container">
                 <svg className="radial-ring" viewBox="0 0 80 80">
@@ -280,18 +310,21 @@ export default function StatsSummary({ books }: { books: Book[] }) {
 
             <div className="rating-dist-list">
               {ratingDistribution.map(({ star, count, percentage }) => (
-                <div key={star} className="rating-dist-row">
+                <div key={star} className={`rating-dist-row ${count === 0 ? 'zero-count' : ''}`}>
                   <span className="star-label">{star}★</span>
                   <div className="bar-track">
-                    <div
-                      className="bar-fill"
-                      style={{
-                        width: `${count > 0 ? Math.max(percentage, 22) : 22}%`,
-                        opacity: count > 0 ? 1 : 0.35,
-                      }}
-                    >
-                      <span className="bar-count-tag">{count}x</span>
-                    </div>
+                    {count > 0 ? (
+                      <div
+                        className="bar-fill"
+                        style={{
+                          width: `${Math.max(percentage, 24)}%`,
+                        }}
+                      >
+                        <span className="bar-count-tag">{count}x</span>
+                      </div>
+                    ) : (
+                      <span className="no-bar-tag">0x</span>
+                    )}
                   </div>
                   <span className="dist-pct-text">
                     {percentage}%
@@ -302,7 +335,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
           </div>
         </div>
       ) : (
-        /* Collapsed Summary View */
+        /* Collapsed Summary Bar */
         <div className="collapsed-summary-bar fade-in">
           <div className="collapsed-item">
             <span className="collapsed-label">Total Entries:</span>
