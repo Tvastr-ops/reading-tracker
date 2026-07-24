@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Book } from '@/lib/types';
 
+const MONTH_LABELS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function StatsSummary({ books }: { books: Book[] }) {
@@ -11,7 +12,6 @@ export default function StatsSummary({ books }: { books: Book[] }) {
   const [editingGoal, setEditingGoal] = useState(false);
   const [savingGoal, setSavingGoal] = useState(false);
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
-  const [activityView, setActivityView] = useState<'heatmap' | 'monthly'>('heatmap');
 
   const thisYear = new Date().getFullYear();
 
@@ -74,80 +74,33 @@ export default function StatsSummary({ books }: { books: Book[] }) {
     return { star, count, percentage };
   });
 
-  // Calculate daily completions map (YYYY-MM-DD -> Array of Books)
-  const dailyCompletions = useMemo(() => {
-    const map: Record<string, Book[]> = {};
-    for (const b of books) {
-      if (b.date_finished) {
-        const dateStr = new Date(b.date_finished).toISOString().split('T')[0];
-        if (!map[dateStr]) map[dateStr] = [];
-        map[dateStr].push(b);
-      }
-    }
-    return map;
-  }, [books]);
-
-  // Generate 52 weeks x 7 days calendar matrix for YTD Activity
-  const calendarWeeks = useMemo(() => {
-    const weeks: Array<Array<{ dateStr: string; count: number; books: Book[]; isCurrentYear: boolean }>> = [];
-    const startDate = new Date(thisYear, 0, 1);
-    
-    const startDayOfWeek = startDate.getDay();
-    const currentDate = new Date(startDate);
-    currentDate.setDate(currentDate.getDate() - startDayOfWeek);
-
-    const endDate = new Date(thisYear, 11, 31);
-
-    let currentWeek: Array<{ dateStr: string; count: number; books: Book[]; isCurrentYear: boolean }> = [];
-
-    while (currentDate <= endDate || currentWeek.length > 0) {
-      const dateStr = currentDate.toISOString().split('T')[0];
-      const finishedBooks = dailyCompletions[dateStr] || [];
-      const isCurrentYear = currentDate.getFullYear() === thisYear;
-
-      currentWeek.push({
-        dateStr,
-        count: finishedBooks.length,
-        books: finishedBooks,
-        isCurrentYear,
-      });
-
-      if (currentWeek.length === 7) {
-        weeks.push(currentWeek);
-        currentWeek = [];
-      }
-
-      currentDate.setDate(currentDate.getDate() + 1);
-
-      if (currentDate.getFullYear() > thisYear && currentWeek.length === 0) {
-        break;
-      }
-    }
-
-    return weeks;
-  }, [thisYear, dailyCompletions]);
-
-  // Books per month count
-  const perMonthCounts = useMemo(() => {
+  // Monthly completion counts
+  const monthlyData = useMemo(() => {
     return Array.from({ length: 12 }, (_, m) => {
-      return books.filter((b) => {
+      const count = books.filter((b) => {
         if (!b.date_finished) return false;
         const d = new Date(b.date_finished);
         return d.getFullYear() === thisYear && d.getMonth() === m;
       }).length;
+      return { month: MONTH_NAMES[m], label: MONTH_LABELS[m], count };
     });
   }, [books, thisYear]);
 
-  const maxMonthlyCount = Math.max(...perMonthCounts, 1);
+  const maxMonthlyCount = Math.max(...monthlyData.map((d) => d.count), 1);
 
-  const getIntensityClass = (count: number) => {
-    if (count === 0) return 'hm-level-0';
-    if (count === 1) return 'hm-level-1';
-    if (count === 2) return 'hm-level-2';
-    return 'hm-level-3';
-  };
+  // Velocity & Pace Calculations
+  const currentMonthIdx = new Date().getMonth() + 1; // 1-indexed (e.g. July = 7)
+  const avgPacePerMonth = (completedThisYear / Math.max(currentMonthIdx, 1)).toFixed(1);
+  const targetGoal = goal ?? 30;
+  const requiredPace = (targetGoal / 12).toFixed(1);
+  const isOnTrack = Number(avgPacePerMonth) >= Number(requiredPace);
 
   const goalPct = goal ? Math.min(100, Math.round((completedThisYear / goal) * 100)) : 0;
+
+  // SVG Radial Ring stroke math
+  const radius = 32;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (goalPct / 100) * circumference;
 
   return (
     <div className={`card summary-dashboard-card ${!isExpanded ? 'is-collapsed' : ''}`}>
@@ -225,117 +178,98 @@ export default function StatsSummary({ books }: { books: Book[] }) {
             </div>
           </div>
 
-          {/* CARD 2: READING ACTIVITY & YTD PROGRESS */}
+          {/* CARD 2: MONTHLY PACE & YTD PROGRESS */}
           <div className="dash-card">
             <div className="dash-card-header-row">
               <div className="dash-card-title">READING ACTIVITY ({thisYear})</div>
-              <div className="view-mode-tabs">
-                <button
-                  type="button"
-                  className={`tab-btn ${activityView === 'heatmap' ? 'active' : ''}`}
-                  onClick={() => setActivityView('heatmap')}
-                >
-                  Heatmap
-                </button>
-                <button
-                  type="button"
-                  className={`tab-btn ${activityView === 'monthly' ? 'active' : ''}`}
-                  onClick={() => setActivityView('monthly')}
-                >
-                  Monthly
-                </button>
+              <span className={`pace-badge ${isOnTrack ? 'on-track' : 'behind'}`}>
+                {isOnTrack ? '⚡ On Track' : '📈 Pace Push'}
+              </span>
+            </div>
+
+            {/* Monthly Bar Visualizer */}
+            <div className="monthly-chart-wrap">
+              <div className="monthly-bars-flex">
+                {monthlyData.map((d, idx) => {
+                  const heightPct = d.count > 0 ? Math.max((d.count / maxMonthlyCount) * 100, 20) : 0;
+                  return (
+                    <div
+                      key={idx}
+                      className="monthly-col"
+                      title={`${d.month}: ${d.count} ${d.count === 1 ? 'book' : 'books'} completed`}
+                    >
+                      <div className="bar-track-vert">
+                        <div
+                          className={`bar-fill-vert ${d.count > 0 ? 'has-value' : ''}`}
+                          style={{ height: `${heightPct}%` }}
+                        >
+                          {d.count > 0 && <span className="bar-num">{d.count}</span>}
+                        </div>
+                      </div>
+                      <span className="month-tag">{d.label}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            {activityView === 'heatmap' ? (
-              <div className="heatmap-container">
-                <div className="heatmap-grid-scroll">
-                  <div className="heatmap-weeks-flex">
-                    {calendarWeeks.map((week, wIdx) => (
-                      <div key={wIdx} className="heatmap-week-col">
-                        {week.map((day, dIdx) => {
-                          const titleText = day.isCurrentYear
-                            ? `${day.dateStr}: ${day.count} ${day.count === 1 ? 'book' : 'books'} completed`
-                            : '';
-                          return (
-                            <div
-                              key={dIdx}
-                              className={`hm-cell ${day.isCurrentYear ? getIntensityClass(day.count) : 'hm-out-year'}`}
-                              title={titleText}
-                            />
-                          );
-                        })}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="heatmap-legend">
-                  <span>Less</span>
-                  <span className="hm-sample hm-level-0" />
-                  <span className="hm-sample hm-level-1" />
-                  <span className="hm-sample hm-level-2" />
-                  <span className="hm-sample hm-level-3" />
-                  <span>More</span>
-                </div>
-              </div>
-            ) : (
-              <div className="monthly-bars-container">
-                <div className="monthly-bars-grid">
-                  {perMonthCounts.map((count, monthIdx) => {
-                    const heightPct = Math.round((count / maxMonthlyCount) * 100);
-                    return (
-                      <div key={monthIdx} className="monthly-bar-col" title={`${MONTH_NAMES[monthIdx]}: ${count} completed`}>
-                        <div className="bar-wrapper">
-                          <div
-                            className="monthly-bar-fill"
-                            style={{ height: `${count > 0 ? Math.max(heightPct, 18) : 0}%` }}
-                          >
-                            {count > 0 && <span className="bar-val">{count}</span>}
-                          </div>
-                        </div>
-                        <span className="month-lbl">{MONTH_NAMES[monthIdx][0]}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Yearly Goal Footer */}
-            <div className="yearly-goal-section">
-              {!editingGoal ? (
-                <div className="goal-display">
-                  <span>
-                    {thisYear} Goal: <strong>{completedThisYear}</strong> / {goal ?? 30} books
-                  </span>
-                  <button
-                    className="goal-edit-btn"
-                    onClick={() => {
-                      setGoalInput(String(goal ?? 30));
-                      setEditingGoal(true);
+            {/* Goal Ring & Velocity Stats */}
+            <div className="goal-velocity-row">
+              <div className="ring-container">
+                <svg className="radial-ring" viewBox="0 0 80 80">
+                  <circle className="ring-bg" cx="40" cy="40" r={radius} />
+                  <circle
+                    className="ring-fill"
+                    cx="40"
+                    cy="40"
+                    r={radius}
+                    style={{
+                      strokeDasharray: circumference,
+                      strokeDashoffset: strokeDashoffset,
                     }}
-                  >
-                    Edit
-                  </button>
-                </div>
-              ) : (
-                <div className="goal-edit-form">
-                  <input
-                    type="number"
-                    min={0}
-                    value={goalInput}
-                    onChange={(e) => setGoalInput(e.target.value)}
                   />
-                  <button disabled={savingGoal} onClick={saveGoal}>
-                    Save
-                  </button>
-                  <button onClick={() => setEditingGoal(false)}>Cancel</button>
+                </svg>
+                <div className="ring-text">
+                  <span className="ring-pct">{goalPct}%</span>
                 </div>
-              )}
+              </div>
 
-              <div className="progress-bar goal-bar">
-                <div style={{ width: `${goalPct}%` }} />
+              <div className="goal-details">
+                {!editingGoal ? (
+                  <div className="goal-text-box">
+                    <div className="goal-title-row">
+                      <span>{thisYear} Goal</span>
+                      <button
+                        className="goal-edit-btn"
+                        onClick={() => {
+                          setGoalInput(String(targetGoal));
+                          setEditingGoal(true);
+                        }}
+                      >
+                        edit
+                      </button>
+                    </div>
+                    <div className="goal-count-big">
+                      <strong>{completedThisYear}</strong> / {targetGoal} books
+                    </div>
+                    <div className="velocity-sub">
+                      Pace: <strong>{avgPacePerMonth}</strong> bks/mo (Req: {requiredPace})
+                    </div>
+                  </div>
+                ) : (
+                  <div className="goal-edit-form">
+                    <input
+                      type="number"
+                      min={0}
+                      value={goalInput}
+                      onChange={(e) => setGoalInput(e.target.value)}
+                    />
+                    <button disabled={savingGoal} onClick={saveGoal}>
+                      Save
+                    </button>
+                    <button onClick={() => setEditingGoal(false)}>Cancel</button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -389,7 +323,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
           <div className="collapsed-item">
             <span className="collapsed-label">Goal:</span>
             <strong>
-              {completedThisYear} / {goal ?? 30} ({goalPct}%)
+              {completedThisYear} / {targetGoal} ({goalPct}%)
             </strong>
           </div>
         </div>
