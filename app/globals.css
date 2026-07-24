@@ -480,10 +480,12 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   background: var(--row-hover);
 }
 
-.pill-menu-btn {
-  padding: 8px 14px;
-  font-size: 16px;
-  line-height: 1;
+.pill-btn.danger {
+  color: var(--danger);
+}
+
+.pill-btn.danger:hover {
+  background: var(--row-hover);
 }
 
 .pill-divider {
