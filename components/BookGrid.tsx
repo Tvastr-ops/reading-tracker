@@ -19,11 +19,14 @@ export default function BookGrid({
   onEdit: (b: Book) => void;
   onDelete: (b: Book) => void;
 }) {
-  // Which tile is currently showing its Edit/⋮ row instead of its normal
-  // metadata. Tapping a tile toggles this rather than opening the modal
-  // directly — a tiny always-visible corner button turned out to be a
-  // precision problem on touch; making the whole tile the tap target and
-  // revealing clearly-labeled buttons is more forgiving.
+  // Which tile is currently showing its Edit/⋮ overlay. Tapping a tile
+  // toggles this rather than opening the modal directly — a tiny
+  // always-visible corner button was a precision problem on touch, so the
+  // whole tile is the tap target instead. The overlay sits on top of the
+  // cover art (not in place of the title/author/rating/progress below it)
+  // so a tile's height never changes between states — an earlier version
+  // replaced the metadata with the overlay, which made the grid's rows
+  // jump/misalign whenever a tile was active.
   const [activeTileId, setActiveTileId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const lastTap = useRef<{ id: string; time: number } | null>(null);
@@ -54,9 +57,11 @@ export default function BookGrid({
 
   return (
     <div className="book-grid">
-      {/* Closes the active tile's action row, or an open ⋮ menu, on
-          outside tap. Lower priority than the tiles themselves so tapping
-          a different tile still switches directly to it. */}
+      {/* Closes the active tile's overlay, or an open ⋮ menu, on outside
+          tap. Every tile sits above this in z-index (see .grid-tile-wrap
+          in globals.css) — without that, this backdrop would intercept
+          taps meant for a tile's own buttons instead of the tile getting
+          them, since it's the only element here with an explicit z-index. */}
       {(activeTileId || openMenuId) && (
         <div
           className="grid-menu-backdrop"
@@ -84,57 +89,55 @@ export default function BookGrid({
               style={{ '--row-status-color': statusColor } as React.CSSProperties}
               title={b.title}
             >
-              {b.cover_url ? (
-                <img src={b.cover_url} alt="" className="grid-cover book-cover" />
-              ) : (
-                <div className="grid-cover placeholder-box" />
-              )}
-
-              {isActive ? (
-                <div className="grid-tile-actions-inline">
-                  <button
-                    type="button"
-                    className="btn secondary compact"
-                    onClick={(e) => { e.stopPropagation(); setActiveTileId(null); onEdit(b); }}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className="grid-tile-menu-btn"
-                    onClick={(e) => { e.stopPropagation(); setOpenMenuId(menuOpen ? null : b.id); }}
-                    aria-label={`More actions for ${b.title}`}
-                    aria-expanded={menuOpen}
-                  >
-                    ⋮
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="grid-tile-title book-title">{b.title}</div>
-                  {b.author && <div className="grid-tile-author label">{b.author}</div>}
-                  <div className="grid-tile-meta">
-                    <span className="status-text" style={{ fontSize: 10 }}>{b.status}</span>
-                    <RatingDisplay rating={b.rating} mode={ratingMode} />
+              <div className="grid-cover-wrap">
+                {b.cover_url ? (
+                  <img src={b.cover_url} alt="" className="grid-cover book-cover" />
+                ) : (
+                  <div className="grid-cover placeholder-box" />
+                )}
+                {isActive && (
+                  <div className="grid-cover-overlay">
+                    <button
+                      type="button"
+                      className="btn secondary compact"
+                      onClick={(e) => { e.stopPropagation(); setActiveTileId(null); onEdit(b); }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="grid-tile-menu-btn"
+                      onClick={(e) => { e.stopPropagation(); setOpenMenuId(menuOpen ? null : b.id); }}
+                      aria-label={`More actions for ${b.title}`}
+                      aria-expanded={menuOpen}
+                    >
+                      ⋮
+                    </button>
                   </div>
-                  {pct != null && (
-                    <div className="progress-bar" style={{ width: '100%', marginTop: 6 }}>
-                      <div className={pct >= 90 ? 'near-complete' : ''} style={{ width: `${pct}%` }} />
-                    </div>
-                  )}
-                  {b.status === 'Reading' && b.reading_pace != null && (
-                    <div className="label" style={{ fontSize: 10, marginTop: 3 }}>~{b.reading_pace}/wk</div>
-                  )}
-                </>
+                )}
+                {menuOpen && (
+                  <div className="grid-tile-dropdown" onClick={(e) => e.stopPropagation()}>
+                    <button type="button" onClick={() => { setOpenMenuId(null); setActiveTileId(null); onEdit(b); }}>Edit</button>
+                    <button type="button" className="danger-text" onClick={() => { setOpenMenuId(null); setActiveTileId(null); onDelete(b); }}>Delete</button>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid-tile-title book-title">{b.title}</div>
+              {b.author && <div className="grid-tile-author label">{b.author}</div>}
+              <div className="grid-tile-meta">
+                <span className="status-text" style={{ fontSize: 10 }}>{b.status}</span>
+                <RatingDisplay rating={b.rating} mode={ratingMode} />
+              </div>
+              {pct != null && (
+                <div className="progress-bar" style={{ width: '100%', marginTop: 6 }}>
+                  <div className={pct >= 90 ? 'near-complete' : ''} style={{ width: `${pct}%` }} />
+                </div>
+              )}
+              {b.status === 'Reading' && b.reading_pace != null && (
+                <div className="label" style={{ fontSize: 10, marginTop: 3 }}>~{b.reading_pace}/wk</div>
               )}
             </div>
-
-            {menuOpen && (
-              <div className="grid-tile-dropdown" onClick={(e) => e.stopPropagation()}>
-                <button type="button" onClick={() => { setOpenMenuId(null); setActiveTileId(null); onEdit(b); }}>Edit</button>
-                <button type="button" className="danger-text" onClick={() => { setOpenMenuId(null); setActiveTileId(null); onDelete(b); }}>Delete</button>
-              </div>
-            )}
           </div>
         );
       })}
