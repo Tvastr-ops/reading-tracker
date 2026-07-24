@@ -35,15 +35,6 @@
   --status-hold: #a6752f;
   --status-dropped: #857a63;
 
-  /* ---------- Design tokens (Visual Polish Phase 1) ----------
-     A real spacing/radius/timing scale, replacing 13 ad-hoc padding
-     values, 8 ad-hoc radii, and 7 ad-hoc transition durations that had
-     accumulated as features were added independently over time. Applied
-     to structural/UI-chrome elements (cards, buttons, inputs, surfaces).
-     Deliberately NOT applied to a few decorative micro-details called out
-     inline below (spine-bar corner, book-cover corner, checkbox corner) —
-     those are doing a specific visual job tied to the book/shelf metaphor,
-     not part of the generic component rhythm. */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -109,8 +100,6 @@ body {
 .container {
   max-width: 1100px;
   margin: 0 auto;
-  /* Bottom value is deliberately not a rhythm step — it's scroll clearance
-     for the last row, not spacing between elements. */
   padding: var(--space-6) var(--space-4) 64px;
 }
 
@@ -140,12 +129,6 @@ button, input, select, textarea {
   color: inherit;
 }
 
-/* ---------- Buttons ----------
-   One sizing system instead of each button family inventing its own
-   padding. Three sizes: standard (.btn), compact (.btn.compact — replaces
-   the old implicit ".row-actions button" descendant-selector override),
-   and icon-only (.btn.icon-only — theme toggle, dismiss buttons). Color
-   variants (secondary/danger) layer on top of whichever size is used. */
 .btn {
   background: var(--accent-bg);
   color: var(--accent-text);
@@ -214,16 +197,9 @@ th, td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom
 th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.02em; }
 tr { transition: background-color var(--duration-base) ease, border-color var(--duration-slow) ease; }
 tr:hover td { background: var(--row-hover); }
-/* Keyboard row navigation (Up/Down + Enter) — a visible cursor since
-   there's no native browser focus ring for a non-interactive <tr>. */
 tr.row-focused td { background: var(--row-hover); }
 tr.row-focused { box-shadow: inset 0 0 0 2px var(--star-filled); }
 
-/* Spine indicator replaces pill badges — a colored bar per row, like a
-   shelf of color-coded book spines, with the status name as plain colored
-   text rather than a background pill. Its 2px corner radius is a
-   decorative exception (see note in :root) — it reads as a rounded shelf
-   tab, not a generic UI radius. */
 th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 .spine {
   display: block;
@@ -245,9 +221,6 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 .status-text:hover { opacity: 0.7; }
 .status-text:active { opacity: 0.5; }
 
-/* Checkbox column is present in the DOM at a fixed position (keeps the
-   responsive nth-child math below correct in both modes) but visually
-   collapses to nothing until selection mode is turned on. */
 .checkbox-cell.collapsed { display: none; }
 
 .row-checkbox {
@@ -256,9 +229,6 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   width: 17px;
   height: 17px;
   border: 1.5px solid var(--input-border);
-  /* Intentionally its own small radius, not --radius-sm — at 17px square,
-     the standard 6px radius reads too heavy; this is a decorative
-     exception like the spine/cover corners above. */
   border-radius: 4px;
   background: var(--input-bg);
   cursor: pointer;
@@ -356,9 +326,6 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   flex-wrap: wrap;
 }
 
-/* Book cover corner radius is intentionally tighter than the UI-chrome
-   scale — a small crisp radius reads like a photograph/book cover, not a
-   generic rounded card. Decorative exception, see note in :root. */
 .book-cover, .placeholder-box {
   border-radius: 2px;
   box-shadow: 1.5px 1.5px 0 var(--card-bg), 3px 3px 0 var(--border);
@@ -366,20 +333,16 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 .placeholder-box { background: var(--progress-track); }
 
 .progress-bar {
-  width: 100px;
-  height: 6px;
+  width: 100%;
+  height: 5px;
   background: var(--progress-track);
-  /* Equal to its own height — fully pill-shaped rather than a slightly
-     rounded rectangle. */
   border-radius: var(--radius-sm);
   overflow: hidden;
 }
 .progress-bar > div { height: 100%; background: var(--accent-bg); transition: width var(--duration-slow) ease, background-color var(--duration-slow) ease; }
-/* Near-complete gets its own color rather than relying purely on bar width
-   to signal "almost done" — easier to spot at a glance across a long list. */
 .progress-bar > div.near-complete { background: var(--status-completed); }
 
-.rating-stars { color: var(--star-empty); font-size: 15px; letter-spacing: 1px; white-space: nowrap; }
+.rating-stars { color: var(--star-empty); font-size: 13px; letter-spacing: 0.5px; white-space: nowrap; }
 .rating-stars .filled { color: var(--star-filled); }
 
 .modal-backdrop {
@@ -392,9 +355,6 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   background: var(--card-bg); border-radius: var(--radius-md); padding: var(--space-5);
   width: 100%; max-width: 560px;
   box-shadow: var(--shadow-modal);
-  /* Kept at its own speed + custom easing curve rather than a token — this
-     is a deliberately snappy "pop" for the modal's entrance, not a generic
-     fade; tying it to --duration-slow would blunt that character. */
   animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .form-grid {
@@ -434,11 +394,6 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 
 .empty-state { color: var(--text-muted); font-size: 13px; padding: var(--space-3) 0; }
 
-/* ---------- Loading skeleton (Visual Polish Phase 2 / H3) ----------
-   Replaces a plain "Loading..." text placeholder, which caused a visible
-   layout jump once real content arrived. Shapes roughly match where the
-   summary tiles and table rows will land, so the page's structure is
-   stable from first paint. */
 .skeleton {
   background: var(--border-soft);
   border-radius: var(--radius-sm);
@@ -454,16 +409,22 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   50% { opacity: 1; }
 }
 
+/* ---------- Rigid Grid Layout Fix ---------- */
 .book-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
   gap: var(--space-3);
   position: relative;
+  align-items: stretch;
 }
-.grid-tile-wrap { position: relative; z-index: 2; }
-/* Always visible rather than hover-only — hover doesn't reliably reveal on
-   touch devices, which is the primary way this app gets used. */
-.grid-cover-wrap { position: relative; width: 100%; }
+.grid-tile-wrap {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.grid-cover-wrap { position: relative; width: 100%; flex-shrink: 0; }
 .grid-cover-overlay {
   position: absolute;
   inset: 0;
@@ -473,7 +434,7 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   gap: var(--space-2);
   padding: var(--space-2);
   background: linear-gradient(to top, rgba(15, 10, 5, 0.75), rgba(15, 10, 5, 0.1) 65%);
-  border-radius: 2px; /* matches .book-cover's own corner radius */
+  border-radius: 2px;
 }
 .grid-cover-overlay .btn { flex: 1; }
 .grid-tile-menu-btn {
@@ -529,6 +490,8 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   font: inherit;
   color: inherit;
   overflow: hidden;
+  width: 100%;
+  height: 100%;
   transition: transform var(--duration-base) ease, box-shadow var(--duration-base) ease;
 }
 .grid-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
@@ -539,24 +502,41 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   aspect-ratio: 2 / 3;
   object-fit: cover;
   margin-bottom: var(--space-2);
+  flex-shrink: 0;
 }
 .grid-tile-title {
-  font-size: 14px;
-  line-height: 1.3;
+  font-size: 13px;
+  line-height: 1.35;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  min-height: 2.7em;
+  word-break: break-word;
+  width: 100%;
 }
-.grid-tile-author { font-size: 11px; margin-top: var(--space-1); }
+.grid-tile-author {
+  font-size: 11px;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+.grid-tile-footer {
+  margin-top: auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: var(--space-2);
+}
 .grid-tile-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  margin-top: var(--space-2);
-  gap: var(--space-2);
-  flex-wrap: wrap;
+  gap: var(--space-1);
 }
 
 .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--space-4); }
@@ -612,9 +592,6 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   .modal-backdrop { padding: var(--space-3); align-items: center; }
   .form-grid { grid-template-columns: 1fr; }
 
-  /* Card-style table: the spine bar becomes the card's left border (still
-     the book-on-a-shelf metaphor), cover + title share the top row,
-     everything else stacks as label/value pairs. */
   table, thead, tbody { display: block; width: 100%; }
   thead { display: none; }
   tr {
