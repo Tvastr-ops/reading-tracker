@@ -439,32 +439,52 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-2);
-  background: rgba(15, 10, 5, 0.65);
-  backdrop-filter: blur(2px);
-  z-index: 2;
-}
-.grid-cover-overlay .btn { flex: 1; }
-
-.grid-tile-menu-btn {
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  background: rgba(0, 0, 0, 0.45);
-  color: #fff;
-  font-size: 14px;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
   align-items: center;
   justify-content: center;
+  padding: var(--space-3);
+  background: rgba(15, 10, 5, 0.65);
+  backdrop-filter: blur(3px);
+  z-index: 2;
 }
-.grid-tile-menu-btn:hover { background: rgba(0, 0, 0, 0.7); }
+
+/* ---------- Unified Pill Action Bar ---------- */
+.pill-action-bar {
+  display: flex;
+  align-items: center;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow-modal);
+  animation: fadeIn 0.12s ease both;
+}
+
+.pill-btn {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease;
+}
+
+.pill-btn:hover {
+  background: var(--secondary-hover);
+}
+
+.pill-menu-btn {
+  padding: 6px 10px;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.pill-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+}
 
 .grid-tile-dropdown {
   width: 100%;
