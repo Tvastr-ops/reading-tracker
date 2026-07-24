@@ -56,10 +56,32 @@ export default function StatsSummary({ books }: { books: Book[] }) {
   const onHoldCount = books.filter((b) => b.status === 'On Hold').length;
   const planToReadCount = books.filter((b) => b.status === 'Plan to Read').length;
 
-  const compPct = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
-  const readPct = totalCount ? Math.round((readingCount / totalCount) * 100) : 0;
-  const holdPct = totalCount ? Math.round((onHoldCount / totalCount) * 100) : 0;
-  const planPct = totalCount ? Math.round((planToReadCount / totalCount) * 100) : 0;
+  // Largest-remainder rounding: independently rounding each percentage can
+  // make four values sum to 99 or 101, which showed up as a hairline gap
+  // or overflow in the stacked bar below (each segment's width is one of
+  // these percentages, laid edge to edge in a shared track). Rounding down
+  // first, then handing out the leftover points to whichever counts had
+  // the largest fractional remainder, guarantees they always sum to
+  // exactly 100.
+  function distributePercentages(counts: number[], total: number): number[] {
+    if (total === 0) return counts.map(() => 0);
+    const raw = counts.map((c) => (c / total) * 100);
+    const floored = raw.map(Math.floor);
+    const remainder = 100 - floored.reduce((a, b) => a + b, 0);
+    const order = raw
+      .map((v, i) => ({ i, frac: v - Math.floor(v) }))
+      .sort((a, b) => b.frac - a.frac);
+    const result = [...floored];
+    for (let k = 0; k < remainder; k++) {
+      result[order[k % order.length].i] += 1;
+    }
+    return result;
+  }
+
+  const [compPct, readPct, holdPct, planPct] = distributePercentages(
+    [completedCount, readingCount, onHoldCount, planToReadCount],
+    totalCount
+  );
 
   const rated = books.filter((b) => b.rating != null && b.rating > 0);
   const avgRating = rated.length
@@ -355,4 +377,3 @@ export default function StatsSummary({ books }: { books: Book[] }) {
     </div>
   );
 }
-
