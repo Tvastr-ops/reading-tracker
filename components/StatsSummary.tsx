@@ -6,6 +6,15 @@ import { Book } from '@/lib/types';
 const MONTH_LABELS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+const SPINE_COLORS = [
+  '#8a3b30', // Terracotta
+  '#3f6b4f', // Sage
+  '#a6752f', // Amber
+  '#4a6fa5', // Slate Blue
+  '#7c5295', // Violet
+  '#994e36', // Rust
+];
+
 export default function StatsSummary({ books }: { books: Book[] }) {
   const [goal, setGoal] = useState<number | null>(null);
   const [goalInput, setGoalInput] = useState('');
@@ -42,7 +51,6 @@ export default function StatsSummary({ books }: { books: Book[] }) {
 
   const totalCount = books.length;
 
-  // Status Counts
   const completedCount = books.filter((b) => b.status === 'Completed').length;
   const readingCount = books.filter((b) => b.status === 'Reading').length;
   const onHoldCount = books.filter((b) => b.status === 'On Hold').length;
@@ -53,7 +61,6 @@ export default function StatsSummary({ books }: { books: Book[] }) {
   const holdPct = totalCount ? Math.round((onHoldCount / totalCount) * 100) : 0;
   const planPct = totalCount ? Math.round((planToReadCount / totalCount) * 100) : 0;
 
-  // Average Rating
   const rated = books.filter((b) => b.rating != null && b.rating > 0);
   const avgRating = rated.length
     ? (rated.reduce((sum, b) => sum + (b.rating || 0), 0) / rated.length).toFixed(2)
@@ -64,7 +71,6 @@ export default function StatsSummary({ books }: { books: Book[] }) {
     return new Date(b.date_finished).getFullYear() === thisYear;
   }).length;
 
-  // Rating Distribution (5★ down to 1★)
   const totalRated = rated.length || 1;
   const ratingDistribution = [5, 4, 3, 2, 1].map((star) => {
     const count = books.filter(
@@ -74,7 +80,6 @@ export default function StatsSummary({ books }: { books: Book[] }) {
     return { star, count, percentage };
   });
 
-  // Monthly completion counts
   const monthlyData = useMemo(() => {
     return Array.from({ length: 12 }, (_, m) => {
       const count = books.filter((b) => {
@@ -82,13 +87,10 @@ export default function StatsSummary({ books }: { books: Book[] }) {
         const d = new Date(b.date_finished);
         return d.getFullYear() === thisYear && d.getMonth() === m;
       }).length;
-      return { month: MONTH_NAMES[m], label: MONTH_LABELS[m], count };
+      return { monthName: MONTH_NAMES[m], label: MONTH_LABELS[m], count };
     });
   }, [books, thisYear]);
 
-  const maxMonthlyCount = Math.max(...monthlyData.map((d) => d.count), 1);
-
-  // Velocity & Pace Calculations
   const currentMonthIdx = new Date().getMonth() + 1;
   const avgPacePerMonth = (completedThisYear / Math.max(currentMonthIdx, 1)).toFixed(1);
   const targetGoal = goal ?? 30;
@@ -97,7 +99,6 @@ export default function StatsSummary({ books }: { books: Book[] }) {
 
   const goalPct = goal ? Math.min(100, Math.round((completedThisYear / goal) * 100)) : 0;
 
-  // SVG Radial Ring stroke math
   const radius = 32;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (goalPct / 100) * circumference;
@@ -178,42 +179,62 @@ export default function StatsSummary({ books }: { books: Book[] }) {
             </div>
           </div>
 
-          {/* CARD 2: MONTHLY PACE & YTD PROGRESS */}
+          {/* CARD 2: MINI SHELF */}
           <div className="dash-card">
             <div className="dash-card-header-row">
-              <div className="dash-card-title">READING ACTIVITY ({thisYear})</div>
+              <div className="dash-card-title">MINI SHELF ({thisYear})</div>
               <span className={`pace-badge ${isOnTrack ? 'on-track' : 'behind'}`}>
                 {isOnTrack ? '⚡ On Track' : '📈 Pace Push'}
               </span>
             </div>
 
-            {/* Monthly Bar Visualizer */}
-            <div className="monthly-chart-wrap">
-              <div className="monthly-bars-flex">
-                {monthlyData.map((d, idx) => {
-                  const heightPct = d.count > 0 ? Math.max((d.count / maxMonthlyCount) * 100, 20) : 0;
+            <div className="mini-shelf-container">
+              <div className="shelf-grid">
+                {monthlyData.map((d, mIdx) => {
+                  const visibleSpinesCount = Math.min(d.count, 4);
+
                   return (
                     <div
-                      key={idx}
-                      className="monthly-col"
-                      title={`${d.month}: ${d.count} ${d.count === 1 ? 'book' : 'books'} completed`}
+                      key={mIdx}
+                      className="shelf-month-col"
+                      title={`${d.monthName}: ${d.count} ${d.count === 1 ? 'book' : 'books'} completed`}
                     >
-                      <div className="bar-track-vert">
-                        <div
-                          className={`bar-fill-vert ${d.count > 0 ? 'has-value' : ''}`}
-                          style={{ height: `${heightPct}%` }}
-                        >
-                          {d.count > 0 && <span className="bar-num">{d.count}</span>}
-                        </div>
+                      <div className="shelf-space">
+                        {d.count === 0 ? (
+                          <div className="shelf-empty-book" />
+                        ) : (
+                          <div className="spine-stack">
+                            {Array.from({ length: visibleSpinesCount }).map((_, spineIdx) => {
+                              const spineColor = SPINE_COLORS[(mIdx + spineIdx * 2) % SPINE_COLORS.length];
+                              const heightPct = 68 + ((mIdx * 11 + spineIdx * 17) % 28);
+
+                              return (
+                                <div
+                                  key={spineIdx}
+                                  className="mini-book-spine"
+                                  style={{
+                                    height: `${heightPct}%`,
+                                    backgroundColor: spineColor,
+                                  }}
+                                >
+                                  <span className="spine-rib" />
+                                </div>
+                              );
+                            })}
+                            {d.count > 4 && (
+                              <span className="spine-overflow-badge">+{d.count - 4}</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <span className="month-tag">{d.label}</span>
                     </div>
                   );
                 })}
               </div>
+              <div className="bookshelf-ledge" />
             </div>
 
-            {/* Goal Ring & Velocity Stats */}
             <div className="goal-velocity-row">
               <div className="ring-container">
                 <svg className="radial-ring" viewBox="0 0 80 80">
@@ -280,13 +301,9 @@ export default function StatsSummary({ books }: { books: Book[] }) {
 
             <div className="rating-dist-list">
               {ratingDistribution.map(({ star, count, percentage }) => (
-                <div 
-                  key={star} 
-                  className={`rating-dist-row ${count === 0 ? 'zero-count' : ''}`}
-                >
+                <div key={star} className={`rating-dist-row ${count === 0 ? 'zero-count' : ''}`}>
                   <span className="star-label">{star}★</span>
                   
-                  {/* Track container */}
                   <div className="bar-track">
                     <div
                       className="bar-fill"
@@ -294,7 +311,6 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                     />
                   </div>
 
-                  {/* Clean numerical display outside bar */}
                   <div className="rating-metrics">
                     <span className="count-tag">{count}x</span>
                     <span className="pct-tag">({percentage}%)</span>
@@ -305,7 +321,6 @@ export default function StatsSummary({ books }: { books: Book[] }) {
           </div>
         </div>
       ) : (
-        /* Collapsed Summary View */
         <div className="collapsed-summary-bar fade-in">
           <div className="collapsed-item">
             <span className="collapsed-label">Total Entries:</span>
@@ -334,3 +349,4 @@ export default function StatsSummary({ books }: { books: Book[] }) {
     </div>
   );
 }
+
