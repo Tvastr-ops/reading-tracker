@@ -4,7 +4,6 @@ import { useEffect, useState, useMemo } from 'react';
 import { Book } from '@/lib/types';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 export default function StatsSummary({ books }: { books: Book[] }) {
   const [goal, setGoal] = useState<number | null>(null);
@@ -65,7 +64,17 @@ export default function StatsSummary({ books }: { books: Book[] }) {
     return new Date(b.date_finished).getFullYear() === thisYear;
   }).length;
 
-  // Calculate real daily completions map (YYYY-MM-DD -> Array of Books)
+  // Rating Distribution (5★ down to 1★)
+  const totalRated = rated.length || 1;
+  const ratingDistribution = [5, 4, 3, 2, 1].map((star) => {
+    const count = books.filter(
+      (b) => b.rating != null && Math.round(b.rating) === star
+    ).length;
+    const percentage = rated.length ? Math.round((count / totalRated) * 100) : 0;
+    return { star, count, percentage };
+  });
+
+  // Calculate daily completions map (YYYY-MM-DD -> Array of Books)
   const dailyCompletions = useMemo(() => {
     const map: Record<string, Book[]> = {};
     for (const b of books) {
@@ -78,7 +87,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
     return map;
   }, [books]);
 
-  // Generate 52 weeks x 7 days matrix for YTD Activity
+  // Generate 52 weeks x 7 days calendar matrix for YTD Activity
   const calendarWeeks = useMemo(() => {
     const weeks: Array<Array<{ dateStr: string; count: number; books: Book[]; isCurrentYear: boolean }>> = [];
     const startDate = new Date(thisYear, 0, 1);
@@ -119,7 +128,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
     return weeks;
   }, [thisYear, dailyCompletions]);
 
-  // Books per month bar chart calculations
+  // Books per month count
   const perMonthCounts = useMemo(() => {
     return Array.from({ length: 12 }, (_, m) => {
       return books.filter((b) => {
@@ -272,7 +281,6 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                 </div>
               </div>
             ) : (
-              /* Monthly Bars View */
               <div className="monthly-bars-container">
                 <div className="monthly-bars-grid">
                   {perMonthCounts.map((count, monthIdx) => {
