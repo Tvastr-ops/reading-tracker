@@ -494,32 +494,6 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   background: var(--border-soft);
 }
 
-.grid-tile-dropdown {
-  width: 100%;
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-modal);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  animation: fadeIn 0.15s ease both;
-}
-.grid-tile-dropdown button {
-  background: none;
-  border: none;
-  text-align: center;
-  padding: var(--space-2) var(--space-3);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  cursor: pointer;
-  border-bottom: 1px solid var(--border-soft);
-}
-.grid-tile-dropdown button:last-child { border-bottom: none; }
-.grid-tile-dropdown button:hover { background: var(--row-hover); }
-.grid-tile-dropdown button.danger-text { color: var(--danger); }
-
 .grid-menu-backdrop { position: fixed; inset: 0; z-index: 1; }
 
 .grid-tile {
@@ -560,10 +534,10 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: ellipses;
   width: 100%;
 }
-.grid-tile-footer {
+grid-tile-footer {
   margin-top: auto;
   width: 100%;
   display: flex;
@@ -571,21 +545,14 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   gap: 4px;
   padding-top: var(--space-2);
 }
-.grid-tile-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  gap: var(--space-1);
-}
 
-.login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--space-4); }
-.login-card { width: 100%; max-width: 320px; padding: var(--space-6); }
-.login-input {
+login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--space-4); }
+login-card { width: 100%; max-width: 320px; padding: var(--space-6); }
+login-input {
   width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--input-border); border-radius: var(--radius-sm);
   background: var(--input-bg); color: var(--text);
 }
-.error-text { color: var(--danger); font-size: 13px; margin-top: var(--space-2); }
+error-text { color: var(--danger); font-size: 13px; margin-top: var(--space-2); }
 .row-actions { display: flex; gap: var(--space-1); flex-wrap: wrap; }
 .mono-btn { background: none; border: none; cursor: pointer; padding: var(--space-1); color: inherit; }
 
