@@ -155,10 +155,17 @@ button, input, select, textarea {
 }
 .btn.icon-only:hover { background: var(--secondary-hover); transform: rotate(12deg); }
 
-.btn:focus-visible, .btn.icon-only:focus-visible, input:focus-visible,
-select:focus-visible, textarea:focus-visible, a:focus-visible {
+/* Buttons & Links keep the offset focus ring for accessibility */
+.btn:focus-visible, .btn.icon-only:focus-visible, a:focus-visible {
   outline: 2px solid var(--star-filled);
   outline-offset: 2px;
+}
+
+/* Inputs, Selects, and Textareas get a flush, modern focus glow */
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: none;
+  border-color: var(--star-filled);
+  box-shadow: 0 0 0 1px var(--star-filled);
 }
 
 .card {
@@ -537,7 +544,7 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   text-overflow: ellipses;
   width: 100%;
 }
-grid-tile-footer {
+.grid-tile-footer {
   margin-top: auto;
   width: 100%;
   display: flex;
@@ -546,13 +553,14 @@ grid-tile-footer {
   padding-top: var(--space-2);
 }
 
-login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--space-4); }
-login-card { width: 100%; max-width: 320px; padding: var(--space-6); }
-login-input {
+.login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--space-4); }
+.login-card { width: 100%; max-width: 320px; padding: var(--space-6); margin: 0 auto; }
+.login-input {
   width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--input-border); border-radius: var(--radius-sm);
   background: var(--input-bg); color: var(--text);
 }
-error-text { color: var(--danger); font-size: 13px; margin-top: var(--space-2); }
+.error-text { color: var(--danger); font-size: 13px; margin-top: var(--space-2); }
+
 .row-actions { display: flex; gap: var(--space-1); flex-wrap: wrap; }
 .mono-btn { background: none; border: none; cursor: pointer; padding: var(--space-1); color: inherit; }
 
