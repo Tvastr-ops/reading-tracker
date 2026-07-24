@@ -605,7 +605,7 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 }
 
 /* ==========================================
-   Dashboard & Summary Section (Mockup Match)
+   Dashboard & Summary Section
    ========================================== */
 
 .summary-dashboard-card {
@@ -761,54 +761,157 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   gap: 4px;
 }
 
-.heatmap-months {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  text-align: center;
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-}
+/* ==========================================
+   Activity Heatmap & Monthly Switcher
+   ========================================== */
 
-.heatmap-matrix {
+.dash-card-header-row {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: var(--space-3);
 }
 
-.heatmap-row {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
+.view-mode-tabs {
+  display: flex;
+  background: var(--card-bg);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all var(--duration-fast) ease;
+}
+
+.tab-btn.active {
+  background: var(--accent-bg);
+  color: var(--accent-text);
+}
+
+.heatmap-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.heatmap-grid-scroll {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.heatmap-weeks-flex {
+  display: flex;
+  gap: 3px;
+  min-width: max-content;
+}
+
+.heatmap-week-col {
+  display: flex;
+  flex-direction: column;
   gap: 3px;
 }
 
 .hm-cell {
-  aspect-ratio: 1;
+  width: 10px;
+  height: 10px;
   border-radius: 2px;
   background: var(--border-soft);
+  transition: transform 0.1s ease, filter 0.1s ease;
 }
 
-.hm-0 { background: rgba(140, 120, 90, 0.15); }
-.hm-1 { background: #f0a38b; }
-.hm-2 { background: #e06c53; }
-.hm-3 { background: #cf4832; }
-.hm-4 { background: #992316; }
+.hm-cell:hover {
+  transform: scale(1.25);
+  z-index: 2;
+}
+
+.hm-out-year {
+  opacity: 0.2;
+}
+
+.hm-level-0 { background: rgba(140, 120, 90, 0.15); }
+.hm-level-1 { background: #f0a38b; }
+.hm-level-2 { background: #e06c53; }
+.hm-level-3 { background: #8a3b30; }
 
 .heatmap-legend {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 11px;
+  justify-content: flex-end;
+  gap: 4px;
+  font-size: 10px;
   color: var(--text-muted);
-  margin-bottom: var(--space-3);
 }
 
 .hm-sample {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 2px;
-  display: inline-block;
+}
+
+.monthly-bars-container {
+  height: 100px;
+  margin-bottom: var(--space-3);
+  display: flex;
+  align-items: flex-end;
+}
+
+.monthly-bars-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  align-items: flex-end;
+}
+
+.monthly-bar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.bar-wrapper {
+  width: 100%;
+  height: 78px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.monthly-bar-fill {
+  width: 80%;
+  max-width: 16px;
+  background: var(--status-reading);
+  border-radius: 4px 4px 2px 2px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 2px;
+  transition: height var(--duration-slow) ease;
+}
+
+.bar-val {
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.month-lbl {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
 }
 
 .yearly-goal-section {
@@ -979,7 +1082,6 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   .modal-backdrop { padding: var(--space-3); align-items: center; }
   .form-grid { grid-template-columns: 1fr; }
 
-  /* Mobile Table View */
   table, thead, tbody { display: block; width: 100%; }
   thead { display: none; }
   
