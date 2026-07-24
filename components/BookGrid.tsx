@@ -129,7 +129,7 @@ export default function BookGrid({
                             onEdit(b);
                           }}
                         >
-                          Edit Entry
+                          Edit
                         </button>
                         <button
                           type="button"
@@ -139,7 +139,7 @@ export default function BookGrid({
                             onDelete(b);
                           }}
                         >
-                          Delete Entry
+                          Delete
                         </button>
                       </div>
                     )}
