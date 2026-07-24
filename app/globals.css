@@ -447,43 +447,49 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   z-index: 2;
 }
 
-/* ---------- Unified Pill Action Bar ---------- */
+/* ---------- Overlay Action Card ---------- */
 .pill-action-bar {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  width: 72%;
+  max-width: 130px;
   background: var(--card-bg);
   border: 1px solid var(--border);
-  border-radius: 20px;
-  overflow: hidden;
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-modal);
+  overflow: hidden;
   animation: fadeIn 0.12s ease both;
 }
 
 .pill-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
   background: transparent;
   border: none;
   color: var(--text);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  padding: 6px 14px;
+  padding: 10px 14px;
   cursor: pointer;
   transition: background-color var(--duration-fast) ease;
 }
 
 .pill-btn:hover {
-  background: var(--secondary-hover);
+  background: var(--row-hover);
 }
 
 .pill-menu-btn {
-  padding: 6px 10px;
-  font-size: 14px;
+  padding: 8px 14px;
+  font-size: 16px;
   line-height: 1;
 }
 
 .pill-divider {
-  width: 1px;
-  height: 16px;
-  background: var(--border);
+  width: 100%;
+  height: 1px;
+  background: var(--border-soft);
 }
 
 .grid-tile-dropdown {
