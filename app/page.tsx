@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Book, BookInput, STATUSES, STATUS_COLOR_VAR, SortField, SortDir } from '@/lib/types';
+import { Book, BookInput, STATUSES, SortField, SortDir } from '@/lib/types';
 import BookTable from '@/components/BookTable';
 import BookGrid from '@/components/BookGrid';
 import BookForm from '@/components/BookForm';
@@ -89,13 +89,10 @@ export default function HomePage() {
     window.localStorage.setItem('ratingMode', next);
   }
 
-  function handleSort(field: SortField) {
-    if (field === sortField) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortField(field);
-      setSortDir('asc');
-    }
+  function handleSortSelect(value: string) {
+    const [field, dir] = value.split('_') as [SortField, SortDir];
+    setSortField(field);
+    setSortDir(dir || 'asc');
   }
 
   async function saveBook(data: BookInput) {
@@ -235,31 +232,13 @@ export default function HomePage() {
     });
   }
 
-  // Handle Search Input Changes & Trigger Symbol Shortcuts (e.g. /reading or status:completed)
-  function handleSearchChange(val: string) {
-    setSearch(val);
-    const lower = val.trim().toLowerCase();
-    
-    if (lower.startsWith('/') || lower.startsWith('status:')) {
-      const query = lower.replace(/^(\/|status:)/, '').trim();
-      const matchedStatus = STATUSES.find((s) => s.toLowerCase().startsWith(query));
-      if (matchedStatus) {
-        setStatusFilter(matchedStatus);
-      } else if (query === 'all') {
-        setStatusFilter('All');
-      }
-    }
-  }
-
   const filtered = useMemo(() => {
     let list = books.filter((b) => {
       if (!showTrash && statusFilter !== 'All' && b.status !== statusFilter) return false;
       if (search.trim()) {
-        const q = search.toLowerCase().replace(/^(\/|status:)/, '').trim();
-        if (q && !STATUSES.some((s) => s.toLowerCase() === q)) {
-          const hay = `${b.title} ${b.author || ''} ${b.genre_tags || ''}`.toLowerCase();
-          if (!hay.includes(q)) return false;
-        }
+        const q = search.toLowerCase();
+        const hay = `${b.title} ${b.author || ''} ${b.genre_tags || ''}`.toLowerCase();
+        if (!hay.includes(q)) return false;
       }
       return true;
     });
@@ -279,6 +258,9 @@ export default function HomePage() {
         case 'date_finished':
           cmp = (a.date_finished || '').localeCompare(b.date_finished || '');
           break;
+        case 'author':
+          cmp = (a.author || '').localeCompare(b.author || '');
+          break;
         default:
           cmp = a.updated_at.localeCompare(b.updated_at);
       }
@@ -294,6 +276,13 @@ export default function HomePage() {
     for (const b of books) counts[b.status] = (counts[b.status] ?? 0) + 1;
     return counts;
   }, [books]);
+
+  const filtersActive = statusFilter !== 'All' || search.trim() !== '';
+
+  function clearFilters() {
+    setStatusFilter('All');
+    setSearch('');
+  }
 
   useEffect(() => { setFocusedIndex(-1); }, [filtered.length, statusFilter, search, sortField, sortDir, showTrash]);
 
@@ -337,6 +326,8 @@ export default function HomePage() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [showTrash, viewMode, editing, filtered, focusedIndex]);
+
+  const currentSortValue = `${sortField}_${sortDir}`;
 
   return (
     <main className="container">
@@ -396,152 +387,143 @@ export default function HomePage() {
         </div>
       )}
 
-      <div className="card">
-        <div className="toolbar">
-          <div className="toolbar-row">
+      <div className="card toolbar-card">
+        <div className="toolbar-v2">
+          {/* Row 1: Search Input */}
+          <div className="search-wrap-v2">
+            <svg className="search-icon-v2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search title, author, tags..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Search title, author, tags"
+            />
+            {search ? (
+              <button className="search-clear-v2" onClick={() => setSearch('')} aria-label="Clear search">×</button>
+            ) : (
+              <kbd className="kbd-v2" aria-hidden="true">/</kbd>
+            )}
+          </div>
+
+          {/* Row 2: Add Entry + Grid / Table Switch */}
+          <div className="toolbar-row-v2">
             {!showTrash && (
-              <button className="btn accent-fill" onClick={() => setEditing(null)}>
-                + Add entry <kbd className="kbd-hint">n</kbd>
+              <button className="btn-add-entry-v2" onClick={() => setEditing(null)}>
+                <span className="plus-icon">+</span>
+                <span className="btn-label">Add Entry</span>
+                <kbd className="kbd-v2 kbd-add">n</kbd>
               </button>
             )}
 
-            {/* SEARCH INPUT WITH INLINE DYNAMIC ACTIVE FILTER BADGE */}
-            <div className="search-wrap">
-              <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-                <circle cx="11" cy="11" r="7" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-
-              {statusFilter !== 'All' && (
-                <span className="search-filter-tag">
-                  {statusFilter}
-                  <button
-                    type="button"
-                    onClick={() => setStatusFilter('All')}
-                    title="Remove status filter"
-                    aria-label="Remove status filter"
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
-
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder={statusFilter === 'All' ? "Search title, author, tags... (/)" : "Search..."}
-                value={search}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                aria-label="Search entries"
-                style={{
-                  paddingLeft: statusFilter !== 'All' ? '120px' : '34px',
-                }}
-              />
-
-              {search ? (
-                <button className="search-clear" onClick={() => setSearch('')} aria-label="Clear search" title="Clear search">×</button>
-              ) : (
-                <kbd className="kbd-hint search-kbd" aria-hidden="true">/</kbd>
-              )}
-            </div>
-
             {!showTrash && (
-              <div className="segmented-control" role="group" aria-label="View mode">
-                <div className={`segmented-thumb${viewMode === 'table' ? ' right' : ''}`} />
+              <div className="segmented-control-v2" role="group" aria-label="View mode">
                 <button
                   type="button"
                   className={viewMode === 'grid' ? 'active' : ''}
-                  aria-pressed={viewMode === 'grid'}
                   onClick={() => viewMode !== 'grid' && toggleViewMode()}
-                  title="Cover grid view"
                 >
-                  ▦ Grid
+                  <span className="icon">▦</span> Grid
                 </button>
                 <button
                   type="button"
                   className={viewMode === 'table' ? 'active' : ''}
-                  aria-pressed={viewMode === 'table'}
                   onClick={() => viewMode !== 'table' && toggleViewMode()}
-                  title="Table view"
                 >
-                  ☰ Table
+                  <span className="icon">☰</span> Table
                 </button>
               </div>
             )}
+          </div>
+
+          {/* Row 3: Filters (Status, Rating, Sort, Up Next, Trash) */}
+          <div className="toolbar-row-v2 toolbar-filters-v2">
+            {!showTrash && (
+              <div className="select-pill-v2">
+                <span className="pill-icon">🔖</span>
+                <span className="pill-text">{statusFilter === 'All' ? 'Status' : statusFilter}</span>
+                <span className="pill-arrow">▾</span>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="pill-native-select"
+                  aria-label="Filter by Status"
+                >
+                  <option value="All">All Statuses ({statusCounts['All'] || 0})</option>
+                  {STATUSES.map((s) => (
+                    <option key={s} value={s}>{s} ({statusCounts[s] || 0})</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <button className="btn-filter-pill-v2" onClick={toggleRatingMode} title="Toggle rating mode">
+              <span className="pill-icon">⭐</span>
+              <span>Rating {ratingMode === 'stars' ? '▾' : '(#.#) ▾'}</span>
+            </button>
+
+            <div className="select-pill-v2">
+              <span className="pill-icon">⇅</span>
+              <span className="pill-text">Sort</span>
+              <span className="pill-arrow">▾</span>
+              <select
+                value={currentSortValue}
+                onChange={(e) => handleSortSelect(e.target.value)}
+                className="pill-native-select"
+                aria-label="Sort entries"
+              >
+                <option value="updated_at_desc">Recently updated</option>
+                <option value="created_at_desc">Recently added</option>
+                <option value="title_asc">Title (A–Z)</option>
+                <option value="title_desc">Title (Z–A)</option>
+                <option value="rating_desc">Highest rating</option>
+                <option value="author_asc">Author</option>
+              </select>
+            </div>
+
+            {!showTrash && (
+              <button className="btn-filter-pill-v2 btn-up-next-v2" onClick={pickUpNext} title="Get a random entry to read next">
+                <span className="pill-icon">✨</span>
+                <span>Up next</span>
+              </button>
+            )}
+
+            {viewMode === 'table' && (
+              <button
+                className={`btn-filter-pill-v2${selectMode ? ' active' : ''}`}
+                onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}
+              >
+                {selectMode ? 'Done' : 'Select'}
+              </button>
+            )}
 
             <button
-              className={`btn secondary${showTrash ? ' is-on' : ''}`}
+              className={`btn-filter-pill-v2 btn-trash-v2${showTrash ? ' active' : ''}`}
               onClick={() => setShowTrash((v) => !v)}
+              title={showTrash ? 'Back to library' : 'View Trash'}
             >
-              🗑 {showTrash ? 'Back' : 'Trash'}
+              <span>🗑</span>
             </button>
           </div>
 
-          <div className="toolbar-row toolbar-row-sub">
-            {!showTrash && (
-              <>
-                {/* Desktop Chips */}
-                <div className="chip-row desktop-chip-row" role="group" aria-label="Filter by status">
-                  {(['All', ...STATUSES] as string[]).map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      className={`chip${statusFilter === s ? ' active' : ''}`}
-                      style={{ '--chip-color': STATUS_COLOR_VAR[s] ?? 'var(--text-muted)' } as React.CSSProperties}
-                      aria-pressed={statusFilter === s}
-                      onClick={() => setStatusFilter(s)}
-                    >
-                      {s === 'All' ? 'All' : s}
-                      <span className="chip-count">{statusCounts[s] ?? 0}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Mobile Dropdown Pill */}
-                <select
-                  className="mobile-status-select"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  aria-label="Filter by status"
-                >
-                  <option value="All">All statuses ({statusCounts['All']})</option>
-                  {STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {s} ({statusCounts[s] ?? 0})
-                    </option>
-                  ))}
-                </select>
-              </>
-            )}
-
-            <div className="toolbar-meta">
-              <span className="result-count" aria-live="polite">
-                {filtered.length}
-                {filtered.length !== books.length && <span className="result-total"> / {books.length}</span>}
-                {' '}{filtered.length === 1 ? 'entry' : 'entries'}
+          {/* Row 4: Entries Counter */}
+          <div className="toolbar-footer-v2">
+            <div className="entry-count-v2">
+              <span className="book-icon">📖</span>
+              <span>
+                {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
+                {filtered.length !== books.length && ` (of ${books.length})`}
               </span>
-
-              {!showTrash && (
-                <button className="btn secondary compact" onClick={pickUpNext} title="Randomly pick something from Plan to Read">
-                  ↻ Up next
-                </button>
-              )}
-              <button
-                className="btn secondary compact"
-                onClick={toggleRatingMode}
-                title="Toggle between stars and decimal ratings"
-              >
-                Rating: {ratingMode === 'stars' ? '★★★' : '#.#'}
-              </button>
-              {viewMode === 'table' && (
-                <button
-                  className={`btn secondary compact${selectMode ? ' is-on' : ''}`}
-                  onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}
-                >
-                  {selectMode ? 'Done' : 'Select'}
-                </button>
-              )}
             </div>
+            {filtersActive && !showTrash && (
+              <button className="link-clear-filters-v2" onClick={clearFilters}>
+                Clear filters
+              </button>
+            )}
           </div>
         </div>
 
