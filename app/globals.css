@@ -250,20 +250,13 @@ textarea:focus-visible {
 .toolbar-row {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
   flex-wrap: wrap;
-}
-
-.toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
+  justify-content: space-between;
 }
 
 .toolbar-row-sub {
-  gap: var(--space-3);
-  justify-content: space-between;
+  align-items: flex-start;
 }
 
 .toolbar select,
@@ -282,7 +275,6 @@ textarea:focus-visible {
   font-size: 12px;
 }
 
-/* Toggle buttons (Select, Trash) read as pressed when active. */
 .toolbar .btn.secondary.is-on {
   background: var(--accent-bg);
   color: var(--accent-text);
@@ -313,11 +305,11 @@ textarea:focus-visible {
   opacity: 0.9;
 }
 
-/* Search ------------------------------------------------- */
+/* Search Box Layout */
 .search-wrap {
   position: relative;
-  flex: 1 1 260px;
-  min-width: 200px;
+  flex: 1 1 200px;
+  max-width: 480px; /* Prevents bloated search bar stretching on desktop */
 }
 .search-wrap input {
   width: 100%;
@@ -369,12 +361,14 @@ textarea:focus-visible {
   color: var(--bg);
 }
 
-/* Status filter chips ------------------------------------ */
+/* Status filter chips */
 .chip-row {
   display: flex;
   align-items: center;
   gap: var(--space-1);
   flex-wrap: wrap;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .chip {
@@ -384,7 +378,7 @@ textarea:focus-visible {
   padding: 5px var(--space-3);
   border: 1px solid var(--border-soft);
   border-radius: 999px;
-  background: var(--input-bg);
+  background: transparent;
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 600;
@@ -404,21 +398,20 @@ textarea:focus-visible {
   outline-offset: 2px;
 }
 
-/* Active chip state dynamically inherits background color */
 .chip.active {
   background: color-mix(
     in srgb,
-    var(--chip-color, var(--text)) 18%,
-    var(--card-bg)
+    var(--chip-color, var(--text-muted)) 16%,
+    transparent
   );
   border-color: var(--chip-color, var(--text-muted));
-  color: var(--text);
+  color: var(--chip-color, var(--text));
 }
 
 .chip-count {
   font-size: 11px;
   font-weight: 700;
-  padding: 1px 6px;
+  padding: 1px 5px;
   border-radius: 999px;
   background: var(--progress-track);
   color: var(--text-faint);
@@ -428,33 +421,26 @@ textarea:focus-visible {
 .chip.active .chip-count {
   background: color-mix(
     in srgb,
-    var(--chip-color, var(--text)) 30%,
+    var(--chip-color, var(--text-muted)) 28%,
     transparent
   );
-  color: var(--text);
+  color: var(--chip-color, var(--text));
 }
 
-/* Result meta + display options -------------------------- */
+/* Result Meta / Bottom Buttons */
 .toolbar-meta {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   flex-wrap: wrap;
-  margin-left: auto;
+  flex-shrink: 0;
+  justify-content: flex-end;
 }
-
-.meta-stats {
+.result-header {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
-
-.meta-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
 .result-count {
   font-size: 12px;
   color: var(--text-muted);
@@ -462,12 +448,6 @@ textarea:focus-visible {
 }
 .result-total {
   color: var(--text-faint);
-}
-.toolbar-divider {
-  width: 1px;
-  height: 18px;
-  background: var(--border-soft);
-  margin: 0 var(--space-1);
 }
 .link-btn {
   background: none;
@@ -1535,12 +1515,6 @@ td.spine-cell {
   }
 }
 
-@media (min-width: 721px) {
-  .show-mobile {
-    display: none !important;
-  }
-}
-
 @media (max-width: 720px) {
   .container {
     padding: var(--space-4) var(--space-3) 48px;
@@ -1562,89 +1536,78 @@ td.spine-cell {
     text-align: center;
   }
 
-  .hide-mobile {
-    display: none !important;
-  }
-  .show-mobile {
-    display: inline !important;
+  /* Toolbar Responsive Fixes */
+  .toolbar-row {
+    flex-wrap: wrap;
+    gap: var(--space-2);
   }
 
-  /* Structured flex forces all buttons on row 2 & row 4 to fit dynamically without wrapping */
-  .toolbar-row {
-    gap: 6px;
-  }
+  /* Pull search bar to full width at the very top */
   .search-wrap {
     flex: 1 1 100%;
     order: -1;
-    margin-bottom: 4px;
+    max-width: 100%;
+    margin-bottom: var(--space-1);
   }
 
-  .toolbar-actions {
-    width: 100%;
-    flex-wrap: nowrap;
-    gap: 6px;
-  }
-  .toolbar-actions > * {
-    flex: 1 1 0;
-    min-width: 0;
+  /* Give these exactly even weight on the row below search */
+  .toolbar-row > .btn.accent-fill {
+    flex: 1 1 auto;
     justify-content: center;
-    padding-left: 4px;
-    padding-right: 4px;
-    font-size: 12px;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .toolbar-row > .segmented-control {
+    flex: 1.2 1 auto;
+  }
+  .toolbar-row > .btn.secondary.trash-btn {
+    flex: 0 0 38px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+  }
+  .trash-text {
+    display: none;
+  }
+  .kbd-hint {
+    display: none;
   }
 
-  .segmented-control button {
-    padding: 4px 6px;
-    font-size: 11px;
+  /* Smooth scrollable chip row */
+  .toolbar-row-sub {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
   }
-
-  /* Status chips strictly horizontally scrollable */
   .chip-row {
     flex-wrap: nowrap;
     overflow-x: auto;
     width: 100%;
     padding-bottom: var(--space-1);
-    -webkit-overflow-scrolling: touch;
+    margin-bottom: var(--space-1);
     scrollbar-width: none;
   }
   .chip-row::-webkit-scrollbar {
     display: none;
   }
 
-  .toolbar-row-sub {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-
+  /* Meta / Action Row: Fixes orphaned "Select" button */
   .toolbar-meta {
-    width: 100%;
     margin-left: 0;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
-  }
-  .toolbar-divider {
-    display: none;
-  }
-
-  .meta-stats {
     width: 100%;
     justify-content: space-between;
   }
-
-  .meta-actions {
+  .result-header {
     width: 100%;
-    flex-wrap: nowrap;
-    gap: 6px;
+    justify-content: space-between;
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--border-soft);
+    margin-bottom: var(--space-2);
   }
-  .meta-actions > * {
-    flex: 1 1 0;
-    min-width: 0;
+  .toolbar-meta > .btn {
+    flex: 1 1 auto;
+    text-align: center;
     justify-content: center;
-    padding-left: 2px;
-    padding-right: 2px;
-    font-size: 11px;
   }
 
   .summary-grid {
