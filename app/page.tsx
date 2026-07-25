@@ -147,7 +147,7 @@ export default function HomePage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: next }),
     });
-    if (!res.ok) load();
+    if (!res.ok) load(); 
   }
 
   async function logout() {
@@ -388,7 +388,13 @@ export default function HomePage() {
       <div className="card">
         <div className="toolbar">
           <div className="toolbar-row">
-            {/* Search Input always gets Row 1 on mobile */}
+            {!showTrash && (
+              <button className="btn accent-fill" onClick={() => setEditing(null)}>
+                <span className="add-text">+ Add entry</span>
+                <kbd className="kbd-hint">n</kbd>
+              </button>
+            )}
+
             <div className="search-wrap">
               <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
                 <circle cx="11" cy="11" r="7" />
@@ -409,48 +415,38 @@ export default function HomePage() {
               )}
             </div>
 
-            {/* Structured group prevents orphaned buttons on mobile */}
-            <div className="toolbar-actions">
-              {!showTrash && (
-                <button className="btn accent-fill" onClick={() => setEditing(null)}>
-                  <span className="hide-mobile">+ Add entry</span>
-                  <span className="show-mobile" style={{ display: 'none' }}>+ Add</span>
-                  <kbd className="kbd-hint hide-mobile">n</kbd>
+            {!showTrash && (
+              <div className="segmented-control" role="group" aria-label="View mode">
+                <div className={`segmented-thumb${viewMode === 'table' ? ' right' : ''}`} />
+                <button
+                  type="button"
+                  className={viewMode === 'grid' ? 'active' : ''}
+                  aria-pressed={viewMode === 'grid'}
+                  onClick={() => viewMode !== 'grid' && toggleViewMode()}
+                  title="Cover grid view"
+                >
+                  ▦ Grid
                 </button>
-              )}
+                <button
+                  type="button"
+                  className={viewMode === 'table' ? 'active' : ''}
+                  aria-pressed={viewMode === 'table'}
+                  onClick={() => viewMode !== 'table' && toggleViewMode()}
+                  title="Table view"
+                >
+                  ☰ Table
+                </button>
+              </div>
+            )}
 
-              {!showTrash && (
-                <div className="segmented-control" role="group" aria-label="View mode">
-                  <div className={`segmented-thumb${viewMode === 'table' ? ' right' : ''}`} />
-                  <button
-                    type="button"
-                    className={viewMode === 'grid' ? 'active' : ''}
-                    aria-pressed={viewMode === 'grid'}
-                    onClick={() => viewMode !== 'grid' && toggleViewMode()}
-                    title="Cover grid view"
-                  >
-                    ▦ Grid
-                  </button>
-                  <button
-                    type="button"
-                    className={viewMode === 'table' ? 'active' : ''}
-                    aria-pressed={viewMode === 'table'}
-                    onClick={() => viewMode !== 'table' && toggleViewMode()}
-                    title="Table view"
-                  >
-                    ☰ Table
-                  </button>
-                </div>
-              )}
-
-              <button
-                className={`btn secondary${showTrash ? ' is-on' : ''}`}
-                onClick={() => setShowTrash((v) => !v)}
-              >
-                <span className="hide-mobile">{showTrash ? '← Back to library' : '🗑 Trash'}</span>
-                <span className="show-mobile" style={{ display: 'none' }}>{showTrash ? '← Back' : '🗑 Trash'}</span>
-              </button>
-            </div>
+            <button
+              className={`btn secondary trash-btn${showTrash ? ' is-on' : ''}`}
+              onClick={() => setShowTrash((v) => !v)}
+              title={showTrash ? 'Back to library' : 'View Trash'}
+            >
+              <span className="trash-icon" aria-hidden="true">🗑</span>
+              <span className="trash-text">{showTrash ? ' Back' : ' Trash'}</span>
+            </button>
           </div>
 
           <div className="toolbar-row toolbar-row-sub">
@@ -473,44 +469,38 @@ export default function HomePage() {
             )}
 
             <div className="toolbar-meta">
-              <div className="meta-stats">
+              <div className="result-header">
                 <span className="result-count" aria-live="polite">
                   {filtered.length}
                   {filtered.length !== books.length && <span className="result-total"> / {books.length}</span>}
                   {' '}{filtered.length === 1 ? 'entry' : 'entries'}
                 </span>
+
                 {!showTrash && filtersActive && (
                   <button className="link-btn" onClick={clearFilters}>Clear filters</button>
                 )}
               </div>
 
-              <span className="toolbar-divider" aria-hidden="true" />
-
-              {/* Structured group prevents orphaned buttons on mobile */}
-              <div className="meta-actions">
-                {!showTrash && (
-                  <button className="btn secondary compact" onClick={pickUpNext} title="Randomly pick something from Plan to Read">
-                    <span className="hide-mobile">↻ Up next</span>
-                    <span className="show-mobile" style={{ display: 'none' }}>↻ Next</span>
-                  </button>
-                )}
-                <button
-                  className="btn secondary compact"
-                  onClick={toggleRatingMode}
-                  title="Toggle between stars and decimal ratings"
-                >
-                  <span className="hide-mobile">Rating: {ratingMode === 'stars' ? '★★★' : '#.#'}</span>
-                  <span className="show-mobile" style={{ display: 'none' }}>{ratingMode === 'stars' ? '★ Mode' : '#.# Mode'}</span>
+              {!showTrash && (
+                <button className="btn secondary compact" onClick={pickUpNext} title="Randomly pick something from Plan to Read">
+                  ↻ Up next
                 </button>
-                {viewMode === 'table' && (
-                  <button
-                    className={`btn secondary compact${selectMode ? ' is-on' : ''}`}
-                    onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}
-                  >
-                    {selectMode ? 'Done' : 'Select'}
-                  </button>
-                )}
-              </div>
+              )}
+              <button
+                className="btn secondary compact"
+                onClick={toggleRatingMode}
+                title="Toggle between stars and decimal ratings"
+              >
+                Rating: {ratingMode === 'stars' ? '★★★' : '#.#'}
+              </button>
+              {viewMode === 'table' && (
+                <button
+                  className={`btn secondary compact${selectMode ? ' is-on' : ''}`}
+                  onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}
+                >
+                  {selectMode ? 'Done' : 'Select'}
+                </button>
+              )}
             </div>
           </div>
         </div>
