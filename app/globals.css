@@ -236,7 +236,7 @@ textarea:focus-visible {
 }
 
 /* ==========================================
-   Refined Toolbar / Filters Section
+   Toolbar Section
    ========================================== */
 .toolbar {
   display: flex;
@@ -250,13 +250,13 @@ textarea:focus-visible {
 .toolbar-row {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   flex-wrap: wrap;
-  justify-content: space-between;
 }
 
 .toolbar-row-sub {
-  align-items: flex-start;
+  gap: var(--space-3);
+  justify-content: space-between;
 }
 
 .toolbar select,
@@ -305,11 +305,11 @@ textarea:focus-visible {
   opacity: 0.9;
 }
 
-/* Search Box Layout */
+/* Search */
 .search-wrap {
   position: relative;
-  flex: 1 1 200px;
-  max-width: 480px; /* Prevents bloated search bar stretching on desktop */
+  flex: 1 1 220px;
+  min-width: 160px;
 }
 .search-wrap input {
   width: 100%;
@@ -367,8 +367,6 @@ textarea:focus-visible {
   align-items: center;
   gap: var(--space-1);
   flex-wrap: wrap;
-  flex: 1 1 0;
-  min-width: 0;
 }
 
 .chip {
@@ -427,19 +425,13 @@ textarea:focus-visible {
   color: var(--chip-color, var(--text));
 }
 
-/* Result Meta / Bottom Buttons */
+/* Result meta + display options */
 .toolbar-meta {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   flex-wrap: wrap;
-  flex-shrink: 0;
-  justify-content: flex-end;
-}
-.result-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
+  margin-left: auto;
 }
 .result-count {
   font-size: 12px;
@@ -1045,7 +1037,7 @@ td.spine-cell {
 }
 
 /* ==========================================
-   DASHBOARD & STATS SUMMARY (RESTORED)
+   DASHBOARD & STATS SUMMARY
    ========================================== */
 
 .summary-dashboard-card {
@@ -1351,8 +1343,8 @@ td.spine-cell {
   justify-content: center;
 }
 .radial-ring {
-  width: 100%;
-  height: 100%;
+  width: 64px;
+  height: 64px;
   transform: rotate(-90deg);
 }
 .ring-bg {
@@ -1536,78 +1528,38 @@ td.spine-cell {
     text-align: center;
   }
 
-  /* Toolbar Responsive Fixes */
+  /* Toolbar Clean Layout Rules for Mobile */
   .toolbar-row {
+    display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: var(--space-2);
   }
 
-  /* Pull search bar to full width at the very top */
   .search-wrap {
     flex: 1 1 100%;
-    order: -1;
-    max-width: 100%;
-    margin-bottom: var(--space-1);
+    min-width: 0;
   }
 
-  /* Give these exactly even weight on the row below search */
-  .toolbar-row > .btn.accent-fill {
-    flex: 1 1 auto;
-    justify-content: center;
-    padding-left: 0;
-    padding-right: 0;
-  }
-  .toolbar-row > .segmented-control {
-    flex: 1.2 1 auto;
-  }
-  .toolbar-row > .btn.secondary.trash-btn {
-    flex: 0 0 38px;
-    padding: 0;
-    display: grid;
-    place-items: center;
-  }
-  .trash-text {
-    display: none;
-  }
-  .kbd-hint {
-    display: none;
-  }
-
-  /* Smooth scrollable chip row */
-  .toolbar-row-sub {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
-  }
   .chip-row {
+    display: flex;
     flex-wrap: nowrap;
     overflow-x: auto;
     width: 100%;
-    padding-bottom: var(--space-1);
-    margin-bottom: var(--space-1);
+    padding-bottom: 4px;
     scrollbar-width: none;
   }
   .chip-row::-webkit-scrollbar {
     display: none;
   }
 
-  /* Meta / Action Row: Fixes orphaned "Select" button */
   .toolbar-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
     margin-left: 0;
     width: 100%;
-    justify-content: space-between;
-  }
-  .result-header {
-    width: 100%;
-    justify-content: space-between;
-    padding-bottom: var(--space-2);
-    border-bottom: 1px solid var(--border-soft);
-    margin-bottom: var(--space-2);
-  }
-  .toolbar-meta > .btn {
-    flex: 1 1 auto;
-    text-align: center;
-    justify-content: center;
   }
 
   .summary-grid {
