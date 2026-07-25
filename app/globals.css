@@ -187,10 +187,15 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
   flex-wrap: wrap;
 }
 
-/* Second row reads as supporting info: filter chips left, meta/options right. */
+/* Second row reads as supporting info: filter chips left, meta/options right.
+   `nowrap` is deliberate: this row previously wrapped the moment its contents
+   grew (e.g. the extra table-view button), which made grid and table view
+   look inconsistent. Instead the chips absorb the pressure by scrolling
+   horizontally while the meta group stays pinned to the right. */
 .toolbar-row-sub {
   gap: var(--space-3);
   justify-content: space-between;
+  flex-wrap: nowrap;
 }
 
 .toolbar select, .toolbar input[type=text] {
@@ -284,8 +289,20 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  /* min-width:0 is what actually lets this shrink below its content size —
+     without it a flex item refuses to go under its intrinsic width and
+     forces the parent row to wrap. */
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Fade the right edge so a cut-off chip reads as "scroll for more"
+     rather than as a rendering bug. */
+  mask-image: linear-gradient(to right, transparent 0, #000 8px, #000 calc(100% - 16px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 8px, #000 calc(100% - 16px), transparent 100%);
+  padding: 2px 0;
 }
+.chip-row::-webkit-scrollbar { display: none; }
 
 .chip {
   display: inline-flex;
@@ -332,7 +349,9 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  /* Never give up width — the chips scroll instead. */
+  flex: 0 0 auto;
   margin-left: auto;
 }
 .result-count { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
@@ -404,12 +423,49 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 .status-text { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--row-status-color, var(--text-muted)); cursor: pointer; transition: opacity var(--duration-fast) ease; }
 .status-text:hover { opacity: 0.7; }
 .status-text:active { opacity: 0.5; }
-.checkbox-cell.collapsed { display: none; }
-.row-checkbox { appearance: none; -webkit-appearance: none; width: 17px; height: 17px; border: 1.5px solid var(--input-border); border-radius: 4px; background: var(--input-bg); cursor: pointer; position: relative; vertical-align: middle; transition: background-color var(--duration-base) ease, border-color var(--duration-base) ease, transform var(--duration-fast) ease; }
+/* Implicit selection ------------------------------------------------------
+   The checkbox column is ALWAYS in the layout (so nothing shifts when you
+   start selecting) but the boxes stay invisible until they're relevant:
+   on row hover, when checked, when focused, or once any selection exists.
+   That removes the need for a "Select" mode button in the toolbar. */
+.checkbox-cell { width: 30px; padding-right: 0; }
+.row-checkbox {
+  appearance: none; -webkit-appearance: none;
+  width: 17px; height: 17px;
+  border: 1.5px solid var(--input-border); border-radius: 4px;
+  background: var(--input-bg);
+  cursor: pointer; position: relative; vertical-align: middle;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: background-color var(--duration-base) ease, border-color var(--duration-base) ease,
+    transform var(--duration-fast) ease, opacity var(--duration-base) ease;
+}
+tr:hover .row-checkbox,
+tr.row-focused .row-checkbox,
+thead:hover .row-checkbox,
+.row-checkbox:focus-visible,
+.row-checkbox:checked,
+.row-checkbox:indeterminate,
+[data-selecting='true'] .row-checkbox {
+  opacity: 1;
+  transform: scale(1);
+}
 .row-checkbox:hover { border-color: var(--star-filled); }
 .row-checkbox:active { transform: scale(0.9); }
+.row-checkbox:focus-visible { outline: 2px solid var(--star-filled); outline-offset: 2px; }
 .row-checkbox:checked { background: var(--star-filled); border-color: var(--star-filled); }
 .row-checkbox:checked::after { content: ''; position: absolute; left: 5px; top: 2px; width: 4px; height: 8px; border: solid var(--bg); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+/* Partial select-all state reads as a dash rather than a tick. */
+.row-checkbox:indeterminate { background: var(--star-filled); border-color: var(--star-filled); }
+.row-checkbox:indeterminate::after { content: ''; position: absolute; left: 3px; top: 6.5px; width: 8px; height: 2px; background: var(--bg); border-radius: 1px; }
+
+tr.row-selected td { background: color-mix(in srgb, var(--star-filled) 12%, transparent); }
+tr.row-selected:hover td { background: color-mix(in srgb, var(--star-filled) 18%, transparent); }
+
+/* Touch devices have no hover, so the affordance must always be present. */
+@media (hover: none) {
+  .row-checkbox { opacity: 0.45; transform: scale(1); }
+}
 .toast { position: fixed; bottom: var(--space-5); left: 50%; transform: translateX(-50%); background: var(--accent-bg); color: var(--accent-text); padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4); border-radius: var(--radius-md); display: flex; align-items: center; gap: var(--space-3); font-size: 13px; box-shadow: var(--shadow-modal); z-index: 100; animation: toastIn var(--duration-base) ease both; max-width: calc(100vw - 32px); }
 .toast-action { background: none; border: 1px solid var(--accent-text); color: var(--accent-text); border-radius: var(--radius-sm); padding: var(--space-1) var(--space-3); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .toast-close { background: none; border: none; color: var(--accent-text); opacity: 0.7; cursor: pointer; font-size: 16px; line-height: 1; padding: 0 var(--space-1); }
@@ -651,9 +707,14 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   tr { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-2); border: 1px solid var(--border); border-left: 4px solid var(--row-status-color, var(--border)); border-radius: var(--radius-lg); padding: var(--space-3); margin-bottom: var(--space-3); background: var(--card-bg); overflow: hidden; }
   tr:hover td { background: transparent; }
   
+  /* Rows are cards here, so selection reads on the card itself rather than
+     on individual cells (which have transparent backgrounds in this mode). */
+  tr.row-selected { border-color: var(--star-filled); background: color-mix(in srgb, var(--star-filled) 12%, var(--card-bg)); }
+  tr.row-selected td { background: transparent; }
+
   td { border: none; padding: 0; font-size: 12px; }
   td.spine-cell { display: none; }
-  td.checkbox-cell { flex: 0 0 auto; }
+  td.checkbox-cell { flex: 0 0 auto; width: auto; }
 
   td:nth-child(3) { flex: 0 0 36px; margin-right: var(--space-1); }
   td:nth-child(3) img, td:nth-child(3) .placeholder-box { width: 36px; height: 52px; object-fit: cover; border-radius: 3px; }

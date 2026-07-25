@@ -26,12 +26,13 @@ export default function HomePage() {
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [focusedIndex, setFocusedIndex] = useState(-1);
-  const [selectMode, setSelectMode] = useState(false);
   const [bulkStatus, setBulkStatus] = useState<string>(STATUSES[0]);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [upNext, setUpNext] = useState<Book | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  // Anchor for shift-click range selection: the last row toggled without shift.
+  const selectAnchorRef = useRef<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -66,7 +67,7 @@ export default function HomePage() {
     const next = viewMode === 'table' ? 'grid' : 'table';
     setViewMode(next);
     window.localStorage.setItem('viewMode', next);
-    if (next === 'grid') { setSelectMode(false); setSelected(new Set()); }
+    if (next === 'grid') clearSelection();
   }
 
   function toggleTheme() {
@@ -76,7 +77,7 @@ export default function HomePage() {
     window.localStorage.setItem('theme', next);
   }
 
-  useEffect(() => { load(); setSelected(new Set()); setSelectMode(false); }, [showTrash]);
+  useEffect(() => { load(); clearSelection(); }, [showTrash]);
 
   async function load() {
     setLoading(true);
@@ -192,12 +193,38 @@ export default function HomePage() {
     }
   }
 
-  function toggleSelect(id: string) {
+  function clearSelection() {
+    setSelected(new Set());
+    selectAnchorRef.current = null;
+  }
+
+  // Selection is implicit — there is no mode to enter. Plain click toggles a
+  // single row; shift-click extends from the last plainly-toggled row so a
+  // long run can be grabbed in two clicks instead of N.
+  function toggleSelect(id: string, extend = false) {
     setSelected((prev) => {
       const next = new Set(prev);
+      const anchor = selectAnchorRef.current;
+      if (extend && anchor && anchor !== id) {
+        const from = filtered.findIndex((b) => b.id === anchor);
+        const to = filtered.findIndex((b) => b.id === id);
+        if (from !== -1 && to !== -1) {
+          const [lo, hi] = from < to ? [from, to] : [to, from];
+          // Extending always adds, never removes — a range drag that partly
+          // overlaps an existing selection shouldn't punch holes in it.
+          for (let i = lo; i <= hi; i++) next.add(filtered[i].id);
+          return next;
+        }
+      }
       if (next.has(id)) next.delete(id); else next.add(id);
+      selectAnchorRef.current = id;
       return next;
     });
+  }
+
+  function toggleSelectAll() {
+    setSelected((prev) => (prev.size === filtered.length ? new Set() : new Set(filtered.map((b) => b.id))));
+    selectAnchorRef.current = null;
   }
 
   async function bulkAction(action: 'status' | 'delete' | 'restore' | 'delete_permanent') {
@@ -212,7 +239,7 @@ export default function HomePage() {
     });
     if (res.ok) {
       const count = selected.size;
-      setSelected(new Set());
+      clearSelection();
       load();
       if (action === 'delete') {
         setToast({ message: `Moved ${count} entries to trash`, actionLabel: undefined, onAction: undefined });
@@ -320,6 +347,14 @@ export default function HomePage() {
       const typing = tag === 'input' || tag === 'textarea' || tag === 'select';
       if (typing) return;
 
+      // Escape is the universal exit from selection — replaces the old
+      // "Done" button now that selection is implicit rather than a mode.
+      if (e.key === 'Escape' && selected.size > 0 && editing === undefined) {
+        e.preventDefault();
+        clearSelection();
+        return;
+      }
+
       // Table-only row navigation: Up/Down moves a highlighted row, Enter
       // opens it for editing. Disabled in grid view (no row concept there),
       // trash (different action set), and while the modal is open.
@@ -338,6 +373,13 @@ export default function HomePage() {
         setEditing(filtered[focusedIndex]);
         return;
       }
+      // Space selects the arrow-key-focused row, so a keyboard user can build
+      // a selection without ever reaching for the mouse.
+      if (rowNavActive && e.key === ' ' && focusedIndex >= 0 && filtered[focusedIndex]) {
+        e.preventDefault();
+        toggleSelect(filtered[focusedIndex].id, e.shiftKey);
+        return;
+      }
 
       if (e.key === '/') {
         e.preventDefault();
@@ -349,7 +391,7 @@ export default function HomePage() {
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [showTrash, viewMode, editing, filtered, focusedIndex]);
+  }, [showTrash, viewMode, editing, filtered, focusedIndex, selected]);
 
   return (
     <main className="container">
@@ -516,21 +558,16 @@ export default function HomePage() {
               >
                 Rating: {ratingMode === 'stars' ? '★★★' : '#.#'}
               </button>
-              {viewMode === 'table' && (
-                <button
-                  className={`btn secondary compact${selectMode ? ' is-on' : ''}`}
-                  onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}
-                >
-                  {selectMode ? 'Done' : 'Select'}
-                </button>
-              )}
             </div>
           </div>
         </div>
 
-        {viewMode === 'table' && selectMode && selected.size > 0 && (
+        {viewMode === 'table' && selected.size > 0 && (
           <div className="bulk-bar">
             <strong>{selected.size} selected</strong>
+            <button className="link-btn" onClick={toggleSelectAll}>
+              {selected.size === filtered.length ? 'Deselect all' : `Select all ${filtered.length}`}
+            </button>
             {!showTrash && (
               <>
                 <select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)}>
@@ -546,7 +583,9 @@ export default function HomePage() {
                 <button className="btn danger" onClick={() => bulkAction('delete_permanent')}>Delete forever</button>
               </>
             )}
-            <button className="mono-btn" style={{ marginLeft: 'auto' }} onClick={() => setSelected(new Set())}>Clear</button>
+            <button className="mono-btn" style={{ marginLeft: 'auto' }} onClick={clearSelection} title="Clear selection (Esc)">
+              Clear <kbd className="kbd-hint">esc</kbd>
+            </button>
           </div>
         )}
 
@@ -574,9 +613,9 @@ export default function HomePage() {
             onSort={handleSort}
             trashMode={showTrash}
             hasAnyBooks={books.length > 0}
-            selectMode={selectMode}
             selected={selected}
             onToggleSelect={toggleSelect}
+            onToggleSelectAll={toggleSelectAll}
             focusedId={focusedIndex >= 0 ? filtered[focusedIndex]?.id ?? null : null}
             onEdit={(b) => setEditing(b)}
             onDelete={deleteBook}

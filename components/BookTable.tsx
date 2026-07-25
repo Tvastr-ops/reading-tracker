@@ -31,9 +31,9 @@ export default function BookTable({
   onSort,
   trashMode = false,
   hasAnyBooks = true,
-  selectMode = false,
   selected,
   onToggleSelect,
+  onToggleSelectAll,
   onEdit,
   onDelete,
   onRestore,
@@ -48,9 +48,9 @@ export default function BookTable({
   onSort: (field: SortField) => void;
   trashMode?: boolean;
   hasAnyBooks?: boolean;
-  selectMode?: boolean;
   selected: Set<string>;
-  onToggleSelect: (id: string) => void;
+  onToggleSelect: (id: string, extend?: boolean) => void;
+  onToggleSelectAll: () => void;
   onEdit: (b: Book) => void;
   onDelete: (b: Book) => void;
   onRestore?: (b: Book) => void;
@@ -79,12 +79,27 @@ export default function BookTable({
     );
   }
 
+  const allSelected = selected.size > 0 && selected.size === books.length;
+  const someSelected = selected.size > 0 && !allSelected;
+
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table>
+    // `data-selecting` lets CSS keep every checkbox visible once a selection
+    // exists, instead of only revealing them one row at a time on hover.
+    <div style={{ overflowX: 'auto' }} data-selecting={selected.size > 0 ? 'true' : undefined}>
+      <table className="selectable-table">
         <thead>
           <tr>
-            <th className={`checkbox-cell${selectMode ? '' : ' collapsed'}`} style={{ width: 24 }}></th>
+            <th className="checkbox-cell">
+              <input
+                type="checkbox"
+                className="row-checkbox"
+                checked={allSelected}
+                ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                onChange={onToggleSelectAll}
+                aria-label={allSelected ? 'Deselect all entries' : 'Select all entries'}
+                title={allSelected ? 'Deselect all' : 'Select all'}
+              />
+            </th>
             <th className="spine-col"></th>
             <th style={{ width: 36 }}></th>
             {headerFor('title', 'Title')}
@@ -107,15 +122,24 @@ export default function BookTable({
               <tr
                 key={b.id}
                 data-row-id={b.id}
-                className={b.id === focusedId ? 'row-focused' : ''}
+                className={`${b.id === focusedId ? 'row-focused' : ''}${selected.has(b.id) ? ' row-selected' : ''}`}
                 style={{ '--row-status-color': statusColor } as React.CSSProperties}
               >
-                <td className={`checkbox-cell${selectMode ? '' : ' collapsed'}`}>
+                <td className="checkbox-cell">
                   <input
                     type="checkbox"
                     className="row-checkbox"
                     checked={selected.has(b.id)}
-                    onChange={() => onToggleSelect(b.id)}
+                    // Shift-range needs the modifier state, which `change`
+                    // doesn't reliably carry — read it from the click instead.
+                    onClick={(e) => { e.preventDefault(); onToggleSelect(b.id, e.shiftKey); }}
+                    onChange={() => {}}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault();
+                        onToggleSelect(b.id, e.shiftKey);
+                      }
+                    }}
                     aria-label={`Select ${b.title}`}
                   />
                 </td>
