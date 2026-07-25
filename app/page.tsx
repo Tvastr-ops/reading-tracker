@@ -39,9 +39,6 @@ export default function HomePage() {
     if (saved === 'decimal' || saved === 'stars') setRatingMode(saved);
     const savedView = window.localStorage.getItem('viewMode');
     if (savedView === 'grid' || savedView === 'table') setViewMode(savedView);
-    // Status filter, search, and sort used to reset every visit — habitual
-    // preferences (e.g. always sorting by rating) meant redoing the same
-    // clicks every session.
     const savedStatus = window.localStorage.getItem('statusFilter');
     if (savedStatus) setStatusFilter(savedStatus);
     const savedSearch = window.localStorage.getItem('search');
@@ -50,9 +47,6 @@ export default function HomePage() {
     if (savedSortField) setSortField(savedSortField as SortField);
     const savedSortDir = window.localStorage.getItem('sortDir');
     if (savedSortDir === 'asc' || savedSortDir === 'desc') setSortDir(savedSortDir);
-    // layout.tsx already set the real data-theme attribute before paint
-    // (avoids a flash); this just syncs React state to match it so the
-    // toggle button shows the right icon.
     const current = document.documentElement.getAttribute('data-theme');
     setTheme(current === 'dark' ? 'dark' : 'light');
   }, []);
@@ -147,14 +141,13 @@ export default function HomePage() {
 
   async function quickStatusChange(b: Book) {
     const next = STATUSES[(STATUSES.indexOf(b.status) + 1) % STATUSES.length];
-    // Optimistic update so the click feels instant.
     setBooks((prev) => prev.map((x) => (x.id === b.id ? { ...x, status: next } : x)));
     const res = await fetch(`/api/books/${b.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: next }),
     });
-    if (!res.ok) load(); // revert to server truth if it failed
+    if (!res.ok) load();
   }
 
   async function logout() {
@@ -277,9 +270,6 @@ export default function HomePage() {
     return list;
   }, [books, statusFilter, search, sortField, sortDir, showTrash]);
 
-  // Counts per status power the filter chips, so you can see how many
-  // entries sit behind each filter before clicking it. Always derived from
-  // the full `books` list (not `filtered`) so numbers stay stable.
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = { All: books.length };
     for (const s of STATUSES) counts[s] = 0;
@@ -396,16 +386,9 @@ export default function HomePage() {
       )}
 
       <div className="card">
-        {/* Toolbar: row 1 = primary actions + search + view switch,
-            row 2 = status filter chips + result meta / display options. */}
         <div className="toolbar">
           <div className="toolbar-row">
-            {!showTrash && (
-              <button className="btn accent-fill" onClick={() => setEditing(null)}>
-                + Add entry <kbd className="kbd-hint">n</kbd>
-              </button>
-            )}
-
+            {/* Search Input always gets Row 1 on mobile */}
             <div className="search-wrap">
               <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
                 <circle cx="11" cy="11" r="7" />
@@ -426,36 +409,48 @@ export default function HomePage() {
               )}
             </div>
 
-            {!showTrash && (
-              <div className="segmented-control" role="group" aria-label="View mode">
-                <div className={`segmented-thumb${viewMode === 'table' ? ' right' : ''}`} />
-                <button
-                  type="button"
-                  className={viewMode === 'grid' ? 'active' : ''}
-                  aria-pressed={viewMode === 'grid'}
-                  onClick={() => viewMode !== 'grid' && toggleViewMode()}
-                  title="Cover grid view"
-                >
-                  ▦ Grid
+            {/* Structured group prevents orphaned buttons on mobile */}
+            <div className="toolbar-actions">
+              {!showTrash && (
+                <button className="btn accent-fill" onClick={() => setEditing(null)}>
+                  <span className="hide-mobile">+ Add entry</span>
+                  <span className="show-mobile" style={{ display: 'none' }}>+ Add</span>
+                  <kbd className="kbd-hint hide-mobile">n</kbd>
                 </button>
-                <button
-                  type="button"
-                  className={viewMode === 'table' ? 'active' : ''}
-                  aria-pressed={viewMode === 'table'}
-                  onClick={() => viewMode !== 'table' && toggleViewMode()}
-                  title="Table view"
-                >
-                  ☰ Table
-                </button>
-              </div>
-            )}
+              )}
 
-            <button
-              className={`btn secondary${showTrash ? ' is-on' : ''}`}
-              onClick={() => setShowTrash((v) => !v)}
-            >
-              {showTrash ? '← Back to library' : '🗑 Trash'}
-            </button>
+              {!showTrash && (
+                <div className="segmented-control" role="group" aria-label="View mode">
+                  <div className={`segmented-thumb${viewMode === 'table' ? ' right' : ''}`} />
+                  <button
+                    type="button"
+                    className={viewMode === 'grid' ? 'active' : ''}
+                    aria-pressed={viewMode === 'grid'}
+                    onClick={() => viewMode !== 'grid' && toggleViewMode()}
+                    title="Cover grid view"
+                  >
+                    ▦ Grid
+                  </button>
+                  <button
+                    type="button"
+                    className={viewMode === 'table' ? 'active' : ''}
+                    aria-pressed={viewMode === 'table'}
+                    onClick={() => viewMode !== 'table' && toggleViewMode()}
+                    title="Table view"
+                  >
+                    ☰ Table
+                  </button>
+                </div>
+              )}
+
+              <button
+                className={`btn secondary${showTrash ? ' is-on' : ''}`}
+                onClick={() => setShowTrash((v) => !v)}
+              >
+                <span className="hide-mobile">{showTrash ? '← Back to library' : '🗑 Trash'}</span>
+                <span className="show-mobile" style={{ display: 'none' }}>{showTrash ? '← Back' : '🗑 Trash'}</span>
+              </button>
+            </div>
           </div>
 
           <div className="toolbar-row toolbar-row-sub">
@@ -478,38 +473,44 @@ export default function HomePage() {
             )}
 
             <div className="toolbar-meta">
-              <span className="result-count" aria-live="polite">
-                {filtered.length}
-                {filtered.length !== books.length && <span className="result-total"> / {books.length}</span>}
-                {' '}{filtered.length === 1 ? 'entry' : 'entries'}
-              </span>
-
-              {!showTrash && filtersActive && (
-                <button className="link-btn" onClick={clearFilters}>Clear filters</button>
-              )}
+              <div className="meta-stats">
+                <span className="result-count" aria-live="polite">
+                  {filtered.length}
+                  {filtered.length !== books.length && <span className="result-total"> / {books.length}</span>}
+                  {' '}{filtered.length === 1 ? 'entry' : 'entries'}
+                </span>
+                {!showTrash && filtersActive && (
+                  <button className="link-btn" onClick={clearFilters}>Clear filters</button>
+                )}
+              </div>
 
               <span className="toolbar-divider" aria-hidden="true" />
 
-              {!showTrash && (
-                <button className="btn secondary compact" onClick={pickUpNext} title="Randomly pick something from Plan to Read">
-                  🎲 Up next
-                </button>
-              )}
-              <button
-                className="btn secondary compact"
-                onClick={toggleRatingMode}
-                title="Toggle between stars and decimal ratings"
-              >
-                Rating: {ratingMode === 'stars' ? '★★★' : '#.#'}
-              </button>
-              {viewMode === 'table' && (
+              {/* Structured group prevents orphaned buttons on mobile */}
+              <div className="meta-actions">
+                {!showTrash && (
+                  <button className="btn secondary compact" onClick={pickUpNext} title="Randomly pick something from Plan to Read">
+                    <span className="hide-mobile">↻ Up next</span>
+                    <span className="show-mobile" style={{ display: 'none' }}>↻ Next</span>
+                  </button>
+                )}
                 <button
-                  className={`btn secondary compact${selectMode ? ' is-on' : ''}`}
-                  onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}
+                  className="btn secondary compact"
+                  onClick={toggleRatingMode}
+                  title="Toggle between stars and decimal ratings"
                 >
-                  {selectMode ? 'Done' : 'Select'}
+                  <span className="hide-mobile">Rating: {ratingMode === 'stars' ? '★★★' : '#.#'}</span>
+                  <span className="show-mobile" style={{ display: 'none' }}>{ratingMode === 'stars' ? '★ Mode' : '#.# Mode'}</span>
                 </button>
-              )}
+                {viewMode === 'table' && (
+                  <button
+                    className={`btn secondary compact${selectMode ? ' is-on' : ''}`}
+                    onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}
+                  >
+                    {selectMode ? 'Done' : 'Select'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
