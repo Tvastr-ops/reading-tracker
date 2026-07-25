@@ -1,675 +1,621 @@
-:root {
-  color-scheme: light;
+'use client';
 
-  --bg: #f1ebdd;
-  --card-bg: #fbf8f1;
-  --border: #ddd2b8;
-  --border-soft: #e8dfc9;
-  --text: #24201a;
-  --text-muted: #6f6553;
-  --text-faint: #938970;
-  --accent-bg: #24201a;
-  --accent-bg-hover: #3c362b;
-  --accent-text: #f1ebdd;
-  --input-bg: #fbf8f1;
-  --input-border: #ddd2b8;
-  --btn-border: #ddd2b8;
-  --secondary-hover: #e9e0c9;
-  --danger: #8a3b30;
-  --danger-hover: #6e2f27;
-  --row-hover: #ece2c8;
-  --progress-track: #e2d7bd;
-  --star-empty: #d3c6a3;
-  --star-filled: #8a3b30;
-  --shadow: 0 1px 2px rgba(40, 30, 10, 0.08);
-  --shadow-modal: 0 16px 44px rgba(30, 22, 8, 0.24);
-  --font-serif: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Book, BookInput, STATUSES, STATUS_COLOR_VAR, SortField, SortDir } from '@/lib/types';
+import BookTable from '@/components/BookTable';
+import BookGrid from '@/components/BookGrid';
+import BookForm from '@/components/BookForm';
+import StatsSummary from '@/components/StatsSummary';
+import Toast, { ToastState } from '@/components/Toast';
+import { useRouter } from 'next/navigation';
 
-  --status-reading: #8a3b30;
-  --status-completed: #3f6b4f;
-  --status-plan: #8a8168;
-  --status-hold: #a6752f;
-  --status-dropped: #857a63;
+export default function HomePage() {
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [search, setSearch] = useState('');
+  const [ratingMode, setRatingMode] = useState<'stars' | 'decimal'>('stars');
+  const [editing, setEditing] = useState<Partial<Book> | null | undefined>(undefined);
+  const [sortField, setSortField] = useState<SortField>('updated_at');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [showTrash, setShowTrash] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState('');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [selectMode, setSelectMode] = useState(false);
+  const [bulkStatus, setBulkStatus] = useState<string>(STATUSES[0]);
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const [upNext, setUpNext] = useState<Book | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-7: 32px;
+  useEffect(() => {
+    const saved = window.localStorage.getItem('ratingMode');
+    if (saved === 'decimal' || saved === 'stars') setRatingMode(saved);
+    const savedView = window.localStorage.getItem('viewMode');
+    if (savedView === 'grid' || savedView === 'table') setViewMode(savedView);
+    const savedStatus = window.localStorage.getItem('statusFilter');
+    if (savedStatus) setStatusFilter(savedStatus);
+    const savedSearch = window.localStorage.getItem('search');
+    if (savedSearch != null) setSearch(savedSearch);
+    const savedSortField = window.localStorage.getItem('sortField');
+    if (savedSortField) setSortField(savedSortField as SortField);
+    const savedSortDir = window.localStorage.getItem('sortDir');
+    if (savedSortDir === 'asc' || savedSortDir === 'desc') setSortDir(savedSortDir);
+    const current = document.documentElement.getAttribute('data-theme');
+    setTheme(current === 'dark' ? 'dark' : 'light');
+  }, []);
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 12px;
+  useEffect(() => { window.localStorage.setItem('statusFilter', statusFilter); }, [statusFilter]);
+  useEffect(() => { window.localStorage.setItem('search', search); }, [search]);
+  useEffect(() => { window.localStorage.setItem('sortField', sortField); }, [sortField]);
+  useEffect(() => { window.localStorage.setItem('sortDir', sortDir); }, [sortDir]);
 
-  --duration-fast: 0.1s;
-  --duration-base: 0.15s;
-  --duration-slow: 0.3s;
-}
-
-[data-theme='dark'] {
-  color-scheme: dark;
-
-  --bg: #1b1712;
-  --card-bg: #241f17;
-  --border: #3d3527;
-  --border-soft: #2d271c;
-  --text: #ece4d3;
-  --text-muted: #b1a68c;
-  --text-faint: #8a7f68;
-  --accent-bg: #ece4d3;
-  --accent-bg-hover: #ffffff;
-  --accent-text: #1b1712;
-  --input-bg: #241f17;
-  --input-border: #453c2c;
-  --btn-border: #5c503a;
-  --secondary-hover: #2d271c;
-  --danger: #d68276;
-  --danger-hover: #e2988d;
-  --row-hover: #29241a;
-  --progress-track: #3d3527;
-  --star-empty: #453c2c;
-  --star-filled: #d18a72;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-  --shadow-modal: 0 16px 44px rgba(0, 0, 0, 0.55);
-
-  --status-reading: #cf7a67;
-  --status-completed: #74b189;
-  --status-plan: #ab9f80;
-  --status-hold: #d3a355;
-  --status-dropped: #93876c;
-}
-
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-  transition: background-color var(--duration-slow) ease, color var(--duration-slow) ease;
-}
-
-.container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: var(--space-6) var(--space-4) 64px;
-}
-
-h1 {
-  font-family: var(--font-serif);
-  font-size: 24px;
-  font-weight: 600;
-  margin: 0 0 var(--space-1);
-  letter-spacing: 0.01em;
-}
-
-h2 { font-size: 16px; margin: 0 0 var(--space-3); }
-.subtitle { color: var(--text-muted); font-size: 13px; margin: 0 0 var(--space-5); }
-.book-title { font-family: var(--font-serif); font-weight: 600; }
-
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-  margin-bottom: var(--space-4);
-}
-
-button, input, select, textarea { font: inherit; color: inherit; }
-
-.btn {
-  background: var(--accent-bg);
-  color: var(--accent-text);
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: var(--space-2) var(--space-4);
-  font-size: 13px;
-  cursor: pointer;
-  transition: background-color var(--duration-base) ease, transform var(--duration-fast) ease, opacity var(--duration-base) ease;
-}
-
-.btn:hover { background: var(--accent-bg-hover); }
-.btn:active { transform: scale(0.97); }
-.btn.secondary { background: var(--card-bg); color: var(--text); border: 1px solid var(--btn-border); }
-.btn.secondary:hover { background: var(--secondary-hover); }
-.btn.danger { background: var(--danger); color: #fff; }
-.btn.danger:hover { background: var(--danger-hover); }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-.btn.compact { padding: var(--space-1) var(--space-3); font-size: 13px; }
-
-.btn.icon-only {
-  background: var(--card-bg);
-  color: var(--text);
-  border: 1px solid var(--btn-border);
-  padding: var(--space-2) var(--space-3);
-  font-size: 15px;
-  line-height: 1;
-  transition: background-color var(--duration-base) ease, transform var(--duration-base) ease;
-}
-
-.btn.icon-only:hover { background: var(--secondary-hover); transform: rotate(12deg); }
-
-.btn:focus-visible, .btn.icon-only:focus-visible, a:focus-visible { outline: 2px solid var(--star-filled); outline-offset: 2px; }
-input:focus-visible, select:focus-visible, textarea:focus-visible { outline: none; border-color: var(--star-filled); box-shadow: 0 0 0 1px var(--star-filled); }
-
-.card {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
-  margin-bottom: var(--space-4);
-  box-shadow: var(--shadow);
-  animation: fadeInUp var(--duration-slow) ease both;
-  transition: background-color var(--duration-slow) ease, border-color var(--duration-slow) ease;
-}
-
-/* ==========================================
-   Toolbar Section
-   ========================================== */
-.toolbar {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding-bottom: var(--space-3);
-  margin-bottom: var(--space-3);
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.toolbar-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-}
-
-.toolbar-row-sub {
-  gap: var(--space-3);
-  justify-content: space-between;
-}
-
-.toolbar select, .toolbar input[type=text] {
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--input-border);
-  border-radius: 999px;
-  background: var(--input-bg);
-  color: var(--text);
-}
-.toolbar .btn { border-radius: 999px; }
-.toolbar .btn.compact { padding: var(--space-1) var(--space-3); font-size: 12px; }
-
-.toolbar .btn.secondary.is-on {
-  background: var(--accent-bg);
-  color: var(--accent-text);
-  border-color: var(--accent-bg);
-}
-
-.toolbar .btn.accent-fill {
-  background: var(--star-filled);
-  color: var(--bg);
-  border: none;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-weight: 600;
-}
-.toolbar .btn.accent-fill:hover { opacity: 0.9; }
-
-.kbd-hint {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 10px;
-  line-height: 1;
-  padding: 3px 5px;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.16);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  opacity: 0.9;
-}
-
-/* Search */
-.search-wrap {
-  position: relative;
-  flex: 1 1 220px;
-  min-width: 160px;
-}
-.search-wrap input { width: 100%; padding-left: 34px; padding-right: 36px; }
-.search-wrap .search-icon {
-  position: absolute;
-  left: var(--space-3);
-  top: 50%;
-  transform: translateY(-50%);
-  width: 14px;
-  height: 14px;
-  color: var(--text-faint);
-  pointer-events: none;
-}
-.search-wrap .search-kbd {
-  position: absolute;
-  right: var(--space-3);
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  background: none;
-  border: 1px solid var(--input-border);
-  color: var(--text-faint);
-}
-.search-clear {
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 22px;
-  height: 22px;
-  display: grid;
-  place-items: center;
-  border: none;
-  border-radius: 999px;
-  background: var(--progress-track);
-  color: var(--text-muted);
-  font-size: 15px;
-  line-height: 1;
-  cursor: pointer;
-  transition: background-color var(--duration-base) ease, color var(--duration-base) ease;
-}
-.search-clear:hover { background: var(--star-filled); color: var(--bg); }
-
-/* Status filter chips */
-.chip-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  flex-wrap: wrap;
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px var(--space-3);
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color var(--duration-base) ease, color var(--duration-base) ease,
-    border-color var(--duration-base) ease;
-}
-.chip:hover { background: var(--secondary-hover); color: var(--text); }
-.chip:focus-visible { outline: 2px solid var(--star-filled); outline-offset: 2px; }
-
-.chip.active {
-  background: color-mix(in srgb, var(--chip-color, var(--text-muted)) 16%, transparent);
-  border-color: var(--chip-color, var(--text-muted));
-  color: var(--chip-color, var(--text));
-}
-
-.chip-count {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 999px;
-  background: var(--progress-track);
-  color: var(--text-faint);
-  min-width: 18px;
-  text-align: center;
-}
-.chip.active .chip-count {
-  background: color-mix(in srgb, var(--chip-color, var(--text-muted)) 28%, transparent);
-  color: var(--chip-color, var(--text));
-}
-
-/* Result meta + display options */
-.toolbar-meta {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-  margin-left: auto;
-}
-.result-count { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
-.result-total { color: var(--text-faint); }
-.link-btn {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--star-filled);
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.link-btn:hover { opacity: 0.75; }
-
-.segmented-control {
-  position: relative;
-  display: flex;
-  background: var(--input-bg);
-  border: 1px solid var(--input-border);
-  border-radius: 999px;
-  padding: 3px;
-}
-.segmented-thumb {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  bottom: 3px;
-  width: calc(50% - 3px);
-  background: var(--accent-bg);
-  border-radius: 999px;
-  transition: transform var(--duration-slow) ease;
-  z-index: 0;
-}
-.segmented-thumb.right { transform: translateX(100%); }
-.segmented-control button {
-  position: relative;
-  z-index: 1;
-  flex: 1;
-  background: none;
-  border: none;
-  border-radius: 999px;
-  padding: var(--space-2) var(--space-4);
-  font-size: 13px;
-  cursor: pointer;
-  color: var(--text);
-  white-space: nowrap;
-  transition: color var(--duration-slow) ease;
-}
-.segmented-control button.active { color: var(--accent-text); }
-
-/* Table, Library, Modals */
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th, td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
-th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.02em; }
-tr { transition: background-color var(--duration-base) ease, border-color var(--duration-slow) ease; }
-tr:hover td { background: var(--row-hover); }
-tr.row-focused td { background: var(--row-hover); }
-tr.row-focused { box-shadow: inset 0 0 0 2px var(--star-filled); }
-th.spine-col, td.spine-cell { padding: 0; width: 4px; }
-.spine { display: block; width: 4px; height: 100%; min-height: 28px; border-radius: 0 2px 2px 0; background: var(--row-status-color, var(--border)); }
-.status-text { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--row-status-color, var(--text-muted)); cursor: pointer; transition: opacity var(--duration-fast) ease; }
-.status-text:hover { opacity: 0.7; }
-.status-text:active { opacity: 0.5; }
-.checkbox-cell.collapsed { display: none; }
-.row-checkbox { appearance: none; -webkit-appearance: none; width: 17px; height: 17px; border: 1.5px solid var(--input-border); border-radius: 4px; background: var(--input-bg); cursor: pointer; position: relative; vertical-align: middle; transition: background-color var(--duration-base) ease, border-color var(--duration-base) ease, transform var(--duration-fast) ease; }
-.row-checkbox:hover { border-color: var(--star-filled); }
-.row-checkbox:active { transform: scale(0.9); }
-.row-checkbox:checked { background: var(--star-filled); border-color: var(--star-filled); }
-.row-checkbox:checked::after { content: ''; position: absolute; left: 5px; top: 2px; width: 4px; height: 8px; border: solid var(--bg); border-width: 0 2px 2px 0; transform: rotate(45deg); }
-.toast { position: fixed; bottom: var(--space-5); left: 50%; transform: translateX(-50%); background: var(--accent-bg); color: var(--accent-text); padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4); border-radius: var(--radius-md); display: flex; align-items: center; gap: var(--space-3); font-size: 13px; box-shadow: var(--shadow-modal); z-index: 100; animation: toastIn var(--duration-base) ease both; max-width: calc(100vw - 32px); }
-.toast-action { background: none; border: 1px solid var(--accent-text); color: var(--accent-text); border-radius: var(--radius-sm); padding: var(--space-1) var(--space-3); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
-.toast-close { background: none; border: none; color: var(--accent-text); opacity: 0.7; cursor: pointer; font-size: 16px; line-height: 1; padding: 0 var(--space-1); }
-.bulk-bar { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; background: var(--row-hover); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-2) var(--space-3); margin-bottom: var(--space-3); font-size: 13px; animation: fadeIn var(--duration-base) ease both; }
-.bulk-bar select { padding: var(--space-1) var(--space-2); border: 1px solid var(--input-border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text); }
-.up-next-card { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
-.book-cover, .placeholder-box { border-radius: 2px; box-shadow: 1.5px 1.5px 0 var(--card-bg), 3px 3px 0 var(--border); }
-.placeholder-box { background: var(--progress-track); }
-.progress-bar { width: 100%; height: 5px; background: var(--progress-track); border-radius: var(--radius-sm); overflow: hidden; }
-.progress-bar > div { height: 100%; background: var(--accent-bg); transition: width var(--duration-slow) ease, background-color var(--duration-slow) ease; }
-.progress-bar > div.near-complete { background: var(--status-completed); }
-.rating-stars { color: var(--star-empty); font-size: 13px; letter-spacing: 0.5px; white-space: nowrap; }
-.rating-stars .filled { color: var(--star-filled); }
-.modal-backdrop { position: fixed; inset: 0; background: rgba(20, 15, 5, 0.45); display: flex; align-items: flex-start; justify-content: center; padding: var(--space-6) var(--space-4); overflow-y: auto; z-index: 50; animation: fadeIn var(--duration-base) ease both; }
-.modal { background: var(--card-bg); border-radius: var(--radius-md); padding: var(--space-5); width: 100%; max-width: 560px; box-shadow: var(--shadow-modal); animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both; }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
-.form-grid .full { grid-column: 1 / -1; }
-.form-grid label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: var(--space-1); }
-.form-grid input, .form-grid select, .form-grid textarea { width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--input-border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text); }
-.form-grid textarea { resize: vertical; min-height: 60px; }
-.modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
-.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-2); }
-.summary-tile { background: var(--row-hover); border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: var(--space-3); transition: transform var(--duration-base) ease, box-shadow var(--duration-base) ease; }
-.summary-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
-.summary-tile .num { font-size: 20px; font-weight: 700; }
-.label { font-size: 12px; color: var(--text-muted); }
-.summary-tile .label { font-size: 12px; color: var(--text-muted); }
-.source-link { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: block; }
-.empty-state { color: var(--text-muted); font-size: 13px; padding: var(--space-3) 0; }
-.skeleton { background: var(--border-soft); border-radius: var(--radius-sm); animation: skeletonPulse 1.4s ease-in-out infinite; }
-.skeleton-row { height: 44px; border-radius: var(--radius-md); margin-bottom: var(--space-2); }
-.book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(125px, 1fr)); gap: var(--space-3); position: relative; align-items: stretch; }
-.grid-tile-wrap { position: relative; z-index: 2; display: flex; flex-direction: column; height: 100%; }
-.grid-cover-wrap { position: relative; width: 100%; aspect-ratio: 2 / 3; overflow: hidden; border-radius: 2px; margin-bottom: var(--space-2); flex-shrink: 0; }
-.grid-cover { width: 100%; height: 100%; object-fit: cover; display: block; }
-.grid-cover-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: var(--space-3); background: rgba(15, 10, 5, 0.65); backdrop-filter: blur(3px); z-index: 2; }
-.pill-action-bar { display: flex; flex-direction: column; width: 72%; max-width: 130px; background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-modal); overflow: hidden; animation: fadeIn 0.12s ease both; }
-.pill-btn { display: flex; align-items: center; justify-content: center; width: 100%; background: transparent; border: none; color: var(--text); font-size: 14px; font-weight: 600; padding: 10px 14px; cursor: pointer; transition: background-color var(--duration-fast) ease; }
-.pill-btn:hover { background: var(--row-hover); }
-.pill-btn.danger { color: var(--danger); }
-.pill-btn.danger:hover { background: var(--row-hover); }
-.pill-divider { width: 100%; height: 1px; background: var(--border-soft); }
-.grid-menu-backdrop { position: fixed; inset: 0; z-index: 1; }
-.grid-tile { display: flex; flex-direction: column; align-items: flex-start; text-align: left; background: var(--card-bg); border: 1px solid var(--border); border-left: 3px solid var(--row-status-color, var(--border)); border-radius: var(--radius-md); padding: var(--space-2); cursor: pointer; font: inherit; color: inherit; overflow: hidden; width: 100%; height: 100%; transition: transform var(--duration-base) ease, box-shadow var(--duration-base) ease; }
-.grid-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
-.grid-tile.action-mode { background: var(--row-hover); }
-.grid-tile:focus-visible { outline: 2px solid var(--star-filled); outline-offset: 2px; }
-.grid-tile-title { font-size: 13px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.7em; word-break: break-word; width: 100%; }
-.grid-tile-author { font-size: 11px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
-.grid-tile-footer { margin-top: auto; width: 100%; display: flex; flex-direction: column; gap: 4px; padding-top: var(--space-2); }
-.login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--space-4); }
-.login-card { width: 100%; max-width: 320px; padding: var(--space-6); margin: 0 auto; }
-.login-input { width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--input-border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text); }
-.error-text { color: var(--danger); font-size: 13px; margin-top: var(--space-2); }
-.row-actions { display: flex; gap: var(--space-1); flex-wrap: wrap; }
-.mono-btn { background: none; border: none; cursor: pointer; padding: var(--space-1); color: inherit; }
-
-@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-@keyframes skeletonPulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes fadeInUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes modalIn { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
-
-/* ==========================================
-   DASHBOARD & STATS SUMMARY
-   ========================================== */
-
-.summary-dashboard-card {
-  padding: var(--space-4);
-  background: var(--card-bg);
-  transition: all var(--duration-slow) ease;
-}
-
-.summary-dashboard-card.is-collapsed { padding-bottom: var(--space-3); }
-
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-4);
-}
-
-.summary-dashboard-card.is-collapsed .dashboard-header { margin-bottom: var(--space-2); }
-
-.dashboard-header h2 { font-size: 18px; font-weight: 700; margin: 0; }
-.dashboard-header-right { display: flex; align-items: center; gap: var(--space-3); font-size: 13px; color: var(--text-muted); }
-
-.stats-toggle-btn {
-  background: transparent; border: none; color: var(--text-muted); font-size: 13px; font-weight: 500;
-  cursor: pointer; padding: 2px 6px; border-radius: var(--radius-sm);
-  transition: color var(--duration-fast) ease, background-color var(--duration-fast) ease;
-}
-.stats-toggle-btn:hover { color: var(--text); background: var(--row-hover); }
-
-.badge-pill {
-  background: var(--row-hover); border: 1px solid var(--border-soft); padding: 2px 10px;
-  border-radius: 12px; font-size: 12px; color: var(--text-muted);
-}
-
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-4);
-}
-
-.dash-card {
-  background: var(--bg); border: 1px solid var(--border-soft); border-radius: var(--radius-md);
-  padding: var(--space-4); display: flex; flex-direction: column; justify-content: space-between;
-  min-width: 0; overflow: hidden;
-}
-
-.dash-card-title { font-size: 12px; font-weight: 700; letter-spacing: 0.05em; color: var(--text-muted); text-transform: uppercase; }
-
-/* Status Breakdown */
-.stacked-progress-bar {
-  display: flex; height: 38px; border-radius: var(--radius-sm); overflow: hidden; margin-top: var(--space-3); margin-bottom: 4px;
-}
-.stacked-progress-bar .segment { display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #ffffff; transition: width var(--duration-slow) ease; }
-.seg-completed { background: var(--status-completed); }
-.seg-reading { background: var(--status-reading); }
-.seg-hold { background: var(--status-hold); }
-.seg-plan { background: var(--status-plan); }
-
-.stacked-pct-labels { display: flex; width: 100%; font-size: 11px; color: var(--text-muted); margin-bottom: var(--space-4); }
-
-.status-legend { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); margin-bottom: var(--space-4); font-size: 12px; }
-.legend-item { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-.dot { width: 9px; height: 9px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
-.dot-completed { background: var(--status-completed); }
-.dot-reading { background: var(--status-reading); }
-.dot-hold { background: var(--status-hold); }
-.dot-plan { background: var(--status-plan); }
-
-.dash-card-footer { border-top: 1px solid var(--border-soft); padding-top: var(--space-3); font-size: 13px; color: var(--text); display: flex; flex-direction: column; gap: 4px; }
-
-/* Mini Bookshelf & Goal Ring */
-.dash-card-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2); }
-.pace-badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
-.pace-badge.on-track { background: rgba(63, 107, 79, 0.2); color: var(--status-completed); }
-.pace-badge.behind { background: rgba(138, 59, 48, 0.2); color: var(--status-reading); }
-
-.mini-shelf-container { width: 100%; margin-bottom: var(--space-3); display: flex; flex-direction: column; }
-.shelf-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 2px; width: 100%; height: 90px; align-items: flex-end; }
-.shelf-month-col { display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; min-width: 0; }
-.shelf-space { width: 100%; height: 70px; display: flex; align-items: flex-end; justify-content: center; }
-.shelf-empty-book { width: 3px; height: 14px; border-radius: 1px; background: var(--border-soft); opacity: 0.4; }
-.spine-stack { display: flex; align-items: flex-end; justify-content: center; gap: 1.5px; width: 100%; height: 100%; position: relative; }
-.mini-book-spine { flex: 1; max-width: 7px; border-radius: 2px 2px 0 0; box-shadow: inset -1px 0 2px rgba(0, 0, 0, 0.25), 1px 0 2px rgba(0, 0, 0, 0.15); position: relative; transition: transform var(--duration-fast) ease, filter var(--duration-fast) ease; cursor: pointer; }
-.mini-book-spine:hover { transform: translateY(-3px) scaleX(1.1); filter: brightness(1.15); }
-.spine-rib { position: absolute; top: 20%; left: 0; right: 0; height: 2px; background: rgba(255, 255, 255, 0.35); }
-.spine-overflow-badge { position: absolute; top: -2px; font-size: 8px; font-weight: 800; color: var(--text-muted); }
-.month-tag { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
-.bookshelf-ledge { width: 100%; height: 5px; background: var(--border); border-radius: 2px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12); margin-top: 1px; }
-[data-theme='dark'] .bookshelf-ledge { background: #3d3527; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4); }
-
-.goal-velocity-row { border-top: 1px solid var(--border-soft); padding-top: var(--space-3); display: flex; align-items: center; gap: var(--space-3); }
-.ring-container { position: relative; width: 64px; height: 64px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-.radial-ring { width: 64px; height: 64px; transform: rotate(-90deg); }
-.ring-bg { fill: none; stroke: var(--border-soft); stroke-width: 8; }
-.ring-fill { fill: none; stroke: var(--status-reading); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
-.ring-text { position: absolute; display: flex; flex-direction: column; align-items: center; }
-.ring-pct { font-size: 13px; font-weight: 700; color: var(--text); }
-.goal-details { flex: 1; min-width: 0; }
-.goal-title-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); }
-.goal-edit-btn { background: none; border: none; cursor: pointer; font-size: 11px; padding: 0; color: var(--text-muted); text-decoration: underline; }
-.goal-count-big { font-size: 14px; margin: 2px 0; }
-.velocity-sub { font-size: 11px; color: var(--text-muted); }
-.goal-edit-form { display: flex; gap: 6px; }
-.goal-edit-form input { width: 60px; padding: 2px 6px; border: 1px solid var(--input-border); background: var(--input-bg); border-radius: var(--radius-sm); font-size: 12px; }
-.goal-edit-form button { font-size: 11px; padding: 2px 8px; border: 1px solid var(--btn-border); background: var(--card-bg); border-radius: var(--radius-sm); cursor: pointer; }
-
-/* Rating Distribution */
-.rating-dist-list { display: flex; flex-direction: column; gap: 12px; margin-top: var(--space-3); }
-.rating-dist-row { display: grid; grid-template-columns: 28px 1fr 64px; align-items: center; gap: 10px; font-size: 13px; }
-.rating-dist-row.zero-count { opacity: 0.45; }
-.star-label { font-weight: 600; color: var(--text); }
-.bar-track { width: 100%; height: 8px; background: var(--border-soft); border-radius: 999px; overflow: hidden; }
-.bar-fill { height: 100%; background: var(--star-filled); border-radius: 999px; transition: width var(--duration-slow) ease-in-out; }
-.rating-metrics { display: flex; align-items: center; justify-content: flex-end; gap: 4px; font-size: 11px; font-family: monospace; }
-.count-tag { font-weight: 700; color: var(--text); }
-.pct-tag { color: var(--text-muted); }
-
-.collapsed-summary-bar { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: center; padding: var(--space-2) var(--space-3); background: var(--bg); border: 1px solid var(--border-soft); border-radius: var(--radius-md); font-size: 13px; }
-.collapsed-item { display: flex; align-items: center; gap: var(--space-1); }
-.collapsed-label { color: var(--text-muted); }
-
-/* ==========================================
-   Media Queries
-   ========================================== */
-
-@media (max-width: 900px) {
-  .dashboard-grid { grid-template-columns: 1fr; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.001ms !important;
-    transition-duration: 0.001ms !important;
-  }
-}
-
-@media (max-width: 720px) {
-  .container { padding: var(--space-4) var(--space-3) 48px; }
-  h1 { font-size: 21px; }
-  .topbar { flex-direction: column; align-items: stretch; }
-  .topbar > div:last-child { display: flex; flex-wrap: wrap; }
-  .topbar > div:last-child .btn,
-  .topbar > div:last-child a { flex: 1 1 auto; text-align: center; }
-
-  /* Toolbar Clean Layout Rules for Mobile */
-  .toolbar-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2);
-  }
-  
-  .search-wrap {
-    flex: 1 1 100%;
-    min-width: 0;
+  function toggleViewMode() {
+    const next = viewMode === 'table' ? 'grid' : 'table';
+    setViewMode(next);
+    window.localStorage.setItem('viewMode', next);
+    if (next === 'grid') { setSelectMode(false); setSelected(new Set()); }
   }
 
-  .chip-row {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    width: 100%;
-    padding-bottom: 4px;
-    scrollbar-width: none;
-  }
-  .chip-row::-webkit-scrollbar { display: none; }
-
-  .toolbar-meta {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    flex-wrap: wrap;
-    margin-left: 0;
-    width: 100%;
+  function toggleTheme() {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    document.documentElement.setAttribute('data-theme', next);
+    window.localStorage.setItem('theme', next);
   }
 
-  .summary-grid { grid-template-columns: repeat(2, 1fr); }
+  useEffect(() => { load(); setSelected(new Set()); setSelectMode(false); }, [showTrash]);
 
-  .modal { padding: var(--space-4); border-radius: var(--radius-lg); max-height: 85vh; overflow-y: auto; }
-  .modal-backdrop { padding: var(--space-3); align-items: center; }
-  .form-grid { grid-template-columns: 1fr; }
+  async function load() {
+    setLoading(true);
+    setError('');
+    const res = await fetch(`/api/books${showTrash ? '?trash=1' : ''}`);
+    if (res.status === 401) { router.push('/login'); return; }
+    const data = await res.json();
+    if (!res.ok) { setError(data.error || 'Failed to load'); setLoading(false); return; }
+    setBooks(data.books);
+    setLoading(false);
+  }
 
-  table, thead, tbody { display: block; width: 100%; }
-  thead { display: none; }
-  
-  tr { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-2); border: 1px solid var(--border); border-left: 4px solid var(--row-status-color, var(--border)); border-radius: var(--radius-lg); padding: var(--space-3); margin-bottom: var(--space-3); background: var(--card-bg); overflow: hidden; }
-  tr:hover td { background: transparent; }
-  
-  td { border: none; padding: 0; font-size: 12px; }
-  td.spine-cell { display: none; }
-  td.checkbox-cell { flex: 0 0 auto; }
+  function toggleRatingMode() {
+    const next = ratingMode === 'stars' ? 'decimal' : 'stars';
+    setRatingMode(next);
+    window.localStorage.setItem('ratingMode', next);
+  }
 
-  td:nth-child(3) { flex: 0 0 36px; margin-right: var(--space-1); }
-  td:nth-child(3) img, td:nth-child(3) .placeholder-box { width: 36px; height: 52px; object-fit: cover; border-radius: 3px; }
+  function handleSort(field: SortField) {
+    if (field === sortField) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+  }
 
-  td:nth-child(4) { flex: 1 1 calc(100% - 56px); font-size: 14px; font-weight: 600; line-height: 1.25; }
-  td:nth-child(4) a.source-link { display: block; font-size: 11px; font-weight: 400; color: var(--text-muted); margin-top: 2px; }
+  async function saveBook(data: BookInput) {
+    const isEdit = editing && editing.id;
+    const res = await fetch(isEdit ? `/api/books/${editing!.id}` : '/api/books', {
+      method: isEdit ? 'PATCH' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Save failed');
+    setEditing(undefined);
+    load();
+  }
 
-  td:nth-child(n+5):not(:last-child) { flex: 1 1 calc(50% - var(--space-2)); display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding-top: var(--space-1); }
-  td:nth-child(n+5):not(:last-child)::before { content: attr(data-label); font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  async function deleteBook(b: Book) {
+    if (!confirm(`Move "${b.title}" to trash?`)) return;
+    const res = await fetch(`/api/books/${b.id}`, { method: 'DELETE' });
+    if (res.ok) {
+      load();
+      setToast({
+        message: `Moved "${b.title}" to trash`,
+        actionLabel: 'Undo',
+        onAction: () => restoreBook(b),
+      });
+    }
+  }
 
-  td:last-child { flex: 1 1 100%; padding-top: var(--space-3); margin-top: var(--space-1); border-top: 1px solid var(--border-soft); }
-  .row-actions { display: flex; gap: var(--space-2); width: 100%; }
-  .row-actions .btn { flex: 1; padding: var(--space-2); text-align: center; justify-content: center; border-radius: var(--radius-sm); }
+  async function restoreBook(b: Book) {
+    const res = await fetch(`/api/books/${b.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ restore: true }),
+    });
+    if (res.ok) load();
+  }
+
+  async function permanentlyDeleteBook(b: Book) {
+    if (!confirm(`Permanently delete "${b.title}"? This can't be undone.`)) return;
+    const res = await fetch(`/api/books/${b.id}?permanent=1`, { method: 'DELETE' });
+    if (res.ok) load();
+  }
+
+  async function quickStatusChange(b: Book) {
+    const next = STATUSES[(STATUSES.indexOf(b.status) + 1) % STATUSES.length];
+    setBooks((prev) => prev.map((x) => (x.id === b.id ? { ...x, status: next } : x)));
+    const res = await fetch(`/api/books/${b.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: next }),
+    });
+    if (!res.ok) load();
+  }
+
+  async function logout() {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/login');
+  }
+
+  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setImportMsg('');
+    try {
+      const text = await file.text();
+      const res = await fetch('/api/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csv: text }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        setImportMsg(result.error || 'Import failed');
+      } else {
+        const parts = [`Imported ${result.imported} entries`];
+        if (result.skippedRows?.length) parts.push(`skipped ${result.skippedRows.length} row(s) without a title`);
+        if (result.skippedDuplicates) parts.push(`skipped ${result.skippedDuplicates} duplicate title(s)`);
+        setImportMsg(parts.join(', ') + '.');
+        load();
+      }
+    } catch {
+      setImportMsg('Could not read that file.');
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  async function bulkAction(action: 'status' | 'delete' | 'restore' | 'delete_permanent') {
+    if (selected.size === 0) return;
+    if (action === 'delete_permanent' && !confirm(`Permanently delete ${selected.size} entries? This can't be undone.`)) return;
+    const body: Record<string, unknown> = { action, ids: Array.from(selected) };
+    if (action === 'status') body.status = bulkStatus;
+    const res = await fetch('/api/books/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) {
+      const count = selected.size;
+      setSelected(new Set());
+      load();
+      if (action === 'delete') {
+        setToast({ message: `Moved ${count} entries to trash`, actionLabel: undefined, onAction: undefined });
+      }
+    }
+  }
+
+  function pickUpNext() {
+    const candidates = books.filter((b) => b.status === 'Plan to Read');
+    if (candidates.length === 0) return;
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    setUpNext(pick);
+  }
+
+  async function startReadingUpNext() {
+    if (!upNext) return;
+    await quickStatusChangeById(upNext.id, 'Reading');
+    setUpNext(null);
+    load();
+  }
+
+  async function quickStatusChangeById(id: string, status: string) {
+    await fetch(`/api/books/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  // Handle Search Input Changes & Trigger Symbol Shortcuts (e.g. /reading or status:completed)
+  function handleSearchChange(val: string) {
+    setSearch(val);
+    const lower = val.trim().toLowerCase();
+    
+    if (lower.startsWith('/') || lower.startsWith('status:')) {
+      const query = lower.replace(/^(\/|status:)/, '').trim();
+      const matchedStatus = STATUSES.find((s) => s.toLowerCase().startsWith(query));
+      if (matchedStatus) {
+        setStatusFilter(matchedStatus);
+      } else if (query === 'all') {
+        setStatusFilter('All');
+      }
+    }
+  }
+
+  const filtered = useMemo(() => {
+    let list = books.filter((b) => {
+      if (!showTrash && statusFilter !== 'All' && b.status !== statusFilter) return false;
+      if (search.trim()) {
+        const q = search.toLowerCase().replace(/^(\/|status:)/, '').trim();
+        if (q && !STATUSES.some((s) => s.toLowerCase() === q)) {
+          const hay = `${b.title} ${b.author || ''} ${b.genre_tags || ''}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+      }
+      return true;
+    });
+
+    list = [...list].sort((a, b) => {
+      let cmp = 0;
+      switch (sortField) {
+        case 'title':
+          cmp = a.title.localeCompare(b.title);
+          break;
+        case 'rating':
+          cmp = (a.rating ?? -1) - (b.rating ?? -1);
+          break;
+        case 'status':
+          cmp = a.status.localeCompare(b.status);
+          break;
+        case 'date_finished':
+          cmp = (a.date_finished || '').localeCompare(b.date_finished || '');
+          break;
+        default:
+          cmp = a.updated_at.localeCompare(b.updated_at);
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+
+    return list;
+  }, [books, statusFilter, search, sortField, sortDir, showTrash]);
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = { All: books.length };
+    for (const s of STATUSES) counts[s] = 0;
+    for (const b of books) counts[b.status] = (counts[b.status] ?? 0) + 1;
+    return counts;
+  }, [books]);
+
+  useEffect(() => { setFocusedIndex(-1); }, [filtered.length, statusFilter, search, sortField, sortDir, showTrash]);
+
+  useEffect(() => {
+    if (focusedIndex < 0) return;
+    document
+      .querySelector(`[data-row-id="${filtered[focusedIndex]?.id}"]`)
+      ?.scrollIntoView({ block: 'nearest' });
+  }, [focusedIndex, filtered]);
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const tag = (document.activeElement?.tagName || '').toLowerCase();
+      const typing = tag === 'input' || tag === 'textarea' || tag === 'select';
+      if (typing) return;
+
+      const rowNavActive = viewMode === 'table' && !showTrash && editing === undefined;
+      if (rowNavActive && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+        e.preventDefault();
+        setFocusedIndex((i) => {
+          const delta = e.key === 'ArrowDown' ? 1 : -1;
+          const next = i + delta;
+          return Math.max(0, Math.min(filtered.length - 1, next < 0 ? 0 : next));
+        });
+        return;
+      }
+      if (rowNavActive && e.key === 'Enter' && focusedIndex >= 0 && filtered[focusedIndex]) {
+        e.preventDefault();
+        setEditing(filtered[focusedIndex]);
+        return;
+      }
+
+      if (e.key === '/') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (e.key.toLowerCase() === 'n' && !showTrash) {
+        e.preventDefault();
+        setEditing(null);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [showTrash, viewMode, editing, filtered, focusedIndex]);
+
+  return (
+    <main className="container">
+      <div className="topbar">
+        <div>
+          <h1>Reading Tracker</h1>
+          <p className="subtitle">Web novels, light novels, novels, essays, short stories, fanfiction, and more.</p>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button className="btn icon-only" onClick={toggleTheme} title="Toggle dark mode" aria-label="Toggle dark mode">
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+          <input ref={fileInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportFile} />
+          <button className="btn secondary" onClick={() => fileInputRef.current?.click()} disabled={importing}>
+            {importing ? 'Importing...' : 'Import CSV'}
+          </button>
+          <a className="btn secondary" href="/api/export">Export CSV</a>
+          <button className="btn secondary" onClick={logout}>Log out</button>
+        </div>
+      </div>
+
+      {importMsg && <div className="card" style={{ padding: 10, fontSize: 13 }}>{importMsg}</div>}
+
+      {!showTrash && (
+        loading ? (
+          <div className="card">
+            <h2>Summary</h2>
+            <div className="summary-grid">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} className="summary-tile">
+                  <div className="skeleton" style={{ height: 20, width: '55%', marginBottom: 6 }} />
+                  <div className="skeleton" style={{ height: 11, width: '80%' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <StatsSummary books={books} />
+        )
+      )}
+
+      {!showTrash && upNext && (
+        <div className="card up-next-card">
+          {upNext.cover_url ? (
+            <img src={upNext.cover_url} alt="" width={32} height={46} className="book-cover" style={{ objectFit: 'cover' }} />
+          ) : (
+            <div className="placeholder-box" style={{ width: 32, height: 46 }} />
+          )}
+          <div style={{ flex: 1 }}>
+            <div className="label">Up next</div>
+            <strong className="book-title">{upNext.title}</strong>
+            {upNext.author && <span className="label"> — {upNext.author}</span>}
+          </div>
+          <button className="btn secondary" onClick={pickUpNext}>Pick another</button>
+          <button className="btn" onClick={startReadingUpNext}>Start reading</button>
+          <button className="mono-btn" onClick={() => setUpNext(null)} aria-label="Dismiss">×</button>
+        </div>
+      )}
+
+      <div className="card">
+        <div className="toolbar">
+          <div className="toolbar-row">
+            {!showTrash && (
+              <button className="btn accent-fill" onClick={() => setEditing(null)}>
+                + Add entry <kbd className="kbd-hint">n</kbd>
+              </button>
+            )}
+
+            {/* SEARCH INPUT WITH INLINE DYNAMIC ACTIVE FILTER BADGE */}
+            <div className="search-wrap">
+              <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+
+              {statusFilter !== 'All' && (
+                <span className="search-filter-tag">
+                  {statusFilter}
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter('All')}
+                    title="Remove status filter"
+                    aria-label="Remove status filter"
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
+
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder={statusFilter === 'All' ? "Search title, author, tags... (/)" : "Search..."}
+                value={search}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                aria-label="Search entries"
+                style={{
+                  paddingLeft: statusFilter !== 'All' ? '120px' : '34px',
+                }}
+              />
+
+              {search ? (
+                <button className="search-clear" onClick={() => setSearch('')} aria-label="Clear search" title="Clear search">×</button>
+              ) : (
+                <kbd className="kbd-hint search-kbd" aria-hidden="true">/</kbd>
+              )}
+            </div>
+
+            {!showTrash && (
+              <div className="segmented-control" role="group" aria-label="View mode">
+                <div className={`segmented-thumb${viewMode === 'table' ? ' right' : ''}`} />
+                <button
+                  type="button"
+                  className={viewMode === 'grid' ? 'active' : ''}
+                  aria-pressed={viewMode === 'grid'}
+                  onClick={() => viewMode !== 'grid' && toggleViewMode()}
+                  title="Cover grid view"
+                >
+                  ▦ Grid
+                </button>
+                <button
+                  type="button"
+                  className={viewMode === 'table' ? 'active' : ''}
+                  aria-pressed={viewMode === 'table'}
+                  onClick={() => viewMode !== 'table' && toggleViewMode()}
+                  title="Table view"
+                >
+                  ☰ Table
+                </button>
+              </div>
+            )}
+
+            <button
+              className={`btn secondary${showTrash ? ' is-on' : ''}`}
+              onClick={() => setShowTrash((v) => !v)}
+            >
+              🗑 {showTrash ? 'Back' : 'Trash'}
+            </button>
+          </div>
+
+          <div className="toolbar-row toolbar-row-sub">
+            {!showTrash && (
+              <>
+                {/* Desktop Chips */}
+                <div className="chip-row desktop-chip-row" role="group" aria-label="Filter by status">
+                  {(['All', ...STATUSES] as string[]).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      className={`chip${statusFilter === s ? ' active' : ''}`}
+                      style={{ '--chip-color': STATUS_COLOR_VAR[s] ?? 'var(--text-muted)' } as React.CSSProperties}
+                      aria-pressed={statusFilter === s}
+                      onClick={() => setStatusFilter(s)}
+                    >
+                      {s === 'All' ? 'All' : s}
+                      <span className="chip-count">{statusCounts[s] ?? 0}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Mobile Dropdown Pill */}
+                <select
+                  className="mobile-status-select"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  aria-label="Filter by status"
+                >
+                  <option value="All">All statuses ({statusCounts['All']})</option>
+                  {STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {s} ({statusCounts[s] ?? 0})
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
+
+            <div className="toolbar-meta">
+              <span className="result-count" aria-live="polite">
+                {filtered.length}
+                {filtered.length !== books.length && <span className="result-total"> / {books.length}</span>}
+                {' '}{filtered.length === 1 ? 'entry' : 'entries'}
+              </span>
+
+              {!showTrash && (
+                <button className="btn secondary compact" onClick={pickUpNext} title="Randomly pick something from Plan to Read">
+                  ↻ Up next
+                </button>
+              )}
+              <button
+                className="btn secondary compact"
+                onClick={toggleRatingMode}
+                title="Toggle between stars and decimal ratings"
+              >
+                Rating: {ratingMode === 'stars' ? '★★★' : '#.#'}
+              </button>
+              {viewMode === 'table' && (
+                <button
+                  className={`btn secondary compact${selectMode ? ' is-on' : ''}`}
+                  onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}
+                >
+                  {selectMode ? 'Done' : 'Select'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {viewMode === 'table' && selectMode && selected.size > 0 && (
+          <div className="bulk-bar">
+            <strong>{selected.size} selected</strong>
+            {!showTrash && (
+              <>
+                <select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)}>
+                  {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <button className="btn secondary" onClick={() => bulkAction('status')}>Set status</button>
+                <button className="btn danger" onClick={() => bulkAction('delete')}>Delete selected</button>
+              </>
+            )}
+            {showTrash && (
+              <>
+                <button className="btn secondary" onClick={() => bulkAction('restore')}>Restore selected</button>
+                <button className="btn danger" onClick={() => bulkAction('delete_permanent')}>Delete forever</button>
+              </>
+            )}
+            <button className="mono-btn" style={{ marginLeft: 'auto' }} onClick={() => setSelected(new Set())}>Clear</button>
+          </div>
+        )}
+
+        {error && <div className="error-text">{error}</div>}
+        {loading ? (
+          <div>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="skeleton skeleton-row" />
+            ))}
+          </div>
+        ) : viewMode === 'grid' && !showTrash ? (
+          <BookGrid
+            books={filtered}
+            ratingMode={ratingMode}
+            hasAnyBooks={books.length > 0}
+            onEdit={(b) => setEditing(b)}
+            onDelete={deleteBook}
+          />
+        ) : (
+          <BookTable
+            books={filtered}
+            ratingMode={ratingMode}
+            sortField={sortField}
+            sortDir={sortDir}
+            onSort={handleSort}
+            trashMode={showTrash}
+            hasAnyBooks={books.length > 0}
+            selectMode={selectMode}
+            selected={selected}
+            onToggleSelect={toggleSelect}
+            focusedId={focusedIndex >= 0 ? filtered[focusedIndex]?.id ?? null : null}
+            onEdit={(b) => setEditing(b)}
+            onDelete={deleteBook}
+            onRestore={restoreBook}
+            onPermanentDelete={permanentlyDeleteBook}
+            onQuickStatus={quickStatusChange}
+          />
+        )}
+      </div>
+
+      {editing !== undefined && (
+        <BookForm
+          initial={editing}
+          ratingMode={ratingMode}
+          existingBooks={books}
+          onCancel={() => setEditing(undefined)}
+          onSave={saveBook}
+        />
+      )}
+
+      <Toast toast={toast} onDismiss={() => setToast(null)} />
+    </main>
+  );
 }
+
