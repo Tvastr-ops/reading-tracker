@@ -147,7 +147,7 @@ export default function HomePage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: next }),
     });
-    if (!res.ok) load(); 
+    if (!res.ok) load();
   }
 
   async function logout() {
@@ -390,8 +390,7 @@ export default function HomePage() {
           <div className="toolbar-row">
             {!showTrash && (
               <button className="btn accent-fill" onClick={() => setEditing(null)}>
-                <span className="add-text">+ Add entry</span>
-                <kbd className="kbd-hint">n</kbd>
+                + Add entry <kbd className="kbd-hint">n</kbd>
               </button>
             )}
 
@@ -440,12 +439,10 @@ export default function HomePage() {
             )}
 
             <button
-              className={`btn secondary trash-btn${showTrash ? ' is-on' : ''}`}
+              className={`btn secondary${showTrash ? ' is-on' : ''}`}
               onClick={() => setShowTrash((v) => !v)}
-              title={showTrash ? 'Back to library' : 'View Trash'}
             >
-              <span className="trash-icon" aria-hidden="true">🗑</span>
-              <span className="trash-text">{showTrash ? ' Back' : ' Trash'}</span>
+              🗑 {showTrash ? 'Back' : 'Trash'}
             </button>
           </div>
 
@@ -469,17 +466,15 @@ export default function HomePage() {
             )}
 
             <div className="toolbar-meta">
-              <div className="result-header">
-                <span className="result-count" aria-live="polite">
-                  {filtered.length}
-                  {filtered.length !== books.length && <span className="result-total"> / {books.length}</span>}
-                  {' '}{filtered.length === 1 ? 'entry' : 'entries'}
-                </span>
+              <span className="result-count" aria-live="polite">
+                {filtered.length}
+                {filtered.length !== books.length && <span className="result-total"> / {books.length}</span>}
+                {' '}{filtered.length === 1 ? 'entry' : 'entries'}
+              </span>
 
-                {!showTrash && filtersActive && (
-                  <button className="link-btn" onClick={clearFilters}>Clear filters</button>
-                )}
-              </div>
+              {!showTrash && filtersActive && (
+                <button className="link-btn" onClick={clearFilters}>Clear filters</button>
+              )}
 
               {!showTrash && (
                 <button className="btn secondary compact" onClick={pickUpNext} title="Randomly pick something from Plan to Read">
