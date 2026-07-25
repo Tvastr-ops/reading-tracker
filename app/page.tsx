@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Book, BookInput, STATUSES, SortField, SortDir } from '@/lib/types';
+import { Book, BookInput, STATUSES, STATUS_COLOR_VAR, SortField, SortDir } from '@/lib/types';
 import BookTable from '@/components/BookTable';
 import BookGrid from '@/components/BookGrid';
 import BookForm from '@/components/BookForm';
@@ -14,16 +14,16 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [ratingFilter, setRatingFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [ratingMode, setRatingMode] = useState<'stars' | 'decimal'>('stars');
   const [editing, setEditing] = useState<Partial<Book> | null | undefined>(undefined);
-  const [sortField, setSortField] = useState<SortField>('updated_at');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [sortOption, setSortOption] = useState<string>('updated_at_desc');
   const [showTrash, setShowTrash] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [selectMode, setSelectMode] = useState(false);
@@ -43,18 +43,15 @@ export default function HomePage() {
     if (savedStatus) setStatusFilter(savedStatus);
     const savedSearch = window.localStorage.getItem('search');
     if (savedSearch != null) setSearch(savedSearch);
-    const savedSortField = window.localStorage.getItem('sortField');
-    if (savedSortField) setSortField(savedSortField as SortField);
-    const savedSortDir = window.localStorage.getItem('sortDir');
-    if (savedSortDir === 'asc' || savedSortDir === 'desc') setSortDir(savedSortDir);
+    const savedSort = window.localStorage.getItem('sortOption');
+    if (savedSort) setSortOption(savedSort);
     const current = document.documentElement.getAttribute('data-theme');
     setTheme(current === 'dark' ? 'dark' : 'light');
   }, []);
 
   useEffect(() => { window.localStorage.setItem('statusFilter', statusFilter); }, [statusFilter]);
   useEffect(() => { window.localStorage.setItem('search', search); }, [search]);
-  useEffect(() => { window.localStorage.setItem('sortField', sortField); }, [sortField]);
-  useEffect(() => { window.localStorage.setItem('sortDir', sortDir); }, [sortDir]);
+  useEffect(() => { window.localStorage.setItem('sortOption', sortOption); }, [sortOption]);
 
   function toggleViewMode() {
     const next = viewMode === 'table' ? 'grid' : 'table';
@@ -87,21 +84,6 @@ export default function HomePage() {
     const next = ratingMode === 'stars' ? 'decimal' : 'stars';
     setRatingMode(next);
     window.localStorage.setItem('ratingMode', next);
-  }
-
-  function handleSort(field: SortField) {
-    if (field === sortField) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortField(field);
-      setSortDir('asc');
-    }
-  }
-
-  function handleSortSelect(value: string) {
-    const [field, dir] = value.split('_') as [SortField, SortDir];
-    setSortField(field);
-    setSortDir(dir || 'asc');
   }
 
   async function saveBook(data: BookInput) {
@@ -244,6 +226,15 @@ export default function HomePage() {
   const filtered = useMemo(() => {
     let list = books.filter((b) => {
       if (!showTrash && statusFilter !== 'All' && b.status !== statusFilter) return false;
+      if (ratingFilter !== 'All') {
+        const r = b.rating ?? -1;
+        if (ratingFilter === '5' && r !== 5) return false;
+        if (ratingFilter === '4+' && r < 4) return false;
+        if (ratingFilter === '3+' && r < 3) return false;
+        if (ratingFilter === '2+' && r < 2) return false;
+        if (ratingFilter === '1+' && r < 1) return false;
+        if (ratingFilter === 'unrated' && r >= 0) return false;
+      }
       if (search.trim()) {
         const q = search.toLowerCase();
         const hay = `${b.title} ${b.author || ''} ${b.genre_tags || ''}`.toLowerCase();
@@ -254,29 +245,50 @@ export default function HomePage() {
 
     list = [...list].sort((a, b) => {
       let cmp = 0;
-      switch (sortField) {
-        case 'title':
+      switch (sortOption) {
+        case 'title_asc':
           cmp = a.title.localeCompare(b.title);
           break;
-        case 'rating':
-          cmp = (a.rating ?? -1) - (b.rating ?? -1);
+        case 'title_desc':
+          cmp = b.title.localeCompare(a.title);
           break;
-        case 'status':
-          cmp = a.status.localeCompare(b.status);
+        case 'rating_desc':
+          cmp = (b.rating ?? -1) - (a.rating ?? -1);
           break;
-        case 'date_finished':
-          cmp = (a.date_finished || '').localeCompare(b.date_finished || '');
+        case 'author_asc':
+          cmp = (a.author || '').localeCompare(b.author || '');
           break;
-        default:
-          cmp = a.updated_at.localeCompare(b.updated_at);
+        case 'created_at_desc':
+          cmp = (b.id || '').localeCompare(a.id || '');
+          break;
+        default: // updated_at_desc
+          cmp = b.updated_at.localeCompare(a.updated_at);
       }
-      return sortDir === 'asc' ? cmp : -cmp;
+      return cmp;
     });
 
     return list;
-  }, [books, statusFilter, search, sortField, sortDir, showTrash]);
+  }, [books, statusFilter, ratingFilter, search, sortOption, showTrash]);
 
-  useEffect(() => { setFocusedIndex(-1); }, [filtered.length, statusFilter, search, sortField, sortDir, showTrash]);
+  // Derived sort field and dir for table component back-compatibility
+  const [currentSortField, currentSortDir] = useMemo(() => {
+    if (sortOption.startsWith('title')) return ['title', sortOption.endsWith('desc') ? 'desc' : 'asc'] as [SortField, SortDir];
+    if (sortOption.startsWith('rating')) return ['rating', 'desc'] as [SortField, SortDir];
+    if (sortOption.startsWith('status')) return ['status', 'asc'] as [SortField, SortDir];
+    return ['updated_at', 'desc'] as [SortField, SortDir];
+  }, [sortOption]);
+
+  function handleTableSort(field: SortField) {
+    if (field === 'title') {
+      setSortOption(sortOption === 'title_asc' ? 'title_desc' : 'title_asc');
+    } else if (field === 'rating') {
+      setSortOption('rating_desc');
+    } else {
+      setSortOption('updated_at_desc');
+    }
+  }
+
+  useEffect(() => { setFocusedIndex(-1); }, [filtered.length, statusFilter, ratingFilter, search, sortOption, showTrash]);
 
   useEffect(() => {
     if (focusedIndex < 0) return;
@@ -318,8 +330,6 @@ export default function HomePage() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [showTrash, viewMode, editing, filtered, focusedIndex]);
-
-  const currentSortValue = `${sortField}_${sortDir}`;
 
   return (
     <main className="container">
@@ -379,123 +389,182 @@ export default function HomePage() {
         </div>
       )}
 
-      <div className="card mk-toolbar-card">
-        <div className="mk-toolbar-container">
-          
-          {/* TOP ROW: Add | Search | Toggle | Trash (Desktop) */}
-          <div className="mk-toolbar-top">
+      {/* TOOLBAR MATCHING MOCKUP 1000321907.png & 1000321908.png */}
+      <div className="card mockup-toolbar-card">
+        <div className="mockup-toolbar">
+
+          {/* Row 1: Add Entry, Search, Grid/Table Switch, Trash */}
+          <div className="mockup-row mockup-row-main">
             {!showTrash && (
-              <button className="mk-btn-add" onClick={() => setEditing(null)}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-                <span>Add entry</span>
-                <kbd className="mk-kbd">n</kbd>
+              <button className="mockup-add-btn" onClick={() => setEditing(null)}>
+                <svg className="btn-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span className="btn-label">Add Entry</span>
+                <span className="mockup-kbd-tag">n</span>
               </button>
             )}
 
-            <div className="mk-search-wrap">
-              <svg className="mk-search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <div className="mockup-search-box">
+              <svg className="search-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <circle cx="11" cy="11" r="7" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
               <input
                 ref={searchInputRef}
                 type="text"
                 placeholder="Search title, author, tags..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                aria-label="Search entries"
               />
               {search ? (
-                <button className="mk-search-clear" onClick={() => setSearch('')}>×</button>
+                <button className="search-clear-btn" onClick={() => setSearch('')} aria-label="Clear search">×</button>
               ) : (
-                <kbd className="mk-kbd-slash">/</kbd>
+                <span className="mockup-kbd-tag search-kbd">/</span>
               )}
             </div>
 
             {!showTrash && (
-              <div className="mk-view-toggle">
-                <button className={viewMode === 'grid' ? 'active' : ''} onClick={() => toggleViewMode()}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
-                  Grid
+              <div className="mockup-segmented-switch">
+                <button
+                  type="button"
+                  className={`switch-tab ${viewMode === 'grid' ? 'active' : ''}`}
+                  onClick={() => viewMode !== 'grid' && toggleViewMode()}
+                >
+                  <svg className="switch-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                    <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                    <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                    <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                  </svg>
+                  <span>Grid</span>
                 </button>
-                <button className={viewMode === 'table' ? 'active' : ''} onClick={() => toggleViewMode()}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
-                  Table
+                <button
+                  type="button"
+                  className={`switch-tab ${viewMode === 'table' ? 'active' : ''}`}
+                  onClick={() => viewMode !== 'table' && toggleViewMode()}
+                >
+                  <svg className="switch-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="3" y="5" width="18" height="3" rx="1" />
+                    <rect x="3" y="11" width="18" height="3" rx="1" />
+                    <rect x="3" y="17" width="18" height="3" rx="1" />
+                  </svg>
+                  <span>Table</span>
                 </button>
               </div>
             )}
 
-            <button className={`mk-btn-outline desktop-trash ${showTrash ? 'active' : ''}`} onClick={() => setShowTrash(!showTrash)}>
-              {showTrash ? (
-                <span>← Back</span>
-              ) : (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                  Trash
-                </>
-              )}
+            <button
+              className={`mockup-icon-btn trash-btn ${showTrash ? 'active' : ''}`}
+              onClick={() => setShowTrash((v) => !v)}
+              title={showTrash ? 'Back to library' : 'Trash'}
+            >
+              <svg className="btn-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <span className="desktop-only">{showTrash ? 'Library' : 'Trash'}</span>
             </button>
           </div>
 
-          {/* BOTTOM ROW: Filters | Selection | Meta | Trash (Mobile) */}
-          <div className="mk-toolbar-bottom">
+          {/* Row 2: Status, Rating, Sort, Up Next, Entries Count */}
+          <div className="mockup-row mockup-row-filters">
+            {/* Status Dropdown */}
             {!showTrash && (
-              <>
-                <div className="mk-dropdown">
-                  <button className={`mk-btn-outline ${statusFilter !== 'All' ? 'active' : ''}`}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
-                    {statusFilter === 'All' ? 'Status' : statusFilter}
-                    <svg className="mk-chevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                  </button>
-                  <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                    <option value="All">All Statuses</option>
-                    {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-
-                <div className="mk-dropdown">
-                  <button className="mk-btn-outline">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg>
-                    Sort
-                    <svg className="mk-chevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                  </button>
-                  <select value={currentSortValue} onChange={(e) => handleSortSelect(e.target.value)}>
-                    <option value="updated_at_desc">Recently updated</option>
-                    <option value="created_at_desc">Recently added</option>
-                    <option value="title_asc">Title (A–Z)</option>
-                    <option value="title_desc">Title (Z–A)</option>
-                    <option value="rating_desc">Highest rating</option>
-                  </select>
-                </div>
-
-                <button className="mk-btn-outline" onClick={toggleRatingMode}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                  Rating {ratingMode === 'stars' ? '' : '(#.#)'}
-                  <svg className="mk-chevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                </button>
-
-                <button className="mk-btn-magic" onClick={pickUpNext} title="Get a random entry to read next">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M5 3v4"/><path d="M3 5h4"/></svg>
-                  Up next
-                </button>
-
-                {viewMode === 'table' && (
-                  <button className={`mk-btn-outline ${selectMode ? 'active' : ''}`} onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}>
-                    {selectMode ? 'Done' : 'Select'}
-                  </button>
-                )}
-
-                <button className="mk-btn-icon mobile-trash" onClick={() => setShowTrash(!showTrash)} title="Trash">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                </button>
-              </>
+              <div className="mockup-select-wrap">
+                <svg className="select-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="mockup-select">
+                  <option value="All">Status</option>
+                  {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <svg className="caret-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
             )}
 
-            <div className="mk-entries-count">
-              <svg className="mobile-only-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
-              {filtered.length} entries {filtered.length !== books.length ? `(of ${books.length})` : ''}
+            {/* Sort Dropdown */}
+            {!showTrash && (
+              <div className="mockup-select-wrap">
+                <svg className="select-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M7 16V3M7 3L3 7M7 3l4 4M17 8v13M17 21l4-4M17 21l-4-4" />
+                </svg>
+                <select value={sortOption} onChange={(e) => setSortOption(e.target.value)} className="mockup-select">
+                  <option value="updated_at_desc">Sort: Recently updated</option>
+                  <option value="created_at_desc">Sort: Recently added</option>
+                  <option value="title_asc">Sort: Title (A–Z)</option>
+                  <option value="title_desc">Sort: Title (Z–A)</option>
+                  <option value="rating_desc">Sort: Rating</option>
+                  <option value="author_asc">Sort: Author</option>
+                </select>
+                <svg className="caret-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+            )}
+
+            {/* Rating Dropdown */}
+            {!showTrash && (
+              <div className="mockup-select-wrap">
+                <svg className="select-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                <select value={ratingFilter} onChange={(e) => setRatingFilter(e.target.value)} className="mockup-select">
+                  <option value="All">Rating</option>
+                  <option value="5">5★ Stars</option>
+                  <option value="4+">4★ & Up</option>
+                  <option value="3+">3★ & Up</option>
+                  <option value="2+">2★ & Up</option>
+                  <option value="1+">1★ & Up</option>
+                  <option value="unrated">Unrated</option>
+                </select>
+                <svg className="caret-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+            )}
+
+            {/* Up Next Action Button */}
+            {!showTrash && (
+              <button className="mockup-upnext-btn" onClick={pickUpNext} title="Get a random entry to read next">
+                <svg className="btn-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 3v18M3 12h18M5.3 5.3l13.4 13.4M5.3 18.7L18.7 5.3" strokeOpacity="0.2" />
+                  <path d="M12 2l2.4 5.6L20 10l-5.6 2.4L12 18l-2.4-5.6L4 10l5.6-2.4z" />
+                </svg>
+                <span>Up next</span>
+              </button>
+            )}
+
+            {/* Entry Counter on Desktop */}
+            <div className="mockup-entries-counter desktop-counter">
+              <svg className="book-count-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              </svg>
+              <span>{filtered.length} entries</span>
             </div>
           </div>
+
+          {/* Bottom Divider Line & Mobile Entry Counter */}
+          <div className="mockup-bottom-meta">
+            <div className="mockup-divider"></div>
+            <div className="mockup-entries-counter mobile-counter">
+              <svg className="book-count-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              </svg>
+              <span>{filtered.length} entries</span>
+            </div>
+          </div>
+
         </div>
 
         {viewMode === 'table' && selectMode && selected.size > 0 && (
-          <div className="bulk-bar">
+          <div className="bulk-bar" style={{ marginTop: 12 }}>
             <strong>{selected.size} selected</strong>
             {!showTrash && (
               <>
@@ -518,7 +587,7 @@ export default function HomePage() {
 
         {error && <div className="error-text">{error}</div>}
         {loading ? (
-          <div>
+          <div style={{ marginTop: 16 }}>
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="skeleton skeleton-row" />
             ))}
@@ -535,9 +604,9 @@ export default function HomePage() {
           <BookTable
             books={filtered}
             ratingMode={ratingMode}
-            sortField={sortField}
-            sortDir={sortDir}
-            onSort={handleSort}
+            sortField={currentSortField}
+            sortDir={currentSortDir}
+            onSort={handleTableSort}
             trashMode={showTrash}
             hasAnyBooks={books.length > 0}
             selectMode={selectMode}
