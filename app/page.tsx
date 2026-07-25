@@ -242,14 +242,6 @@ export default function HomePage() {
     });
   }
 
-  // Keyboard shortcuts: "/" focuses search, "n" opens the add-entry modal.
-  // Ignored while typing in any field so normal typing (e.g. a note
-  // containing the letter "n") is never hijacked. Escape-closes-modal is
-  // handled by BookForm itself, not here — keeps this listener decoupled
-  // from the modal's internals.
-  // (keyboard shortcut effect moved below, after `filtered` is defined —
-  // row navigation needs to read the current filtered/sorted list)
-
   const filtered = useMemo(() => {
     let list = books.filter((b) => {
       if (!showTrash && statusFilter !== 'All' && b.status !== statusFilter) return false;
@@ -302,9 +294,6 @@ export default function HomePage() {
     setSearch('');
   }
 
-  // Reset the keyboard-nav cursor whenever the visible list changes shape
-  // (new filter/search/sort, or switching library/trash) — an old index
-  // could otherwise point at the wrong row after the list reorders.
   useEffect(() => { setFocusedIndex(-1); }, [filtered.length, statusFilter, search, sortField, sortDir, showTrash]);
 
   useEffect(() => {
@@ -320,9 +309,6 @@ export default function HomePage() {
       const typing = tag === 'input' || tag === 'textarea' || tag === 'select';
       if (typing) return;
 
-      // Table-only row navigation: Up/Down moves a highlighted row, Enter
-      // opens it for editing. Disabled in grid view (no row concept there),
-      // trash (different action set), and while the modal is open.
       const rowNavActive = viewMode === 'table' && !showTrash && editing === undefined;
       if (rowNavActive && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
         e.preventDefault();
@@ -506,7 +492,7 @@ export default function HomePage() {
 
               {!showTrash && (
                 <button className="btn secondary compact" onClick={pickUpNext} title="Randomly pick something from Plan to Read">
-                  ↻ Up next
+                  🎲 Up next
                 </button>
               )}
               <button
