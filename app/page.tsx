@@ -270,7 +270,6 @@ export default function HomePage() {
     return list;
   }, [books, statusFilter, ratingFilter, search, sortOption, showTrash]);
 
-  // Derived sort field and dir for table component back-compatibility
   const [currentSortField, currentSortDir] = useMemo(() => {
     if (sortOption.startsWith('title')) return ['title', sortOption.endsWith('desc') ? 'desc' : 'asc'] as [SortField, SortDir];
     if (sortOption.startsWith('rating')) return ['rating', 'desc'] as [SortField, SortDir];
@@ -393,19 +392,10 @@ export default function HomePage() {
       <div className="card mockup-toolbar-card">
         <div className="mockup-toolbar">
 
-          {/* Row 1: Add Entry, Search, Grid/Table Switch, Trash */}
+          {/* Main Controls Row (Row 1 on Desktop, Rows 1 & 2 on Mobile) */}
           <div className="mockup-row mockup-row-main">
-            {!showTrash && (
-              <button className="mockup-add-btn" onClick={() => setEditing(null)}>
-                <svg className="btn-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                <span className="btn-label">Add Entry</span>
-                <span className="mockup-kbd-tag">n</span>
-              </button>
-            )}
 
+            {/* Search Box */}
             <div className="mockup-search-box">
               <svg className="search-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <circle cx="11" cy="11" r="7" />
@@ -426,6 +416,19 @@ export default function HomePage() {
               )}
             </div>
 
+            {/* Add Entry Button */}
+            {!showTrash && (
+              <button className="mockup-add-btn" onClick={() => setEditing(null)}>
+                <svg className="btn-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span className="btn-label">Add Entry</span>
+                <span className="mockup-kbd-tag">n</span>
+              </button>
+            )}
+
+            {/* Grid / Table Switch */}
             {!showTrash && (
               <div className="mockup-segmented-switch">
                 <button
@@ -456,6 +459,7 @@ export default function HomePage() {
               </div>
             )}
 
+            {/* Trash Button */}
             <button
               className={`mockup-icon-btn trash-btn ${showTrash ? 'active' : ''}`}
               onClick={() => setShowTrash((v) => !v)}
@@ -465,11 +469,11 @@ export default function HomePage() {
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
-              <span className="desktop-only">{showTrash ? 'Library' : 'Trash'}</span>
+              <span className="desktop-trash-label">{showTrash ? 'Library' : 'Trash'}</span>
             </button>
           </div>
 
-          {/* Row 2: Status, Rating, Sort, Up Next, Entries Count */}
+          {/* Filters Row (Row 2 on Desktop, Row 3 on Mobile) */}
           <div className="mockup-row mockup-row-filters">
             {/* Status Dropdown */}
             {!showTrash && (
@@ -528,18 +532,17 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* Up Next Action Button */}
+            {/* Up Next Button */}
             {!showTrash && (
               <button className="mockup-upnext-btn" onClick={pickUpNext} title="Get a random entry to read next">
                 <svg className="btn-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 3v18M3 12h18M5.3 5.3l13.4 13.4M5.3 18.7L18.7 5.3" strokeOpacity="0.2" />
                   <path d="M12 2l2.4 5.6L20 10l-5.6 2.4L12 18l-2.4-5.6L4 10l5.6-2.4z" />
                 </svg>
                 <span>Up next</span>
               </button>
             )}
 
-            {/* Entry Counter on Desktop */}
+            {/* Desktop Entries Count */}
             <div className="mockup-entries-counter desktop-counter">
               <svg className="book-count-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
@@ -549,7 +552,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Bottom Divider Line & Mobile Entry Counter */}
+          {/* Bottom Divider & Mobile Entries Count */}
           <div className="mockup-bottom-meta">
             <div className="mockup-divider"></div>
             <div className="mockup-entries-counter mobile-counter">

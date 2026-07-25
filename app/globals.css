@@ -23,7 +23,9 @@
   --star-filled: #8a3b30;
   --shadow: 0 1px 2px rgba(40, 30, 10, 0.08);
   --shadow-modal: 0 16px 44px rgba(30, 22, 8, 0.24);
-  --font-serif: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-serif:
+    Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino,
+    serif;
 
   --status-reading: #8a3b30;
   --status-completed: #3f6b4f;
@@ -48,7 +50,7 @@
   --duration-slow: 0.3s;
 }
 
-[data-theme='dark'] {
+[data-theme="dark"] {
   color-scheme: dark;
 
   --bg: #15120e;
@@ -87,11 +89,15 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
   background: var(--bg);
   color: var(--text);
   font-variant-numeric: tabular-nums;
-  transition: background-color var(--duration-slow) ease, color var(--duration-slow) ease;
+  transition:
+    background-color var(--duration-slow) ease,
+    color var(--duration-slow) ease;
 }
 
 .container {
@@ -149,7 +155,10 @@ textarea {
   padding: var(--space-2) var(--space-4);
   font-size: 13px;
   cursor: pointer;
-  transition: background-color var(--duration-base) ease, transform var(--duration-fast) ease, opacity var(--duration-base) ease;
+  transition:
+    background-color var(--duration-base) ease,
+    transform var(--duration-fast) ease,
+    opacity var(--duration-base) ease;
 }
 
 .btn:hover {
@@ -197,7 +206,9 @@ textarea {
   padding: var(--space-2) var(--space-3);
   font-size: 15px;
   line-height: 1;
-  transition: background-color var(--duration-base) ease, transform var(--duration-base) ease;
+  transition:
+    background-color var(--duration-base) ease,
+    transform var(--duration-base) ease;
 }
 
 .btn.icon-only:hover {
@@ -228,15 +239,17 @@ textarea:focus-visible {
   margin-bottom: var(--space-4);
   box-shadow: var(--shadow);
   animation: fadeInUp var(--duration-slow) ease both;
-  transition: background-color var(--duration-slow) ease, border-color var(--duration-slow) ease;
+  transition:
+    background-color var(--duration-slow) ease,
+    border-color var(--duration-slow) ease;
 }
 
 /* ==========================================
-   MOCKUP TOOLBAR (1000321907 & 1000321908)
+   EXACT 1:1 MOCKUP TOOLBAR (1000321907 & 1000321908)
    ========================================== */
 
 .mockup-toolbar-card {
-  padding: 16px;
+  padding: 14px 16px;
   border-radius: 14px;
 }
 
@@ -270,7 +283,9 @@ textarea:focus-visible {
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
-  transition: transform var(--duration-fast) ease, opacity var(--duration-fast) ease;
+  transition:
+    transform var(--duration-fast) ease,
+    opacity var(--duration-fast) ease;
 }
 
 .mockup-add-btn:hover {
@@ -350,7 +365,7 @@ textarea:focus-visible {
   padding: 2px 6px;
 }
 
-/* Segmented View Switch */
+/* Segmented View Switcher */
 .mockup-segmented-switch {
   display: inline-flex;
   align-items: center;
@@ -380,14 +395,9 @@ textarea:focus-visible {
 }
 
 .mockup-segmented-switch .switch-tab.active {
-  background: #f0e8d8;
-  color: #17120e;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-}
-
-[data-theme='dark'] .mockup-segmented-switch .switch-tab.active {
   background: #eee5d8;
   color: #15120e;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
 .switch-icon {
@@ -395,7 +405,7 @@ textarea:focus-visible {
   height: 14px;
 }
 
-/* Standard & Icon Buttons */
+/* Icon Buttons */
 .mockup-icon-btn {
   display: inline-flex;
   align-items: center;
@@ -411,7 +421,9 @@ textarea:focus-visible {
   font-weight: 600;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background-color var(--duration-fast) ease, border-color var(--duration-fast) ease;
+  transition:
+    background-color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease;
 }
 
 .mockup-icon-btn:hover {
@@ -428,7 +440,7 @@ textarea:focus-visible {
   height: 16px;
 }
 
-/* --- Row 2 Select Dropdowns & Special Buttons --- */
+/* --- Select Dropdowns & Buttons --- */
 .mockup-select-wrap {
   position: relative;
   display: inline-flex;
@@ -456,6 +468,9 @@ textarea:focus-visible {
   font-weight: 600;
   cursor: pointer;
   padding-right: 4px;
+  max-width: 160px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .select-svg-icon {
@@ -476,7 +491,7 @@ textarea:focus-visible {
   pointer-events: none;
 }
 
-/* Purple Up Next Button */
+/* Up Next Purple Button */
 .mockup-upnext-btn {
   display: inline-flex;
   align-items: center;
@@ -491,7 +506,9 @@ textarea:focus-visible {
   font-weight: 700;
   cursor: pointer;
   flex-shrink: 0;
-  transition: transform var(--duration-fast) ease, background-color var(--duration-fast) ease;
+  transition:
+    transform var(--duration-fast) ease,
+    background-color var(--duration-fast) ease;
 }
 
 .mockup-upnext-btn:hover {
@@ -559,7 +576,9 @@ th {
 }
 
 tr {
-  transition: background-color var(--duration-base) ease, border-color var(--duration-slow) ease;
+  transition:
+    background-color var(--duration-base) ease,
+    border-color var(--duration-slow) ease;
 }
 
 tr:hover td {
@@ -622,7 +641,10 @@ td.spine-cell {
   cursor: pointer;
   position: relative;
   vertical-align: middle;
-  transition: background-color var(--duration-base) ease, border-color var(--duration-base) ease, transform var(--duration-fast) ease;
+  transition:
+    background-color var(--duration-base) ease,
+    border-color var(--duration-base) ease,
+    transform var(--duration-fast) ease;
 }
 
 .row-checkbox:hover {
@@ -639,7 +661,7 @@ td.spine-cell {
 }
 
 .row-checkbox:checked::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 5px;
   top: 2px;
@@ -724,7 +746,9 @@ td.spine-cell {
 .book-cover,
 .placeholder-box {
   border-radius: 2px;
-  box-shadow: 1.5px 1.5px 0 var(--card-bg), 3px 3px 0 var(--border);
+  box-shadow:
+    1.5px 1.5px 0 var(--card-bg),
+    3px 3px 0 var(--border);
 }
 
 .placeholder-box {
@@ -742,7 +766,9 @@ td.spine-cell {
 .progress-bar>div {
   height: 100%;
   background: var(--accent-bg);
-  transition: width var(--duration-slow) ease, background-color var(--duration-slow) ease;
+  transition:
+    width var(--duration-slow) ease,
+    background-color var(--duration-slow) ease;
 }
 
 .progress-bar>div.near-complete {
@@ -834,7 +860,9 @@ td.spine-cell {
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
   padding: var(--space-3);
-  transition: transform var(--duration-base) ease, box-shadow var(--duration-base) ease;
+  transition:
+    transform var(--duration-base) ease,
+    box-shadow var(--duration-base) ease;
 }
 
 .summary-tile:hover {
@@ -996,7 +1024,9 @@ td.spine-cell {
   overflow: hidden;
   width: 100%;
   height: 100%;
-  transition: transform var(--duration-base) ease, box-shadow var(--duration-base) ease;
+  transition:
+    transform var(--duration-base) ease,
+    box-shadow var(--duration-base) ease;
 }
 
 .grid-tile:hover {
@@ -1193,7 +1223,9 @@ td.spine-cell {
   cursor: pointer;
   padding: 2px 6px;
   border-radius: var(--radius-sm);
-  transition: color var(--duration-fast) ease, background-color var(--duration-fast) ease;
+  transition:
+    color var(--duration-fast) ease,
+    background-color var(--duration-fast) ease;
 }
 
 .stats-toggle-btn:hover {
@@ -1409,9 +1441,13 @@ td.spine-cell {
   flex: 1;
   max-width: 7px;
   border-radius: 2px 2px 0 0;
-  box-shadow: inset -1px 0 2px rgba(0, 0, 0, 0.25), 1px 0 2px rgba(0, 0, 0, 0.15);
+  box-shadow:
+    inset -1px 0 2px rgba(0, 0, 0, 0.25),
+    1px 0 2px rgba(0, 0, 0, 0.15);
   position: relative;
-  transition: transform var(--duration-fast) ease, filter var(--duration-fast) ease;
+  transition:
+    transform var(--duration-fast) ease,
+    filter var(--duration-fast) ease;
   cursor: pointer;
 }
 
@@ -1452,7 +1488,7 @@ td.spine-cell {
   margin-top: 1px;
 }
 
-[data-theme='dark'] .bookshelf-ledge {
+[data-theme="dark"] .bookshelf-ledge {
   background: #3d3527;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
 }
@@ -1643,8 +1679,13 @@ td.spine-cell {
   color: var(--text-muted);
 }
 
+/* Desktop view default text adjustments */
+.desktop-trash-label {
+  display: inline;
+}
+
 /* ==========================================
-   Media Queries for Mobile (1000321907.png)
+   Media Queries for 1:1 Mobile Mockup (1000321907.png)
    ========================================== */
 
 @media (max-width: 900px) {
@@ -1688,7 +1729,7 @@ td.spine-cell {
     text-align: center;
   }
 
-  /* Match 1000321907.png Mobile Toolbar structure */
+  /* 1:1 Match for 1000321907.png Mobile Toolbar */
   .mockup-toolbar {
     gap: 10px;
   }
@@ -1698,51 +1739,60 @@ td.spine-cell {
     gap: 8px;
   }
 
+  /* Row 1: Search box full width */
   .mockup-search-box {
     flex: 1 1 100%;
-    order: -1;
-    /* Row 1: Search bar */
+    order: 1;
   }
 
+  /* Row 2: Add Entry + Grid/Table switcher */
   .mockup-add-btn {
     flex: 1 1 auto;
-    /* Row 2: Add Entry button */
+    order: 2;
     justify-content: center;
   }
 
   .mockup-segmented-switch {
     flex: 0 0 auto;
-    /* Row 2: Grid/Table switch */
+    order: 3;
   }
 
-  .desktop-only {
+  .desktop-trash-label {
     display: none !important;
   }
 
-  /* Row 3: Dropdowns & Icon-only Trash Button */
+  /* Row 3: Filter dropdowns, Up next, and Trash icon */
   .mockup-row-filters {
-    flex-wrap: wrap;
-    gap: 8px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .mockup-row-filters::-webkit-scrollbar {
+    display: none;
   }
 
   .mockup-select-wrap {
-    flex: 1 1 auto;
-    min-width: 80px;
-    padding: 0 20px 0 28px;
+    flex: 0 0 auto;
+    padding: 0 24px 0 30px;
   }
 
   .mockup-upnext-btn {
-    flex: 1 1 auto;
-    justify-content: center;
+    flex: 0 0 auto;
+    padding: 0 12px;
   }
 
   .desktop-counter {
     display: none !important;
   }
 
+  /* Row 4: Divider + Entries Count */
   .mockup-bottom-meta {
     display: flex;
-    margin-top: 4px;
+    margin-top: 2px;
   }
 
   .mobile-counter {
@@ -1840,7 +1890,7 @@ td.spine-cell {
     margin-top: 2px;
   }
 
-  td:nth-child(n+5):not(:last-child) {
+  td:nth-child(n + 5):not(:last-child) {
     flex: 1 1 calc(50% - var(--space-2));
     display: flex;
     flex-direction: column;
@@ -1849,7 +1899,7 @@ td.spine-cell {
     padding-top: var(--space-1);
   }
 
-  td:nth-child(n+5):not(:last-child)::before {
+  td:nth-child(n + 5):not(:last-child)::before {
     content: attr(data-label);
     font-size: 10px;
     font-weight: 700;
