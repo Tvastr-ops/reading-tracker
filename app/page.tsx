@@ -395,30 +395,49 @@ export default function HomePage() {
       <div className="card">
         <div className="filters">
           {!showTrash && (
+            <button className="btn accent-fill" onClick={() => setEditing(null)}>+ Add entry (n)</button>
+          )}
+          {!showTrash && (
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="All">All statuses</option>
               {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           )}
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Search title, author, tags... (/)"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <div className="search-wrap">
+            <span className="search-icon">🔍</span>
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search title, author, tags... (/)"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
           <button className="btn secondary" onClick={toggleRatingMode}>
-            Rating: {ratingMode === 'stars' ? '★ stars' : '#.# decimal'}
+            Rating: {ratingMode === 'stars' ? '★' : '#.#'} ▾
           </button>
           {!showTrash && (
             <button className="btn secondary" onClick={pickUpNext} title="Randomly pick from Plan to Read">
-              🎲 Up next
+              ↻ Up next
             </button>
           )}
           {!showTrash && (
-            <button className="btn secondary" onClick={toggleViewMode} title="Switch between table and cover grid">
-              {viewMode === 'table' ? '▦ Grid' : '☰ Table'}
-            </button>
+            <div className="view-toggle-group">
+              <button
+                className={`btn view-toggle${viewMode === 'grid' ? ' active' : ''}`}
+                onClick={() => viewMode !== 'grid' && toggleViewMode()}
+                title="Cover grid view"
+              >
+                ▦ Grid
+              </button>
+              <button
+                className={`btn view-toggle${viewMode === 'table' ? ' active' : ''}`}
+                onClick={() => viewMode !== 'table' && toggleViewMode()}
+                title="Table view"
+              >
+                ☰ Table
+              </button>
+            </div>
           )}
           {viewMode === 'table' && (
             <button
@@ -428,11 +447,10 @@ export default function HomePage() {
               {selectMode ? 'Done selecting' : 'Select'}
             </button>
           )}
-          <button className="btn secondary" onClick={() => setShowTrash((v) => !v)}>
-            {showTrash ? '← Back to library' : 'Trash'}
-          </button>
           <div className="filter-spacer" style={{ flex: 1 }} />
-          {!showTrash && <button className="btn" onClick={() => setEditing(null)}>+ Add entry (n)</button>}
+          <button className="btn secondary" onClick={() => setShowTrash((v) => !v)}>
+            🗑 {showTrash ? '← Back to library' : 'Trash'}
+          </button>
         </div>
 
         {viewMode === 'table' && selectMode && selected.size > 0 && (
