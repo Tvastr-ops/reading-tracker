@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Book, BookInput, STATUSES, SortField, SortDir } from '@/lib/types';
+import { Book, BookInput, STATUSES, STATUS_COLOR_VAR, SortField, SortDir } from '@/lib/types';
 import BookTable from '@/components/BookTable';
 import BookGrid from '@/components/BookGrid';
 import BookForm from '@/components/BookForm';
@@ -285,6 +285,23 @@ export default function HomePage() {
     return list;
   }, [books, statusFilter, search, sortField, sortDir, showTrash]);
 
+  // Counts per status power the filter chips, so you can see how many
+  // entries sit behind each filter before clicking it. Always derived from
+  // the full `books` list (not `filtered`) so numbers stay stable.
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = { All: books.length };
+    for (const s of STATUSES) counts[s] = 0;
+    for (const b of books) counts[b.status] = (counts[b.status] ?? 0) + 1;
+    return counts;
+  }, [books]);
+
+  const filtersActive = statusFilter !== 'All' || search.trim() !== '';
+
+  function clearFilters() {
+    setStatusFilter('All');
+    setSearch('');
+  }
+
   // Reset the keyboard-nav cursor whenever the visible list changes shape
   // (new filter/search/sort, or switching library/trash) — an old index
   // could otherwise point at the wrong row after the list reorders.
@@ -393,47 +410,43 @@ export default function HomePage() {
       )}
 
       <div className="card">
-        {/* STRUCTURAL UPDATE: Filters grouped into 3 distinct visual zones */}
-        <div className="filters">
-          {!showTrash && (
-            <div className="filters-group">
-              <button className="btn accent-fill" onClick={() => setEditing(null)}>+ Add entry (n)</button>
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                <option value="All">All statuses</option>
-                {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-          )}
-
-          <div className="search-wrap">
-            <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-              <circle cx="11" cy="11" r="7" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder="Search title, author, tags... (/)"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-
-          <div className="filters-group filters-right">
-            <button className="btn secondary" onClick={toggleRatingMode}>
-              Rating: {ratingMode === 'stars' ? '★' : '#.#'} ▾
-            </button>
+        {/* Toolbar: row 1 = primary actions + search + view switch,
+            row 2 = status filter chips + result meta / display options. */}
+        <div className="toolbar">
+          <div className="toolbar-row">
             {!showTrash && (
-              <button className="btn secondary" onClick={pickUpNext} title="Randomly pick from Plan to Read">
-                ↻ Up next
+              <button className="btn accent-fill" onClick={() => setEditing(null)}>
+                + Add entry <kbd className="kbd-hint">n</kbd>
               </button>
             )}
+
+            <div className="search-wrap">
+              <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search title, author, tags…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                aria-label="Search entries"
+              />
+              {search ? (
+                <button className="search-clear" onClick={() => setSearch('')} aria-label="Clear search" title="Clear search">×</button>
+              ) : (
+                <kbd className="kbd-hint search-kbd" aria-hidden="true">/</kbd>
+              )}
+            </div>
+
             {!showTrash && (
-              <div className="segmented-control">
+              <div className="segmented-control" role="group" aria-label="View mode">
                 <div className={`segmented-thumb${viewMode === 'table' ? ' right' : ''}`} />
                 <button
                   type="button"
                   className={viewMode === 'grid' ? 'active' : ''}
+                  aria-pressed={viewMode === 'grid'}
                   onClick={() => viewMode !== 'grid' && toggleViewMode()}
                   title="Cover grid view"
                 >
@@ -442,6 +455,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   className={viewMode === 'table' ? 'active' : ''}
+                  aria-pressed={viewMode === 'table'}
                   onClick={() => viewMode !== 'table' && toggleViewMode()}
                   title="Table view"
                 >
@@ -449,17 +463,68 @@ export default function HomePage() {
                 </button>
               </div>
             )}
-            {viewMode === 'table' && (
-              <button
-                className="btn secondary"
-                onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}
-              >
-                {selectMode ? 'Done selecting' : 'Select'}
-              </button>
-            )}
-            <button className="btn secondary" onClick={() => setShowTrash((v) => !v)}>
-              🗑 {showTrash ? '← Back to library' : 'Trash'}
+
+            <button
+              className={`btn secondary${showTrash ? ' is-on' : ''}`}
+              onClick={() => setShowTrash((v) => !v)}
+            >
+              {showTrash ? '← Back to library' : '🗑 Trash'}
             </button>
+          </div>
+
+          <div className="toolbar-row toolbar-row-sub">
+            {!showTrash && (
+              <div className="chip-row" role="group" aria-label="Filter by status">
+                {(['All', ...STATUSES] as string[]).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    className={`chip${statusFilter === s ? ' active' : ''}`}
+                    style={{ '--chip-color': STATUS_COLOR_VAR[s] ?? 'var(--text-muted)' } as React.CSSProperties}
+                    aria-pressed={statusFilter === s}
+                    onClick={() => setStatusFilter(s)}
+                  >
+                    {s === 'All' ? 'All' : s}
+                    <span className="chip-count">{statusCounts[s] ?? 0}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="toolbar-meta">
+              <span className="result-count" aria-live="polite">
+                {filtered.length}
+                {filtered.length !== books.length && <span className="result-total"> / {books.length}</span>}
+                {' '}{filtered.length === 1 ? 'entry' : 'entries'}
+              </span>
+
+              {!showTrash && filtersActive && (
+                <button className="link-btn" onClick={clearFilters}>Clear filters</button>
+              )}
+
+              <span className="toolbar-divider" aria-hidden="true" />
+
+              {!showTrash && (
+                <button className="btn secondary compact" onClick={pickUpNext} title="Randomly pick something from Plan to Read">
+                  ↻ Up next
+                </button>
+              )}
+              <button
+                className="btn secondary compact"
+                onClick={toggleRatingMode}
+                title="Toggle between stars and decimal ratings"
+              >
+                Rating: {ratingMode === 'stars' ? '★★★' : '#.#'}
+              </button>
+              {viewMode === 'table' && (
+                <button
+                  className={`btn secondary compact${selectMode ? ' is-on' : ''}`}
+                  onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}
+                >
+                  {selectMode ? 'Done' : 'Select'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
