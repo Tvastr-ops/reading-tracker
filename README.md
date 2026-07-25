@@ -11,7 +11,7 @@ export to CSV any time.
   cover image, dates, and notes
 - Live-computed % complete (never goes out of sync with progress)
 - Half-star or decimal rating display, switchable per user
-- Sortable columns, status filtering, text search
+- Sortable columns, status filtering, text searches
 - Summary dashboard: per-status counts, average rating, completed-per-month
   and rating-distribution charts, and a yearly reading goal with progress bar
 - Per-book reading log — timestamped progress entries, not just one number
