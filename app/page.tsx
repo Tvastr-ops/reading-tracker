@@ -258,9 +258,6 @@ export default function HomePage() {
         case 'date_finished':
           cmp = (a.date_finished || '').localeCompare(b.date_finished || '');
           break;
-        case 'author':
-          cmp = (a.author || '').localeCompare(b.author || '');
-          break;
         default:
           cmp = a.updated_at.localeCompare(b.updated_at);
       }
@@ -481,7 +478,6 @@ export default function HomePage() {
                 <option value="title_asc">Title (A–Z)</option>
                 <option value="title_desc">Title (Z–A)</option>
                 <option value="rating_desc">Highest rating</option>
-                <option value="author_asc">Author</option>
               </select>
             </div>
 
@@ -600,4 +596,3 @@ export default function HomePage() {
     </main>
   );
 }
-
