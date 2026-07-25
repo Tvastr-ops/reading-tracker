@@ -171,45 +171,74 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
 /* ==========================================
    Refined Toolbar / Filters Section
    ========================================== */
-.filters {
+.toolbar {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: var(--space-3);
-  flex-wrap: wrap;
+  padding-bottom: var(--space-3);
   margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-soft);
 }
 
-.filters-group {
+.toolbar-row {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   flex-wrap: wrap;
 }
 
-.filters-right { margin-left: auto; }
+/* Second row reads as supporting info: filter chips left, meta/options right. */
+.toolbar-row-sub {
+  gap: var(--space-3);
+  justify-content: space-between;
+}
 
-.filters select, .filters input[type=text] {
+.toolbar select, .toolbar input[type=text] {
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--input-border);
   border-radius: 999px;
   background: var(--input-bg);
   color: var(--text);
 }
-.filters .btn { border-radius: 999px; }
+.toolbar .btn { border-radius: 999px; }
+.toolbar .btn.compact { padding: var(--space-1) var(--space-3); font-size: 12px; }
 
-.filters .btn.accent-fill {
+/* Toggle buttons (Select, Trash) read as pressed when active. */
+.toolbar .btn.secondary.is-on {
+  background: var(--accent-bg);
+  color: var(--accent-text);
+  border-color: var(--accent-bg);
+}
+
+.toolbar .btn.accent-fill {
   background: var(--star-filled);
   color: var(--bg);
   border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
 }
-.filters .btn.accent-fill:hover { opacity: 0.9; }
+.toolbar .btn.accent-fill:hover { opacity: 0.9; }
 
-.search-wrap { 
-  position: relative; 
-  flex: 1 1 auto; 
-  min-width: 200px; 
+.kbd-hint {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 5px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.16);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  opacity: 0.9;
 }
-.search-wrap input { width: 100%; padding-left: 34px; }
+
+/* Search ------------------------------------------------- */
+.search-wrap {
+  position: relative;
+  flex: 1 1 260px;
+  min-width: 200px;
+}
+.search-wrap input { width: 100%; padding-left: 34px; padding-right: 36px; }
 .search-wrap .search-icon {
   position: absolute;
   left: var(--space-3);
@@ -220,6 +249,111 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
   color: var(--text-faint);
   pointer-events: none;
 }
+.search-wrap .search-kbd {
+  position: absolute;
+  right: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  background: none;
+  border: 1px solid var(--input-border);
+  color: var(--text-faint);
+}
+.search-clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 999px;
+  background: var(--progress-track);
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--duration-base) ease, color var(--duration-base) ease;
+}
+.search-clear:hover { background: var(--star-filled); color: var(--bg); }
+
+/* Status filter chips ------------------------------------ */
+.chip-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px var(--space-3);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--duration-base) ease, color var(--duration-base) ease,
+    border-color var(--duration-base) ease;
+}
+.chip:hover { background: var(--secondary-hover); color: var(--text); }
+.chip:focus-visible { outline: 2px solid var(--star-filled); outline-offset: 2px; }
+
+.chip.active {
+  background: color-mix(in srgb, var(--chip-color, var(--text-muted)) 16%, transparent);
+  border-color: var(--chip-color, var(--text-muted));
+  color: var(--chip-color, var(--text));
+}
+
+.chip-count {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--progress-track);
+  color: var(--text-faint);
+  min-width: 18px;
+  text-align: center;
+}
+.chip.active .chip-count {
+  background: color-mix(in srgb, var(--chip-color, var(--text-muted)) 28%, transparent);
+  color: var(--chip-color, var(--text));
+}
+
+/* Result meta + display options -------------------------- */
+.toolbar-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.result-count { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.result-total { color: var(--text-faint); }
+.toolbar-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+}
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--star-filled);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.link-btn:hover { opacity: 0.75; }
 
 .segmented-control {
   position: relative;
@@ -485,11 +619,25 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   .topbar > div:last-child .btn,
   .topbar > div:last-child a { flex: 1 1 auto; text-align: center; }
   
-  .filters { flex-direction: column; align-items: stretch; gap: var(--space-2); }
-  .filters-group { flex-direction: column; align-items: stretch; width: 100%; gap: var(--space-2); }
-  .filters-right { margin-left: 0; }
-  .filters-group > * { width: 100%; }
-  .filters > * { width: 100%; }
+  /* Search claims its own full-width line; the action buttons share the
+     line below it and stretch to fill, so nothing gets orphaned. */
+  .search-wrap { flex: 1 1 100%; order: -1; }
+  .toolbar-row > .btn.accent-fill { flex: 1 1 auto; justify-content: center; }
+  .toolbar-row > .segmented-control { flex: 1 1 auto; }
+  .toolbar-row > .btn.secondary { flex: 0 1 auto; }
+
+  /* Chips stay on one swipeable line instead of eating four rows. */
+  .chip-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    width: 100%;
+    padding-bottom: var(--space-1);
+    scrollbar-width: none;
+  }
+  .chip-row::-webkit-scrollbar { display: none; }
+  .toolbar-row-sub { flex-direction: column; align-items: stretch; }
+  .toolbar-meta { margin-left: 0; }
+  .toolbar-divider { display: none; }
   
   .summary-grid { grid-template-columns: repeat(2, 1fr); }
 
