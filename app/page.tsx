@@ -276,20 +276,6 @@ export default function HomePage() {
     return list;
   }, [books, statusFilter, search, sortField, sortDir, showTrash]);
 
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { All: books.length };
-    for (const s of STATUSES) counts[s] = 0;
-    for (const b of books) counts[b.status] = (counts[b.status] ?? 0) + 1;
-    return counts;
-  }, [books]);
-
-  const filtersActive = statusFilter !== 'All' || search.trim() !== '';
-
-  function clearFilters() {
-    setStatusFilter('All');
-    setSearch('');
-  }
-
   useEffect(() => { setFocusedIndex(-1); }, [filtered.length, statusFilter, search, sortField, sortDir, showTrash]);
 
   useEffect(() => {
@@ -393,142 +379,118 @@ export default function HomePage() {
         </div>
       )}
 
-      <div className="card toolbar-card">
-        <div className="toolbar-v2">
-          {/* Row 1: Search Input */}
-          <div className="search-wrap-v2">
-            <svg className="search-icon-v2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
-              <circle cx="11" cy="11" r="7" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder="Search title, author, tags..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              aria-label="Search title, author, tags"
-            />
-            {search ? (
-              <button className="search-clear-v2" onClick={() => setSearch('')} aria-label="Clear search">×</button>
-            ) : (
-              <kbd className="kbd-v2" aria-hidden="true">/</kbd>
-            )}
-          </div>
-
-          {/* Row 2: Add Entry + Grid / Table Switch */}
-          <div className="toolbar-row-v2">
+      <div className="card mk-toolbar-card">
+        <div className="mk-toolbar-container">
+          
+          {/* TOP ROW: Add | Search | Toggle | Trash (Desktop) */}
+          <div className="mk-toolbar-top">
             {!showTrash && (
-              <button className="btn-add-entry-v2" onClick={() => setEditing(null)}>
-                <span className="plus-icon">+</span>
-                <span className="btn-label">Add Entry</span>
-                <kbd className="kbd-v2 kbd-add">n</kbd>
+              <button className="mk-btn-add" onClick={() => setEditing(null)}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                <span>Add entry</span>
+                <kbd className="mk-kbd">n</kbd>
               </button>
             )}
 
-            {!showTrash && (
-              <div className="segmented-control-v2" role="group" aria-label="View mode">
-                <button
-                  type="button"
-                  className={viewMode === 'grid' ? 'active' : ''}
-                  onClick={() => viewMode !== 'grid' && toggleViewMode()}
-                >
-                  <span className="icon">▦</span> Grid
-                </button>
-                <button
-                  type="button"
-                  className={viewMode === 'table' ? 'active' : ''}
-                  onClick={() => viewMode !== 'table' && toggleViewMode()}
-                >
-                  <span className="icon">☰</span> Table
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Row 3: Filters (Status, Rating, Sort, Up Next, Trash) */}
-          <div className="toolbar-row-v2 toolbar-filters-v2">
-            {!showTrash && (
-              <div className="select-pill-v2">
-                <span className="pill-icon">🔖</span>
-                <span className="pill-text">{statusFilter === 'All' ? 'Status' : statusFilter}</span>
-                <span className="pill-arrow">▾</span>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="pill-native-select"
-                  aria-label="Filter by Status"
-                >
-                  <option value="All">All Statuses ({statusCounts['All'] || 0})</option>
-                  {STATUSES.map((s) => (
-                    <option key={s} value={s}>{s} ({statusCounts[s] || 0})</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <button className="btn-filter-pill-v2" onClick={toggleRatingMode} title="Toggle rating mode">
-              <span className="pill-icon">⭐</span>
-              <span>Rating {ratingMode === 'stars' ? '▾' : '(#.#) ▾'}</span>
-            </button>
-
-            <div className="select-pill-v2">
-              <span className="pill-icon">⇅</span>
-              <span className="pill-text">Sort</span>
-              <span className="pill-arrow">▾</span>
-              <select
-                value={currentSortValue}
-                onChange={(e) => handleSortSelect(e.target.value)}
-                className="pill-native-select"
-                aria-label="Sort entries"
-              >
-                <option value="updated_at_desc">Recently updated</option>
-                <option value="created_at_desc">Recently added</option>
-                <option value="title_asc">Title (A–Z)</option>
-                <option value="title_desc">Title (Z–A)</option>
-                <option value="rating_desc">Highest rating</option>
-              </select>
+            <div className="mk-search-wrap">
+              <svg className="mk-search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search title, author, tags..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              {search ? (
+                <button className="mk-search-clear" onClick={() => setSearch('')}>×</button>
+              ) : (
+                <kbd className="mk-kbd-slash">/</kbd>
+              )}
             </div>
 
             {!showTrash && (
-              <button className="btn-filter-pill-v2 btn-up-next-v2" onClick={pickUpNext} title="Get a random entry to read next">
-                <span className="pill-icon">✨</span>
-                <span>Up next</span>
-              </button>
+              <div className="mk-view-toggle">
+                <button className={viewMode === 'grid' ? 'active' : ''} onClick={() => toggleViewMode()}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                  Grid
+                </button>
+                <button className={viewMode === 'table' ? 'active' : ''} onClick={() => toggleViewMode()}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
+                  Table
+                </button>
+              </div>
             )}
 
-            {viewMode === 'table' && (
-              <button
-                className={`btn-filter-pill-v2${selectMode ? ' active' : ''}`}
-                onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}
-              >
-                {selectMode ? 'Done' : 'Select'}
-              </button>
-            )}
-
-            <button
-              className={`btn-filter-pill-v2 btn-trash-v2${showTrash ? ' active' : ''}`}
-              onClick={() => setShowTrash((v) => !v)}
-              title={showTrash ? 'Back to library' : 'View Trash'}
-            >
-              <span>🗑</span>
+            <button className={`mk-btn-outline desktop-trash ${showTrash ? 'active' : ''}`} onClick={() => setShowTrash(!showTrash)}>
+              {showTrash ? (
+                <span>← Back</span>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                  Trash
+                </>
+              )}
             </button>
           </div>
 
-          {/* Row 4: Entries Counter */}
-          <div className="toolbar-footer-v2">
-            <div className="entry-count-v2">
-              <span className="book-icon">📖</span>
-              <span>
-                {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
-                {filtered.length !== books.length && ` (of ${books.length})`}
-              </span>
-            </div>
-            {filtersActive && !showTrash && (
-              <button className="link-clear-filters-v2" onClick={clearFilters}>
-                Clear filters
-              </button>
+          {/* BOTTOM ROW: Filters | Selection | Meta | Trash (Mobile) */}
+          <div className="mk-toolbar-bottom">
+            {!showTrash && (
+              <>
+                <div className="mk-dropdown">
+                  <button className={`mk-btn-outline ${statusFilter !== 'All' ? 'active' : ''}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+                    {statusFilter === 'All' ? 'Status' : statusFilter}
+                    <svg className="mk-chevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                  <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                    <option value="All">All Statuses</option>
+                    {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+
+                <div className="mk-dropdown">
+                  <button className="mk-btn-outline">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg>
+                    Sort
+                    <svg className="mk-chevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                  <select value={currentSortValue} onChange={(e) => handleSortSelect(e.target.value)}>
+                    <option value="updated_at_desc">Recently updated</option>
+                    <option value="created_at_desc">Recently added</option>
+                    <option value="title_asc">Title (A–Z)</option>
+                    <option value="title_desc">Title (Z–A)</option>
+                    <option value="rating_desc">Highest rating</option>
+                  </select>
+                </div>
+
+                <button className="mk-btn-outline" onClick={toggleRatingMode}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  Rating {ratingMode === 'stars' ? '' : '(#.#)'}
+                  <svg className="mk-chevron" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+
+                <button className="mk-btn-magic" onClick={pickUpNext} title="Get a random entry to read next">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M5 3v4"/><path d="M3 5h4"/></svg>
+                  Up next
+                </button>
+
+                {viewMode === 'table' && (
+                  <button className={`mk-btn-outline ${selectMode ? 'active' : ''}`} onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}>
+                    {selectMode ? 'Done' : 'Select'}
+                  </button>
+                )}
+
+                <button className="mk-btn-icon mobile-trash" onClick={() => setShowTrash(!showTrash)} title="Trash">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
+              </>
             )}
+
+            <div className="mk-entries-count">
+              <svg className="mobile-only-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+              {filtered.length} entries {filtered.length !== books.length ? `(of ${books.length})` : ''}
+            </div>
           </div>
         </div>
 
