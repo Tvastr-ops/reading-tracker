@@ -236,7 +236,7 @@ textarea:focus-visible {
 }
 
 /* ==========================================
-   Toolbar Section
+   Refined Toolbar & Inline Filter Badge Rules
    ========================================== */
 .toolbar {
   display: flex;
@@ -305,17 +305,21 @@ textarea:focus-visible {
   opacity: 0.9;
 }
 
-/* Search */
+/* Search Bar & Inline Active Filter Badge */
 .search-wrap {
   position: relative;
-  flex: 1 1 220px;
-  min-width: 160px;
+  flex: 1 1 240px;
+  min-width: 180px;
+  display: flex;
+  align-items: center;
 }
+
 .search-wrap input {
   width: 100%;
-  padding-left: 34px;
   padding-right: 36px;
+  transition: padding-left var(--duration-fast) ease;
 }
+
 .search-wrap .search-icon {
   position: absolute;
   left: var(--space-3);
@@ -325,7 +329,42 @@ textarea:focus-visible {
   height: 14px;
   color: var(--text-faint);
   pointer-events: none;
+  z-index: 2;
 }
+
+.search-filter-tag {
+  position: absolute;
+  left: 32px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--star-filled);
+  color: var(--bg);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.search-filter-tag button {
+  background: none;
+  border: none;
+  color: var(--bg);
+  font-size: 13px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+.search-filter-tag button:hover {
+  opacity: 1;
+}
+
 .search-wrap .search-kbd {
   position: absolute;
   right: var(--space-3);
@@ -336,6 +375,7 @@ textarea:focus-visible {
   border: 1px solid var(--input-border);
   color: var(--text-faint);
 }
+
 .search-clear {
   position: absolute;
   right: 6px;
@@ -361,9 +401,15 @@ textarea:focus-visible {
   color: var(--bg);
 }
 
-/* Status filter chips */
-.chip-row {
+/* Desktop Status Chips & Mobile Dropdown Pill Toggle */
+.desktop-chip-row {
   display: flex;
+}
+.mobile-status-select {
+  display: none;
+}
+
+.chip-row {
   align-items: center;
   gap: var(--space-1);
   flex-wrap: wrap;
@@ -440,20 +486,6 @@ textarea:focus-visible {
 }
 .result-total {
   color: var(--text-faint);
-}
-.link-btn {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--star-filled);
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.link-btn:hover {
-  opacity: 0.75;
 }
 
 .segmented-control {
@@ -1528,7 +1560,22 @@ td.spine-cell {
     text-align: center;
   }
 
-  /* Toolbar Clean Layout Rules for Mobile */
+  /* Mobile Toolbar Controls */
+  .desktop-chip-row {
+    display: none !important;
+  }
+
+  .mobile-status-select {
+    display: block;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--input-border);
+    border-radius: 999px;
+    background: var(--input-bg);
+    color: var(--text);
+    font-size: 13px;
+    width: 100%;
+  }
+
   .toolbar-row {
     display: flex;
     flex-wrap: wrap;
@@ -1541,18 +1588,6 @@ td.spine-cell {
     min-width: 0;
   }
 
-  .chip-row {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    width: 100%;
-    padding-bottom: 4px;
-    scrollbar-width: none;
-  }
-  .chip-row::-webkit-scrollbar {
-    display: none;
-  }
-
   .toolbar-meta {
     display: flex;
     align-items: center;
@@ -1560,6 +1595,7 @@ td.spine-cell {
     flex-wrap: wrap;
     margin-left: 0;
     width: 100%;
+    justify-content: space-between;
   }
 
   .summary-grid {
