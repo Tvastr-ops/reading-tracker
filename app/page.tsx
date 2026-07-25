@@ -404,7 +404,10 @@ export default function HomePage() {
             </select>
           )}
           <div className="search-wrap">
-            <span className="search-icon">🔍</span>
+            <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
             <input
               ref={searchInputRef}
               type="text"
@@ -422,16 +425,19 @@ export default function HomePage() {
             </button>
           )}
           {!showTrash && (
-            <div className="view-toggle-group">
+            <div className="segmented-control">
+              <div className={`segmented-thumb${viewMode === 'table' ? ' right' : ''}`} />
               <button
-                className={`btn view-toggle${viewMode === 'grid' ? ' active' : ''}`}
+                type="button"
+                className={viewMode === 'grid' ? 'active' : ''}
                 onClick={() => viewMode !== 'grid' && toggleViewMode()}
                 title="Cover grid view"
               >
                 ▦ Grid
               </button>
               <button
-                className={`btn view-toggle${viewMode === 'table' ? ' active' : ''}`}
+                type="button"
+                className={viewMode === 'table' ? 'active' : ''}
                 onClick={() => viewMode !== 'table' && toggleViewMode()}
                 title="Table view"
               >

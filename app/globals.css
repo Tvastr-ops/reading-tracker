@@ -208,28 +208,61 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 }
 .filters .btn.accent-fill:hover { opacity: 0.9; }
 
-.search-wrap { position: relative; flex: 1 1 200px; min-width: 160px; }
-.search-wrap input {
-  width: 100%;
-  padding-left: calc(var(--space-3) + 18px);
-}
+/* flex-grow/shrink only, no flex-basis shorthand — a basis like "200px"
+   applies to HEIGHT once a parent switches to flex-direction:column (as
+   .filters does on mobile), which was blowing this wrapper up to 200px
+   tall and leaving the icon floating in the empty space below the input. */
+.search-wrap { position: relative; flex: 1 1 auto; min-width: 160px; }
+.search-wrap input { width: 100%; padding-left: 34px; }
 .search-wrap .search-icon {
   position: absolute;
   left: var(--space-3);
   top: 50%;
   transform: translateY(-50%);
-  font-size: 13px;
+  width: 14px;
+  height: 14px;
   color: var(--text-faint);
   pointer-events: none;
 }
 
-/* Grid/Table as two separate always-visible buttons instead of one toggle
-   whose label changes — clearer at a glance which mode is active. */
-.view-toggle-group { display: flex; gap: var(--space-1); }
-.btn.view-toggle.active {
-  background: var(--accent-bg);
-  color: var(--accent-text);
+/* Sliding segmented control (Grid/Table) — a single pill-shaped track with
+   a highlighted "thumb" that slides between two equal halves, rather than
+   two visually disconnected separate buttons. */
+.segmented-control {
+  position: relative;
+  display: flex;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 999px;
+  padding: 3px;
 }
+.segmented-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  bottom: 3px;
+  width: calc(50% - 3px);
+  background: var(--accent-bg);
+  border-radius: 999px;
+  transition: transform var(--duration-slow) ease;
+  z-index: 0;
+}
+.segmented-thumb.right { transform: translateX(100%); }
+.segmented-control button {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  background: none;
+  border: none;
+  border-radius: 999px;
+  padding: var(--space-2) var(--space-4);
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text);
+  white-space: nowrap;
+  transition: color var(--duration-slow) ease;
+}
+.segmented-control button.active { color: var(--accent-text); }
 
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th, td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
