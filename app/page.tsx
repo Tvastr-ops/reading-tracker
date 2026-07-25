@@ -89,6 +89,15 @@ export default function HomePage() {
     window.localStorage.setItem('ratingMode', next);
   }
 
+  function handleSort(field: SortField) {
+    if (field === sortField) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+  }
+
   function handleSortSelect(value: string) {
     const [field, dir] = value.split('_') as [SortField, SortDir];
     setSortField(field);
