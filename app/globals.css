@@ -182,6 +182,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 
 .filters {
   display: flex;
+  align-items: center;
   gap: var(--space-2);
   flex-wrap: wrap;
   margin-bottom: var(--space-3);
@@ -190,9 +191,44 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .filters select, .filters input[type=text] {
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--input-border);
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
   background: var(--input-bg);
   color: var(--text);
+}
+.filters .btn { border-radius: 999px; }
+
+/* Primary action gets the app's one spent-sparingly accent color (same
+   oxblood as ratings/spine/focus rings) rather than introducing a second
+   accent just for this button — stays inside the existing palette
+   discipline while still reading as "the important one." */
+.filters .btn.accent-fill {
+  background: var(--star-filled);
+  color: var(--bg);
+  border: none;
+}
+.filters .btn.accent-fill:hover { opacity: 0.9; }
+
+.search-wrap { position: relative; flex: 1 1 200px; min-width: 160px; }
+.search-wrap input {
+  width: 100%;
+  padding-left: calc(var(--space-3) + 18px);
+}
+.search-wrap .search-icon {
+  position: absolute;
+  left: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: var(--text-faint);
+  pointer-events: none;
+}
+
+/* Grid/Table as two separate always-visible buttons instead of one toggle
+   whose label changes — clearer at a glance which mode is active. */
+.view-toggle-group { display: flex; gap: var(--space-1); }
+.btn.view-toggle.active {
+  background: var(--accent-bg);
+  color: var(--accent-text);
 }
 
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
