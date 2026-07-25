@@ -180,12 +180,26 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   transition: background-color var(--duration-slow) ease, border-color var(--duration-slow) ease;
 }
 
+/* ==========================================
+   Refined Toolbar / Filters Section
+   ========================================== */
 .filters {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3); /* Increased to 12px for better section separation */
   flex-wrap: wrap;
   margin-bottom: var(--space-3);
+}
+
+.filters-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2); /* Keep tighter 8px gap for related items inside groups */
+  flex-wrap: wrap;
+}
+
+.filters-right {
+  margin-left: auto;
 }
 
 .filters select, .filters input[type=text] {
@@ -197,10 +211,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 }
 .filters .btn { border-radius: 999px; }
 
-/* Primary action gets the app's one spent-sparingly accent color (same
-   oxblood as ratings/spine/focus rings) rather than introducing a second
-   accent just for this button — stays inside the existing palette
-   discipline while still reading as "the important one." */
+/* Primary action gets the app's one spent-sparingly accent color */
 .filters .btn.accent-fill {
   background: var(--star-filled);
   color: var(--bg);
@@ -212,7 +223,11 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
    applies to HEIGHT once a parent switches to flex-direction:column (as
    .filters does on mobile), which was blowing this wrapper up to 200px
    tall and leaving the icon floating in the empty space below the input. */
-.search-wrap { position: relative; flex: 1 1 auto; min-width: 160px; }
+.search-wrap { 
+  position: relative; 
+  flex: 1 1 auto; 
+  min-width: 200px; /* Increased from 160px so it forces a cleaner wrap earlier */
+}
 .search-wrap input { width: 100%; padding-left: 34px; }
 .search-wrap .search-icon {
   position: absolute;
@@ -225,9 +240,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   pointer-events: none;
 }
 
-/* Sliding segmented control (Grid/Table) — a single pill-shaped track with
-   a highlighted "thumb" that slides between two equal halves, rather than
-   two visually disconnected separate buttons. */
+/* Sliding segmented control (Grid/Table) */
 .segmented-control {
   position: relative;
   display: flex;
@@ -264,6 +277,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 }
 .segmented-control button.active { color: var(--accent-text); }
 
+/* (Remaining CSS logic...) */
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th, td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
 th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.02em; }
@@ -673,491 +687,6 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
 }
 
 /* ==========================================
-   Dashboard & Summary Section (Clean Fluid Grid)
-   ========================================== */
-
-.summary-dashboard-card {
-  padding: var(--space-4);
-  background: var(--card-bg);
-  transition: all var(--duration-slow) ease;
-}
-
-.summary-dashboard-card.is-collapsed {
-  padding-bottom: var(--space-3);
-}
-
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-4);
-}
-
-.summary-dashboard-card.is-collapsed .dashboard-header {
-  margin-bottom: var(--space-2);
-}
-
-.dashboard-header h2 {
-  font-size: 18px;
-  font-weight: 700;
-  margin: 0;
-}
-
-.dashboard-header-right {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.stats-toggle-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  transition: color var(--duration-fast) ease, background-color var(--duration-fast) ease;
-}
-
-.stats-toggle-btn:hover {
-  color: var(--text);
-  background: var(--row-hover);
-}
-
-.badge-pill {
-  background: var(--row-hover);
-  border: 1px solid var(--border-soft);
-  padding: 2px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-4);
-}
-
-.dash-card {
-  background: var(--bg);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.dash-card-title {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-  text-transform: uppercase;
-}
-
-.stacked-progress-bar {
-  display: flex;
-  height: 38px;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  margin-top: var(--space-3);
-  margin-bottom: 4px;
-}
-
-.stacked-progress-bar .segment {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-  color: #ffffff;
-  transition: width var(--duration-slow) ease;
-}
-
-.seg-completed { background: var(--status-completed); }
-.seg-reading { background: var(--status-reading); }
-.seg-hold { background: var(--status-hold); }
-.seg-plan { background: var(--status-plan); }
-
-.stacked-pct-labels {
-  display: flex;
-  width: 100%;
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-bottom: var(--space-4);
-}
-
-.status-legend {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-2);
-  margin-bottom: var(--space-4);
-  font-size: 12px;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-}
-
-.dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 2px;
-  display: inline-block;
-  flex-shrink: 0;
-}
-
-.dot-completed { background: var(--status-completed); }
-.dot-reading { background: var(--status-reading); }
-.dot-hold { background: var(--status-hold); }
-.dot-plan { background: var(--status-plan); }
-
-.dash-card-footer {
-  border-top: 1px solid var(--border-soft);
-  padding-top: var(--space-3);
-  font-size: 13px;
-  color: var(--text);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-/* ==========================================
-   Card 2: Mini Bookshelf Viewport & Goal Ring
-   ========================================== */
-
-.dash-card-header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-2);
-}
-
-.pace-badge {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-
-.pace-badge.on-track {
-  background: rgba(63, 107, 79, 0.2);
-  color: var(--status-completed);
-}
-
-.pace-badge.behind {
-  background: rgba(138, 59, 48, 0.2);
-  color: var(--status-reading);
-}
-
-.mini-shelf-container {
-  width: 100%;
-  margin-bottom: var(--space-3);
-  display: flex;
-  flex-direction: column;
-}
-
-.shelf-grid {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 2px;
-  width: 100%;
-  height: 90px;
-  align-items: flex-end;
-}
-
-.shelf-month-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  height: 100%;
-  justify-content: flex-end;
-  min-width: 0;
-}
-
-.shelf-space {
-  width: 100%;
-  height: 70px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.shelf-empty-book {
-  width: 3px;
-  height: 14px;
-  border-radius: 1px;
-  background: var(--border-soft);
-  opacity: 0.4;
-}
-
-.spine-stack {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 1.5px;
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
-
-.mini-book-spine {
-  flex: 1;
-  max-width: 7px;
-  border-radius: 2px 2px 0 0;
-  box-shadow: inset -1px 0 2px rgba(0, 0, 0, 0.25), 1px 0 2px rgba(0, 0, 0, 0.15);
-  position: relative;
-  transition: transform var(--duration-fast) ease, filter var(--duration-fast) ease;
-  cursor: pointer;
-}
-
-.mini-book-spine:hover {
-  transform: translateY(-3px) scaleX(1.1);
-  filter: brightness(1.15);
-}
-
-.spine-rib {
-  position: absolute;
-  top: 20%;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: rgba(255, 255, 255, 0.35);
-}
-
-.spine-overflow-badge {
-  position: absolute;
-  top: -2px;
-  font-size: 8px;
-  font-weight: 800;
-  color: var(--text-muted);
-}
-
-.month-tag {
-  font-size: 10px;
-  color: var(--text-muted);
-  margin-top: 4px;
-}
-
-.bookshelf-ledge {
-  width: 100%;
-  height: 5px;
-  background: var(--border);
-  border-radius: 2px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
-  margin-top: 1px;
-}
-
-[data-theme='dark'] .bookshelf-ledge {
-  background: #3d3527;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
-}
-
-.goal-velocity-row {
-  border-top: 1px solid var(--border-soft);
-  padding-top: var(--space-3);
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.ring-container {
-  position: relative;
-  width: 64px;
-  height: 64px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.radial-ring {
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
-}
-
-.ring-bg {
-  fill: none;
-  stroke: var(--border-soft);
-  stroke-width: 8;
-}
-
-.ring-fill {
-  fill: none;
-  stroke: var(--status-reading);
-  stroke-width: 8;
-  stroke-linecap: round;
-  transition: stroke-dashoffset 0.6s ease;
-}
-
-.ring-text {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.ring-pct {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.goal-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.goal-title-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.goal-edit-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 11px;
-  padding: 0;
-  color: var(--text-muted);
-  text-decoration: underline;
-}
-
-.goal-count-big {
-  font-size: 14px;
-  margin: 2px 0;
-}
-
-.velocity-sub {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-.goal-edit-form {
-  display: flex;
-  gap: 6px;
-}
-
-.goal-edit-form input {
-  width: 60px;
-  padding: 2px 6px;
-  border: 1px solid var(--input-border);
-  background: var(--input-bg);
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-}
-
-.goal-edit-form button {
-  font-size: 11px;
-  padding: 2px 8px;
-  border: 1px solid var(--btn-border);
-  background: var(--card-bg);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-}
-
-/* ==========================================
-   Card 3: Rating Distribution Progress Tracks
-   ========================================== */
-
-.rating-dist-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: var(--space-3);
-}
-
-.rating-dist-row {
-  display: grid;
-  grid-template-columns: 28px 1fr 64px;
-  align-items: center;
-  gap: 10px;
-  font-size: 13px;
-}
-
-.rating-dist-row.zero-count {
-  opacity: 0.45;
-}
-
-.star-label {
-  font-weight: 600;
-  color: var(--text);
-}
-
-.bar-track {
-  width: 100%;
-  height: 8px;
-  background: var(--border-soft);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.bar-fill {
-  height: 100%;
-  background: var(--star-filled);
-  border-radius: 999px;
-  transition: width var(--duration-slow) ease-in-out;
-}
-
-.rating-metrics {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-  font-size: 11px;
-  font-family: monospace;
-}
-
-.count-tag {
-  font-weight: 700;
-  color: var(--text);
-}
-
-.pct-tag {
-  color: var(--text-muted);
-}
-
-.collapsed-summary-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  align-items: center;
-  padding: var(--space-2) var(--space-3);
-  background: var(--bg);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-}
-
-.collapsed-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.collapsed-label {
-  color: var(--text-muted);
-}
-
-.fade-in {
-  animation: fadeIn var(--duration-base) ease both;
-}
-
-/* ==========================================
    Media Queries
    ========================================== */
 
@@ -1181,10 +710,14 @@ th.spine-col, td.spine-cell { padding: 0; width: 4px; }
   .topbar > div:last-child { display: flex; flex-wrap: wrap; }
   .topbar > div:last-child .btn,
   .topbar > div:last-child a { flex: 1 1 auto; text-align: center; }
-  .filters { flex-direction: column; align-items: stretch; }
+  
+  /* Retain mobile stacked integrity by forcing group-items to span fully */
+  .filters { flex-direction: column; align-items: stretch; gap: var(--space-2); }
+  .filters-group { flex-direction: column; align-items: stretch; width: 100%; gap: var(--space-2); }
+  .filters-right { margin-left: 0; }
+  .filters-group > * { width: 100%; }
   .filters > * { width: 100%; }
-  .filters > .filter-spacer { display: none; }
-
+  
   .summary-grid { grid-template-columns: repeat(2, 1fr); }
 
   .modal {
