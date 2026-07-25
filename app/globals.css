@@ -254,7 +254,13 @@ textarea:focus-visible {
   flex-wrap: wrap;
 }
 
-/* Second row reads as supporting info: filter chips left, meta/options right. */
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
 .toolbar-row-sub {
   gap: var(--space-3);
   justify-content: space-between;
@@ -398,7 +404,7 @@ textarea:focus-visible {
   outline-offset: 2px;
 }
 
-/* Active chip state with colored background tint based on status */
+/* Active chip state dynamically inherits background color */
 .chip.active {
   background: color-mix(
     in srgb,
@@ -436,6 +442,19 @@ textarea:focus-visible {
   flex-wrap: wrap;
   margin-left: auto;
 }
+
+.meta-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.meta-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .result-count {
   font-size: 12px;
   color: var(--text-muted);
@@ -1516,6 +1535,12 @@ td.spine-cell {
   }
 }
 
+@media (min-width: 721px) {
+  .show-mobile {
+    display: none !important;
+  }
+}
+
 @media (max-width: 720px) {
   .container {
     padding: var(--space-4) var(--space-3) 48px;
@@ -1537,45 +1562,89 @@ td.spine-cell {
     text-align: center;
   }
 
-  /* Search claims its own full-width line; the action buttons share the
-     line below it and stretch to fill, so nothing gets orphaned. */
+  .hide-mobile {
+    display: none !important;
+  }
+  .show-mobile {
+    display: inline !important;
+  }
+
+  /* Structured flex forces all buttons on row 2 & row 4 to fit dynamically without wrapping */
+  .toolbar-row {
+    gap: 6px;
+  }
   .search-wrap {
     flex: 1 1 100%;
     order: -1;
-  }
-  .toolbar-row > .btn.accent-fill {
-    flex: 1 1 auto;
-    justify-content: center;
-  }
-  .toolbar-row > .segmented-control {
-    flex: 1 1 auto;
-  }
-  .toolbar-row > .btn.secondary {
-    flex: 0 1 auto;
+    margin-bottom: 4px;
   }
 
-  /* Keeps filter chips on a single swipeable row on mobile screens */
+  .toolbar-actions {
+    width: 100%;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+  .toolbar-actions > * {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    padding-left: 4px;
+    padding-right: 4px;
+    font-size: 12px;
+  }
+
+  .segmented-control button {
+    padding: 4px 6px;
+    font-size: 11px;
+  }
+
+  /* Status chips strictly horizontally scrollable */
   .chip-row {
     flex-wrap: nowrap;
     overflow-x: auto;
     width: 100%;
     padding-bottom: var(--space-1);
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; /* Firefox */
+    scrollbar-width: none;
   }
   .chip-row::-webkit-scrollbar {
     display: none;
-  } /* Chrome/Safari/Edge */
+  }
 
   .toolbar-row-sub {
     flex-direction: column;
     align-items: stretch;
+    gap: 8px;
   }
+
   .toolbar-meta {
+    width: 100%;
     margin-left: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
   }
   .toolbar-divider {
     display: none;
+  }
+
+  .meta-stats {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .meta-actions {
+    width: 100%;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+  .meta-actions > * {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    padding-left: 2px;
+    padding-right: 2px;
+    font-size: 11px;
   }
 
   .summary-grid {
