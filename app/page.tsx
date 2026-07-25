@@ -388,116 +388,118 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* TOOLBAR MATCHING MOCKUP 1000321907.png & 1000321908.png */}
-      <div className="card mockup-toolbar-card">
-        <div className="mockup-toolbar">
-
-          {/* Main Controls Row (Row 1 on Desktop, Rows 1 & 2 on Mobile) */}
-          <div className="mockup-row mockup-row-main">
-
-            {/* Search Box */}
-            <div className="mockup-search-box">
-              <svg className="search-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <circle cx="11" cy="11" r="7" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search title, author, tags..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                aria-label="Search entries"
-              />
-              {search ? (
-                <button className="search-clear-btn" onClick={() => setSearch('')} aria-label="Clear search">×</button>
-              ) : (
-                <span className="mockup-kbd-tag search-kbd">/</span>
-              )}
-            </div>
-
-            {/* Add Entry Button */}
-            {!showTrash && (
-              <button className="mockup-add-btn" onClick={() => setEditing(null)}>
-                <svg className="btn-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                <span className="btn-label">Add Entry</span>
-                <span className="mockup-kbd-tag">n</span>
-              </button>
+      {/* 1:1 REBUILT TOOLBAR (Desktop & Mobile Sync) */}
+      <div className="tb-card">
+        
+        {/* ROW 1 (Desktop) / ROWS 1 & 2 (Mobile) */}
+        <div className="tb-top-row">
+          
+          {/* SEARCH (First on mobile, second on desktop) */}
+          <div className="tb-search">
+            <svg className="tb-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <circle cx="11" cy="11" r="7" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search title, author, tags..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Search entries"
+            />
+            {search ? (
+              <button className="tb-search-clear" onClick={() => setSearch('')}>×</button>
+            ) : (
+              <span className="tb-kbd tb-search-kbd">/</span>
             )}
-
-            {/* Grid / Table Switch */}
-            {!showTrash && (
-              <div className="mockup-segmented-switch">
-                <button
-                  type="button"
-                  className={`switch-tab ${viewMode === 'grid' ? 'active' : ''}`}
-                  onClick={() => viewMode !== 'grid' && toggleViewMode()}
-                >
-                  <svg className="switch-icon" viewBox="0 0 24 24" fill="currentColor">
-                    <rect x="3" y="3" width="7" height="7" rx="1.5" />
-                    <rect x="14" y="3" width="7" height="7" rx="1.5" />
-                    <rect x="3" y="14" width="7" height="7" rx="1.5" />
-                    <rect x="14" y="14" width="7" height="7" rx="1.5" />
-                  </svg>
-                  <span>Grid</span>
-                </button>
-                <button
-                  type="button"
-                  className={`switch-tab ${viewMode === 'table' ? 'active' : ''}`}
-                  onClick={() => viewMode !== 'table' && toggleViewMode()}
-                >
-                  <svg className="switch-icon" viewBox="0 0 24 24" fill="currentColor">
-                    <rect x="3" y="5" width="18" height="3" rx="1" />
-                    <rect x="3" y="11" width="18" height="3" rx="1" />
-                    <rect x="3" y="17" width="18" height="3" rx="1" />
-                  </svg>
-                  <span>Table</span>
-                </button>
-              </div>
-            )}
-
-            {/* Trash Button */}
-            <button
-              className={`mockup-icon-btn trash-btn ${showTrash ? 'active' : ''}`}
-              onClick={() => setShowTrash((v) => !v)}
-              title={showTrash ? 'Back to library' : 'Trash'}
-            >
-              <svg className="btn-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-              </svg>
-              <span className="desktop-trash-label">{showTrash ? 'Library' : 'Trash'}</span>
-            </button>
           </div>
 
-          {/* Filters Row (Row 2 on Desktop, Row 3 on Mobile) */}
-          <div className="mockup-row mockup-row-filters">
-            {/* Status Dropdown */}
+          {/* ADD ENTRY (First on desktop, second on mobile) */}
+          {!showTrash && (
+            <button className="tb-add-btn" onClick={() => setEditing(null)}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: 16, height: 16 }}>
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Add Entry</span>
+              <span className="tb-kbd">n</span>
+            </button>
+          )}
+
+          {/* VIEW SWITCH (Third on both) */}
+          {!showTrash && (
+            <div className="tb-switch">
+              <button
+                type="button"
+                className={`tb-switch-tab ${viewMode === 'grid' ? 'active' : ''}`}
+                onClick={() => viewMode !== 'grid' && toggleViewMode()}
+              >
+                <svg className="tb-switch-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+                  <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                  <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+                  <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+                </svg>
+                <span>Grid</span>
+              </button>
+              <button
+                type="button"
+                className={`tb-switch-tab ${viewMode === 'table' ? 'active' : ''}`}
+                onClick={() => viewMode !== 'table' && toggleViewMode()}
+              >
+                <svg className="tb-switch-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="3" y="5" width="18" height="3" rx="1"/>
+                  <rect x="3" y="11" width="18" height="3" rx="1"/>
+                  <rect x="3" y="17" width="18" height="3" rx="1"/>
+                </svg>
+                <span>Table</span>
+              </button>
+            </div>
+          )}
+
+          {/* DESKTOP TRASH (Fourth on desktop, hidden on mobile) */}
+          <button
+            className={`tb-trash-desktop ${showTrash ? 'active' : ''}`}
+            onClick={() => setShowTrash((v) => !v)}
+            title={showTrash ? 'Back to library' : 'Trash'}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <span>{showTrash ? 'Library' : 'Trash'}</span>
+          </button>
+        </div>
+
+        {/* BOTTOM ROWS (Filters and Metadata) */}
+        <div className="tb-bottom-row">
+          
+          {/* Scrollable Filters Strip */}
+          <div className="tb-filters">
+            {/* Status */}
             {!showTrash && (
-              <div className="mockup-select-wrap">
-                <svg className="select-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <div className="tb-select-wrap tb-filter-status">
+                <svg className="tb-select-icon left" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
                 </svg>
-                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="mockup-select">
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="tb-select">
                   <option value="All">Status</option>
                   {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
-                <svg className="caret-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <svg className="tb-select-icon right" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
               </div>
             )}
 
-            {/* Sort Dropdown */}
+            {/* Sort */}
             {!showTrash && (
-              <div className="mockup-select-wrap">
-                <svg className="select-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M7 16V3M7 3L3 7M7 3l4 4M17 8v13M17 21l4-4M17 21l-4-4" />
+              <div className="tb-select-wrap tb-filter-sort">
+                <svg className="tb-select-icon left" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M7 16V3M7 3L3 7M7 3l4 4M17 8v13M17 21l4-4M17 21l-4-4"/>
                 </svg>
-                <select value={sortOption} onChange={(e) => setSortOption(e.target.value)} className="mockup-select">
+                <select value={sortOption} onChange={(e) => setSortOption(e.target.value)} className="tb-select">
                   <option value="updated_at_desc">Sort: Recently updated</option>
                   <option value="created_at_desc">Sort: Recently added</option>
                   <option value="title_asc">Sort: Title (A–Z)</option>
@@ -505,19 +507,19 @@ export default function HomePage() {
                   <option value="rating_desc">Sort: Rating</option>
                   <option value="author_asc">Sort: Author</option>
                 </select>
-                <svg className="caret-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <svg className="tb-select-icon right" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
               </div>
             )}
 
-            {/* Rating Dropdown */}
+            {/* Rating */}
             {!showTrash && (
-              <div className="mockup-select-wrap">
-                <svg className="select-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <div className="tb-select-wrap tb-filter-rating">
+                <svg className="tb-select-icon left" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                 </svg>
-                <select value={ratingFilter} onChange={(e) => setRatingFilter(e.target.value)} className="mockup-select">
+                <select value={ratingFilter} onChange={(e) => setRatingFilter(e.target.value)} className="tb-select">
                   <option value="All">Rating</option>
                   <option value="5">5★ Stars</option>
                   <option value="4+">4★ & Up</option>
@@ -526,104 +528,115 @@ export default function HomePage() {
                   <option value="1+">1★ & Up</option>
                   <option value="unrated">Unrated</option>
                 </select>
-                <svg className="caret-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <svg className="tb-select-icon right" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
               </div>
             )}
 
-            {/* Up Next Button */}
+            {/* Up Next */}
             {!showTrash && (
-              <button className="mockup-upnext-btn" onClick={pickUpNext} title="Get a random entry to read next">
-                <svg className="btn-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2l2.4 5.6L20 10l-5.6 2.4L12 18l-2.4-5.6L4 10l5.6-2.4z" />
+              <button className="tb-upnext-btn tb-filter-upnext" onClick={pickUpNext} title="Get a random entry to read next">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
+                  <path d="M12 2l2.4 5.6L20 10l-5.6 2.4L12 18l-2.4-5.6L4 10l5.6-2.4z"/>
                 </svg>
                 <span>Up next</span>
               </button>
             )}
 
-            {/* Desktop Entries Count */}
-            <div className="mockup-entries-counter desktop-counter">
-              <svg className="book-count-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            {/* MOBILE TRASH (Appears at end of scroll row on mobile) */}
+            <button
+              className={`tb-trash-mobile tb-filter-trash ${showTrash ? 'active' : ''}`}
+              onClick={() => setShowTrash((v) => !v)}
+              title={showTrash ? 'Back to library' : 'Trash'}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
-              <span>{filtered.length} entries</span>
-            </div>
+            </button>
           </div>
 
-          {/* Bottom Divider & Mobile Entries Count */}
-          <div className="mockup-bottom-meta">
-            <div className="mockup-divider"></div>
-            <div className="mockup-entries-counter mobile-counter">
-              <svg className="book-count-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-              </svg>
-              <span>{filtered.length} entries</span>
-            </div>
+          {/* DESKTOP ENTRY COUNT */}
+          <div className="tb-count-desktop">
+            <svg className="tb-count-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+            <span>{filtered.length} entries</span>
           </div>
-
         </div>
 
-        {viewMode === 'table' && selectMode && selected.size > 0 && (
-          <div className="bulk-bar" style={{ marginTop: 12 }}>
-            <strong>{selected.size} selected</strong>
-            {!showTrash && (
-              <>
-                <select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)}>
-                  {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-                <button className="btn secondary" onClick={() => bulkAction('status')}>Set status</button>
-                <button className="btn danger" onClick={() => bulkAction('delete')}>Delete selected</button>
-              </>
-            )}
-            {showTrash && (
-              <>
-                <button className="btn secondary" onClick={() => bulkAction('restore')}>Restore selected</button>
-                <button className="btn danger" onClick={() => bulkAction('delete_permanent')}>Delete forever</button>
-              </>
-            )}
-            <button className="mono-btn" style={{ marginLeft: 'auto' }} onClick={() => setSelected(new Set())}>Clear</button>
+        {/* MOBILE BOTTOM META (Divider & Entries Count) */}
+        <div className="tb-mobile-meta">
+          <div className="tb-divider"></div>
+          <div className="tb-count-mobile">
+            <svg className="tb-count-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+            <span>{filtered.length} entries</span>
           </div>
-        )}
-
-        {error && <div className="error-text">{error}</div>}
-        {loading ? (
-          <div style={{ marginTop: 16 }}>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="skeleton skeleton-row" />
-            ))}
-          </div>
-        ) : viewMode === 'grid' && !showTrash ? (
-          <BookGrid
-            books={filtered}
-            ratingMode={ratingMode}
-            hasAnyBooks={books.length > 0}
-            onEdit={(b) => setEditing(b)}
-            onDelete={deleteBook}
-          />
-        ) : (
-          <BookTable
-            books={filtered}
-            ratingMode={ratingMode}
-            sortField={currentSortField}
-            sortDir={currentSortDir}
-            onSort={handleTableSort}
-            trashMode={showTrash}
-            hasAnyBooks={books.length > 0}
-            selectMode={selectMode}
-            selected={selected}
-            onToggleSelect={toggleSelect}
-            focusedId={focusedIndex >= 0 ? filtered[focusedIndex]?.id ?? null : null}
-            onEdit={(b) => setEditing(b)}
-            onDelete={deleteBook}
-            onRestore={restoreBook}
-            onPermanentDelete={permanentlyDeleteBook}
-            onQuickStatus={quickStatusChange}
-          />
-        )}
+        </div>
       </div>
+
+      {viewMode === 'table' && selectMode && selected.size > 0 && (
+        <div className="bulk-bar" style={{ marginTop: 12, marginBottom: 12 }}>
+          <strong>{selected.size} selected</strong>
+          {!showTrash && (
+            <>
+              <select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)}>
+                {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <button className="btn secondary" onClick={() => bulkAction('status')}>Set status</button>
+              <button className="btn danger" onClick={() => bulkAction('delete')}>Delete selected</button>
+            </>
+          )}
+          {showTrash && (
+            <>
+              <button className="btn secondary" onClick={() => bulkAction('restore')}>Restore selected</button>
+              <button className="btn danger" onClick={() => bulkAction('delete_permanent')}>Delete forever</button>
+            </>
+          )}
+          <button className="mono-btn" style={{ marginLeft: 'auto' }} onClick={() => setSelected(new Set())}>Clear</button>
+        </div>
+      )}
+
+      {error && <div className="error-text">{error}</div>}
+      {loading ? (
+        <div style={{ marginTop: 16 }}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="skeleton skeleton-row" />
+          ))}
+        </div>
+      ) : viewMode === 'grid' && !showTrash ? (
+        <BookGrid
+          books={filtered}
+          ratingMode={ratingMode}
+          hasAnyBooks={books.length > 0}
+          onEdit={(b) => setEditing(b)}
+          onDelete={deleteBook}
+        />
+      ) : (
+        <BookTable
+          books={filtered}
+          ratingMode={ratingMode}
+          sortField={currentSortField}
+          sortDir={currentSortDir}
+          onSort={handleTableSort}
+          trashMode={showTrash}
+          hasAnyBooks={books.length > 0}
+          selectMode={selectMode}
+          selected={selected}
+          onToggleSelect={toggleSelect}
+          focusedId={focusedIndex >= 0 ? filtered[focusedIndex]?.id ?? null : null}
+          onEdit={(b) => setEditing(b)}
+          onDelete={deleteBook}
+          onRestore={restoreBook}
+          onPermanentDelete={permanentlyDeleteBook}
+          onQuickStatus={quickStatusChange}
+        />
+      )}
 
       {editing !== undefined && (
         <BookForm
