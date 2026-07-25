@@ -393,16 +393,18 @@ export default function HomePage() {
       )}
 
       <div className="card">
+        {/* STRUCTURAL UPDATE: Filters grouped into 3 distinct visual zones */}
         <div className="filters">
           {!showTrash && (
-            <button className="btn accent-fill" onClick={() => setEditing(null)}>+ Add entry (n)</button>
+            <div className="filters-group">
+              <button className="btn accent-fill" onClick={() => setEditing(null)}>+ Add entry (n)</button>
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option value="All">All statuses</option>
+                {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
           )}
-          {!showTrash && (
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="All">All statuses</option>
-              {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          )}
+
           <div className="search-wrap">
             <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
               <circle cx="11" cy="11" r="7" />
@@ -416,47 +418,49 @@ export default function HomePage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <button className="btn secondary" onClick={toggleRatingMode}>
-            Rating: {ratingMode === 'stars' ? '★' : '#.#'} ▾
-          </button>
-          {!showTrash && (
-            <button className="btn secondary" onClick={pickUpNext} title="Randomly pick from Plan to Read">
-              ↻ Up next
+
+          <div className="filters-group filters-right">
+            <button className="btn secondary" onClick={toggleRatingMode}>
+              Rating: {ratingMode === 'stars' ? '★' : '#.#'} ▾
             </button>
-          )}
-          {!showTrash && (
-            <div className="segmented-control">
-              <div className={`segmented-thumb${viewMode === 'table' ? ' right' : ''}`} />
-              <button
-                type="button"
-                className={viewMode === 'grid' ? 'active' : ''}
-                onClick={() => viewMode !== 'grid' && toggleViewMode()}
-                title="Cover grid view"
-              >
-                ▦ Grid
+            {!showTrash && (
+              <button className="btn secondary" onClick={pickUpNext} title="Randomly pick from Plan to Read">
+                ↻ Up next
               </button>
+            )}
+            {!showTrash && (
+              <div className="segmented-control">
+                <div className={`segmented-thumb${viewMode === 'table' ? ' right' : ''}`} />
+                <button
+                  type="button"
+                  className={viewMode === 'grid' ? 'active' : ''}
+                  onClick={() => viewMode !== 'grid' && toggleViewMode()}
+                  title="Cover grid view"
+                >
+                  ▦ Grid
+                </button>
+                <button
+                  type="button"
+                  className={viewMode === 'table' ? 'active' : ''}
+                  onClick={() => viewMode !== 'table' && toggleViewMode()}
+                  title="Table view"
+                >
+                  ☰ Table
+                </button>
+              </div>
+            )}
+            {viewMode === 'table' && (
               <button
-                type="button"
-                className={viewMode === 'table' ? 'active' : ''}
-                onClick={() => viewMode !== 'table' && toggleViewMode()}
-                title="Table view"
+                className="btn secondary"
+                onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}
               >
-                ☰ Table
+                {selectMode ? 'Done selecting' : 'Select'}
               </button>
-            </div>
-          )}
-          {viewMode === 'table' && (
-            <button
-              className="btn secondary"
-              onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}
-            >
-              {selectMode ? 'Done selecting' : 'Select'}
+            )}
+            <button className="btn secondary" onClick={() => setShowTrash((v) => !v)}>
+              🗑 {showTrash ? '← Back to library' : 'Trash'}
             </button>
-          )}
-          <div className="filter-spacer" style={{ flex: 1 }} />
-          <button className="btn secondary" onClick={() => setShowTrash((v) => !v)}>
-            🗑 {showTrash ? '← Back to library' : 'Trash'}
-          </button>
+          </div>
         </div>
 
         {viewMode === 'table' && selectMode && selected.size > 0 && (
