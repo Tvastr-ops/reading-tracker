@@ -50,9 +50,6 @@ export default function HomePage() {
     if (saved === 'decimal' || saved === 'stars') setRatingMode(saved);
     const savedView = window.localStorage.getItem('viewMode');
     if (savedView === 'grid' || savedView === 'table') setViewMode(savedView);
-    // Status filter, search, and sort used to reset every visit — habitual
-    // preferences (e.g. always sorting by rating) meant redoing the same
-    // clicks every session.
     const savedStatus = window.localStorage.getItem('statusFilter');
     if (savedStatus) setStatusFilter(savedStatus);
     const savedSearch = window.localStorage.getItem('search');
@@ -61,9 +58,6 @@ export default function HomePage() {
     if (savedSortField) setSortField(savedSortField as SortField);
     const savedSortDir = window.localStorage.getItem('sortDir');
     if (savedSortDir === 'asc' || savedSortDir === 'desc') setSortDir(savedSortDir);
-    // layout.tsx already set the real data-theme attribute before paint
-    // (avoids a flash); this just syncs React state to match it so the
-    // toggle button shows the right icon.
     const current = document.documentElement.getAttribute('data-theme');
     setTheme(current === 'dark' ? 'dark' : 'light');
   }, []);
@@ -158,14 +152,13 @@ export default function HomePage() {
 
   async function quickStatusChange(b: Book) {
     const next = STATUSES[(STATUSES.indexOf(b.status) + 1) % STATUSES.length];
-    // Optimistic update so the click feels instant.
     setBooks((prev) => prev.map((x) => (x.id === b.id ? { ...x, status: next } : x)));
     const res = await fetch(`/api/books/${b.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: next }),
     });
-    if (!res.ok) load(); // revert to server truth if it failed
+    if (!res.ok) load();
   }
 
   async function logout() {
@@ -253,14 +246,6 @@ export default function HomePage() {
     });
   }
 
-  // Keyboard shortcuts: "/" focuses search, "n" opens the add-entry modal.
-  // Ignored while typing in any field so normal typing (e.g. a note
-  // containing the letter "n") is never hijacked. Escape-closes-modal is
-  // handled by BookForm itself, not here — keeps this listener decoupled
-  // from the modal's internals.
-  // (keyboard shortcut effect moved below, after `filtered` is defined —
-  // row navigation needs to read the current filtered/sorted list)
-
   const filtered = useMemo(() => {
     let list = books.filter((b) => {
       if (!showTrash && statusFilter !== 'All' && b.status !== statusFilter) return false;
@@ -305,9 +290,6 @@ export default function HomePage() {
     return list;
   }, [books, statusFilter, search, sortField, sortDir, showTrash]);
 
-  // Counts per status power the filter chips, so you can see how many
-  // entries sit behind each filter before clicking it. Always derived from
-  // the full `books` list (not `filtered`) so numbers stay stable.
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = { All: books.length };
     for (const s of STATUSES) counts[s] = 0;
@@ -322,9 +304,6 @@ export default function HomePage() {
     setSearch('');
   }
 
-  // Reset the keyboard-nav cursor whenever the visible list changes shape
-  // (new filter/search/sort, or switching library/trash) — an old index
-  // could otherwise point at the wrong row after the list reorders.
   useEffect(() => { setFocusedIndex(-1); }, [filtered.length, statusFilter, search, sortField, sortDir, showTrash]);
 
   useEffect(() => {
@@ -340,9 +319,6 @@ export default function HomePage() {
       const typing = tag === 'input' || tag === 'textarea' || tag === 'select';
       if (typing) return;
 
-      // Table-only row navigation: Up/Down moves a highlighted row, Enter
-      // opens it for editing. Disabled in grid view (no row concept there),
-      // trash (different action set), and while the modal is open.
       const rowNavActive = viewMode === 'table' && !showTrash && editing === undefined;
       if (rowNavActive && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
         e.preventDefault();
@@ -430,8 +406,6 @@ export default function HomePage() {
       )}
 
       <div className="card">
-        {/* Toolbar: row 1 = primary actions + search + view switch,
-            row 2 = status filter chips + result meta / display options. */}
         <div className="toolbar">
           <div className="toolbar-row">
             {!showTrash && (
@@ -493,7 +467,7 @@ export default function HomePage() {
           </div>
 
           <div className="toolbar-row toolbar-row-sub">
-            {(openMenu) && (
+            {openMenu && (
               <div className="menu-backdrop" onClick={() => setOpenMenu(null)} />
             )}
 
@@ -526,6 +500,7 @@ export default function HomePage() {
             )}
 
             <button
+              type="button"
               className="btn secondary compact"
               onClick={toggleRatingMode}
               title="Toggle between stars and decimal ratings"
@@ -533,7 +508,7 @@ export default function HomePage() {
               ⭐ Rating: {ratingMode === 'stars' ? '★★★' : '#.#'} ▾
             </button>
 
-            <div className="dropdown-wrap">
+            <div className="dropdown-wrap align-right">
               <button
                 type="button"
                 className="btn secondary compact"
@@ -566,6 +541,7 @@ export default function HomePage() {
 
             {viewMode === 'table' && (
               <button
+                type="button"
                 className={`btn secondary compact${selectMode ? ' is-on' : ''}`}
                 onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}
               >
