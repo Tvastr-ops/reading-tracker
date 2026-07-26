@@ -35,7 +35,7 @@ export const STATUS_COLOR_VAR: Record<string, string> = {
   Dropped: 'var(--status-dropped)',
 };
 
-export type SortField = 'updated_at' | 'title' | 'rating' | 'date_finished' | 'status';
+export type SortField = 'updated_at' | 'created_at' | 'title' | 'rating' | 'date_finished' | 'status' | 'progress' | 'author';
 export type SortDir = 'asc' | 'desc';
 
 export interface ReadingLogEntry {
