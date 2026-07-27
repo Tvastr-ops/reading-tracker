@@ -1,13 +1,23 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Book, BookInput, STATUSES, STATUS_COLOR_VAR, SortField, SortDir } from '@/lib/types';
+import { Book, BookInput, STATUSES, SortField, SortDir } from '@/lib/types';
 import BookTable from '@/components/BookTable';
 import BookGrid from '@/components/BookGrid';
 import BookForm from '@/components/BookForm';
 import StatsSummary from '@/components/StatsSummary';
 import Toast, { ToastState } from '@/components/Toast';
 import { useRouter } from 'next/navigation';
+
+const SORT_PRESETS: { label: string; field: SortField; dir: SortDir }[] = [
+  { label: 'Recently added', field: 'created_at', dir: 'desc' },
+  { label: 'Recently updated', field: 'updated_at', dir: 'desc' },
+  { label: 'Title (A–Z)', field: 'title', dir: 'asc' },
+  { label: 'Title (Z–A)', field: 'title', dir: 'desc' },
+  { label: 'Progress', field: 'progress', dir: 'desc' },
+  { label: 'Rating', field: 'rating', dir: 'desc' },
+  { label: 'Author', field: 'author', dir: 'asc' },
+];
 
 export default function HomePage() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -26,6 +36,7 @@ export default function HomePage() {
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [openMenu, setOpenMenu] = useState<'status' | 'sort' | null>(null);
   const [selectMode, setSelectMode] = useState(false);
   const [bulkStatus, setBulkStatus] = useState<string>(STATUSES[0]);
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -39,9 +50,6 @@ export default function HomePage() {
     if (saved === 'decimal' || saved === 'stars') setRatingMode(saved);
     const savedView = window.localStorage.getItem('viewMode');
     if (savedView === 'grid' || savedView === 'table') setViewMode(savedView);
-    // Status filter, search, and sort used to reset every visit — habitual
-    // preferences (e.g. always sorting by rating) meant redoing the same
-    // clicks every session.
     const savedStatus = window.localStorage.getItem('statusFilter');
     if (savedStatus) setStatusFilter(savedStatus);
     const savedSearch = window.localStorage.getItem('search');
@@ -50,9 +58,6 @@ export default function HomePage() {
     if (savedSortField) setSortField(savedSortField as SortField);
     const savedSortDir = window.localStorage.getItem('sortDir');
     if (savedSortDir === 'asc' || savedSortDir === 'desc') setSortDir(savedSortDir);
-    // layout.tsx already set the real data-theme attribute before paint
-    // (avoids a flash); this just syncs React state to match it so the
-    // toggle button shows the right icon.
     const current = document.documentElement.getAttribute('data-theme');
     setTheme(current === 'dark' ? 'dark' : 'light');
   }, []);
@@ -76,7 +81,7 @@ export default function HomePage() {
     window.localStorage.setItem('theme', next);
   }
 
-  useEffect(() => { load(); setSelected(new Set()); setSelectMode(false); }, [showTrash]);
+  useEffect(() => { load(); setSelected(new Set()); setSelectMode(false); setOpenMenu(null); }, [showTrash]);
 
   async function load() {
     setLoading(true);
@@ -147,14 +152,13 @@ export default function HomePage() {
 
   async function quickStatusChange(b: Book) {
     const next = STATUSES[(STATUSES.indexOf(b.status) + 1) % STATUSES.length];
-    // Optimistic update so the click feels instant.
     setBooks((prev) => prev.map((x) => (x.id === b.id ? { ...x, status: next } : x)));
     const res = await fetch(`/api/books/${b.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: next }),
     });
-    if (!res.ok) load(); // revert to server truth if it failed
+    if (!res.ok) load();
   }
 
   async function logout() {
@@ -242,14 +246,6 @@ export default function HomePage() {
     });
   }
 
-  // Keyboard shortcuts: "/" focuses search, "n" opens the add-entry modal.
-  // Ignored while typing in any field so normal typing (e.g. a note
-  // containing the letter "n") is never hijacked. Escape-closes-modal is
-  // handled by BookForm itself, not here — keeps this listener decoupled
-  // from the modal's internals.
-  // (keyboard shortcut effect moved below, after `filtered` is defined —
-  // row navigation needs to read the current filtered/sorted list)
-
   const filtered = useMemo(() => {
     let list = books.filter((b) => {
       if (!showTrash && statusFilter !== 'All' && b.status !== statusFilter) return false;
@@ -276,6 +272,15 @@ export default function HomePage() {
         case 'date_finished':
           cmp = (a.date_finished || '').localeCompare(b.date_finished || '');
           break;
+        case 'created_at':
+          cmp = a.created_at.localeCompare(b.created_at);
+          break;
+        case 'progress':
+          cmp = (a.progress ?? -1) - (b.progress ?? -1);
+          break;
+        case 'author':
+          cmp = (a.author || '').localeCompare(b.author || '');
+          break;
         default:
           cmp = a.updated_at.localeCompare(b.updated_at);
       }
@@ -285,9 +290,6 @@ export default function HomePage() {
     return list;
   }, [books, statusFilter, search, sortField, sortDir, showTrash]);
 
-  // Counts per status power the filter chips, so you can see how many
-  // entries sit behind each filter before clicking it. Always derived from
-  // the full `books` list (not `filtered`) so numbers stay stable.
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = { All: books.length };
     for (const s of STATUSES) counts[s] = 0;
@@ -302,9 +304,6 @@ export default function HomePage() {
     setSearch('');
   }
 
-  // Reset the keyboard-nav cursor whenever the visible list changes shape
-  // (new filter/search/sort, or switching library/trash) — an old index
-  // could otherwise point at the wrong row after the list reorders.
   useEffect(() => { setFocusedIndex(-1); }, [filtered.length, statusFilter, search, sortField, sortDir, showTrash]);
 
   useEffect(() => {
@@ -320,9 +319,6 @@ export default function HomePage() {
       const typing = tag === 'input' || tag === 'textarea' || tag === 'select';
       if (typing) return;
 
-      // Table-only row navigation: Up/Down moves a highlighted row, Enter
-      // opens it for editing. Disabled in grid view (no row concept there),
-      // trash (different action set), and while the modal is open.
       const rowNavActive = viewMode === 'table' && !showTrash && editing === undefined;
       if (rowNavActive && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
         e.preventDefault();
@@ -410,8 +406,6 @@ export default function HomePage() {
       )}
 
       <div className="card">
-        {/* Toolbar: row 1 = primary actions + search + view switch,
-            row 2 = status filter chips + result meta / display options. */}
         <div className="toolbar">
           <div className="toolbar-row">
             {!showTrash && (
@@ -473,22 +467,86 @@ export default function HomePage() {
           </div>
 
           <div className="toolbar-row toolbar-row-sub">
+            {openMenu && (
+              <div className="menu-backdrop" onClick={() => setOpenMenu(null)} />
+            )}
+
             {!showTrash && (
-              <div className="chip-row" role="group" aria-label="Filter by status">
-                {(['All', ...STATUSES] as string[]).map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    className={`chip${statusFilter === s ? ' active' : ''}`}
-                    style={{ '--chip-color': STATUS_COLOR_VAR[s] ?? 'var(--text-muted)' } as React.CSSProperties}
-                    aria-pressed={statusFilter === s}
-                    onClick={() => setStatusFilter(s)}
-                  >
-                    {s === 'All' ? 'All' : s}
-                    <span className="chip-count">{statusCounts[s] ?? 0}</span>
-                  </button>
-                ))}
+              <div className="dropdown-wrap">
+                <button
+                  type="button"
+                  className={`btn secondary compact${statusFilter !== 'All' ? ' is-on' : ''}`}
+                  onClick={() => setOpenMenu(openMenu === 'status' ? null : 'status')}
+                  aria-expanded={openMenu === 'status'}
+                >
+                  🔖 {statusFilter === 'All' ? 'Status' : statusFilter} ▾
+                </button>
+                {openMenu === 'status' && (
+                  <div className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
+                    {(['All', ...STATUSES] as string[]).map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        className={statusFilter === s ? 'active' : ''}
+                        onClick={() => { setStatusFilter(s); setOpenMenu(null); }}
+                      >
+                        <span>{s}</span>
+                        <span className="dropdown-count">{statusCounts[s] ?? 0}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
+            )}
+
+            <button
+              type="button"
+              className="btn secondary compact"
+              onClick={toggleRatingMode}
+              title="Toggle between stars and decimal ratings"
+            >
+              ⭐ Rating: {ratingMode === 'stars' ? '★★★' : '#.#'} ▾
+            </button>
+
+            <div className="dropdown-wrap align-right">
+              <button
+                type="button"
+                className="btn secondary compact"
+                onClick={() => setOpenMenu(openMenu === 'sort' ? null : 'sort')}
+                aria-expanded={openMenu === 'sort'}
+              >
+                ↕ Sort ▾
+              </button>
+              {openMenu === 'sort' && (
+                <div className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
+                  {SORT_PRESETS.map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      className={sortField === p.field && sortDir === p.dir ? 'active' : ''}
+                      onClick={() => { setSortField(p.field); setSortDir(p.dir); setOpenMenu(null); }}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {!showTrash && (
+              <button className="btn up-next-btn compact" onClick={pickUpNext} title="Get a random entry to read next">
+                ✨ Up next
+              </button>
+            )}
+
+            {viewMode === 'table' && (
+              <button
+                type="button"
+                className={`btn secondary compact${selectMode ? ' is-on' : ''}`}
+                onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}
+              >
+                {selectMode ? 'Done' : 'Select'}
+              </button>
             )}
 
             <div className="toolbar-meta">
@@ -500,29 +558,6 @@ export default function HomePage() {
 
               {!showTrash && filtersActive && (
                 <button className="link-btn" onClick={clearFilters}>Clear filters</button>
-              )}
-
-              <span className="toolbar-divider" aria-hidden="true" />
-
-              {!showTrash && (
-                <button className="btn secondary compact" onClick={pickUpNext} title="Randomly pick something from Plan to Read">
-                  ↻ Up next
-                </button>
-              )}
-              <button
-                className="btn secondary compact"
-                onClick={toggleRatingMode}
-                title="Toggle between stars and decimal ratings"
-              >
-                Rating: {ratingMode === 'stars' ? '★★★' : '#.#'}
-              </button>
-              {viewMode === 'table' && (
-                <button
-                  className={`btn secondary compact${selectMode ? ' is-on' : ''}`}
-                  onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}
-                >
-                  {selectMode ? 'Done' : 'Select'}
-                </button>
               )}
             </div>
           </div>
