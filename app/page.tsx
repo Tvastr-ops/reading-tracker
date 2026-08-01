@@ -348,13 +348,13 @@ export default function HomePage() {
   }, [showTrash, viewMode, editing, filtered, focusedIndex]);
 
   return (
-    <main className="container">
-      <div className="topbar">
+    <main className="max-w-[1100px] mx-auto py-[var(--space-6)] px-[var(--space-4)] pb-16 max-sm:py-[var(--space-4)] max-sm:px-[var(--space-3)] max-sm:pb-12">
+      <div className="flex justify-between items-start gap-[var(--space-3)] flex-wrap mb-[var(--space-4)] max-sm:flex-col max-sm:items-stretch">
         <div>
           <h1>Reading Tracker</h1>
-          <p className="subtitle">Web novels, light novels, novels, essays, short stories, fanfiction, and more.</p>
+          <p className="text-text-muted text-[13px] m-0 mb-[var(--space-5)]">Web novels, light novels, novels, essays, short stories, fanfiction, and more.</p>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div className="flex gap-2 flex-wrap max-sm:[&>button]:flex-1 max-sm:[&>a]:flex-1 max-sm:[&>button]:text-center max-sm:[&>a]:text-center">
           <button className="btn icon-only" onClick={toggleTheme} title="Toggle dark mode" aria-label="Toggle dark mode">
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>

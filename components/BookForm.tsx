@@ -106,10 +106,13 @@ export default function BookForm({
     }
   }
 
+  const inputClass = "w-full py-[var(--space-2)] px-[var(--space-3)] border border-input-border rounded-[var(--radius-sm)] bg-input-bg text-text-main font-inherit";
+  const labelClass = "block text-[12px] text-text-muted mb-[var(--space-1)]";
+
   return (
-    <div className="modal-backdrop" onClick={onCancel}>
+    <div className="fixed inset-0 bg-[rgba(20,15,5,0.45)] flex items-start justify-center py-[var(--space-6)] px-[var(--space-4)] overflow-y-auto z-50 animate-[fadeIn_150ms_ease_both]" onClick={onCancel}>
       <form
-        className="modal"
+        className="bg-card-bg rounded-[var(--radius-md)] p-[var(--space-5)] w-full max-w-[560px] shadow-[var(--shadow-modal)] animate-[modalIn_0.2s_cubic-bezier(0.16,1,0.3,1)_both]"
         onClick={(e) => e.stopPropagation()}
         onSubmit={submit}
         onKeyDown={handleModalKeyDown}
@@ -117,91 +120,91 @@ export default function BookForm({
         aria-modal="true"
         aria-labelledby="book-form-heading"
       >
-        <h2 id="book-form-heading">{initial?.id ? 'Edit entry' : 'Add entry'}</h2>
-        <div className="form-grid">
-          <div className="full">
-            <label>Title *</label>
-            <input value={form.title} onChange={(e) => set('title', e.target.value)} autoFocus />
+        <h2 id="book-form-heading" className="text-[18px] font-bold m-0 mb-4">{initial?.id ? 'Edit entry' : 'Add entry'}</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--space-3)]">
+          <div className="col-span-full">
+            <label className={labelClass}>Title *</label>
+            <input className={inputClass} value={form.title} onChange={(e) => set('title', e.target.value)} autoFocus />
             {isDuplicate && (
-              <div className="label" style={{ color: 'var(--status-hold)', marginTop: 4 }}>
+              <div className="text-[12px] text-status-hold mt-1">
                 You already have an entry with this title — saving will create a duplicate.
               </div>
             )}
           </div>
 
           <div>
-            <label>Type</label>
-            <select value={form.type} onChange={(e) => set('type', e.target.value)}>
+            <label className={labelClass}>Type</label>
+            <select className={inputClass} value={form.type} onChange={(e) => set('type', e.target.value)}>
               {TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
 
           <div>
-            <label>Status</label>
-            <select value={form.status} onChange={(e) => set('status', e.target.value as any)}>
+            <label className={labelClass}>Status</label>
+            <select className={inputClass} value={form.status} onChange={(e) => set('status', e.target.value as any)}>
               {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
 
           <div>
-            <label>Author</label>
-            <input value={form.author || ''} onChange={(e) => set('author', e.target.value)} />
+            <label className={labelClass}>Author</label>
+            <input className={inputClass} value={form.author || ''} onChange={(e) => set('author', e.target.value)} />
           </div>
 
           <div>
-            <label>Rating</label>
+            <label className={labelClass}>Rating</label>
             <RatingSelect value={form.rating} onChange={(v) => set('rating', v)} mode={ratingMode} />
           </div>
 
           <div>
-            <label>Progress (units read)</label>
-            <input type="number" min={0} step="0.5" value={form.progress ?? ''} onChange={(e) => set('progress', e.target.value === '' ? 0 : parseFloat(e.target.value))} />
+            <label className={labelClass}>Progress (units read)</label>
+            <input className={inputClass} type="number" min={0} step="0.5" value={form.progress ?? ''} onChange={(e) => set('progress', e.target.value === '' ? 0 : parseFloat(e.target.value))} />
           </div>
 
           <div>
-            <label>Total units</label>
-            <input type="number" min={0} step="0.5" value={form.total_units ?? ''} onChange={(e) => set('total_units', e.target.value === '' ? null : parseFloat(e.target.value))} />
+            <label className={labelClass}>Total units</label>
+            <input className={inputClass} type="number" min={0} step="0.5" value={form.total_units ?? ''} onChange={(e) => set('total_units', e.target.value === '' ? null : parseFloat(e.target.value))} />
           </div>
 
-          <div className="full">
-            <label>Genre / Tags</label>
-            <input value={form.genre_tags || ''} onChange={(e) => set('genre_tags', e.target.value)} placeholder="Fantasy, Time Loop" />
+          <div className="col-span-full">
+            <label className={labelClass}>Genre / Tags</label>
+            <input className={inputClass} value={form.genre_tags || ''} onChange={(e) => set('genre_tags', e.target.value)} placeholder="Fantasy, Time Loop" />
           </div>
 
-          <div className="full">
-            <label>Source / Link</label>
-            <input value={form.source_link || ''} onChange={(e) => set('source_link', e.target.value)} placeholder="royalroad.com" />
+          <div className="col-span-full">
+            <label className={labelClass}>Source / Link</label>
+            <input className={inputClass} value={form.source_link || ''} onChange={(e) => set('source_link', e.target.value)} placeholder="royalroad.com" />
           </div>
 
-          <div className="full">
-            <label>Cover image</label>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="col-span-full">
+            <label className={labelClass}>Cover image</label>
+            <div className="flex gap-2 items-center">
               {form.cover_url ? (
-                <img src={form.cover_url} alt="" width={32} height={46} className="book-cover" style={{ objectFit: 'cover' }} />
+                <img src={form.cover_url} alt="" width={32} height={46} className="object-cover book-cover" />
               ) : (
-                <div className="placeholder-box" style={{ width: 32, height: 46, flexShrink: 0 }} />
+                <div className="w-8 h-[46px] shrink-0 placeholder-box" />
               )}
               <input
+                className={`${inputClass} flex-1`}
                 value={form.cover_url || ''}
                 onChange={(e) => set('cover_url', e.target.value)}
                 placeholder="Paste an image URL, or search below"
-                style={{ flex: 1 }}
               />
               <button type="button" className="btn secondary" onClick={searchCover} disabled={coverSearching || !form.title.trim()}>
                 {coverSearching ? 'Searching...' : 'Search'}
               </button>
             </div>
             {coverResults.length > 0 && (
-              <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+              <div className="flex gap-2 mt-2 flex-wrap">
                 {coverResults.map((r) => (
                   <button
                     type="button"
                     key={r.cover_url}
                     onClick={() => { set('cover_url', r.cover_url); setCoverResults([]); }}
                     title={`${r.title}${r.author ? ' — ' + r.author : ''}`}
-                    style={{ border: '1px solid var(--input-border)', borderRadius: 4, padding: 2, background: 'var(--card-bg)', cursor: 'pointer' }}
+                    className="border border-input-border rounded-[4px] p-0.5 bg-card-bg cursor-pointer"
                   >
-                    <img src={r.cover_url} alt="" width={40} height={58} className="book-cover" style={{ objectFit: 'cover', display: 'block' }} />
+                    <img src={r.cover_url} alt="" width={40} height={58} className="object-cover block book-cover" />
                   </button>
                 ))}
               </div>
@@ -209,18 +212,18 @@ export default function BookForm({
           </div>
 
           <div>
-            <label>Date started</label>
-            <input type="date" value={form.date_started || ''} onChange={(e) => set('date_started', e.target.value)} />
+            <label className={labelClass}>Date started</label>
+            <input className={inputClass} type="date" value={form.date_started || ''} onChange={(e) => set('date_started', e.target.value)} />
           </div>
 
           <div>
-            <label>Date finished</label>
-            <input type="date" value={form.date_finished || ''} onChange={(e) => set('date_finished', e.target.value)} />
+            <label className={labelClass}>Date finished</label>
+            <input className={inputClass} type="date" value={form.date_finished || ''} onChange={(e) => set('date_finished', e.target.value)} />
           </div>
 
-          <div className="full">
-            <label>Notes</label>
-            <textarea value={form.notes || ''} onChange={(e) => set('notes', e.target.value)} />
+          <div className="col-span-full">
+            <label className={labelClass}>Notes</label>
+            <textarea className={`${inputClass} resize-y min-h-[60px]`} value={form.notes || ''} onChange={(e) => set('notes', e.target.value)} />
           </div>
 
           {initial?.id && (
@@ -233,9 +236,9 @@ export default function BookForm({
           )}
         </div>
 
-        {error && <div className="error-text">{error}</div>}
+        {error && <div className="text-[12px] text-danger mt-3 font-semibold">{error}</div>}
 
-        <div className="modal-actions">
+        <div className="flex justify-end gap-2 mt-4">
           <button type="button" className="btn secondary" onClick={onCancel}>Cancel</button>
           <button type="submit" className="btn" disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
         </div>

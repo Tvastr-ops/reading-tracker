@@ -87,10 +87,10 @@ export default function ReadingLog({
   }
 
   return (
-    <div className="full" style={{ marginTop: 4 }}>
+    <div className="col-span-full mt-1">
       <label>Reading log</label>
-      {paceInfo && <div className="label" style={{ marginBottom: 6 }}>{paceInfo}</div>}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }} onKeyDown={handleKeyDown}>
+      {paceInfo && <div className="text-[12px] text-text-muted mb-1.5">{paceInfo}</div>}
+      <div className="flex gap-2 mb-2" onKeyDown={handleKeyDown}>
         <input
           type="number"
           min={0}
@@ -98,14 +98,14 @@ export default function ReadingLog({
           placeholder={`Now at ${currentProgress}`}
           value={toProgress}
           onChange={(e) => setToProgress(e.target.value)}
-          style={{ width: 110 }}
+          className="w-[110px]"
         />
         <input
           type="text"
           placeholder="Note (optional)"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          style={{ flex: 1 }}
+          className="flex-1"
         />
         <button type="button" className="btn secondary" disabled={saving} onClick={() => addEntry()}>
           {saving ? 'Adding...' : 'Log'}
@@ -113,21 +113,21 @@ export default function ReadingLog({
       </div>
 
       {loading ? (
-        <p className="subtitle">Loading log...</p>
+        <p className="text-[13px] text-text-muted">Loading log...</p>
       ) : entries.length === 0 ? (
-        <p className="subtitle">No log entries yet.</p>
+        <p className="text-[13px] text-text-muted">No log entries yet.</p>
       ) : (
-        <div style={{ maxHeight: 140, overflowY: 'auto', border: '1px solid var(--border-soft)', borderRadius: 6 }}>
+        <div className="max-h-[140px] overflow-y-auto border border-border-soft rounded-[6px]">
           {entries.map((e) => (
             <div
               key={e.id}
-              style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', fontSize: 12, borderBottom: '1px solid var(--border-soft)' }}
+              className="flex justify-between py-1.5 px-2.5 text-[12px] border-b border-border-soft"
             >
               <span>
                 {e.from_progress != null ? `${e.from_progress} → ` : ''}{e.to_progress}
-                {e.note ? <span className="label"> — {e.note}</span> : null}
+                {e.note ? <span className="text-[12px] text-text-muted"> — {e.note}</span> : null}
               </span>
-              <span className="label">{new Date(e.logged_at).toLocaleDateString()}</span>
+              <span className="text-[12px] text-text-muted">{new Date(e.logged_at).toLocaleDateString()}</span>
             </div>
           ))}
         </div>
