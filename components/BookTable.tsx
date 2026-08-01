@@ -71,7 +71,7 @@ export default function BookTable({
       <th
         key={field}
         onClick={() => onSort(field)}
-        style={{ cursor: 'pointer', userSelect: 'none' }}
+        className="text-left py-[var(--space-2)] px-[var(--space-3)] border-b border-border-soft align-middle text-text-muted font-semibold text-[12px] uppercase tracking-[0.02em] cursor-pointer select-none"
         title={`Sort by ${label}`}
       >
         {label}{active ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
@@ -80,22 +80,22 @@ export default function BookTable({
   }
 
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table>
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse text-[13px]">
         <thead>
           <tr>
-            <th className={`checkbox-cell${selectMode ? '' : ' collapsed'}`} style={{ width: 24 }}></th>
-            <th className="spine-col"></th>
-            <th style={{ width: 36 }}></th>
+            <th className={`checkbox-cell ${selectMode ? '' : 'collapsed'} text-left py-[var(--space-2)] px-[var(--space-3)] border-b border-border-soft align-middle text-text-muted font-semibold text-[12px] uppercase tracking-[0.02em]`} style={{ width: 24 }}></th>
+            <th className="spine-col p-0 w-1 text-left border-b border-border-soft align-middle"></th>
+            <th className="text-left py-[var(--space-2)] px-[var(--space-3)] border-b border-border-soft align-middle text-text-muted font-semibold text-[12px] uppercase tracking-[0.02em]" style={{ width: 36 }}></th>
             {headerFor('title', 'Title')}
-            <th>Type</th>
-            <th>Author</th>
+            <th className="text-left py-[var(--space-2)] px-[var(--space-3)] border-b border-border-soft align-middle text-text-muted font-semibold text-[12px] uppercase tracking-[0.02em]">Type</th>
+            <th className="text-left py-[var(--space-2)] px-[var(--space-3)] border-b border-border-soft align-middle text-text-muted font-semibold text-[12px] uppercase tracking-[0.02em]">Author</th>
             {headerFor('status', 'Status')}
             {headerFor('rating', 'Rating')}
-            <th>Progress</th>
-            <th>Genre / Tags</th>
+            <th className="text-left py-[var(--space-2)] px-[var(--space-3)] border-b border-border-soft align-middle text-text-muted font-semibold text-[12px] uppercase tracking-[0.02em]">Progress</th>
+            <th className="text-left py-[var(--space-2)] px-[var(--space-3)] border-b border-border-soft align-middle text-text-muted font-semibold text-[12px] uppercase tracking-[0.02em]">Genre / Tags</th>
             {headerFor('date_finished', 'Finished')}
-            <th></th>
+            <th className="text-left py-[var(--space-2)] px-[var(--space-3)] border-b border-border-soft align-middle text-text-muted font-semibold text-[12px] uppercase tracking-[0.02em]"></th>
           </tr>
         </thead>
         <tbody>
@@ -103,67 +103,89 @@ export default function BookTable({
             const pct = b.total_units ? Math.min(100, Math.round(((b.progress || 0) / b.total_units) * 100)) : null;
             const statusColor = STATUS_COLOR_VAR[b.status] || 'var(--border)';
             const nextStatus = STATUSES[(STATUSES.indexOf(b.status) + 1) % STATUSES.length];
+            const isFocused = b.id === focusedId;
+
             return (
               <tr
                 key={b.id}
                 data-row-id={b.id}
-                className={b.id === focusedId ? 'row-focused' : ''}
-                style={{ '--row-status-color': statusColor } as React.CSSProperties}
+                className={`transition-[background-color,border-color] duration-[150ms] ease-out hover:bg-row-hover [&:hover>td]:bg-row-hover [&:focus-within>td]:bg-row-hover ${isFocused ? 'row-focused shadow-[inset_0_0_0_2px_var(--star-filled)] [&>td]:bg-row-hover' : ''}`}
+                style={{
+                  '--row-status-color': statusColor,
+                  borderColor: isFocused ? 'var(--star-filled)' : undefined,
+                } as React.CSSProperties}
               >
-                <td className={`checkbox-cell${selectMode ? '' : ' collapsed'}`}>
+                <td className={`checkbox-cell ${selectMode ? '' : 'collapsed'} text-left py-[var(--space-2)] px-[var(--space-3)] border-b border-border-soft align-middle`}>
                   <input
                     type="checkbox"
-                    className="row-checkbox"
+                    className="row-checkbox cursor-pointer"
                     checked={selected.has(b.id)}
                     onChange={() => onToggleSelect(b.id)}
                     aria-label={`Select ${b.title}`}
                   />
                 </td>
-                <td className="spine-cell"><span className="spine" /></td>
-                <td>
-                  {b.cover_url ? (
-                    <img src={b.cover_url} alt="" width={28} height={40} className="book-cover" style={{ objectFit: 'cover' }} />
-                  ) : (
-                    <div className="placeholder-box" style={{ width: 28, height: 40 }} />
-                  )}
-                </td>
-                <td>
-                  <strong className="book-title">{b.title}</strong>
-                  {b.source_link && (
-                    <div className="label source-link" style={{ fontSize: 11 }}>{hostnameOf(b.source_link)}</div>
-                  )}
-                </td>
-                <td data-label="Type">{b.type}</td>
-                <td data-label="Author">{b.author || '—'}</td>
-                <td data-label="Status">
+                <td className="spine-cell p-0 w-1 text-left border-b border-border-soft align-middle">
                   <span
-                    className="status-text"
+                    className="block w-1 h-full min-h-[28px] rounded-r-[2px] bg-[var(--row-status-color,var(--border))]"
+                    style={{ backgroundColor: 'var(--row-status-color)' }}
+                  />
+                </td>
+                <td className="text-left py-[var(--space-2)] px-[var(--space-3)] border-b border-border-soft align-middle">
+                  {b.cover_url ? (
+                    <img src={b.cover_url} alt="" width={28} height={40} className="object-cover book-cover" />
+                  ) : (
+                    <div className="w-7 h-10 placeholder-box" />
+                  )}
+                </td>
+                <td className="text-left py-[var(--space-2)] px-[var(--space-3)] border-b border-border-soft align-middle">
+                  <strong className="font-serif font-semibold text-text-main book-title">{b.title}</strong>
+                  {b.source_link && (
+                    <div className="text-[11px] text-text-muted whitespace-nowrap overflow-hidden text-ellipsis w-full label source-link">
+                      {hostnameOf(b.source_link)}
+                    </div>
+                  )}
+                </td>
+                <td data-label="Type" className="text-left py-[var(--space-2)] px-[var(--space-3)] border-b border-border-soft align-middle">{b.type}</td>
+                <td data-label="Author" className="text-left py-[var(--space-2)] px-[var(--space-3)] border-b border-border-soft align-middle">{b.author || '—'}</td>
+                <td data-label="Status" className="text-left py-[var(--space-2)] px-[var(--space-3)] border-b border-border-soft align-middle">
+                  <span
+                    className="text-[12px] cursor-pointer hover:underline status-text"
                     onClick={() => !trashMode && onQuickStatus(b)}
                     title={trashMode ? undefined : `Click to mark as "${nextStatus}"`}
                   >
                     {b.status}
                   </span>
                 </td>
-                <td data-label="Rating"><RatingDisplay rating={b.rating} mode={ratingMode} /></td>
-                <td data-label="Progress">
+                <td data-label="Rating" className="text-left py-[var(--space-2)] px-[var(--space-3)] border-b border-border-soft align-middle">
+                  <RatingDisplay rating={b.rating} mode={ratingMode} />
+                </td>
+                <td data-label="Progress" className="text-left py-[var(--space-2)] px-[var(--space-3)] border-b border-border-soft align-middle">
                   {b.total_units ? (
                     <>
-                      <div className="progress-bar"><div className={pct != null && pct >= 90 ? 'near-complete' : ''} style={{ width: `${pct}%` }} /></div>
-                      <div className="label" style={{ fontSize: 11, marginTop: 2 }}>
+                      <div className="w-full h-2 bg-progress-track rounded-full overflow-hidden progress-bar">
+                        <div
+                          className={`h-full bg-status-reading ${pct != null && pct >= 90 ? 'bg-status-completed' : ''}`}
+                          style={{
+                            width: `${pct}%`,
+                            backgroundColor: pct != null && pct >= 90 ? 'var(--status-completed)' : 'var(--status-reading)',
+                          }}
+                        />
+                      </div>
+                      <div className="text-[11px] text-text-muted mt-0.5 label">
                         {b.progress ?? 0}/{b.total_units} ({pct}%)
                         {b.status === 'Reading' && b.reading_pace != null && ` · ~${b.reading_pace}/wk`}
                       </div>
                     </>
                   ) : (
-                    <span style={{ fontSize: 12 }}>{b.progress ?? 0} units</span>
+                    <span className="text-[12px]">{b.progress ?? 0} units</span>
                   )}
                 </td>
-                <td data-label="Genre / Tags" className="label" style={{ fontSize: 12 }} title={b.genre_tags || undefined}>
+                <td data-label="Genre / Tags" className="text-left py-[var(--space-2)] px-[var(--space-3)] border-b border-border-soft align-middle text-[12px] text-text-muted label" title={b.genre_tags || undefined}>
                   {b.genre_tags ? truncateTags(b.genre_tags) : '—'}
                 </td>
-                <td data-label="Finished" className="label" style={{ fontSize: 12 }}>{b.date_finished || '—'}</td>
-                <td>
-                  <div className="row-actions">
+                <td data-label="Finished" className="text-left py-[var(--space-2)] px-[var(--space-3)] border-b border-border-soft align-middle text-[12px] text-text-muted label">{b.date_finished || '—'}</td>
+                <td className="text-left py-[var(--space-2)] px-[var(--space-3)] border-b border-border-soft align-middle">
+                  <div className="flex gap-2 row-actions">
                     {trashMode ? (
                       <>
                         <button className="btn secondary compact" onClick={() => onRestore?.(b)}>Restore</button>

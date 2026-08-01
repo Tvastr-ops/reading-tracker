@@ -26,7 +26,7 @@ export function BarChart({
         width="100%"
         height={height}
         preserveAspectRatio="none"
-        style={{ color: 'var(--text)' }}
+        className="text-text-main"
         role="img"
         aria-label={summary}
       >
@@ -58,7 +58,7 @@ export function BarChart({
                   y={barTop - 3}
                   fontSize="5"
                   textAnchor="middle"
-                  fill="var(--text)"
+                  fill="currentColor"
                 >
                   {d.value}
                 </text>
@@ -67,9 +67,9 @@ export function BarChart({
           );
         })}
       </svg>
-      <div className="label" style={{ display: 'flex' }} aria-hidden="true">
+      <div className="text-[12px] text-text-muted flex" aria-hidden="true">
         {data.map((d) => (
-          <div key={d.label} style={{ flex: 1, textAlign: 'center' }}>{d.label}</div>
+          <div key={d.label} className="flex-1 text-center">{d.label}</div>
         ))}
       </div>
     </div>

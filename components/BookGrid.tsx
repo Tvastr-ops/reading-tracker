@@ -51,11 +51,11 @@ export default function BookGrid({
   }
 
   return (
-    <div className="book-grid">
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(125px,1fr))] gap-[var(--space-3)] relative items-stretch">
       {/* Tap backdrop to dismiss active card overlay */}
       {activeTileId && (
         <div
-          className="grid-menu-backdrop"
+          className="fixed inset-0 z-[1]"
           onClick={closeOverlay}
         />
       )}
@@ -65,32 +65,35 @@ export default function BookGrid({
         const isActive = activeTileId === b.id;
 
         return (
-          <div key={b.id} className="grid-tile-wrap">
+          <div key={b.id} className="relative z-[2] flex flex-col h-full">
             <div
-              className={`grid-tile${isActive ? ' action-mode' : ''}`}
+              className={`flex flex-col items-start text-left bg-card-bg border border-border-main border-l-[3px] rounded-[var(--radius-md)] p-[var(--space-2)] cursor-pointer font-inherit color-inherit overflow-hidden w-full h-full transition-[transform,box-shadow] duration-[150ms] ease-out hover:-translate-y-[2px] hover:shadow-[var(--shadow)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-star-filled focus-visible:outline-offset-2 ${isActive ? 'bg-row-hover' : ''}`}
               role="button"
               tabIndex={0}
               onClick={() => handleTileTap(b)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(b); }
               }}
-              style={{ '--row-status-color': statusColor } as React.CSSProperties}
+              style={{
+                '--row-status-color': statusColor,
+                borderLeftColor: 'var(--row-status-color)',
+              } as React.CSSProperties}
               title={b.title}
             >
-              <div className="grid-cover-wrap">
+              <div className="relative w-full aspect-[2/3] overflow-hidden rounded-[2px] mb-[var(--space-2)] shrink-0">
                 {b.cover_url ? (
-                  <img src={b.cover_url} alt="" className="grid-cover book-cover" />
+                  <img src={b.cover_url} alt="" className="w-full h-full object-cover block book-cover" />
                 ) : (
-                  <div className="grid-cover placeholder-box" />
+                  <div className="w-full h-full object-cover block placeholder-box" />
                 )}
 
                 {/* Active Tile Overlay with Direct Action Buttons */}
                 {isActive && (
-                  <div className="grid-cover-overlay">
-                    <div className="pill-action-bar">
+                  <div className="absolute inset-0 flex items-center justify-center p-[var(--space-3)] bg-[rgba(15,10,5,0.65)] backdrop-blur-[3px] z-[2]">
+                    <div className="flex flex-col w-[72%] max-w-[130px] bg-card-bg border border-border-main rounded-[var(--radius-md)] shadow-[var(--shadow-modal)] overflow-hidden animate-[fadeIn_0.12s_ease_both]">
                       <button
                         type="button"
-                        className="pill-btn"
+                        className="flex items-center justify-center w-full bg-transparent border-none text-text-main text-[14px] font-semibold py-2.5 px-3.5 cursor-pointer transition-colors duration-[100ms] ease-out hover:bg-row-hover"
                         onClick={(e) => {
                           e.stopPropagation();
                           closeOverlay();
@@ -99,10 +102,10 @@ export default function BookGrid({
                       >
                         Edit
                       </button>
-                      <div className="pill-divider" />
+                      <div className="w-full h-[1px] bg-border-soft" />
                       <button
                         type="button"
-                        className="pill-btn danger"
+                        className="flex items-center justify-center w-full bg-transparent border-none text-danger text-[14px] font-semibold py-2.5 px-3.5 cursor-pointer transition-colors duration-[100ms] ease-out hover:bg-row-hover"
                         onClick={(e) => {
                           e.stopPropagation();
                           closeOverlay();
@@ -116,12 +119,12 @@ export default function BookGrid({
                 )}
               </div>
 
-              <div className="grid-tile-title book-title">{b.title}</div>
-              {b.author && <div className="grid-tile-author label">{b.author}</div>}
+              <div className="text-[13px] leading-[1.35] line-clamp-2 overflow-hidden min-h-[2.7em] break-words w-full book-title">{b.title}</div>
+              {b.author && <div className="text-[11px] mt-[2px] whitespace-nowrap overflow-hidden text-ellipsis w-full label">{b.author}</div>}
 
-              <div className="grid-tile-footer">
-                <div className="grid-tile-meta">
-                  <span className="status-text" style={{ fontSize: 10 }}>
+              <div className="mt-auto w-full flex flex-col gap-1 pt-[var(--space-2)]">
+                <div className="flex justify-between items-center w-full">
+                  <span className="status-text text-[10px]">
                     {b.status}
                     {b.status === 'Reading' && b.reading_pace != null ? ` • ~${b.reading_pace}/wk` : ''}
                   </span>

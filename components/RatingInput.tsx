@@ -1,7 +1,7 @@
 'use client';
 
 export function RatingDisplay({ rating, mode }: { rating: number | null; mode: 'stars' | 'decimal' }) {
-  if (rating == null) return <span style={{ color: 'var(--text-faint)' }}>—</span>;
+  if (rating == null) return <span className="text-text-faint">—</span>;
   if (mode === 'decimal') return <span>{rating.toFixed(1)} / 5</span>;
 
   const stars = [];
@@ -9,7 +9,7 @@ export function RatingDisplay({ rating, mode }: { rating: number | null; mode: '
     const diff = rating - (i - 1);
     if (diff >= 1) {
       // Full star.
-      stars.push(<span key={i} className="filled">★</span>);
+      stars.push(<span key={i} className="text-star-filled">★</span>);
     } else if (diff >= 0.5) {
       // Half star: rendered as a filled ★ clipped to 50% width, layered over
       // an empty ☆ underneath. Some devices/fonts don't include a half-star
@@ -17,11 +17,10 @@ export function RatingDisplay({ rating, mode }: { rating: number | null; mode: '
       // avoids depending on one — only ★/☆ are used, which are universally
       // supported.
       stars.push(
-        <span key={i} style={{ position: 'relative', display: 'inline-block' }}>
+        <span key={i} className="relative inline-block">
           <span>☆</span>
           <span
-            className="filled"
-            style={{ position: 'absolute', left: 0, top: 0, width: '50%', overflow: 'hidden', whiteSpace: 'nowrap' }}
+            className="text-star-filled absolute left-0 top-0 w-1/2 overflow-hidden whitespace-nowrap"
           >
             ★
           </span>
@@ -31,7 +30,7 @@ export function RatingDisplay({ rating, mode }: { rating: number | null; mode: '
       stars.push(<span key={i}>☆</span>);
     }
   }
-  return <span className="rating-stars">{stars}</span>;
+  return <span className="text-star-empty text-[13px] tracking-[0.5px] whitespace-nowrap">{stars}</span>;
 }
 
 export function RatingSelect({
