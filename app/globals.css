@@ -1,3 +1,28 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: var(--bg);
+  --color-card-bg: var(--card-bg);
+  --color-border-main: var(--border);
+  --color-border-soft: var(--border-soft);
+  --color-text-main: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
+  --color-accent-bg: var(--accent-bg);
+  --color-accent-bg-hover: var(--accent-bg-hover);
+  --color-accent-text: var(--accent-text);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-row-hover: var(--row-hover);
+  --color-progress-track: var(--progress-track);
+
+  --color-status-reading: var(--status-reading);
+  --color-status-completed: var(--status-completed);
+  --color-status-plan: var(--status-plan);
+  --color-status-hold: var(--status-hold);
+  --color-status-dropped: var(--status-dropped);
+}
+
 :root {
   color-scheme: light;
 
@@ -660,47 +685,6 @@ td.spine-cell {
   transform: rotate(45deg);
 }
 
-.toast {
-  position: fixed;
-  bottom: var(--space-5);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--accent-bg);
-  color: var(--accent-text);
-  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  font-size: 13px;
-  box-shadow: var(--shadow-modal);
-  z-index: 100;
-  animation: toastIn var(--duration-base) ease both;
-  max-width: calc(100vw - 32px);
-}
-
-.toast-action {
-  background: none;
-  border: 1px solid var(--accent-text);
-  color: var(--accent-text);
-  border-radius: var(--radius-sm);
-  padding: var(--space-1) var(--space-3);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.toast-close {
-  background: none;
-  border: none;
-  color: var(--accent-text);
-  opacity: 0.7;
-  cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
-  padding: 0 var(--space-1);
-}
 
 .bulk-bar {
   display: flex;
