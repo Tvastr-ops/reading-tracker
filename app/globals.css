@@ -746,29 +746,6 @@ textarea:focus-visible {
 }
 
 
-.login-wrap {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-4);
-}
-
-.login-card {
-  width: 100%;
-  max-width: 320px;
-  padding: var(--space-6);
-  margin: 0 auto;
-}
-
-.login-input {
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--input-border);
-  border-radius: var(--radius-sm);
-  background: var(--input-bg);
-  color: var(--text);
-}
 
 .error-text {
   color: var(--danger);
