@@ -42,29 +42,28 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="login-wrap">
+    <div className="min-h-screen flex items-center justify-center p-[var(--space-4)]">
       <button
-        className="btn icon-only"
+        className="btn icon-only fixed top-4 right-4"
         onClick={toggleTheme}
         title="Toggle dark mode"
         aria-label="Toggle dark mode"
-        style={{ position: 'fixed', top: 16, right: 16 }}
       >
         {theme === 'dark' ? '☀️' : '🌙'}
       </button>
-      <form className="card login-card" onSubmit={submit}>
-        <h1>Reading Tracker</h1>
-        <p className="subtitle">Enter your password to continue.</p>
+      <form className="card w-full max-w-[320px] p-[var(--space-6)] mx-auto" onSubmit={submit}>
+        <h1 className="text-[24px] font-bold font-serif m-0 mb-1">Reading Tracker</h1>
+        <p className="text-text-muted text-[13px] m-0 mb-5">Enter your password to continue.</p>
         <input
           type="password"
           autoFocus
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
-          className="login-input"
+          className="w-full py-[var(--space-2)] px-[var(--space-3)] border border-input-border rounded-[var(--radius-sm)] bg-input-bg text-text-main font-inherit"
         />
-        {error && <div className="error-text">{error}</div>}
-        <button className="btn" type="submit" disabled={loading} style={{ marginTop: 12, width: '100%' }}>
+        {error && <div className="text-[13px] text-danger mt-2 font-medium">{error}</div>}
+        <button className="btn mt-3 w-full" type="submit" disabled={loading}>
           {loading ? 'Signing in...' : 'Sign in'}
         </button>
       </form>

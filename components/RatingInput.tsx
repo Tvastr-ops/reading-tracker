@@ -49,6 +49,7 @@ export function RatingSelect({
     <select
       value={value ?? ''}
       onChange={(e) => onChange(e.target.value === '' ? null : parseFloat(e.target.value))}
+      className="w-full py-[var(--space-2)] px-[var(--space-3)] border border-input-border rounded-[var(--radius-sm)] bg-input-bg text-text-main font-inherit"
     >
       {options.map((opt) => (
         <option key={opt ?? 'none'} value={opt ?? ''}>
