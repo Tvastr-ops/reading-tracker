@@ -1,6 +1,6 @@
-import { SignJWT, jwtVerify } from 'jose';
-import { NextRequest, NextResponse } from 'next/server';
-import { timingSafeEqual } from 'crypto';
+import { timingSafeEqual } from 'node:crypto';
+import { jwtVerify, SignJWT } from 'jose';
+import { type NextRequest, NextResponse } from 'next/server';
 
 const COOKIE_NAME = 'session';
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
@@ -61,7 +61,7 @@ export async function requireAuthenticatedRequest(req: {
 // security property — each request still gets independently verified, not
 // relying on proxy.ts alone — just written once instead of a dozen times.
 export function withAuth<Args extends any[]>(
-  handler: (req: NextRequest, ...args: Args) => Promise<Response>
+  handler: (req: NextRequest, ...args: Args) => Promise<Response>,
 ) {
   return async (req: NextRequest, ...args: Args): Promise<Response> => {
     if (!(await requireAuthenticatedRequest(req))) {

@@ -1,12 +1,42 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
-import { Book } from '@/lib/types';
+import {
+  BarChart2,
+  BookCheck,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Edit2,
+  Flame,
+  Sparkles,
+  Star,
+  Trophy,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import type { Book } from '@/lib/types';
 
 const MONTH_LABELS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_NAMES = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
-const SPINE_COLORS = [
+const _SPINE_COLORS = [
   '#8a3b30', // Terracotta
   '#3f6b4f', // Sage
   '#a6752f', // Amber
@@ -50,7 +80,6 @@ export default function StatsSummary({ books }: { books: Book[] }) {
   }
 
   const totalCount = books.length;
-
   const completedCount = books.filter((b) => b.status === 'Completed').length;
   const readingCount = books.filter((b) => b.status === 'Reading').length;
   const onHoldCount = books.filter((b) => b.status === 'On Hold').length;
@@ -73,7 +102,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
 
   const [compPct, readPct, holdPct, planPct] = distributePercentages(
     [completedCount, readingCount, onHoldCount, planToReadCount],
-    totalCount
+    totalCount,
   );
 
   const rated = books.filter((b) => b.rating != null && b.rating > 0);
@@ -88,9 +117,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
 
   const totalRated = rated.length || 1;
   const ratingDistribution = [5, 4, 3, 2, 1].map((star) => {
-    const count = books.filter(
-      (b) => b.rating != null && Math.round(b.rating) === star
-    ).length;
+    const count = books.filter((b) => b.rating != null && Math.round(b.rating) === star).length;
     const percentage = Math.round((count / totalRated) * 100);
     return { star, count, percentage };
   });
@@ -117,261 +144,292 @@ export default function StatsSummary({ books }: { books: Book[] }) {
   const elapsedMonths = currentMonthIdx + 1;
   const remainingMonths = 12 - currentMonthIdx;
 
-  const avgPacePerMonth = completedThisYear ? (completedThisYear / elapsedMonths).toFixed(1) : '0.0';
+  const avgPacePerMonth = completedThisYear
+    ? (completedThisYear / elapsedMonths).toFixed(1)
+    : '0.0';
   const remainingBooksNeeded = Math.max(0, targetGoal - completedThisYear);
   const requiredPace = (remainingBooksNeeded / remainingMonths).toFixed(1);
-  const isOnTrack = completedThisYear >= targetGoal || Number(avgPacePerMonth) >= Number(requiredPace);
+  const isOnTrack =
+    completedThisYear >= targetGoal || Number(avgPacePerMonth) >= Number(requiredPace);
 
   const goalPct = goal ? Math.min(100, Math.round((completedThisYear / goal) * 100)) : 0;
 
-  const radius = 32;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (goalPct / 100) * circumference;
-
   return (
-    <div className={`p-[var(--space-4)] bg-card-bg border border-border-main rounded-[var(--radius-lg)] shadow-[var(--shadow)] transition-all duration-[300ms] ease-out ${!isExpanded ? 'pb-[var(--space-3)]' : ''}`}>
-      <div className={`flex justify-between items-center ${isExpanded ? 'mb-[var(--space-4)]' : 'mb-[var(--space-2)]'}`}>
-        <h2 className="text-[18px] font-bold m-0">Dashboard</h2>
-        <div className="flex items-center gap-[var(--space-3)] text-[13px] text-text-muted">
-          <button
-            className="bg-transparent border-none text-text-muted text-[13px] font-medium cursor-pointer py-0.5 px-1.5 rounded-[var(--radius-sm)] transition-all duration-[100ms] hover:text-text-main hover:bg-row-hover"
-            onClick={() => setIsExpanded(!isExpanded)}
-            type="button"
-            aria-expanded={isExpanded}
-          >
-            {isExpanded ? 'Hide Stats ▴' : 'Show Stats ▾'}
-          </button>
-          <span className="bg-bg border border-border-main px-2.5 py-0.5 rounded-[12px] text-[12px] text-text-muted">
-            {isExpanded ? 'Expanded' : 'Collapsed'}
-          </span>
+    <Card className="mb-6 border-border shadow-sm">
+      <CardHeader className="flex flex-row items-center justify-between pb-4">
+        <div className="flex items-center gap-2">
+          <BarChart2 className="h-5 w-5 text-accent-color" />
+          <CardTitle className="font-bold text-lg">Reading Dashboard</CardTitle>
         </div>
-      </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="text-text-muted text-xs hover:text-text"
+        >
+          <span>{isExpanded ? 'Hide Details' : 'Show Details'}</span>
+          {isExpanded ? (
+            <ChevronUp className="ml-1 h-4 w-4" />
+          ) : (
+            <ChevronDown className="ml-1 h-4 w-4" />
+          )}
+        </Button>
+      </CardHeader>
 
       {isExpanded ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-[var(--space-4)] animate-[fadeIn_0.12s_ease_both]">
-          {/* CARD 1: STATUS BREAKDOWN */}
-          <div className="bg-bg border border-border-soft rounded-[var(--radius-md)] p-[var(--space-4)] flex flex-col justify-between min-w-0 overflow-hidden">
-            <div className="text-[12px] font-bold tracking-[0.05em] text-text-muted uppercase">STATUS BREAKDOWN</div>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {/* CARD 1: STATUS BREAKDOWN */}
+            <div className="flex flex-col justify-between rounded-xl border border-border bg-surface/50 p-4">
+              <div className="flex items-center justify-between font-bold text-text-muted text-xs uppercase tracking-wider">
+                <span>Status Breakdown</span>
+                <BookCheck className="h-4 w-4 text-accent-color" />
+              </div>
 
-            <div className="flex h-[38px] rounded-[var(--radius-sm)] overflow-hidden mt-[var(--space-3)] mb-[4px]">
-              <div className="flex items-center justify-center text-[13px] font-bold text-white transition-[width] duration-[300ms] bg-status-completed" style={{ width: `${compPct}%` }}>
-                {compPct >= 8 && <span>{completedCount}</span>}
-              </div>
-              <div className="flex items-center justify-center text-[13px] font-bold text-white transition-[width] duration-[300ms] bg-status-reading" style={{ width: `${readPct}%` }}>
-                {readPct >= 8 && <span>{readingCount}</span>}
-              </div>
-              <div className="flex items-center justify-center text-[13px] font-bold text-white transition-[width] duration-[300ms] bg-status-hold" style={{ width: `${holdPct}%` }}>
-                {holdPct >= 8 && <span>{onHoldCount}</span>}
-              </div>
-              <div className="flex items-center justify-center text-[13px] font-bold text-white transition-[width] duration-[300ms] bg-status-plan" style={{ width: `${planPct}%` }}>
-                {planPct >= 8 && <span>{planToReadCount}</span>}
-              </div>
-            </div>
-
-            <div className="flex w-full text-[11px] text-text-muted mb-[var(--space-4)]">
-              <span style={{ width: `${compPct}%`, textAlign: 'center' }}>{compPct > 0 ? `${compPct}%` : ''}</span>
-              <span style={{ width: `${readPct}%`, textAlign: 'center' }}>{readPct > 0 ? `${readPct}%` : ''}</span>
-              <span style={{ width: `${holdPct}%`, textAlign: 'center' }}>{holdPct > 0 ? `${holdPct}%` : ''}</span>
-              <span style={{ width: `${planPct}%`, textAlign: 'center' }}>{planPct > 0 ? `${planPct}%` : ''}</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-[var(--space-2)] mb-[var(--space-4)] text-[12px]">
-              <div className="flex items-center gap-1.5 whitespace-nowrap">
-                <span className="w-[9px] h-[9px] rounded-[2px] inline-block shrink-0 bg-status-completed" />
-                <span>Completed ({completedCount})</span>
-              </div>
-              <div className="flex items-center gap-1.5 whitespace-nowrap">
-                <span className="w-[9px] h-[9px] rounded-[2px] inline-block shrink-0 bg-status-reading" />
-                <span>Reading ({readingCount})</span>
-              </div>
-              <div className="flex items-center gap-1.5 whitespace-nowrap">
-                <span className="w-[9px] h-[9px] rounded-[2px] inline-block shrink-0 bg-status-hold" />
-                <span>On Hold ({onHoldCount})</span>
-              </div>
-              <div className="flex items-center gap-1.5 whitespace-nowrap">
-                <span className="w-[9px] h-[9px] rounded-[2px] inline-block shrink-0 bg-status-plan" />
-                <span>Plan to Read ({planToReadCount})</span>
-              </div>
-            </div>
-
-            <div className="border-t border-border-soft pt-[var(--space-3)] text-[13px] text-text-main flex flex-col gap-1">
-              <div>
-                Total Entries: <strong>{totalCount}</strong>
-              </div>
-              <div>
-                Average Rating: <strong>{avgRating}★</strong>
-              </div>
-            </div>
-          </div>
-
-          {/* CARD 2: MINI SHELF */}
-          <div className="bg-bg border border-border-soft rounded-[var(--radius-md)] p-[var(--space-4)] flex flex-col justify-between min-w-0 overflow-hidden">
-            <div className="flex justify-between items-center mb-[var(--space-2)]">
-              <div className="text-[12px] font-bold tracking-[0.05em] text-text-muted uppercase">MINI SHELF ({thisYear})</div>
-              <span className={`text-[11px] font-bold padding-[2px_8px] rounded-[10px] py-[2px] px-[8px] ${isOnTrack ? 'bg-[rgba(63,107,79,0.2)] text-status-completed' : 'bg-[rgba(138,59,48,0.2)] text-status-reading'}`}>
-                {isOnTrack ? '⚡ On Track' : '📈 Pace Push'}
-              </span>
-            </div>
-
-            <div className="w-full mb-[var(--space-3)] flex flex-col">
-              <div className="grid grid-cols-12 gap-[2px] w-full h-[90px] items-end">
-                {monthlyData.map((d, mIdx) => {
-                  const visibleSpinesCount = Math.min(d.count, 4);
-
-                  return (
-                    <div
-                      key={mIdx}
-                      className="flex flex-col items-center h-full justify-end min-w-0"
-                      title={`${d.monthName}: ${d.count} ${d.count === 1 ? 'book' : 'books'} completed`}
-                    >
-                      <div className="w-full h-[70px] flex items-end justify-center">
-                        {d.count === 0 ? (
-                          <div className="w-[3px] h-[14px] rounded-[1px] bg-border-soft opacity-40" />
-                        ) : (
-                          <div className="flex items-end justify-center gap-[1.5px] w-full h-full relative">
-                            {Array.from({ length: visibleSpinesCount }).map((_, spineIdx) => {
-                              const spineColor = SPINE_COLORS[(mIdx + spineIdx * 2) % SPINE_COLORS.length];
-                              const heightPct = 68 + ((mIdx * 11 + spineIdx * 17) % 28);
-
-                              return (
-                                <div
-                                  key={spineIdx}
-                                  className="flex-1 max-w-[7px] rounded-[2px_2px_0_0] shadow-[inset_-1px_0_2px_rgba(0,0,0,0.25),_1px_0_2px_rgba(0,0,0,0.15)] relative transition-all duration-[100ms] ease-out cursor-pointer hover:-translate-y-[3px] hover:scale-x-[1.1] hover:brightness-[1.15]"
-                                  style={{
-                                    height: `${heightPct}%`,
-                                    backgroundColor: spineColor,
-                                  }}
-                                >
-                                  <span className="absolute top-[20%] left-0 right-0 h-[2px] bg-[rgba(255,255,255,0.35)]" />
-                                </div>
-                              );
-                            })}
-                            {d.count > 4 && (
-                              <span className="absolute top-[-2px] text-[8px] font-extrabold text-text-muted">+{d.count - 4}</span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      <span className="text-[10px] text-text-muted mt-1">{d.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="w-full h-[5px] bg-border-main dark:bg-[#3d3527] rounded-[2px] shadow-[0_2px_4px_rgba(0,0,0,0.12)] dark:shadow-[0_2px_5px_rgba(0,0,0,0.4)] mt-[1px]" />
-            </div>
-
-            <div className="border-t border-border-soft pt-[var(--space-3)] flex items-center gap-[var(--space-3)]">
-              <div className="relative w-16 h-16 shrink-0 flex items-center justify-center">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
-                  <circle className="fill-none stroke-border-soft stroke-[8px]" cx="40" cy="40" r={radius} />
-                  <circle
-                    className="fill-none stroke-status-reading stroke-[8px] stroke-linecap-round transition-[stroke-dashoffset] duration-[600ms] ease-out"
-                    cx="40"
-                    cy="40"
-                    r={radius}
-                    style={{
-                      strokeDasharray: circumference,
-                      strokeDashoffset: strokeDashoffset,
-                    }}
+              {/* Progress Stack Bar */}
+              <div className="my-3 space-y-1.5">
+                <div className="flex h-3 overflow-hidden rounded-full bg-border/40">
+                  <div
+                    className="bg-emerald-500 transition-all duration-300"
+                    style={{ width: `${compPct}%` }}
+                    title={`Completed: ${completedCount}`}
                   />
-                </svg>
-                <div className="absolute flex flex-col items-center">
-                  <span className="text-[13px] font-bold text-text-main">{goalPct}%</span>
+                  <div
+                    className="bg-blue-500 transition-all duration-300"
+                    style={{ width: `${readPct}%` }}
+                    title={`Reading: ${readingCount}`}
+                  />
+                  <div
+                    className="bg-orange-500 transition-all duration-300"
+                    style={{ width: `${holdPct}%` }}
+                    title={`On Hold: ${onHoldCount}`}
+                  />
+                  <div
+                    className="bg-amber-500 transition-all duration-300"
+                    style={{ width: `${planPct}%` }}
+                    title={`Plan to Read: ${planToReadCount}`}
+                  />
                 </div>
               </div>
 
-              <div className="flex-1 min-w-0">
-                {!editingGoal ? (
-                  <div className="flex flex-col">
-                    <div className="flex justify-between text-[12px] text-text-muted">
-                      <span>{thisYear} Goal</span>
-                      <button
-                        className="bg-none border-none cursor-pointer text-[11px] p-0 text-text-muted underline"
+              {/* Status Pills */}
+              <div className="mb-3 grid grid-cols-2 gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-xs bg-emerald-500" />
+                  <span className="text-text-muted">
+                    Completed: <strong className="text-text">{completedCount}</strong>{' '}
+                    <span className="text-[11px] text-text-muted/80">
+                      ({totalCount ? Math.round((completedCount / totalCount) * 100) : 0}%)
+                    </span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-xs bg-sky-500" />
+                  <span className="text-text-muted">
+                    Reading: <strong className="text-text">{readingCount}</strong>{' '}
+                    <span className="text-[11px] text-text-muted/80">
+                      ({totalCount ? Math.round((readingCount / totalCount) * 100) : 0}%)
+                    </span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-xs bg-orange-500" />
+                  <span className="text-text-muted">
+                    On Hold: <strong className="text-text">{onHoldCount}</strong>{' '}
+                    <span className="text-[11px] text-text-muted/80">
+                      ({totalCount ? Math.round((onHoldCount / totalCount) * 100) : 0}%)
+                    </span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-xs bg-amber-500" />
+                  <span className="text-text-muted">
+                    Plan to Read: <strong className="text-text">{planToReadCount}</strong>{' '}
+                    <span className="text-[11px] text-text-muted/80">
+                      ({totalCount ? Math.round((planToReadCount / totalCount) * 100) : 0}%)
+                    </span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between border-border/80 border-t pt-3 text-xs">
+                <span className="text-text-muted">
+                  Total Entries: <strong className="text-text">{totalCount}</strong>
+                </span>
+                <span className="flex items-center gap-1 text-text-muted">
+                  Avg Rating: <strong className="text-text">{avgRating}</strong>
+                  <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                </span>
+              </div>
+            </div>
+
+            {/* CARD 2: ANNUAL SHELF & GOALS */}
+            <div className="flex flex-col justify-between rounded-xl border border-border bg-surface/50 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-bold text-text-muted text-xs uppercase tracking-wider">
+                  <Trophy className="h-4 w-4 text-amber-500" />
+                  <span>{thisYear} Goal & Pace</span>
+                </div>
+
+                {/* Ultra-Minimal Animated Glyph Hint */}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex h-6 w-6 cursor-help items-center justify-center rounded-full border border-border/60 bg-surface/80 shadow-2xs transition-all hover:scale-110 hover:border-accent-color/50">
+                        {isOnTrack ? (
+                          <Sparkles className="h-3.5 w-3.5 animate-pulse text-emerald-500" />
+                        ) : (
+                          <Flame className="h-3.5 w-3.5 animate-pulse text-amber-500" />
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {isOnTrack
+                        ? `⚡ Excellent pace! You've finished ${completedThisYear} books out of ${targetGoal}.`
+                        : `📈 Keep going! Target pace requires ~${Math.max(1, Math.round((targetGoal - completedThisYear) / Math.max(1, 12 - new Date().getMonth())))} bks/mo.`}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+
+              {/* Mini Shelf Monthly Histogram */}
+              <div className="my-3 space-y-1">
+                <div className="grid h-14 grid-cols-12 items-end gap-1">
+                  {monthlyData.map((d, mIdx) => (
+                    <div
+                      key={mIdx}
+                      className="group relative flex h-full flex-col items-center justify-end"
+                      title={`${d.monthName}: ${d.count} finished`}
+                    >
+                      <div
+                        className="w-full rounded-xs bg-accent-color/75 transition-all duration-200 group-hover:scale-y-105 group-hover:bg-accent-color"
+                        style={{
+                          height:
+                            d.count === 0
+                              ? '2px'
+                              : `${Math.round((d.count / Math.max(1, ...monthlyData.map((m) => m.count))) * 100)}%`,
+                        }}
+                      />
+                      <span className="mt-1 font-mono text-[9px] text-text-muted">{d.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Goal Progress Ring & Edit */}
+              <div className="flex items-center gap-3 border-border/80 border-t pt-3">
+                <div className="w-full space-y-1">
+                  {!editingGoal ? (
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1">
+                        <span className="text-text-muted">Target:</span>
+                        <strong className="text-text">
+                          {completedThisYear} / {targetGoal} books
+                        </strong>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => {
                           setGoalInput(String(targetGoal));
                           setEditingGoal(true);
                         }}
+                        className="h-6 px-1.5 text-accent-color text-xs"
                       >
-                        edit
-                      </button>
+                        <Edit2 className="h-3 w-3" />
+                      </Button>
                     </div>
-                    <div className="text-[14px] my-0.5">
-                      <strong>{completedThisYear}</strong> / {targetGoal} books
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min={0}
+                        value={goalInput}
+                        onChange={(e) => setGoalInput(e.target.value)}
+                        className="h-7 w-16 rounded border border-border bg-card-bg px-2 text-xs"
+                      />
+                      <Button
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={saveGoal}
+                        disabled={savingGoal}
+                      >
+                        <Check className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => setEditingGoal(false)}
+                      >
+                        Cancel
+                      </Button>
                     </div>
-                    <div className="text-[11px] text-text-muted">
-                      Pace: <strong>{avgPacePerMonth}</strong> bks/mo (Req: {requiredPace})
-                    </div>
+                  )}
+
+                  <Progress value={goalPct} className="h-2" />
+
+                  <div className="flex items-center justify-between pt-0.5 text-[11px] text-text-muted">
+                    <span>{goalPct}% Achieved</span>
+                    <span>
+                      Pace: {avgPacePerMonth} bks/mo (Req: {requiredPace})
+                    </span>
                   </div>
-                ) : (
-                  <div className="flex gap-1.5">
-                    <input
-                      type="number"
-                      min={0}
-                      value={goalInput}
-                      onChange={(e) => setGoalInput(e.target.value)}
-                      className="w-[60px] py-[2px] px-[6px] border border-input-border bg-input-bg rounded-[var(--radius-sm)] text-[12px]"
-                    />
-                    <button className="text-[11px] py-[2px] px-[8px] border border-btn-border bg-card-bg rounded-[var(--radius-sm)] cursor-pointer" disabled={savingGoal} onClick={saveGoal}>
-                      Save
-                    </button>
-                    <button className="text-[11px] py-[2px] px-[8px] border border-btn-border bg-card-bg rounded-[var(--radius-sm)] cursor-pointer" onClick={() => setEditingGoal(false)}>Cancel</button>
+                </div>
+              </div>
+            </div>
+
+            {/* CARD 3: RATING DISTRIBUTION */}
+            <div className="flex flex-col justify-between rounded-xl border border-border bg-surface/50 p-4">
+              <div className="flex items-center justify-between font-bold text-text-muted text-xs uppercase tracking-wider">
+                <span>Rating Breakdown</span>
+                <Flame className="h-4 w-4 text-amber-500" />
+              </div>
+
+              <div className="my-2 space-y-2">
+                {ratingDistribution.map(({ star, count, percentage }) => (
+                  <div
+                    key={star}
+                    className="grid grid-cols-[24px_1fr_60px] items-center gap-2 text-xs"
+                  >
+                    <span className="flex items-center gap-0.5 font-semibold text-text">
+                      {star}
+                      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                    </span>
+                    <Progress value={percentage} className="h-2" />
+                    <span className="text-right font-mono text-[11px] text-text-muted">
+                      {count}x ({percentage}%)
+                    </span>
                   </div>
-                )}
+                ))}
               </div>
             </div>
           </div>
-
-          {/* CARD 3: RATING DISTRIBUTION */}
-          <div className="bg-bg border border-border-soft rounded-[var(--radius-md)] p-[var(--space-4)] flex flex-col justify-between min-w-0 overflow-hidden">
-            <div className="text-[12px] font-bold tracking-[0.05em] text-text-muted uppercase">RATING DISTRIBUTION</div>
-
-            <div className="flex flex-col gap-3 mt-[var(--space-3)]">
-              {ratingDistribution.map(({ star, count, percentage }) => (
-                <div key={star} className={`grid grid-cols-[28px_1fr_64px] items-center gap-2.5 text-[13px] ${count === 0 ? 'opacity-45' : ''}`}>
-                  <span className="font-semibold text-text-main">{star}★</span>
-                  
-                  <div className="w-full h-2 bg-border-soft rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-star-filled rounded-full transition-[width] duration-[600ms] ease-in-out"
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-end gap-1 text-[11px] font-mono">
-                    <span className="font-bold text-text-main">{count}x</span>
-                    <span className="text-text-muted">({percentage}%)</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        </CardContent>
       ) : (
-        <div className="flex flex-wrap gap-[var(--space-4)] items-center py-[var(--space-2)] px-[var(--space-3)] bg-bg border border-border-soft rounded-[var(--radius-md)] text-[13px] animate-[fadeIn_0.12s_ease_both]">
-          <div className="flex items-center gap-[var(--space-1)]">
-            <span className="text-text-muted">Total Entries:</span>
-            <strong>{totalCount}</strong>
+        <CardContent className="py-2">
+          <div className="flex flex-wrap items-center gap-4 text-text-muted text-xs">
+            <span>
+              Total: <strong className="text-text">{totalCount}</strong>
+            </span>
+            <span>
+              Completed ({thisYear}): <strong className="text-text">{completedThisYear}</strong>
+            </span>
+            <span>
+              Reading: <strong className="text-text">{readingCount}</strong>
+            </span>
+            <span>
+              Avg Rating: <strong className="text-text">{avgRating}★</strong>
+            </span>
+            <span>
+              Goal:{' '}
+              <strong className="text-text">
+                {completedThisYear}/{targetGoal} ({goalPct}%)
+              </strong>
+            </span>
           </div>
-          <div className="flex items-center gap-[var(--space-1)]">
-            <span className="text-text-muted">Completed ({thisYear}):</span>
-            <strong>{completedThisYear}</strong>
-          </div>
-          <div className="flex items-center gap-[var(--space-1)]">
-            <span className="text-text-muted">Reading:</span>
-            <strong>{readingCount}</strong>
-          </div>
-          <div className="flex items-center gap-[var(--space-1)]">
-            <span className="text-text-muted">Avg Rating:</span>
-            <strong>{avgRating}★</strong>
-          </div>
-          <div className="flex items-center gap-[var(--space-1)]">
-            <span className="text-text-muted">Goal:</span>
-            <strong>
-              {completedThisYear} / {targetGoal} ({goalPct}%)
-            </strong>
-          </div>
-        </div>
+        </CardContent>
       )}
-    </div>
+    </Card>
   );
 }

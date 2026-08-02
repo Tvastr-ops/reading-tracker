@@ -67,9 +67,11 @@ export function BarChart({
           );
         })}
       </svg>
-      <div className="text-[12px] text-text-muted flex" aria-hidden="true">
+      <div className="flex text-[12px] text-text-muted" aria-hidden="true">
         {data.map((d) => (
-          <div key={d.label} className="flex-1 text-center">{d.label}</div>
+          <div key={d.label} className="flex-1 text-center">
+            {d.label}
+          </div>
         ))}
       </div>
     </div>

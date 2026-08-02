@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -7,7 +7,6 @@ export const dynamic = 'force-dynamic';
 // volume. We only ever store the resulting *URL* string on a book (a few
 // dozen bytes), never the image itself — keeps DB storage negligible.
 export const GET = withAuth(async (req: NextRequest) => {
-
   const title = req.nextUrl.searchParams.get('title')?.trim();
   if (!title) {
     return NextResponse.json({ error: 'title query param required' }, { status: 400 });
