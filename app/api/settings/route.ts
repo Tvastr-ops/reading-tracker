@@ -1,13 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase';
+import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
+import { supabaseServer } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
 const GOAL_KEY = 'yearly_goal';
 
-export const GET = withAuth(async (req: NextRequest) => {
-
+export const GET = withAuth(async (_req: NextRequest) => {
   const supabase = supabaseServer();
   const { data, error } = await supabase
     .from('app_settings')
@@ -20,11 +19,13 @@ export const GET = withAuth(async (req: NextRequest) => {
 });
 
 export const PATCH = withAuth(async (req: NextRequest) => {
-
   const body = await req.json().catch(() => null);
   const count = Number(body?.yearlyGoal);
   if (!Number.isFinite(count) || count < 0) {
-    return NextResponse.json({ error: 'yearlyGoal must be a non-negative number' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'yearlyGoal must be a non-negative number' },
+      { status: 400 },
+    );
   }
 
   const supabase = supabaseServer();
