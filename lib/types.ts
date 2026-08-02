@@ -21,7 +21,10 @@ export interface Book {
   updated_at: string;
 }
 
-export type BookInput = Omit<Book, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'reading_pace'>;
+export type BookInput = Omit<
+  Book,
+  'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'reading_pace'
+>;
 
 export const STATUSES: Status[] = ['Plan to Read', 'Reading', 'On Hold', 'Completed', 'Dropped'];
 
@@ -35,7 +38,15 @@ export const STATUS_COLOR_VAR: Record<string, string> = {
   Dropped: 'var(--status-dropped)',
 };
 
-export type SortField = 'updated_at' | 'created_at' | 'title' | 'rating' | 'date_finished' | 'status' | 'progress' | 'author';
+export type SortField =
+  | 'updated_at'
+  | 'created_at'
+  | 'title'
+  | 'rating'
+  | 'date_finished'
+  | 'status'
+  | 'progress'
+  | 'author';
 export type SortDir = 'asc' | 'desc';
 
 export interface ReadingLogEntry {

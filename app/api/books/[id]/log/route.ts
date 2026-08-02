@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase';
+import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
+import { supabaseServer } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 type RouteContext = { params: Promise<{ id: string }> };
 
-export const GET = withAuth(async (req: NextRequest, { params }: RouteContext) => {
+export const GET = withAuth(async (_req: NextRequest, { params }: RouteContext) => {
   const { id } = await params;
   if (!UUID_RE.test(id)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
 
@@ -32,7 +32,10 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
   const body = await req.json().catch(() => null);
   const toProgress = Number(body?.to_progress);
   if (!Number.isFinite(toProgress) || toProgress < 0) {
-    return NextResponse.json({ error: 'to_progress must be a non-negative number' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'to_progress must be a non-negative number' },
+      { status: 400 },
+    );
   }
   const fromProgress = body?.from_progress != null ? Number(body.from_progress) : null;
   const note = typeof body?.note === 'string' ? body.note.slice(0, 500) : null;
@@ -63,7 +66,7 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
     const deltaProgress = newest.to_progress - oldest.to_progress;
     const deltaDays = Math.max(
       1,
-      (new Date(newest.logged_at).getTime() - new Date(oldest.logged_at).getTime()) / 86400000
+      (new Date(newest.logged_at).getTime() - new Date(oldest.logged_at).getTime()) / 86400000,
     );
     const perWeek = (deltaProgress / deltaDays) * 7;
     if (perWeek > 0) readingPace = Math.round(perWeek * 10) / 10;

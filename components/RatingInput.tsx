@@ -1,36 +1,44 @@
 'use client';
 
-export function RatingDisplay({ rating, mode }: { rating: number | null; mode: 'stars' | 'decimal' }) {
-  if (rating == null) return <span className="text-text-faint">—</span>;
-  if (mode === 'decimal') return <span>{rating.toFixed(1)} / 5</span>;
+import { Star } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+export function RatingDisplay({
+  rating,
+  mode,
+}: {
+  rating: number | null;
+  mode: 'stars' | 'decimal';
+}) {
+  if (rating == null) return <span className="text-text-muted/60">—</span>;
+  if (mode === 'decimal')
+    return <span className="font-medium text-text">{rating.toFixed(1)} / 5</span>;
 
   const stars = [];
   for (let i = 1; i <= 5; i++) {
     const diff = rating - (i - 1);
     if (diff >= 1) {
-      // Full star.
-      stars.push(<span key={i} className="text-star-filled">★</span>);
+      stars.push(<Star key={i} className="inline-block h-4 w-4 fill-amber-400 text-amber-400" />);
     } else if (diff >= 0.5) {
-      // Half star: rendered as a filled ★ clipped to 50% width, layered over
-      // an empty ☆ underneath. Some devices/fonts don't include a half-star
-      // glyph at all and render it as a "tofu" placeholder box, so this
-      // avoids depending on one — only ★/☆ are used, which are universally
-      // supported.
       stars.push(
-        <span key={i} className="relative inline-block">
-          <span>☆</span>
-          <span
-            className="text-star-filled absolute left-0 top-0 w-1/2 overflow-hidden whitespace-nowrap"
-          >
-            ★
-          </span>
-        </span>
+        <div key={i} className="relative inline-block h-4 w-4">
+          <Star className="inline-block h-4 w-4 text-amber-400/30" />
+          <div className="absolute inset-0 w-1/2 overflow-hidden">
+            <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+          </div>
+        </div>,
       );
     } else {
-      stars.push(<span key={i}>☆</span>);
+      stars.push(<Star key={i} className="inline-block h-4 w-4 text-amber-400/30" />);
     }
   }
-  return <span className="text-star-empty text-[13px] tracking-[0.5px] whitespace-nowrap">{stars}</span>;
+  return <div className="inline-flex items-center gap-0.5">{stars}</div>;
 }
 
 export function RatingSelect({
@@ -46,16 +54,26 @@ export function RatingSelect({
   for (let v = 0.5; v <= 5; v += 0.5) options.push(Math.round(v * 10) / 10);
 
   return (
-    <select
-      value={value ?? ''}
-      onChange={(e) => onChange(e.target.value === '' ? null : parseFloat(e.target.value))}
-      className="w-full py-[var(--space-2)] px-[var(--space-3)] border border-input-border rounded-[var(--radius-sm)] bg-input-bg text-text-main font-inherit"
+    <Select
+      value={value == null ? 'none' : value.toString()}
+      onValueChange={(val) => onChange(val === 'none' ? null : parseFloat(val))}
     >
-      {options.map((opt) => (
-        <option key={opt ?? 'none'} value={opt ?? ''}>
-          {opt == null ? 'Not rated' : mode === 'decimal' ? `${opt.toFixed(1)}` : `${opt.toFixed(1)} ★`}
-        </option>
-      ))}
-    </select>
+      <SelectTrigger className="w-full">
+        <SelectValue placeholder="Select rating" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="none">Not rated</SelectItem>
+        {options
+          .filter((opt): opt is number => opt !== null)
+          .map((opt) => (
+            <SelectItem key={opt} value={opt.toString()}>
+              <div className="flex items-center gap-2">
+                <span>{opt.toFixed(1)}</span>
+                {mode === 'stars' && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />}
+              </div>
+            </SelectItem>
+          ))}
+      </SelectContent>
+    </Select>
   );
 }
