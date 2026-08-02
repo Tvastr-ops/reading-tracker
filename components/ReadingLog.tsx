@@ -98,14 +98,14 @@ export default function ReadingLog({
           placeholder={`Now at ${currentProgress}`}
           value={toProgress}
           onChange={(e) => setToProgress(e.target.value)}
-          className="w-[110px]"
+          className="w-[110px] py-[var(--space-2)] px-[var(--space-3)] border border-input-border rounded-[var(--radius-sm)] bg-input-bg text-text-main font-inherit"
         />
         <input
           type="text"
           placeholder="Note (optional)"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          className="flex-1"
+          className="flex-1 py-[var(--space-2)] px-[var(--space-3)] border border-input-border rounded-[var(--radius-sm)] bg-input-bg text-text-main font-inherit"
         />
         <button type="button" className="btn secondary" disabled={saving} onClick={() => addEntry()}>
           {saving ? 'Adding...' : 'Log'}
