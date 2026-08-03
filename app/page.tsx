@@ -689,13 +689,49 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Row 2: Filter Pills Bar (Clean Flex-Wrap on Mobile) */}
-          <div className="flex items-center justify-between gap-2 border-border/40 border-t pt-2.5">
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          {/* Row 2: Filter Pills Bar */}
+          <div className="flex items-center justify-between gap-2 border-border/40 border-t pt-2">
+            <div className="flex flex-1 items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 sm:flex-wrap sm:gap-2">
+              {/* When Selection Mode is ACTIVE, show Done & Select All at the VERY FRONT */}
+              {selectMode && (
+                <>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="h-7 shrink-0 px-3 text-xs shadow-xs font-semibold"
+                    onClick={() => {
+                      setSelectMode(false);
+                      setSelected(new Set());
+                    }}
+                  >
+                    <Check className="mr-1 h-3.5 w-3.5" />
+                    <span>Done</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 shrink-0 px-2.5 text-xs text-accent-color hover:bg-accent-color/10"
+                    onClick={() => {
+                      const allSelected =
+                        filtered.length > 0 && filtered.every((b) => selected.has(b.id));
+                      if (allSelected) {
+                        setSelected(new Set());
+                      } else {
+                        setSelected(new Set(filtered.map((b) => b.id)));
+                      }
+                    }}
+                  >
+                    {filtered.length > 0 && filtered.every((b) => selected.has(b.id))
+                      ? 'Deselect All'
+                      : `Select All (${filtered.length})`}
+                  </Button>
+                </>
+              )}
+
               {/* Status Filter */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7 px-2 text-xs sm:px-2.5">
+                  <Button variant="outline" size="sm" className="h-7 shrink-0 px-2.5 text-xs">
                     <Filter className="mr-1 h-3 w-3 text-text-muted" />
                     <span>{statusFilter === 'All' ? 'Status' : statusFilter}</span>
                   </Button>
@@ -718,7 +754,7 @@ export default function HomePage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 px-2 text-xs sm:px-2.5"
+                className="h-7 shrink-0 px-2.5 text-xs"
                 onClick={() =>
                   setRatingMode((m) => {
                     const next = m === 'stars' ? 'decimal' : 'stars';
@@ -738,7 +774,7 @@ export default function HomePage() {
               {/* Sort Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7 px-2 text-xs sm:px-2.5">
+                  <Button variant="outline" size="sm" className="h-7 shrink-0 px-2.5 text-xs">
                     <ArrowUpDown className="mr-1 h-3 w-3 text-text-muted" />
                     <span>Sort</span>
                   </Button>
@@ -770,7 +806,7 @@ export default function HomePage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 px-2 text-xs text-accent-color hover:bg-accent-color/10 sm:px-2.5"
+                  className="h-7 shrink-0 px-2.5 text-xs text-accent-color hover:bg-accent-color/10"
                   onClick={pickUpNext}
                 >
                   <Sparkles className="mr-1 h-3 w-3" />
@@ -778,40 +814,20 @@ export default function HomePage() {
                 </Button>
               )}
 
-              {/* Selection Mode Button */}
-              <div className="flex items-center gap-1.5">
+              {/* Selection Mode Button (when selectMode is INACTIVE) */}
+              {!selectMode && (
                 <Button
-                  variant={selectMode ? 'secondary' : 'outline'}
+                  variant="outline"
                   size="sm"
-                  className="h-7 px-2 text-xs sm:px-2.5"
+                  className="h-7 shrink-0 px-2.5 text-xs"
                   onClick={() => {
-                    setSelectMode((v) => !v);
+                    setSelectMode(true);
                     setSelected(new Set());
                   }}
                 >
-                  {selectMode ? 'Done Select' : 'Select'}
+                  Select
                 </Button>
-                {selectMode && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 px-2 text-xs text-accent-color hover:bg-accent-color/10 sm:px-2.5"
-                    onClick={() => {
-                      const allSelected =
-                        filtered.length > 0 && filtered.every((b) => selected.has(b.id));
-                      if (allSelected) {
-                        setSelected(new Set());
-                      } else {
-                        setSelected(new Set(filtered.map((b) => b.id)));
-                      }
-                    }}
-                  >
-                    {filtered.length > 0 && filtered.every((b) => selected.has(b.id))
-                      ? 'Deselect All'
-                      : `Select All (${filtered.length})`}
-                  </Button>
-                )}
-              </div>
+              )}
             </div>
 
             <div className="hidden sm:flex items-center gap-2 text-text-muted text-xs shrink-0">
