@@ -823,13 +823,23 @@ export default function HomePage() {
 
         {/* Bulk Action Bar */}
         {selectMode && selected.size > 0 && (
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent-color/40 bg-accent-color/10 p-3 text-xs">
-            <span className="font-bold text-text">{selected.size} selected</span>
-            <div className="flex items-center gap-2">
+          <div className="mb-4 flex flex-col gap-2.5 rounded-xl border border-accent-color/40 bg-accent-color/10 p-3 text-xs sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-text">{selected.size} selected</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs text-text-muted hover:text-text sm:hidden"
+                onClick={() => setSelected(new Set())}
+              >
+                Clear
+              </Button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
               {!showTrash && (
                 <>
                   <Select value={bulkStatus} onValueChange={(val) => setBulkStatus(val)}>
-                    <SelectTrigger className="h-8 w-36 text-xs">
+                    <SelectTrigger className="h-8 w-32 sm:w-36 text-xs">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -870,7 +880,7 @@ export default function HomePage() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8"
+                className="hidden sm:inline-flex h-8"
                 onClick={() => setSelected(new Set())}
               >
                 Clear
