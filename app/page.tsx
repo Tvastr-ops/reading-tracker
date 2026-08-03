@@ -417,7 +417,7 @@ export default function HomePage() {
   }, [showTrash, viewMode, editing, filtered, focusedIndex]);
 
   return (
-    <main className="mx-auto max-w-[1180px] px-4 py-6 pb-20 sm:px-6">
+    <main className="mx-auto max-w-7xl 2xl:max-w-screen-2xl px-4 py-6 pb-20 sm:px-6 lg:px-8 xl:px-10">
       {/* Header Bar */}
       <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
@@ -696,41 +696,39 @@ export default function HomePage() {
                 </Button>
               )}
 
-              {viewMode === 'table' && (
-                <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant={selectMode ? 'secondary' : 'outline'}
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={() => {
+                    setSelectMode((v) => !v);
+                    setSelected(new Set());
+                  }}
+                >
+                  {selectMode ? 'Done Select' : 'Select'}
+                </Button>
+                {selectMode && (
                   <Button
-                    variant={selectMode ? 'secondary' : 'outline'}
+                    variant="outline"
                     size="sm"
-                    className="h-8 text-xs"
+                    className="h-8 text-xs text-accent-color hover:bg-accent-color/10"
                     onClick={() => {
-                      setSelectMode((v) => !v);
-                      setSelected(new Set());
+                      const allSelected =
+                        filtered.length > 0 && filtered.every((b) => selected.has(b.id));
+                      if (allSelected) {
+                        setSelected(new Set());
+                      } else {
+                        setSelected(new Set(filtered.map((b) => b.id)));
+                      }
                     }}
                   >
-                    {selectMode ? 'Done Select' : 'Select Rows'}
+                    {filtered.length > 0 && filtered.every((b) => selected.has(b.id))
+                      ? 'Deselect All'
+                      : `Select All (${filtered.length})`}
                   </Button>
-                  {selectMode && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 text-xs text-accent-color hover:bg-accent-color/10"
-                      onClick={() => {
-                        const allSelected =
-                          filtered.length > 0 && filtered.every((b) => selected.has(b.id));
-                        if (allSelected) {
-                          setSelected(new Set());
-                        } else {
-                          setSelected(new Set(filtered.map((b) => b.id)));
-                        }
-                      }}
-                    >
-                      {filtered.length > 0 && filtered.every((b) => selected.has(b.id))
-                        ? 'Deselect All'
-                        : `Select All (${filtered.length})`}
-                    </Button>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-2 text-text-muted text-xs">
@@ -755,7 +753,7 @@ export default function HomePage() {
         </div>
 
         {/* Bulk Action Bar */}
-        {viewMode === 'table' && selectMode && selected.size > 0 && (
+        {selectMode && selected.size > 0 && (
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent-color/40 bg-accent-color/10 p-3 text-xs">
             <span className="font-bold text-text">{selected.size} selected</span>
             <div className="flex items-center gap-2">
@@ -773,31 +771,30 @@ export default function HomePage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button size="sm" className="h-8" onClick={() => bulkAction('status')}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={!bulkStatus}
+                    onClick={() => bulkAction('status')}
+                  >
                     Set Status
                   </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="h-8"
-                    onClick={() => bulkAction('delete')}
-                  >
-                    Delete Selected
+                  <Button variant="destructive" size="sm" onClick={() => bulkAction('delete')}>
+                    Move to Trash
                   </Button>
                 </>
               )}
               {showTrash && (
                 <>
-                  <Button size="sm" className="h-8" onClick={() => bulkAction('restore')}>
+                  <Button variant="secondary" size="sm" onClick={() => bulkAction('restore')}>
                     Restore Selected
                   </Button>
                   <Button
                     variant="destructive"
                     size="sm"
-                    className="h-8"
                     onClick={() => bulkAction('delete_permanent')}
                   >
-                    Delete Forever
+                    Delete Permanently
                   </Button>
                 </>
               )}
@@ -806,6 +803,41 @@ export default function HomePage() {
                 size="sm"
                 className="h-8"
                 onClick={() => setSelected(new Set())}
+              >
+                Clear
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Filters Quick Action Bar */}
+        {filtersActive && (
+          <div className="mb-3 flex items-center justify-between rounded-lg border border-border bg-surface/50 p-2 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-semibold text-text-muted">Active Filters:</span>
+              {statusFilter !== 'All' && (
+                <span className="inline-flex items-center gap-1 rounded-md border border-border bg-card-bg px-2 py-0.5">
+                  Status: <strong>{statusFilter}</strong>
+                  <X
+                    className="h-3 w-3 cursor-pointer text-text-muted hover:text-text"
+                    onClick={() => setStatusFilter('All')}
+                  />
+                </span>
+              )}
+              {search.trim() !== '' && (
+                <span className="inline-flex items-center gap-1 rounded-md border border-border bg-card-bg px-2 py-0.5">
+                  Search: <strong>"{search}"</strong>
+                  <X
+                    className="h-3 w-3 cursor-pointer text-text-muted hover:text-text"
+                    onClick={() => setSearch('')}
+                  />
+                </span>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-accent-color text-xs"
+                onClick={clearFilters}
               >
                 Clear
               </Button>
@@ -822,13 +854,19 @@ export default function HomePage() {
               <div key={i} className="h-12 animate-pulse rounded-lg bg-surface/60" />
             ))}
           </div>
-        ) : viewMode === 'grid' && !showTrash ? (
+        ) : viewMode === 'grid' ? (
           <BookGrid
             books={filtered}
             ratingMode={ratingMode}
             hasAnyBooks={books.length > 0}
+            selectMode={selectMode}
+            selected={selected}
+            onToggleSelect={toggleSelect}
+            trashMode={showTrash}
             onEdit={(b) => setEditing(b)}
             onDelete={deleteBook}
+            onRestore={restoreBook}
+            onPermanentDelete={permanentlyDeleteBook}
           />
         ) : (
           <BookTable
