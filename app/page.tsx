@@ -689,14 +689,14 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Row 2: Filter Pills Bar (Horizontal Scroll on Mobile) */}
+          {/* Row 2: Filter Pills Bar (Clean Flex-Wrap on Mobile) */}
           <div className="flex items-center justify-between gap-2 border-border/40 border-t pt-2.5">
-            <div className="flex flex-1 items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               {/* Status Filter */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7 shrink-0 text-xs">
-                    <Filter className="mr-1.5 h-3 w-3 text-text-muted" />
+                  <Button variant="outline" size="sm" className="h-7 px-2 text-xs sm:px-2.5">
+                    <Filter className="mr-1 h-3 w-3 text-text-muted" />
                     <span>{statusFilter === 'All' ? 'Status' : statusFilter}</span>
                   </Button>
                 </DropdownMenuTrigger>
@@ -718,7 +718,7 @@ export default function HomePage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 shrink-0 text-xs"
+                className="h-7 px-2 text-xs sm:px-2.5"
                 onClick={() =>
                   setRatingMode((m) => {
                     const next = m === 'stars' ? 'decimal' : 'stars';
@@ -728,15 +728,18 @@ export default function HomePage() {
                 }
                 title="Toggle rating mode"
               >
-                <Sparkles className="mr-1.5 h-3 w-3 text-amber-400" />
-                <span>Rating: {ratingMode === 'stars' ? 'Stars' : 'Decimal'}</span>
+                <Sparkles className="mr-1 h-3 w-3 text-amber-400" />
+                <span>
+                  <span className="hidden sm:inline">Rating: </span>
+                  {ratingMode === 'stars' ? 'Stars' : 'Decimal'}
+                </span>
               </Button>
 
               {/* Sort Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7 shrink-0 text-xs">
-                    <ArrowUpDown className="mr-1.5 h-3 w-3 text-text-muted" />
+                  <Button variant="outline" size="sm" className="h-7 px-2 text-xs sm:px-2.5">
+                    <ArrowUpDown className="mr-1 h-3 w-3 text-text-muted" />
                     <span>Sort</span>
                   </Button>
                 </DropdownMenuTrigger>
@@ -767,20 +770,20 @@ export default function HomePage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 shrink-0 text-xs text-accent-color hover:bg-accent-color/10"
+                  className="h-7 px-2 text-xs text-accent-color hover:bg-accent-color/10 sm:px-2.5"
                   onClick={pickUpNext}
                 >
-                  <Sparkles className="mr-1.5 h-3 w-3" />
+                  <Sparkles className="mr-1 h-3 w-3" />
                   <span>Up Next</span>
                 </Button>
               )}
 
               {/* Selection Mode Button */}
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-1.5">
                 <Button
                   variant={selectMode ? 'secondary' : 'outline'}
                   size="sm"
-                  className="h-7 text-xs"
+                  className="h-7 px-2 text-xs sm:px-2.5"
                   onClick={() => {
                     setSelectMode((v) => !v);
                     setSelected(new Set());
@@ -792,7 +795,7 @@ export default function HomePage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 text-xs text-accent-color hover:bg-accent-color/10"
+                    className="h-7 px-2 text-xs text-accent-color hover:bg-accent-color/10 sm:px-2.5"
                     onClick={() => {
                       const allSelected =
                         filtered.length > 0 && filtered.every((b) => selected.has(b.id));
