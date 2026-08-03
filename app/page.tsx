@@ -734,11 +734,11 @@ export default function HomePage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 flex-1 min-w-0 justify-center px-1.5 text-xs sm:flex-none sm:px-2.5"
+                    className="h-7 flex-1 min-w-0 justify-center px-2 text-xs sm:flex-none sm:px-3"
                     title={statusFilter === 'All' ? 'Filter Status' : statusFilter}
                   >
-                    <Filter className="h-3 w-3 text-text-muted min-[380px]:mr-1" />
-                    <span className="hidden min-[380px]:inline truncate">
+                    <Filter className="h-3.5 w-3.5 text-text-muted sm:mr-1.5" />
+                    <span className="hidden sm:inline">
                       {statusFilter === 'All' ? 'Status' : statusFilter}
                     </span>
                   </Button>
@@ -761,7 +761,7 @@ export default function HomePage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 flex-1 min-w-0 justify-center px-1.5 text-xs sm:flex-none sm:px-2.5"
+                className="h-7 flex-1 min-w-0 justify-center px-2 text-xs sm:flex-none sm:px-3"
                 onClick={() =>
                   setRatingMode((m) => {
                     const next = m === 'stars' ? 'decimal' : 'stars';
@@ -769,12 +769,11 @@ export default function HomePage() {
                     return next;
                   })
                 }
-                title="Toggle rating mode"
+                title={`Rating display: ${ratingMode === 'stars' ? 'Stars' : 'Decimal'}`}
               >
-                <Sparkles className="h-3 w-3 text-amber-400 min-[380px]:mr-1" />
-                <span className="hidden min-[380px]:inline truncate">
-                  <span className="hidden sm:inline">Rating: </span>
-                  {ratingMode === 'stars' ? 'Stars' : 'Decimal'}
+                <Sparkles className="h-3.5 w-3.5 text-amber-400 sm:mr-1.5" />
+                <span className="hidden sm:inline">
+                  Rating: {ratingMode === 'stars' ? 'Stars' : 'Decimal'}
                 </span>
               </Button>
 
@@ -784,11 +783,11 @@ export default function HomePage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 flex-1 min-w-0 justify-center px-1.5 text-xs sm:flex-none sm:px-2.5"
+                    className="h-7 flex-1 min-w-0 justify-center px-2 text-xs sm:flex-none sm:px-3"
                     title="Sort entries"
                   >
-                    <ArrowUpDown className="h-3 w-3 text-text-muted min-[380px]:mr-1" />
-                    <span className="hidden min-[380px]:inline truncate">Sort</span>
+                    <ArrowUpDown className="h-3.5 w-3.5 text-text-muted sm:mr-1.5" />
+                    <span className="hidden sm:inline">Sort</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
@@ -818,12 +817,12 @@ export default function HomePage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 flex-1 min-w-0 justify-center px-1.5 text-xs text-accent-color hover:bg-accent-color/10 sm:flex-none sm:px-2.5"
+                  className="h-7 flex-1 min-w-0 justify-center px-2 text-xs text-accent-color hover:bg-accent-color/10 sm:flex-none sm:px-3"
                   onClick={pickUpNext}
                   title="Random Up Next"
                 >
-                  <Sparkles className="h-3 w-3 min-[380px]:mr-1" />
-                  <span className="hidden min-[380px]:inline truncate">
+                  <Sparkles className="mr-1 h-3.5 w-3.5" />
+                  <span>
                     <span className="inline sm:hidden">Next</span>
                     <span className="hidden sm:inline">Up Next</span>
                   </span>
@@ -835,7 +834,7 @@ export default function HomePage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 flex-1 min-w-0 justify-center px-1.5 text-xs font-medium sm:flex-none sm:px-2.5"
+                  className="h-7 flex-1 min-w-0 justify-center px-2.5 text-xs font-medium sm:flex-none sm:px-3"
                   onClick={() => {
                     setSelectMode(true);
                     setSelected(new Set());
