@@ -1,13 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase';
-import { BookInput } from '@/lib/types';
+import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
+import { supabaseServer } from '@/lib/supabase';
+import type { BookInput } from '@/lib/types';
 
 // See app/api/export/route.ts for why this is required.
 export const dynamic = 'force-dynamic';
 
 export const GET = withAuth(async (req: NextRequest) => {
-
   const showTrash = req.nextUrl.searchParams.get('trash') === '1';
 
   const supabase = supabaseServer();
@@ -23,8 +22,19 @@ function sanitize(input: Partial<BookInput>) {
   // Only allow known fields through — never trust the raw request body
   // straight into the database.
   const {
-    title, type, author, status, rating, progress, total_units,
-    genre_tags, source_link, cover_url, date_started, date_finished, notes,
+    title,
+    type,
+    author,
+    status,
+    rating,
+    progress,
+    total_units,
+    genre_tags,
+    source_link,
+    cover_url,
+    date_started,
+    date_finished,
+    notes,
   } = input;
 
   if (!title || typeof title !== 'string' || !title.trim()) {
@@ -52,11 +62,10 @@ function sanitize(input: Partial<BookInput>) {
 }
 
 export const POST = withAuth(async (req: NextRequest) => {
-
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
 
-  let clean;
+  let clean: ReturnType<typeof sanitize>;
   try {
     clean = sanitize(body);
   } catch (e: any) {

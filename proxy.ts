@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
+import { type NextRequest, NextResponse } from 'next/server';
 
 // IMPORTANT: as of Next.js 16, this file (proxy.ts, formerly middleware.ts)
 // is NOT the security boundary. It only exists to redirect signed-out users

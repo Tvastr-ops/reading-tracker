@@ -1,12 +1,42 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
-import { Book } from '@/lib/types';
+import {
+  BarChart2,
+  BookCheck,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Edit2,
+  Flame,
+  Sparkles,
+  Star,
+  Trophy,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import type { Book } from '@/lib/types';
 
 const MONTH_LABELS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_NAMES = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
-const SPINE_COLORS = [
+const _SPINE_COLORS = [
   '#8a3b30', // Terracotta
   '#3f6b4f', // Sage
   '#a6752f', // Amber
@@ -50,19 +80,11 @@ export default function StatsSummary({ books }: { books: Book[] }) {
   }
 
   const totalCount = books.length;
-
   const completedCount = books.filter((b) => b.status === 'Completed').length;
   const readingCount = books.filter((b) => b.status === 'Reading').length;
   const onHoldCount = books.filter((b) => b.status === 'On Hold').length;
   const planToReadCount = books.filter((b) => b.status === 'Plan to Read').length;
 
-  // Largest-remainder rounding: independently rounding each percentage can
-  // make four values sum to 99 or 101, which showed up as a hairline gap
-  // or overflow in the stacked bar below (each segment's width is one of
-  // these percentages, laid edge to edge in a shared track). Rounding down
-  // first, then handing out the leftover points to whichever counts had
-  // the largest fractional remainder, guarantees they always sum to
-  // exactly 100.
   function distributePercentages(counts: number[], total: number): number[] {
     if (total === 0) return counts.map(() => 0);
     const raw = counts.map((c) => (c / total) * 100);
@@ -80,7 +102,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
 
   const [compPct, readPct, holdPct, planPct] = distributePercentages(
     [completedCount, readingCount, onHoldCount, planToReadCount],
-    totalCount
+    totalCount,
   );
 
   const rated = books.filter((b) => b.rating != null && b.rating > 0);
@@ -95,285 +117,319 @@ export default function StatsSummary({ books }: { books: Book[] }) {
 
   const totalRated = rated.length || 1;
   const ratingDistribution = [5, 4, 3, 2, 1].map((star) => {
-    const count = books.filter(
-      (b) => b.rating != null && Math.round(b.rating) === star
-    ).length;
-    const percentage = rated.length ? Math.round((count / totalRated) * 100) : 0;
+    const count = books.filter((b) => b.rating != null && Math.round(b.rating) === star).length;
+    const percentage = Math.round((count / totalRated) * 100);
     return { star, count, percentage };
   });
 
   const monthlyData = useMemo(() => {
-    return Array.from({ length: 12 }, (_, m) => {
-      const count = books.filter((b) => {
-        if (!b.date_finished) return false;
+    const counts = Array.from({ length: 12 }, () => 0);
+    books.forEach((b) => {
+      if (b.status === 'Completed' && b.date_finished) {
         const d = new Date(b.date_finished);
-        return d.getFullYear() === thisYear && d.getMonth() === m;
-      }).length;
-      return { monthName: MONTH_NAMES[m], label: MONTH_LABELS[m], count };
+        if (d.getFullYear() === thisYear) {
+          counts[d.getMonth()] += 1;
+        }
+      }
     });
+    return MONTH_LABELS.map((label, idx) => ({
+      label,
+      monthName: MONTH_NAMES[idx],
+      count: counts[idx],
+    }));
   }, [books, thisYear]);
-  const now = new Date();
-  const currentMonthIdx = now.getMonth() + 1; // 1 to 12
+
   const targetGoal = goal ?? 30;
+  const currentMonthIdx = new Date().getMonth();
+  const elapsedMonths = currentMonthIdx + 1;
+  const remainingMonths = 12 - currentMonthIdx;
 
-  // Your actual average pace so far this year
-  const avgPacePerMonth = (completedThisYear / Math.max(currentMonthIdx, 1)).toFixed(1);
-
-  // Dynamic required pace based on remaining months in the year
-  const remainingMonths = Math.max(1, 12 - currentMonthIdx + 1);
+  const avgPacePerMonth = completedThisYear
+    ? (completedThisYear / elapsedMonths).toFixed(1)
+    : '0.0';
   const remainingBooksNeeded = Math.max(0, targetGoal - completedThisYear);
   const requiredPace = (remainingBooksNeeded / remainingMonths).toFixed(1);
-  const isOnTrack = completedThisYear >= targetGoal || Number(avgPacePerMonth) >= Number(requiredPace);
+  const isOnTrack =
+    completedThisYear >= targetGoal || Number(avgPacePerMonth) >= Number(requiredPace);
 
   const goalPct = goal ? Math.min(100, Math.round((completedThisYear / goal) * 100)) : 0;
 
-  const radius = 32;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (goalPct / 100) * circumference;
-
   return (
-    <div className={`card summary-dashboard-card ${!isExpanded ? 'is-collapsed' : ''}`}>
-      <div className="dashboard-header">
-        <h2>Dashboard</h2>
-        <div className="dashboard-header-right">
-          <button
-            className="stats-toggle-btn"
-            onClick={() => setIsExpanded(!isExpanded)}
-            type="button"
-            aria-expanded={isExpanded}
-          >
-            {isExpanded ? 'Hide Stats ▴' : 'Show Stats ▾'}
-          </button>
-          <span className="badge-pill">
-            {isExpanded ? 'Expanded' : 'Collapsed'}
-          </span>
+    <Card className="mb-6 border-border shadow-sm">
+      <CardHeader className="flex flex-row items-center justify-between pb-4">
+        <div className="flex items-center gap-2">
+          <BarChart2 className="h-5 w-5 text-accent-color" />
+          <CardTitle className="font-bold text-lg">Reading Dashboard</CardTitle>
         </div>
-      </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="text-text-muted text-xs hover:text-text"
+        >
+          <span>{isExpanded ? 'Hide Details' : 'Show Details'}</span>
+          {isExpanded ? (
+            <ChevronUp className="ml-1 h-4 w-4" />
+          ) : (
+            <ChevronDown className="ml-1 h-4 w-4" />
+          )}
+        </Button>
+      </CardHeader>
 
       {isExpanded ? (
-        <div className="dashboard-grid fade-in">
-          {/* CARD 1: STATUS BREAKDOWN */}
-          <div className="dash-card">
-            <div className="dash-card-title">STATUS BREAKDOWN</div>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {/* CARD 1: STATUS BREAKDOWN */}
+            <div className="flex flex-col justify-between rounded-xl border border-border bg-surface/50 p-4">
+              <div className="flex items-center justify-between font-bold text-text-muted text-xs uppercase tracking-wider">
+                <span>Status Breakdown</span>
+                <BookCheck className="h-4 w-4 text-accent-color" />
+              </div>
 
-            <div className="stacked-progress-bar">
-              <div className="segment seg-completed" style={{ width: `${compPct}%` }}>
-                {compPct >= 8 && <span>{completedCount}</span>}
-              </div>
-              <div className="segment seg-reading" style={{ width: `${readPct}%` }}>
-                {readPct >= 8 && <span>{readingCount}</span>}
-              </div>
-              <div className="segment seg-hold" style={{ width: `${holdPct}%` }}>
-                {holdPct >= 8 && <span>{onHoldCount}</span>}
-              </div>
-              <div className="segment seg-plan" style={{ width: `${planPct}%` }}>
-                {planPct >= 8 && <span>{planToReadCount}</span>}
-              </div>
-            </div>
-
-            <div className="stacked-pct-labels">
-              <span style={{ width: `${compPct}%`, textAlign: 'center' }}>{compPct > 0 ? `${compPct}%` : ''}</span>
-              <span style={{ width: `${readPct}%`, textAlign: 'center' }}>{readPct > 0 ? `${readPct}%` : ''}</span>
-              <span style={{ width: `${holdPct}%`, textAlign: 'center' }}>{holdPct > 0 ? `${holdPct}%` : ''}</span>
-              <span style={{ width: `${planPct}%`, textAlign: 'center' }}>{planPct > 0 ? `${planPct}%` : ''}</span>
-            </div>
-
-            <div className="status-legend">
-              <div className="legend-item">
-                <span className="dot dot-completed" />
-                <span>Completed ({completedCount})</span>
-              </div>
-              <div className="legend-item">
-                <span className="dot dot-reading" />
-                <span>Reading ({readingCount})</span>
-              </div>
-              <div className="legend-item">
-                <span className="dot dot-hold" />
-                <span>On Hold ({onHoldCount})</span>
-              </div>
-              <div className="legend-item">
-                <span className="dot dot-plan" />
-                <span>Plan to Read ({planToReadCount})</span>
-              </div>
-            </div>
-
-            <div className="dash-card-footer">
-              <div>
-                Total Entries: <strong>{totalCount}</strong>
-              </div>
-              <div>
-                Average Rating: <strong>{avgRating}★</strong>
-              </div>
-            </div>
-          </div>
-
-          {/* CARD 2: MINI SHELF */}
-          <div className="dash-card">
-            <div className="dash-card-header-row">
-              <div className="dash-card-title">MINI SHELF ({thisYear})</div>
-              <span className={`pace-badge ${isOnTrack ? 'on-track' : 'behind'}`}>
-                {isOnTrack ? '⚡ On Track' : '📈 Pace Push'}
-              </span>
-            </div>
-
-            <div className="mini-shelf-container">
-              <div className="shelf-grid">
-                {monthlyData.map((d, mIdx) => {
-                  const visibleSpinesCount = Math.min(d.count, 4);
-
-                  return (
-                    <div
-                      key={mIdx}
-                      className="shelf-month-col"
-                      title={`${d.monthName}: ${d.count} ${d.count === 1 ? 'book' : 'books'} completed`}
-                    >
-                      <div className="shelf-space">
-                        {d.count === 0 ? (
-                          <div className="shelf-empty-book" />
-                        ) : (
-                          <div className="spine-stack">
-                            {Array.from({ length: visibleSpinesCount }).map((_, spineIdx) => {
-                              const spineColor = SPINE_COLORS[(mIdx + spineIdx * 2) % SPINE_COLORS.length];
-                              const heightPct = 68 + ((mIdx * 11 + spineIdx * 17) % 28);
-
-                              return (
-                                <div
-                                  key={spineIdx}
-                                  className="mini-book-spine"
-                                  style={{
-                                    height: `${heightPct}%`,
-                                    backgroundColor: spineColor,
-                                  }}
-                                >
-                                  <span className="spine-rib" />
-                                </div>
-                              );
-                            })}
-                            {d.count > 4 && (
-                              <span className="spine-overflow-badge">+{d.count - 4}</span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      <span className="month-tag">{d.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="bookshelf-ledge" />
-            </div>
-
-            <div className="goal-velocity-row">
-              <div className="ring-container">
-                <svg className="radial-ring" viewBox="0 0 80 80">
-                  <circle className="ring-bg" cx="40" cy="40" r={radius} />
-                  <circle
-                    className="ring-fill"
-                    cx="40"
-                    cy="40"
-                    r={radius}
-                    style={{
-                      strokeDasharray: circumference,
-                      strokeDashoffset: strokeDashoffset,
-                    }}
+              {/* Progress Stack Bar */}
+              <div className="my-3 space-y-1.5">
+                <div className="flex h-3 overflow-hidden rounded-full bg-border/40">
+                  <div
+                    className="bg-emerald-500 transition-all duration-300"
+                    style={{ width: `${compPct}%` }}
+                    title={`Completed: ${completedCount}`}
                   />
-                </svg>
-                <div className="ring-text">
-                  <span className="ring-pct">{goalPct}%</span>
+                  <div
+                    className="bg-blue-500 transition-all duration-300"
+                    style={{ width: `${readPct}%` }}
+                    title={`Reading: ${readingCount}`}
+                  />
+                  <div
+                    className="bg-orange-500 transition-all duration-300"
+                    style={{ width: `${holdPct}%` }}
+                    title={`On Hold: ${onHoldCount}`}
+                  />
+                  <div
+                    className="bg-amber-500 transition-all duration-300"
+                    style={{ width: `${planPct}%` }}
+                    title={`Plan to Read: ${planToReadCount}`}
+                  />
                 </div>
               </div>
 
-              <div className="goal-details">
-                {!editingGoal ? (
-                  <div className="goal-text-box">
-                    <div className="goal-title-row">
-                      <span>{thisYear} Goal</span>
-                      <button
-                        className="goal-edit-btn"
+              {/* Status Pills */}
+              <div className="mb-3 grid grid-cols-2 gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-xs bg-emerald-500" />
+                  <span className="text-text-muted">
+                    Completed: <strong className="text-text">{completedCount}</strong>{' '}
+                    <span className="text-[11px] text-text-muted/80">
+                      ({totalCount ? Math.round((completedCount / totalCount) * 100) : 0}%)
+                    </span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-xs bg-sky-500" />
+                  <span className="text-text-muted">
+                    Reading: <strong className="text-text">{readingCount}</strong>{' '}
+                    <span className="text-[11px] text-text-muted/80">
+                      ({totalCount ? Math.round((readingCount / totalCount) * 100) : 0}%)
+                    </span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-xs bg-orange-500" />
+                  <span className="text-text-muted">
+                    On Hold: <strong className="text-text">{onHoldCount}</strong>{' '}
+                    <span className="text-[11px] text-text-muted/80">
+                      ({totalCount ? Math.round((onHoldCount / totalCount) * 100) : 0}%)
+                    </span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-xs bg-amber-500" />
+                  <span className="text-text-muted">
+                    Plan to Read: <strong className="text-text">{planToReadCount}</strong>{' '}
+                    <span className="text-[11px] text-text-muted/80">
+                      ({totalCount ? Math.round((planToReadCount / totalCount) * 100) : 0}%)
+                    </span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between border-border/80 border-t pt-3 text-xs">
+                <span className="text-text-muted">
+                  Total Entries: <strong className="text-text">{totalCount}</strong>
+                </span>
+                <span className="flex items-center gap-1 text-text-muted">
+                  Avg Rating: <strong className="text-text">{avgRating}</strong>
+                  <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                </span>
+              </div>
+            </div>
+
+            {/* CARD 2: ANNUAL SHELF & GOALS */}
+            <div className="flex flex-col justify-between rounded-xl border border-border bg-surface/50 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-bold text-text-muted text-xs uppercase tracking-wider">
+                  <Trophy className="h-4 w-4 text-amber-500" />
+                  <span>{thisYear} Goal & Pace</span>
+                </div>
+
+                {/* Ultra-Minimal Animated Glyph Hint */}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex h-6 w-6 cursor-help items-center justify-center rounded-full border border-border/60 bg-surface/80 shadow-2xs transition-all hover:scale-110 hover:border-accent-color/50">
+                        {isOnTrack ? (
+                          <Sparkles className="h-3.5 w-3.5 animate-pulse text-emerald-500" />
+                        ) : (
+                          <Flame className="h-3.5 w-3.5 animate-pulse text-amber-500" />
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {isOnTrack
+                        ? `⚡ Excellent pace! You've finished ${completedThisYear} books out of ${targetGoal}.`
+                        : `📈 Keep going! Target pace requires ~${Math.max(1, Math.round((targetGoal - completedThisYear) / Math.max(1, 12 - new Date().getMonth())))} bks/mo.`}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+
+              {/* Mini Shelf Monthly Histogram */}
+              <div className="my-3 space-y-1">
+                <div className="grid h-14 grid-cols-12 items-end gap-1">
+                  {monthlyData.map((d, mIdx) => (
+                    <div
+                      key={mIdx}
+                      className="group relative flex h-full flex-col items-center justify-end"
+                      title={`${d.monthName}: ${d.count} finished`}
+                    >
+                      <div
+                        className="w-full rounded-xs bg-accent-color/75 transition-all duration-200 group-hover:scale-y-105 group-hover:bg-accent-color"
+                        style={{
+                          height:
+                            d.count === 0
+                              ? '2px'
+                              : `${Math.round((d.count / Math.max(1, ...monthlyData.map((m) => m.count))) * 100)}%`,
+                        }}
+                      />
+                      <span className="mt-1 font-mono text-[9px] text-text-muted">{d.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Goal Progress Ring & Edit */}
+              <div className="flex items-center gap-3 border-border/80 border-t pt-3">
+                <div className="w-full space-y-1">
+                  {!editingGoal ? (
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1">
+                        <span className="text-text-muted">Target:</span>
+                        <strong className="text-text">
+                          {completedThisYear} / {targetGoal} books
+                        </strong>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => {
                           setGoalInput(String(targetGoal));
                           setEditingGoal(true);
                         }}
+                        className="h-6 px-1.5 text-accent-color text-xs"
                       >
-                        edit
-                      </button>
+                        <Edit2 className="h-3 w-3" />
+                      </Button>
                     </div>
-                    <div className="goal-count-big">
-                      <strong>{completedThisYear}</strong> / {targetGoal} books
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min={0}
+                        value={goalInput}
+                        onChange={(e) => setGoalInput(e.target.value)}
+                        className="h-7 w-16 rounded border border-border bg-card-bg px-2 text-xs"
+                      />
+                      <Button
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={saveGoal}
+                        disabled={savingGoal}
+                      >
+                        <Check className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => setEditingGoal(false)}
+                      >
+                        Cancel
+                      </Button>
                     </div>
-                    <div className="velocity-sub">
-                      Pace: <strong>{avgPacePerMonth}</strong> bks/mo (Req: {requiredPace})
-                    </div>
+                  )}
+
+                  <Progress value={goalPct} className="h-2" />
+
+                  <div className="flex items-center justify-between pt-0.5 text-[11px] text-text-muted">
+                    <span>{goalPct}% Achieved</span>
+                    <span>
+                      Pace: {avgPacePerMonth} bks/mo (Req: {requiredPace})
+                    </span>
                   </div>
-                ) : (
-                  <div className="goal-edit-form">
-                    <input
-                      type="number"
-                      min={0}
-                      value={goalInput}
-                      onChange={(e) => setGoalInput(e.target.value)}
-                    />
-                    <button disabled={savingGoal} onClick={saveGoal}>
-                      Save
-                    </button>
-                    <button onClick={() => setEditingGoal(false)}>Cancel</button>
+                </div>
+              </div>
+            </div>
+
+            {/* CARD 3: RATING DISTRIBUTION */}
+            <div className="flex flex-col justify-between rounded-xl border border-border bg-surface/50 p-4">
+              <div className="flex items-center justify-between font-bold text-text-muted text-xs uppercase tracking-wider">
+                <span>Rating Breakdown</span>
+                <Flame className="h-4 w-4 text-amber-500" />
+              </div>
+
+              <div className="my-2 space-y-2">
+                {ratingDistribution.map(({ star, count, percentage }) => (
+                  <div
+                    key={star}
+                    className="grid grid-cols-[24px_1fr_60px] items-center gap-2 text-xs"
+                  >
+                    <span className="flex items-center gap-0.5 font-semibold text-text">
+                      {star}
+                      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                    </span>
+                    <Progress value={percentage} className="h-2" />
+                    <span className="text-right font-mono text-[11px] text-text-muted">
+                      {count}x ({percentage}%)
+                    </span>
                   </div>
-                )}
+                ))}
               </div>
             </div>
           </div>
-
-          {/* CARD 3: RATING DISTRIBUTION */}
-          <div className="dash-card">
-            <div className="dash-card-title">RATING DISTRIBUTION</div>
-
-            <div className="rating-dist-list">
-              {ratingDistribution.map(({ star, count, percentage }) => (
-                <div key={star} className={`rating-dist-row ${count === 0 ? 'zero-count' : ''}`}>
-                  <span className="star-label">{star}★</span>
-                  
-                  <div className="bar-track">
-                    <div
-                      className="bar-fill"
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-
-                  <div className="rating-metrics">
-                    <span className="count-tag">{count}x</span>
-                    <span className="pct-tag">({percentage}%)</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        </CardContent>
       ) : (
-        <div className="collapsed-summary-bar fade-in">
-          <div className="collapsed-item">
-            <span className="collapsed-label">Total Entries:</span>
-            <strong>{totalCount}</strong>
+        <CardContent className="py-2">
+          <div className="flex flex-wrap items-center gap-4 text-text-muted text-xs">
+            <span>
+              Total: <strong className="text-text">{totalCount}</strong>
+            </span>
+            <span>
+              Completed ({thisYear}): <strong className="text-text">{completedThisYear}</strong>
+            </span>
+            <span>
+              Reading: <strong className="text-text">{readingCount}</strong>
+            </span>
+            <span>
+              Avg Rating: <strong className="text-text">{avgRating}★</strong>
+            </span>
+            <span>
+              Goal:{' '}
+              <strong className="text-text">
+                {completedThisYear}/{targetGoal} ({goalPct}%)
+              </strong>
+            </span>
           </div>
-          <div className="collapsed-item">
-            <span className="collapsed-label">Completed ({thisYear}):</span>
-            <strong>{completedThisYear}</strong>
-          </div>
-          <div className="collapsed-item">
-            <span className="collapsed-label">Reading:</span>
-            <strong>{readingCount}</strong>
-          </div>
-          <div className="collapsed-item">
-            <span className="collapsed-label">Avg Rating:</span>
-            <strong>{avgRating}★</strong>
-          </div>
-          <div className="collapsed-item">
-            <span className="collapsed-label">Goal:</span>
-            <strong>
-              {completedThisYear} / {targetGoal} ({goalPct}%)
-            </strong>
-          </div>
-        </div>
+        </CardContent>
       )}
-    </div>
+    </Card>
   );
 }

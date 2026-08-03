@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { checkPassword, createSessionToken, SESSION_COOKIE, SESSION_MAX_AGE } from '@/lib/auth';
 
 // Very small in-memory rate limiter (per server instance) to slow down
@@ -19,9 +19,10 @@ export async function POST(req: NextRequest) {
   const password = typeof body?.password === 'string' ? body.password : '';
 
   if (!checkPassword(password)) {
-    const next = entry && entry.resetAt > now
-      ? { count: entry.count + 1, resetAt: entry.resetAt }
-      : { count: 1, resetAt: now + WINDOW_MS };
+    const next =
+      entry && entry.resetAt > now
+        ? { count: entry.count + 1, resetAt: entry.resetAt }
+        : { count: 1, resetAt: now + WINDOW_MS };
     attempts.set(ip, next);
     return NextResponse.json({ error: 'Incorrect password' }, { status: 401 });
   }
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
   const res = NextResponse.json({ ok: true });
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: SESSION_MAX_AGE,

@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase';
+import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
+import { supabaseServer } from '@/lib/supabase';
 
 // Next.js 14 caches server-side fetch() calls by default, and the Supabase
 // client uses fetch internally — without this, the first export would get
@@ -8,8 +8,18 @@ import { withAuth } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 
 const COLUMNS = [
-  'title', 'type', 'author', 'status', 'rating', 'progress', 'total_units',
-  'genre_tags', 'source_link', 'date_started', 'date_finished', 'notes',
+  'title',
+  'type',
+  'author',
+  'status',
+  'rating',
+  'progress',
+  'total_units',
+  'genre_tags',
+  'source_link',
+  'date_started',
+  'date_finished',
+  'notes',
 ];
 
 function csvEscape(val: unknown): string {
@@ -19,8 +29,7 @@ function csvEscape(val: unknown): string {
   return s;
 }
 
-export const GET = withAuth(async (req: NextRequest) => {
-
+export const GET = withAuth(async (_req: NextRequest) => {
   const supabase = supabaseServer();
   const { data, error } = await supabase
     .from('books')

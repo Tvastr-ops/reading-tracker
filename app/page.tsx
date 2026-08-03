@@ -1,13 +1,50 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Book, BookInput, STATUSES, SortField, SortDir } from '@/lib/types';
-import BookTable from '@/components/BookTable';
-import BookGrid from '@/components/BookGrid';
-import BookForm from '@/components/BookForm';
-import StatsSummary from '@/components/StatsSummary';
-import Toast, { ToastState } from '@/components/Toast';
+import {
+  ArrowLeft,
+  ArrowUpDown,
+  Check,
+  Download,
+  Filter,
+  LayoutGrid,
+  List,
+  LogOut,
+  Moon,
+  Plus,
+  Search,
+  Sparkles,
+  Sun,
+  Trash2,
+  Upload,
+  X,
+} from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import BookForm from '@/components/BookForm';
+import BookGrid from '@/components/BookGrid';
+import BookTable from '@/components/BookTable';
+import StatsSummary from '@/components/StatsSummary';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { type Book, type BookInput, type SortDir, type SortField, STATUSES } from '@/lib/types';
 
 const SORT_PRESETS: { label: string; field: SortField; dir: SortDir }[] = [
   { label: 'Recently added', field: 'created_at', dir: 'desc' },
@@ -36,10 +73,8 @@ export default function HomePage() {
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [focusedIndex, setFocusedIndex] = useState(-1);
-  const [openMenu, setOpenMenu] = useState<'status' | 'sort' | null>(null);
   const [selectMode, setSelectMode] = useState(false);
   const [bulkStatus, setBulkStatus] = useState<string>(STATUSES[0]);
-  const [toast, setToast] = useState<ToastState | null>(null);
   const [upNext, setUpNext] = useState<Book | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -62,16 +97,26 @@ export default function HomePage() {
     setTheme(current === 'dark' ? 'dark' : 'light');
   }, []);
 
-  useEffect(() => { window.localStorage.setItem('statusFilter', statusFilter); }, [statusFilter]);
-  useEffect(() => { window.localStorage.setItem('search', search); }, [search]);
-  useEffect(() => { window.localStorage.setItem('sortField', sortField); }, [sortField]);
-  useEffect(() => { window.localStorage.setItem('sortDir', sortDir); }, [sortDir]);
+  useEffect(() => {
+    window.localStorage.setItem('statusFilter', statusFilter);
+  }, [statusFilter]);
+  useEffect(() => {
+    window.localStorage.setItem('search', search);
+  }, [search]);
+  useEffect(() => {
+    window.localStorage.setItem('sortField', sortField);
+  }, [sortField]);
+  useEffect(() => {
+    window.localStorage.setItem('sortDir', sortDir);
+  }, [sortDir]);
 
-  function toggleViewMode() {
-    const next = viewMode === 'table' ? 'grid' : 'table';
-    setViewMode(next);
-    window.localStorage.setItem('viewMode', next);
-    if (next === 'grid') { setSelectMode(false); setSelected(new Set()); }
+  function toggleViewMode(mode: 'table' | 'grid') {
+    setViewMode(mode);
+    window.localStorage.setItem('viewMode', mode);
+    if (mode === 'grid') {
+      setSelectMode(false);
+      setSelected(new Set());
+    }
   }
 
   function toggleTheme() {
@@ -81,15 +126,26 @@ export default function HomePage() {
     window.localStorage.setItem('theme', next);
   }
 
-  useEffect(() => { load(); setSelected(new Set()); setSelectMode(false); setOpenMenu(null); }, [showTrash]);
+  useEffect(() => {
+    load();
+    setSelected(new Set());
+    setSelectMode(false);
+  }, [showTrash]);
 
   async function load() {
     setLoading(true);
     setError('');
     const res = await fetch(`/api/books${showTrash ? '?trash=1' : ''}`);
-    if (res.status === 401) { router.push('/login'); return; }
+    if (res.status === 401) {
+      router.push('/login');
+      return;
+    }
     const data = await res.json();
-    if (!res.ok) { setError(data.error || 'Failed to load'); setLoading(false); return; }
+    if (!res.ok) {
+      setError(data.error || 'Failed to load');
+      setLoading(false);
+      return;
+    }
     setBooks(data.books);
     setLoading(false);
   }
@@ -98,6 +154,7 @@ export default function HomePage() {
     const next = ratingMode === 'stars' ? 'decimal' : 'stars';
     setRatingMode(next);
     window.localStorage.setItem('ratingMode', next);
+    toast.info(`Switched rating mode to ${next === 'stars' ? 'Stars (★)' : 'Decimal (#.#)'}`);
   }
 
   function handleSort(field: SortField) {
@@ -110,7 +167,7 @@ export default function HomePage() {
   }
 
   async function saveBook(data: BookInput) {
-    const isEdit = editing && editing.id;
+    const isEdit = editing?.id;
     const res = await fetch(isEdit ? `/api/books/${editing!.id}` : '/api/books', {
       method: isEdit ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -119,6 +176,7 @@ export default function HomePage() {
     const result = await res.json();
     if (!res.ok) throw new Error(result.error || 'Save failed');
     setEditing(undefined);
+    toast.success(isEdit ? `Updated "${data.title}"` : `Added "${data.title}" to library`);
     load();
   }
 
@@ -127,10 +185,11 @@ export default function HomePage() {
     const res = await fetch(`/api/books/${b.id}`, { method: 'DELETE' });
     if (res.ok) {
       load();
-      setToast({
-        message: `Moved "${b.title}" to trash`,
-        actionLabel: 'Undo',
-        onAction: () => restoreBook(b),
+      toast(`Moved "${b.title}" to trash`, {
+        action: {
+          label: 'Undo',
+          onClick: () => restoreBook(b),
+        },
       });
     }
   }
@@ -141,13 +200,19 @@ export default function HomePage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ restore: true }),
     });
-    if (res.ok) load();
+    if (res.ok) {
+      toast.success(`Restored "${b.title}"`);
+      load();
+    }
   }
 
   async function permanentlyDeleteBook(b: Book) {
     if (!confirm(`Permanently delete "${b.title}"? This can't be undone.`)) return;
     const res = await fetch(`/api/books/${b.id}?permanent=1`, { method: 'DELETE' });
-    if (res.ok) load();
+    if (res.ok) {
+      toast.success(`Permanently deleted "${b.title}"`);
+      load();
+    }
   }
 
   async function quickStatusChange(b: Book) {
@@ -159,6 +224,7 @@ export default function HomePage() {
       body: JSON.stringify({ status: next }),
     });
     if (!res.ok) load();
+    else toast.info(`Marked "${b.title}" as ${next}`);
   }
 
   async function logout() {
@@ -181,15 +247,20 @@ export default function HomePage() {
       const result = await res.json();
       if (!res.ok) {
         setImportMsg(result.error || 'Import failed');
+        toast.error('Import failed');
       } else {
         const parts = [`Imported ${result.imported} entries`];
-        if (result.skippedRows?.length) parts.push(`skipped ${result.skippedRows.length} row(s) without a title`);
-        if (result.skippedDuplicates) parts.push(`skipped ${result.skippedDuplicates} duplicate title(s)`);
-        setImportMsg(parts.join(', ') + '.');
+        if (result.skippedRows?.length)
+          parts.push(`skipped ${result.skippedRows.length} row(s) without a title`);
+        if (result.skippedDuplicates)
+          parts.push(`skipped ${result.skippedDuplicates} duplicate title(s)`);
+        setImportMsg(`${parts.join(', ')}.`);
+        toast.success(`Successfully imported ${result.imported} books`);
         load();
       }
     } catch {
       setImportMsg('Could not read that file.');
+      toast.error('Could not read file');
     } finally {
       setImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -199,14 +270,19 @@ export default function HomePage() {
   function toggleSelect(id: string) {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
 
   async function bulkAction(action: 'status' | 'delete' | 'restore' | 'delete_permanent') {
     if (selected.size === 0) return;
-    if (action === 'delete_permanent' && !confirm(`Permanently delete ${selected.size} entries? This can't be undone.`)) return;
+    if (
+      action === 'delete_permanent' &&
+      !confirm(`Permanently delete ${selected.size} entries? This can't be undone.`)
+    )
+      return;
     const body: Record<string, unknown> = { action, ids: Array.from(selected) };
     if (action === 'status') body.status = bulkStatus;
     const res = await fetch('/api/books/bulk', {
@@ -219,83 +295,81 @@ export default function HomePage() {
       setSelected(new Set());
       load();
       if (action === 'delete') {
-        setToast({ message: `Moved ${count} entries to trash`, actionLabel: undefined, onAction: undefined });
+        toast(`Moved ${count} entries to trash`);
+      } else if (action === 'status') {
+        toast.success(`Updated status for ${count} entries`);
       }
     }
   }
 
   function pickUpNext() {
     const candidates = books.filter((b) => b.status === 'Plan to Read');
-    if (candidates.length === 0) return;
+    if (candidates.length === 0) {
+      toast.info('No books currently in "Plan to Read"');
+      return;
+    }
     const pick = candidates[Math.floor(Math.random() * candidates.length)];
     setUpNext(pick);
   }
 
   async function startReadingUpNext() {
     if (!upNext) return;
-    await quickStatusChangeById(upNext.id, 'Reading');
+    const b = upNext;
     setUpNext(null);
-    load();
+    await quickStatusChange(b);
   }
-
-  async function quickStatusChangeById(id: string, status: string) {
-    await fetch(`/api/books/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    });
-  }
-
-  const filtered = useMemo(() => {
-    let list = books.filter((b) => {
-      if (!showTrash && statusFilter !== 'All' && b.status !== statusFilter) return false;
-      if (search.trim()) {
-        const q = search.toLowerCase();
-        const hay = `${b.title} ${b.author || ''} ${b.genre_tags || ''}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    });
-
-    list = [...list].sort((a, b) => {
-      let cmp = 0;
-      switch (sortField) {
-        case 'title':
-          cmp = a.title.localeCompare(b.title);
-          break;
-        case 'rating':
-          cmp = (a.rating ?? -1) - (b.rating ?? -1);
-          break;
-        case 'status':
-          cmp = a.status.localeCompare(b.status);
-          break;
-        case 'date_finished':
-          cmp = (a.date_finished || '').localeCompare(b.date_finished || '');
-          break;
-        case 'created_at':
-          cmp = a.created_at.localeCompare(b.created_at);
-          break;
-        case 'progress':
-          cmp = (a.progress ?? -1) - (b.progress ?? -1);
-          break;
-        case 'author':
-          cmp = (a.author || '').localeCompare(b.author || '');
-          break;
-        default:
-          cmp = a.updated_at.localeCompare(b.updated_at);
-      }
-      return sortDir === 'asc' ? cmp : -cmp;
-    });
-
-    return list;
-  }, [books, statusFilter, search, sortField, sortDir, showTrash]);
 
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { All: books.length };
-    for (const s of STATUSES) counts[s] = 0;
-    for (const b of books) counts[b.status] = (counts[b.status] ?? 0) + 1;
-    return counts;
+    const c: Record<string, number> = { All: books.length };
+    STATUSES.forEach((s) => {
+      c[s] = 0;
+    });
+    books.forEach((b) => {
+      if (c[b.status] != null) c[b.status] += 1;
+    });
+    return c;
   }, [books]);
+
+  const filtered = useMemo(() => {
+    let list = books;
+
+    if (statusFilter !== 'All') {
+      list = list.filter((b) => b.status === statusFilter);
+    }
+
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter(
+        (b) =>
+          b.title.toLowerCase().includes(q) ||
+          b.author?.toLowerCase().includes(q) ||
+          b.genre_tags?.toLowerCase().includes(q) ||
+          b.type?.toLowerCase().includes(q),
+      );
+    }
+
+    return [...list].sort((a, b) => {
+      let va: any = a[sortField];
+      let vb: any = b[sortField];
+
+      if (sortField === 'title' || sortField === 'author') {
+        va = (va || '').toString().toLowerCase();
+        vb = (vb || '').toString().toLowerCase();
+        return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+      }
+
+      if (va == null) va = sortDir === 'asc' ? Infinity : -Infinity;
+      if (vb == null) vb = sortDir === 'asc' ? Infinity : -Infinity;
+
+      if (typeof va === 'string' && typeof vb === 'string') {
+        return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+      }
+
+      if (va < vb) return sortDir === 'asc' ? -1 : 1;
+      if (va > vb) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [books, statusFilter, search, sortField, sortDir]);
 
   const filtersActive = statusFilter !== 'All' || search.trim() !== '';
 
@@ -304,19 +378,14 @@ export default function HomePage() {
     setSearch('');
   }
 
-  useEffect(() => { setFocusedIndex(-1); }, [filtered.length, statusFilter, search, sortField, sortDir, showTrash]);
-
-  useEffect(() => {
-    if (focusedIndex < 0) return;
-    document
-      .querySelector(`[data-row-id="${filtered[focusedIndex]?.id}"]`)
-      ?.scrollIntoView({ block: 'nearest' });
-  }, [focusedIndex, filtered]);
-
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      const tag = (document.activeElement?.tagName || '').toLowerCase();
-      const typing = tag === 'input' || tag === 'textarea' || tag === 'select';
+      const active = document.activeElement;
+      const typing =
+        active &&
+        (active.tagName === 'INPUT' ||
+          active.tagName === 'TEXTAREA' ||
+          active.tagName === 'SELECT');
       if (typing) return;
 
       const rowNavActive = viewMode === 'table' && !showTrash && editing === undefined;
@@ -338,7 +407,7 @@ export default function HomePage() {
       if (e.key === '/') {
         e.preventDefault();
         searchInputRef.current?.focus();
-      } else if (e.key.toLowerCase() === 'n' && !showTrash) {
+      } else if (e.key.toLowerCase() === 'n' && !showTrash && editing === undefined) {
         e.preventDefault();
         setEditing(null);
       }
@@ -348,257 +417,535 @@ export default function HomePage() {
   }, [showTrash, viewMode, editing, filtered, focusedIndex]);
 
   return (
-    <main className="container">
-      <div className="topbar">
+    <main className="mx-auto max-w-7xl 2xl:max-w-screen-2xl px-4 py-6 pb-20 sm:px-6 lg:px-8 xl:px-10">
+      {/* Header Bar */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1>Reading Tracker</h1>
-          <p className="subtitle">Web novels, light novels, novels, essays, short stories, fanfiction, and more.</p>
+          <h1 className="font-bold text-2xl text-text tracking-tight sm:text-3xl">
+            Reading Tracker
+          </h1>
+          <p className="mt-1 text-text-muted text-xs sm:text-sm line-clamp-1 sm:line-clamp-none">
+            Web novels, light novels, literature, essays, short stories, and fanfiction.
+          </p>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn icon-only" onClick={toggleTheme} title="Toggle dark mode" aria-label="Toggle dark mode">
-            {theme === 'dark' ? '☀️' : '🌙'}
-          </button>
-          <input ref={fileInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportFile} />
-          <button className="btn secondary" onClick={() => fileInputRef.current?.click()} disabled={importing}>
-            {importing ? 'Importing...' : 'Import CSV'}
-          </button>
-          <a className="btn secondary" href="/api/export">Export CSV</a>
-          <button className="btn secondary" onClick={logout}>Log out</button>
+
+        <div className="flex items-center justify-between gap-2 border-border/60 border-t pt-3 sm:w-auto sm:border-0 sm:pt-0">
+          <Button variant="outline" size="icon" onClick={toggleTheme} title="Toggle dark mode">
+            {theme === 'dark' ? (
+              <Sun className="h-4 w-4 text-amber-400" />
+            ) : (
+              <Moon className="h-4 w-4 text-slate-700" />
+            )}
+          </Button>
+
+          <div className="flex items-center gap-1.5">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={handleImportFile}
+            />
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importing}
+              className="h-8 px-2.5 text-xs sm:h-9 sm:px-3 sm:text-sm"
+            >
+              <Upload className="mr-1.5 h-3.5 w-3.5" />
+              <span>{importing ? '...' : 'Import'}</span>
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              asChild
+              className="h-8 px-2.5 text-xs sm:h-9 sm:px-3 sm:text-sm"
+            >
+              <a href="/api/export">
+                <Download className="mr-1.5 h-3.5 w-3.5" />
+                <span>Export</span>
+              </a>
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-text-muted hover:text-text sm:h-9 sm:w-9"
+              onClick={logout}
+              title="Logout"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
-      {importMsg && <div className="card" style={{ padding: 10, fontSize: 13 }}>{importMsg}</div>}
-
-      {!showTrash && (
-        loading ? (
-          <div className="card">
-            <h2>Summary</h2>
-            <div className="summary-grid">
-              {Array.from({ length: 7 }).map((_, i) => (
-                <div key={i} className="summary-tile">
-                  <div className="skeleton" style={{ height: 20, width: '55%', marginBottom: 6 }} />
-                  <div className="skeleton" style={{ height: 11, width: '80%' }} />
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <StatsSummary books={books} />
-        )
+      {importMsg && (
+        <Card className="mb-4 border-accent-color/30 bg-accent-color/10 p-3 text-text text-xs">
+          {importMsg}
+        </Card>
       )}
 
+      {/* Dashboard Stats */}
+      {!showTrash && <StatsSummary books={books} />}
+
+      {/* Up Next Card Popup */}
       {!showTrash && upNext && (
-        <div className="card up-next-card">
+        <Card className="mb-6 flex flex-col items-center gap-4 border-accent-color/40 bg-accent-color/5 p-4 shadow-sm sm:flex-row">
           {upNext.cover_url ? (
-            <img src={upNext.cover_url} alt="" width={32} height={46} className="book-cover" style={{ objectFit: 'cover' }} />
+            <img
+              src={upNext.cover_url}
+              alt=""
+              className="h-14 w-10 shrink-0 rounded border border-border object-cover"
+            />
           ) : (
-            <div className="placeholder-box" style={{ width: 32, height: 46 }} />
+            <div className="h-14 w-10 shrink-0 rounded border border-border bg-surface" />
           )}
-          <div style={{ flex: 1 }}>
-            <div className="label">Up next</div>
-            <strong className="book-title">{upNext.title}</strong>
-            {upNext.author && <span className="label"> — {upNext.author}</span>}
+          <div className="flex-1 text-center sm:text-left">
+            <span className="font-bold text-accent-color text-xs uppercase tracking-wider">
+              Up Next
+            </span>
+            <h4 className="line-clamp-1 font-bold text-sm text-text">{upNext.title}</h4>
+            {upNext.author && <p className="text-text-muted text-xs">{upNext.author}</p>}
           </div>
-          <button className="btn secondary" onClick={pickUpNext}>Pick another</button>
-          <button className="btn" onClick={startReadingUpNext}>Start reading</button>
-          <button className="mono-btn" onClick={() => setUpNext(null)} aria-label="Dismiss">×</button>
-        </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={pickUpNext}>
+              Pick another
+            </Button>
+            <Button size="sm" onClick={startReadingUpNext}>
+              Start reading
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setUpNext(null)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </Card>
       )}
 
-      <div className="card">
-        <div className="toolbar">
-          <div className="toolbar-row">
-            {!showTrash && (
-              <button className="btn accent-fill" onClick={() => setEditing(null)}>
-                + Add entry <kbd className="kbd-hint">n</kbd>
-              </button>
-            )}
+      {/* Main Content Area */}
+      <Card className="p-3.5 shadow-xs sm:p-5">
+        {/* Toolbar */}
+        <div className="mb-4 space-y-3">
+          {/* Row 1: Add Entry / Search / View Toggle */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center justify-between gap-2 sm:justify-start">
+              {!showTrash ? (
+                <Button onClick={() => setEditing(null)} className="shadow-sm">
+                  <Plus className="mr-1.5 h-4 w-4" />
+                  <span>Add Entry</span>
+                  <kbd className="ml-2 hidden rounded bg-accent-text/15 px-1.5 py-0.5 text-[10px] text-accent-text/70 sm:inline-block">
+                    n
+                  </kbd>
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={() => setShowTrash(false)}>
+                  <ArrowLeft className="mr-1.5 h-4 w-4" />
+                  <span>Back to Library</span>
+                </Button>
+              )}
 
-            <div className="search-wrap">
-              <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-                <circle cx="11" cy="11" r="7" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
+              {/* View Mode & Trash toggle for Mobile */}
+              <div className="flex items-center gap-1.5 sm:hidden">
+                {!showTrash && (
+                  <div className="relative flex items-center rounded-xl border border-border/80 bg-surface/80 p-0.5 backdrop-blur-md">
+                    <button
+                      type="button"
+                      onClick={() => toggleViewMode('grid')}
+                      className={cn(
+                        'relative z-10 flex h-7 items-center justify-center rounded-lg px-2.5 font-semibold text-xs transition-colors cursor-pointer',
+                        viewMode === 'grid'
+                          ? 'text-accent-text'
+                          : 'text-text-muted hover:text-text',
+                      )}
+                      title="Grid view"
+                    >
+                      {viewMode === 'grid' && (
+                        <motion.div
+                          layoutId="mobileViewModePill"
+                          className="absolute inset-0 rounded-lg bg-accent-color shadow-xs"
+                          transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                        />
+                      )}
+                      <LayoutGrid className="relative z-10 h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleViewMode('table')}
+                      className={cn(
+                        'relative z-10 flex h-7 items-center justify-center rounded-lg px-2.5 font-semibold text-xs transition-colors cursor-pointer',
+                        viewMode === 'table'
+                          ? 'text-accent-text'
+                          : 'text-text-muted hover:text-text',
+                      )}
+                      title="Table view"
+                    >
+                      {viewMode === 'table' && (
+                        <motion.div
+                          layoutId="mobileViewModePill"
+                          className="absolute inset-0 rounded-lg bg-accent-color shadow-xs"
+                          transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                        />
+                      )}
+                      <List className="relative z-10 h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+                {!showTrash && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 rounded-lg"
+                    onClick={() => setShowTrash(true)}
+                    title="Trash"
+                  >
+                    <Trash2 className="h-4 w-4 text-text-muted" />
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative w-full sm:max-w-md sm:flex-1">
+              <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-text-muted" />
               <input
                 ref={searchInputRef}
                 type="text"
-                placeholder="Search title, author, tags…"
+                placeholder="Search title, author, tags... (/)"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                aria-label="Search entries"
+                className="h-9 w-full rounded-lg border border-border bg-card-bg pr-8 pl-9 text-text text-xs transition-all focus:outline-none focus:ring-2 focus:ring-accent-color sm:text-sm"
               />
-              {search ? (
-                <button className="search-clear" onClick={() => setSearch('')} aria-label="Clear search" title="Clear search">×</button>
-              ) : (
-                <kbd className="kbd-hint search-kbd" aria-hidden="true">/</kbd>
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  className="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer text-text-muted hover:text-text"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
               )}
             </div>
 
-            {!showTrash && (
-              <div className="segmented-control" role="group" aria-label="View mode">
-                <div className={`segmented-thumb${viewMode === 'table' ? ' right' : ''}`} />
-                <button
-                  type="button"
-                  className={viewMode === 'grid' ? 'active' : ''}
-                  aria-pressed={viewMode === 'grid'}
-                  onClick={() => viewMode !== 'grid' && toggleViewMode()}
-                  title="Cover grid view"
-                >
-                  ▦ Grid
-                </button>
-                <button
-                  type="button"
-                  className={viewMode === 'table' ? 'active' : ''}
-                  aria-pressed={viewMode === 'table'}
-                  onClick={() => viewMode !== 'table' && toggleViewMode()}
-                  title="Table view"
-                >
-                  ☰ Table
-                </button>
-              </div>
-            )}
+            {/* Controls Right Group (Desktop) */}
+            <div className="hidden sm:flex sm:items-center sm:gap-2">
+              {!showTrash && (
+                <div className="relative flex items-center rounded-xl border border-border/80 bg-surface/80 p-1 shadow-xs backdrop-blur-md">
+                  <button
+                    type="button"
+                    onClick={() => toggleViewMode('grid')}
+                    className={cn(
+                      'relative z-10 flex h-7 items-center gap-1.5 rounded-lg px-3 font-semibold text-xs transition-colors cursor-pointer',
+                      viewMode === 'grid' ? 'text-accent-text' : 'text-text-muted hover:text-text',
+                    )}
+                    title="Grid view"
+                  >
+                    {viewMode === 'grid' && (
+                      <motion.div
+                        layoutId="viewModePill"
+                        className="absolute inset-0 rounded-lg bg-accent-color shadow-xs"
+                        transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                      />
+                    )}
+                    <LayoutGrid className="relative z-10 h-3.5 w-3.5" />
+                    <span className="relative z-10 hidden sm:inline">Grid</span>
+                  </button>
 
-            <button
-              className={`btn secondary${showTrash ? ' is-on' : ''}`}
-              onClick={() => setShowTrash((v) => !v)}
-            >
-              {showTrash ? '← Back to library' : '🗑 Trash'}
-            </button>
-          </div>
-
-          <div className="toolbar-row toolbar-row-sub">
-            {openMenu && (
-              <div className="menu-backdrop" onClick={() => setOpenMenu(null)} />
-            )}
-
-            {!showTrash && (
-              <div className="dropdown-wrap">
-                <button
-                  type="button"
-                  className={`btn secondary compact${statusFilter !== 'All' ? ' is-on' : ''}`}
-                  onClick={() => setOpenMenu(openMenu === 'status' ? null : 'status')}
-                  aria-expanded={openMenu === 'status'}
-                >
-                  🔖 {statusFilter === 'All' ? 'Status' : statusFilter} ▾
-                </button>
-                {openMenu === 'status' && (
-                  <div className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
-                    {(['All', ...STATUSES] as string[]).map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        className={statusFilter === s ? 'active' : ''}
-                        onClick={() => { setStatusFilter(s); setOpenMenu(null); }}
-                      >
-                        <span>{s}</span>
-                        <span className="dropdown-count">{statusCounts[s] ?? 0}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <button
-              type="button"
-              className="btn secondary compact"
-              onClick={toggleRatingMode}
-              title="Toggle between stars and decimal ratings"
-            >
-              ⭐ Rating: {ratingMode === 'stars' ? '★★★' : '#.#'} ▾
-            </button>
-
-            <div className="dropdown-wrap align-right">
-              <button
-                type="button"
-                className="btn secondary compact"
-                onClick={() => setOpenMenu(openMenu === 'sort' ? null : 'sort')}
-                aria-expanded={openMenu === 'sort'}
-              >
-                ↕ Sort ▾
-              </button>
-              {openMenu === 'sort' && (
-                <div className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
-                  {SORT_PRESETS.map((p) => (
-                    <button
-                      key={p.label}
-                      type="button"
-                      className={sortField === p.field && sortDir === p.dir ? 'active' : ''}
-                      onClick={() => { setSortField(p.field); setSortDir(p.dir); setOpenMenu(null); }}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
+                  <button
+                    type="button"
+                    onClick={() => toggleViewMode('table')}
+                    className={cn(
+                      'relative z-10 flex h-7 items-center gap-1.5 rounded-lg px-3 font-semibold text-xs transition-colors cursor-pointer',
+                      viewMode === 'table' ? 'text-accent-text' : 'text-text-muted hover:text-text',
+                    )}
+                    title="Table view"
+                  >
+                    {viewMode === 'table' && (
+                      <motion.div
+                        layoutId="viewModePill"
+                        className="absolute inset-0 rounded-lg bg-accent-color shadow-xs"
+                        transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                      />
+                    )}
+                    <List className="relative z-10 h-3.5 w-3.5" />
+                    <span className="relative z-10 hidden sm:inline">Table</span>
+                  </button>
                 </div>
               )}
+
+              {!showTrash && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5 text-xs text-text-muted hover:text-text"
+                  onClick={() => setShowTrash(true)}
+                  title="View Trash"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Trash</span>
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Row 2: Filter Pills Bar (Horizontal Scroll on Mobile) */}
+          <div className="flex items-center justify-between gap-2 border-border/40 border-t pt-2.5">
+            <div className="flex flex-1 items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+              {/* Status Filter */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 shrink-0 text-xs">
+                    <Filter className="mr-1.5 h-3 w-3 text-text-muted" />
+                    <span>{statusFilter === 'All' ? 'Status' : statusFilter}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setStatusFilter('All')}>
+                    All Statuses
+                  </DropdownMenuItem>
+                  {STATUSES.map((s) => (
+                    <DropdownMenuItem key={s} onClick={() => setStatusFilter(s)}>
+                      {s}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Rating Filter */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 shrink-0 text-xs"
+                onClick={() =>
+                  setRatingMode((m) => {
+                    const next = m === 'stars' ? 'decimal' : 'stars';
+                    window.localStorage.setItem('ratingMode', next);
+                    return next;
+                  })
+                }
+                title="Toggle rating mode"
+              >
+                <Sparkles className="mr-1.5 h-3 w-3 text-amber-400" />
+                <span>Rating: {ratingMode === 'stars' ? 'Stars' : 'Decimal'}</span>
+              </Button>
+
+              {/* Sort Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 shrink-0 text-xs">
+                    <ArrowUpDown className="mr-1.5 h-3 w-3 text-text-muted" />
+                    <span>Sort</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuLabel>Sort Options</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleSort('updated_at')}>
+                    Last Updated {sortField === 'updated_at' && (sortDir === 'desc' ? '↓' : '↑')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleSort('title')}>
+                    Title {sortField === 'title' && (sortDir === 'asc' ? 'A-Z' : 'Z-A')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleSort('rating')}>
+                    Rating {sortField === 'rating' && (sortDir === 'desc' ? 'High' : 'Low')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleSort('status')}>
+                    Status {sortField === 'status' && (sortDir === 'asc' ? 'A-Z' : 'Z-A')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleSort('date_finished')}>
+                    Finished Date{' '}
+                    {sortField === 'date_finished' && (sortDir === 'desc' ? 'Newest' : 'Oldest')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Up Next */}
+              {!showTrash && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 shrink-0 text-xs text-accent-color hover:bg-accent-color/10"
+                  onClick={pickUpNext}
+                >
+                  <Sparkles className="mr-1.5 h-3 w-3" />
+                  <span>Up Next</span>
+                </Button>
+              )}
+
+              {/* Selection Mode Button */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Button
+                  variant={selectMode ? 'secondary' : 'outline'}
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => {
+                    setSelectMode((v) => !v);
+                    setSelected(new Set());
+                  }}
+                >
+                  {selectMode ? 'Done Select' : 'Select'}
+                </Button>
+                {selectMode && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs text-accent-color hover:bg-accent-color/10"
+                    onClick={() => {
+                      const allSelected =
+                        filtered.length > 0 && filtered.every((b) => selected.has(b.id));
+                      if (allSelected) {
+                        setSelected(new Set());
+                      } else {
+                        setSelected(new Set(filtered.map((b) => b.id)));
+                      }
+                    }}
+                  >
+                    {filtered.length > 0 && filtered.every((b) => selected.has(b.id))
+                      ? 'Deselect All'
+                      : `Select All (${filtered.length})`}
+                  </Button>
+                )}
+              </div>
             </div>
 
-            {!showTrash && (
-              <button className="btn up-next-btn compact" onClick={pickUpNext} title="Get a random entry to read next">
-                ✨ Up next
-              </button>
-            )}
-
-            {viewMode === 'table' && (
-              <button
-                type="button"
-                className={`btn secondary compact${selectMode ? ' is-on' : ''}`}
-                onClick={() => { setSelectMode((v) => !v); setSelected(new Set()); }}
-              >
-                {selectMode ? 'Done' : 'Select'}
-              </button>
-            )}
-
-            <div className="toolbar-meta">
-              <span className="result-count" aria-live="polite">
-                {filtered.length}
-                {filtered.length !== books.length && <span className="result-total"> / {books.length}</span>}
-                {' '}{filtered.length === 1 ? 'entry' : 'entries'}
+            <div className="hidden sm:flex items-center gap-2 text-text-muted text-xs shrink-0">
+              <span>
+                <strong>{filtered.length}</strong>
+                {filtered.length !== books.length && <span> / {books.length}</span>}{' '}
+                {filtered.length === 1 ? 'entry' : 'entries'}
               </span>
-
-              {!showTrash && filtersActive && (
-                <button className="link-btn" onClick={clearFilters}>Clear filters</button>
-              )}
             </div>
           </div>
         </div>
 
-        {viewMode === 'table' && selectMode && selected.size > 0 && (
-          <div className="bulk-bar">
-            <strong>{selected.size} selected</strong>
-            {!showTrash && (
-              <>
-                <select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)}>
-                  {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-                <button className="btn secondary" onClick={() => bulkAction('status')}>Set status</button>
-                <button className="btn danger" onClick={() => bulkAction('delete')}>Delete selected</button>
-              </>
-            )}
-            {showTrash && (
-              <>
-                <button className="btn secondary" onClick={() => bulkAction('restore')}>Restore selected</button>
-                <button className="btn danger" onClick={() => bulkAction('delete_permanent')}>Delete forever</button>
-              </>
-            )}
-            <button className="mono-btn" style={{ marginLeft: 'auto' }} onClick={() => setSelected(new Set())}>Clear</button>
+        {/* Bulk Action Bar */}
+        {selectMode && selected.size > 0 && (
+          <div className="mb-4 flex flex-col gap-2.5 rounded-xl border border-accent-color/40 bg-accent-color/10 p-3 text-xs sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-text">{selected.size} selected</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs text-text-muted hover:text-text sm:hidden"
+                onClick={() => setSelected(new Set())}
+              >
+                Clear
+              </Button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {!showTrash && (
+                <>
+                  <Select value={bulkStatus} onValueChange={(val) => setBulkStatus(val)}>
+                    <SelectTrigger className="h-8 w-32 sm:w-36 text-xs">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUSES.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={!bulkStatus}
+                    onClick={() => bulkAction('status')}
+                  >
+                    Set Status
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={() => bulkAction('delete')}>
+                    Move to Trash
+                  </Button>
+                </>
+              )}
+              {showTrash && (
+                <>
+                  <Button variant="secondary" size="sm" onClick={() => bulkAction('restore')}>
+                    Restore Selected
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => bulkAction('delete_permanent')}
+                  >
+                    Delete Permanently
+                  </Button>
+                </>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="hidden sm:inline-flex h-8"
+                onClick={() => setSelected(new Set())}
+              >
+                Clear
+              </Button>
+            </div>
           </div>
         )}
 
-        {error && <div className="error-text">{error}</div>}
+        {/* Filters Quick Action Bar */}
+        {filtersActive && (
+          <div className="mb-3 flex items-center justify-between rounded-lg border border-border bg-surface/50 p-2 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-semibold text-text-muted">Active Filters:</span>
+              {statusFilter !== 'All' && (
+                <span className="inline-flex items-center gap-1 rounded-md border border-border bg-card-bg px-2 py-0.5">
+                  Status: <strong>{statusFilter}</strong>
+                  <X
+                    className="h-3 w-3 cursor-pointer text-text-muted hover:text-text"
+                    onClick={() => setStatusFilter('All')}
+                  />
+                </span>
+              )}
+              {search.trim() !== '' && (
+                <span className="inline-flex items-center gap-1 rounded-md border border-border bg-card-bg px-2 py-0.5">
+                  Search: <strong>"{search}"</strong>
+                  <X
+                    className="h-3 w-3 cursor-pointer text-text-muted hover:text-text"
+                    onClick={() => setSearch('')}
+                  />
+                </span>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-accent-color text-xs"
+                onClick={clearFilters}
+              >
+                Clear
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Content View */}
+        {error && <div className="mb-3 font-semibold text-rose-600 text-xs">{error}</div>}
+
         {loading ? (
-          <div>
+          <div className="space-y-3 py-6">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="skeleton skeleton-row" />
+              <div key={i} className="h-12 animate-pulse rounded-lg bg-surface/60" />
             ))}
           </div>
-        ) : viewMode === 'grid' && !showTrash ? (
+        ) : viewMode === 'grid' ? (
           <BookGrid
             books={filtered}
             ratingMode={ratingMode}
             hasAnyBooks={books.length > 0}
+            selectMode={selectMode}
+            selected={selected}
+            onToggleSelect={toggleSelect}
+            trashMode={showTrash}
             onEdit={(b) => setEditing(b)}
             onDelete={deleteBook}
+            onRestore={restoreBook}
+            onPermanentDelete={permanentlyDeleteBook}
           />
         ) : (
           <BookTable
@@ -612,7 +959,15 @@ export default function HomePage() {
             selectMode={selectMode}
             selected={selected}
             onToggleSelect={toggleSelect}
-            focusedId={focusedIndex >= 0 ? filtered[focusedIndex]?.id ?? null : null}
+            onToggleSelectAll={() => {
+              const allSelected = filtered.length > 0 && filtered.every((b) => selected.has(b.id));
+              if (allSelected) {
+                setSelected(new Set());
+              } else {
+                setSelected(new Set(filtered.map((b) => b.id)));
+              }
+            }}
+            focusedId={focusedIndex >= 0 ? (filtered[focusedIndex]?.id ?? null) : null}
             onEdit={(b) => setEditing(b)}
             onDelete={deleteBook}
             onRestore={restoreBook}
@@ -620,8 +975,9 @@ export default function HomePage() {
             onQuickStatus={quickStatusChange}
           />
         )}
-      </div>
+      </Card>
 
+      {/* Book Form Modal Dialog */}
       {editing !== undefined && (
         <BookForm
           initial={editing}
@@ -631,8 +987,6 @@ export default function HomePage() {
           onSave={saveBook}
         />
       )}
-
-      <Toast toast={toast} onDismiss={() => setToast(null)} />
     </main>
   );
 }
