@@ -1,6 +1,20 @@
 import './globals.css';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Toaster } from '@/components/ui/sonner';
+import { Newsreader, Plus_Jakarta_Sans } from 'next/font/google';
+
+const newsreader = Newsreader({
+  subsets: ['latin'],
+  style: ['normal', 'italic'],
+  variable: '--font-newsreader',
+  display: 'swap',
+});
+
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-jakarta',
+  display: 'swap',
+});
 
 export const metadata = {
   title: 'Reading Tracker',
@@ -36,11 +50,15 @@ const THEME_INIT_SCRIPT = `
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${newsreader.variable} ${jakarta.variable}`}
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body>
+      <body className="bg-bg font-sans text-text antialiased">
         {children}
         <Toaster position="bottom-right" richColors closeButton />
         <SpeedInsights />

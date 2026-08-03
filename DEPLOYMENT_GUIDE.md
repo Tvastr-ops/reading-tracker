@@ -101,7 +101,7 @@ openssl rand -base64 32
 and copy the output.
 
 Either way, save this random string somewhere temporary — you'll paste it
-into Vercel in the next step, labeled `SESSION_SECRET`.
+into Vercel in the next step, labeled `SESSION_SECRET`. *(Note: `SESSION_SECRET` must be at least 16 characters long or the app server will throw an error at startup).*
 
 Also now is a good time to **pick your app password** — the password you'll
 type to log into your reading tracker. Make it something only you know
@@ -125,7 +125,7 @@ type to log into your reading tracker. Make it something only you know
    | `SUPABASE_URL` | the Project URL you copied in Part 2 |
    | `SUPABASE_SERVICE_ROLE_KEY` | the `service_role` key you copied in Part 2 |
    | `APP_PASSWORD` | the login password you picked in Part 4 |
-   | `SESSION_SECRET` | the random string you generated in Part 4 |
+   | `SESSION_SECRET` | the random string (16+ chars) you generated in Part 4 |
 
 6. Double-check there are no extra spaces before/after any pasted value.
 7. Click **Deploy**.
@@ -136,14 +136,28 @@ type to log into your reading tracker. Make it something only you know
 
 ---
 
-## Part 6: First login
+## Part 6: First login & Home Screen Setup (PWA)
 
 1. You should see a login screen. Enter the `APP_PASSWORD` you set in Part 4.
 2. You're in — you should see an empty tracker with "+ Add entry" available.
 3. Add a book to confirm everything works end to end.
 
-**Bookmark your Vercel URL** — that's your permanent app address. You can
-open it from your phone too, it'll work the same way.
+### Install on Mobile (PWA)
+
+- **iPhone / iPad (Safari)**: Open your Vercel URL in Safari → tap the **Share** icon (square with arrow up) → tap **Add to Home Screen**.
+- **Android (Chrome)**: Open your Vercel URL in Chrome → tap the **⋮** menu (top right) → tap **Add to Home Screen** / **Install app**.
+
+Bookmark your Vercel URL or install it to your home screen — that's your permanent app address.
+
+---
+
+## Upgrading an Existing Deployment
+
+If you deployed an earlier version of Reading Tracker, run the migration scripts in your Supabase SQL Editor:
+
+1. Open **Supabase Dashboard** → **SQL Editor** → **New Query**.
+2. If upgrading from **v1**: Open `supabase/migration_v2.sql`, copy all text, paste into Supabase, and click **Run**. Next, open `supabase/migration_v3.sql`, copy all text, paste into Supabase, and click **Run**.
+3. If upgrading from **v2**: Open `supabase/migration_v3.sql`, copy all text, paste into Supabase, and click **Run**.
 
 ---
 
@@ -155,6 +169,9 @@ typo in one of the environment variable names or values — go to your
 Vercel project → **Settings → Environment Variables**, fix it, then go to
 the **Deployments** tab and click the **⋯** menu on the latest one →
 **Redeploy**.
+
+**"500 Internal Server Error" when adding a reading log entry:**
+This means your Supabase database is missing the `reading_pace` column added in v3. Go to Supabase **SQL Editor** → **New Query**, copy the contents of `supabase/migration_v3.sql` (`ALTER TABLE books ADD COLUMN IF NOT EXISTS reading_pace numeric;`), and click **Run**.
 
 **Login page says "Incorrect password":**
 Double check `APP_PASSWORD` in Vercel's environment variables has no extra
