@@ -24,7 +24,11 @@ const COLUMNS = [
 
 function csvEscape(val: unknown): string {
   if (val == null) return '';
-  const s = String(val);
+  let s = String(val);
+  // Prevent CSV Formula Injection by prepending ' to formula triggers
+  if (/^[=+@\-\t\r]/.test(s)) {
+    s = `'${s}`;
+  }
   if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }
