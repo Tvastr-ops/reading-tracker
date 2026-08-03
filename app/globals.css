@@ -25,9 +25,14 @@
   --color-status-plan: var(--status-plan);
   --color-status-hold: var(--status-hold);
   --color-status-dropped: var(--status-dropped);
+}
 
-  --color-star-empty: var(--star-empty);
-  --color-star-filled: var(--star-filled);
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 :root {
