@@ -61,6 +61,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [ratingFilter, setRatingFilter] = useState<number | 'All' | 'Unrated'>('All');
   const [search, setSearch] = useState('');
   const [ratingMode, setRatingMode] = useState<'stars' | 'decimal'>('stars');
   const [editing, setEditing] = useState<Partial<Book> | null | undefined>(undefined);
@@ -223,8 +224,12 @@ export default function HomePage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: next }),
     });
-    if (!res.ok) load();
-    else toast.info(`Marked "${b.title}" as ${next}`);
+    if (!res.ok) {
+      toast.error(`Failed to update status for "${b.title}"`);
+      load();
+    } else {
+      toast.info(`Marked "${b.title}" as ${next}`);
+    }
   }
 
   async function logout() {
@@ -337,6 +342,14 @@ export default function HomePage() {
       list = list.filter((b) => b.status === statusFilter);
     }
 
+    if (ratingFilter !== 'All') {
+      if (ratingFilter === 'Unrated') {
+        list = list.filter((b) => !b.rating || b.rating === 0);
+      } else {
+        list = list.filter((b) => b.rating && b.rating >= (ratingFilter as number));
+      }
+    }
+
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       list = list.filter(
@@ -369,14 +382,18 @@ export default function HomePage() {
       if (va > vb) return sortDir === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [books, statusFilter, search, sortField, sortDir]);
+  }, [books, statusFilter, ratingFilter, search, sortField, sortDir]);
 
-  const filtersActive = statusFilter !== 'All' || search.trim() !== '';
+  const filtersActive = statusFilter !== 'All' || ratingFilter !== 'All' || search.trim() !== '';
 
   function clearFilters() {
     setStatusFilter('All');
+    setRatingFilter('All');
     setSearch('');
   }
+
+  const filteredRef = useRef(filtered);
+  filteredRef.current = filtered;
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -388,19 +405,20 @@ export default function HomePage() {
           active.tagName === 'SELECT');
       if (typing) return;
 
+      const currentFiltered = filteredRef.current;
       const rowNavActive = viewMode === 'table' && !showTrash && editing === undefined;
       if (rowNavActive && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
         e.preventDefault();
         setFocusedIndex((i) => {
           const delta = e.key === 'ArrowDown' ? 1 : -1;
           const next = i + delta;
-          return Math.max(0, Math.min(filtered.length - 1, next < 0 ? 0 : next));
+          return Math.max(0, Math.min(currentFiltered.length - 1, next < 0 ? 0 : next));
         });
         return;
       }
-      if (rowNavActive && e.key === 'Enter' && focusedIndex >= 0 && filtered[focusedIndex]) {
+      if (rowNavActive && e.key === 'Enter' && focusedIndex >= 0 && currentFiltered[focusedIndex]) {
         e.preventDefault();
-        setEditing(filtered[focusedIndex]);
+        setEditing(currentFiltered[focusedIndex]);
         return;
       }
 
@@ -414,7 +432,7 @@ export default function HomePage() {
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [showTrash, viewMode, editing, filtered, focusedIndex]);
+  }, [showTrash, viewMode, editing, focusedIndex]);
 
   return (
     <main className="mx-auto max-w-7xl 2xl:max-w-screen-2xl px-4 py-6 pb-20 sm:px-6 lg:px-8 xl:px-10">
@@ -758,24 +776,53 @@ export default function HomePage() {
               </DropdownMenu>
 
               {/* Rating Filter */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 flex-1 min-w-0 justify-center px-2 text-xs sm:flex-none sm:px-3"
-                onClick={() =>
-                  setRatingMode((m) => {
-                    const next = m === 'stars' ? 'decimal' : 'stars';
-                    window.localStorage.setItem('ratingMode', next);
-                    return next;
-                  })
-                }
-                title={`Rating display: ${ratingMode === 'stars' ? 'Stars' : 'Decimal'}`}
-              >
-                <Sparkles className="h-3.5 w-3.5 text-amber-400 sm:mr-1.5" />
-                <span className="hidden sm:inline">
-                  Rating: {ratingMode === 'stars' ? 'Stars' : 'Decimal'}
-                </span>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 flex-1 min-w-0 justify-center px-2 text-xs sm:flex-none sm:px-3"
+                    title={
+                      ratingFilter === 'All'
+                        ? 'Filter by Rating'
+                        : ratingFilter === 'Unrated'
+                          ? 'Unrated'
+                          : `${ratingFilter}+ Stars`
+                    }
+                  >
+                    <Sparkles className="h-3.5 w-3.5 text-amber-400 sm:mr-1.5" />
+                    <span className="hidden sm:inline">
+                      {ratingFilter === 'All'
+                        ? 'Rating'
+                        : ratingFilter === 'Unrated'
+                          ? 'Unrated'
+                          : `${ratingFilter}★+`}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuLabel>Filter by Rating</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setRatingFilter('All')}>
+                    All Ratings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setRatingFilter(5)}>
+                    5 Stars (5.0)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setRatingFilter(4)}>
+                    4+ Stars (4.0+)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setRatingFilter(3)}>
+                    3+ Stars (3.0+)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setRatingFilter(2)}>
+                    2+ Stars (2.0+)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setRatingFilter('Unrated')}>
+                    Unrated
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               {/* Sort Menu */}
               <DropdownMenu>
