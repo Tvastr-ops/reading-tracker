@@ -419,17 +419,17 @@ export default function HomePage() {
   return (
     <main className="mx-auto max-w-7xl 2xl:max-w-screen-2xl px-4 py-6 pb-20 sm:px-6 lg:px-8 xl:px-10">
       {/* Header Bar */}
-      <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-bold text-2xl text-text tracking-tight sm:text-3xl">
             Reading Tracker
           </h1>
-          <p className="mt-1 text-text-muted text-xs sm:text-sm">
+          <p className="mt-1 text-text-muted text-xs sm:text-sm line-clamp-1 sm:line-clamp-none">
             Web novels, light novels, literature, essays, short stories, and fanfiction.
           </p>
         </div>
 
-        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+        <div className="flex items-center justify-between gap-2 border-border/60 border-t pt-3 sm:w-auto sm:border-0 sm:pt-0">
           <Button variant="outline" size="icon" onClick={toggleTheme} title="Toggle dark mode">
             {theme === 'dark' ? (
               <Sun className="h-4 w-4 text-amber-400" />
@@ -438,34 +438,47 @@ export default function HomePage() {
             )}
           </Button>
 
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv"
-            className="hidden"
-            onChange={handleImportFile}
-          />
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importing}
-          >
-            <Upload className="mr-1.5 h-3.5 w-3.5" />
-            <span>{importing ? 'Importing...' : 'Import'}</span>
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={handleImportFile}
+            />
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importing}
+              className="h-8 px-2.5 text-xs sm:h-9 sm:px-3 sm:text-sm"
+            >
+              <Upload className="mr-1.5 h-3.5 w-3.5" />
+              <span>{importing ? '...' : 'Import'}</span>
+            </Button>
 
-          <Button variant="secondary" size="sm" asChild>
-            <a href="/api/export">
-              <Download className="mr-1.5 h-3.5 w-3.5" />
-              <span>Export</span>
-            </a>
-          </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              asChild
+              className="h-8 px-2.5 text-xs sm:h-9 sm:px-3 sm:text-sm"
+            >
+              <a href="/api/export">
+                <Download className="mr-1.5 h-3.5 w-3.5" />
+                <span>Export</span>
+              </a>
+            </Button>
 
-          <Button variant="ghost" size="sm" onClick={logout}>
-            <LogOut className="mr-1.5 h-3.5 w-3.5" />
-            <span>Logout</span>
-          </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-text-muted hover:text-text sm:h-9 sm:w-9"
+              onClick={logout}
+              title="Logout"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -512,27 +525,89 @@ export default function HomePage() {
       )}
 
       {/* Main Content Area */}
-      <Card className="p-4 shadow-xs sm:p-5">
+      <Card className="p-3.5 shadow-xs sm:p-5">
         {/* Toolbar */}
-        <div className="mb-5 space-y-3.5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            {!showTrash ? (
-              <Button onClick={() => setEditing(null)} className="shadow-sm">
-                <Plus className="mr-1.5 h-4 w-4" />
-                <span>Add Entry</span>
-                <kbd className="ml-2 hidden rounded bg-accent-text/15 px-1.5 py-0.5 text-[10px] text-accent-text/70 sm:inline-block">
-                  n
-                </kbd>
-              </Button>
-            ) : (
-              <Button variant="outline" onClick={() => setShowTrash(false)}>
-                <ArrowLeft className="mr-1.5 h-4 w-4" />
-                <span>Back to Library</span>
-              </Button>
-            )}
+        <div className="mb-4 space-y-3">
+          {/* Row 1: Add Entry / Search / View Toggle */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center justify-between gap-2 sm:justify-start">
+              {!showTrash ? (
+                <Button onClick={() => setEditing(null)} className="shadow-sm">
+                  <Plus className="mr-1.5 h-4 w-4" />
+                  <span>Add Entry</span>
+                  <kbd className="ml-2 hidden rounded bg-accent-text/15 px-1.5 py-0.5 text-[10px] text-accent-text/70 sm:inline-block">
+                    n
+                  </kbd>
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={() => setShowTrash(false)}>
+                  <ArrowLeft className="mr-1.5 h-4 w-4" />
+                  <span>Back to Library</span>
+                </Button>
+              )}
+
+              {/* View Mode & Trash toggle for Mobile */}
+              <div className="flex items-center gap-1.5 sm:hidden">
+                {!showTrash && (
+                  <div className="relative flex items-center rounded-xl border border-border/80 bg-surface/80 p-0.5 backdrop-blur-md">
+                    <button
+                      type="button"
+                      onClick={() => toggleViewMode('grid')}
+                      className={cn(
+                        'relative z-10 flex h-7 items-center justify-center rounded-lg px-2.5 font-semibold text-xs transition-colors cursor-pointer',
+                        viewMode === 'grid'
+                          ? 'text-accent-text'
+                          : 'text-text-muted hover:text-text',
+                      )}
+                      title="Grid view"
+                    >
+                      {viewMode === 'grid' && (
+                        <motion.div
+                          layoutId="mobileViewModePill"
+                          className="absolute inset-0 rounded-lg bg-accent-color shadow-xs"
+                          transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                        />
+                      )}
+                      <LayoutGrid className="relative z-10 h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleViewMode('table')}
+                      className={cn(
+                        'relative z-10 flex h-7 items-center justify-center rounded-lg px-2.5 font-semibold text-xs transition-colors cursor-pointer',
+                        viewMode === 'table'
+                          ? 'text-accent-text'
+                          : 'text-text-muted hover:text-text',
+                      )}
+                      title="Table view"
+                    >
+                      {viewMode === 'table' && (
+                        <motion.div
+                          layoutId="mobileViewModePill"
+                          className="absolute inset-0 rounded-lg bg-accent-color shadow-xs"
+                          transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                        />
+                      )}
+                      <List className="relative z-10 h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+                {!showTrash && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 rounded-lg"
+                    onClick={() => setShowTrash(true)}
+                    title="Trash"
+                  >
+                    <Trash2 className="h-4 w-4 text-text-muted" />
+                  </Button>
+                )}
+              </div>
+            </div>
 
             {/* Search Input */}
-            <div className="relative min-w-[200px] max-w-md flex-1">
+            <div className="relative w-full sm:max-w-md sm:flex-1">
               <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-text-muted" />
               <input
                 ref={searchInputRef}
@@ -553,8 +628,8 @@ export default function HomePage() {
               )}
             </div>
 
-            {/* Controls Right Group */}
-            <div className="flex items-center gap-2">
+            {/* Controls Right Group (Desktop) */}
+            <div className="hidden sm:flex sm:items-center sm:gap-2">
               {!showTrash && (
                 <div className="relative flex items-center rounded-xl border border-border/80 bg-surface/80 p-1 shadow-xs backdrop-blur-md">
                   <button
@@ -603,104 +678,109 @@ export default function HomePage() {
                 <Button
                   variant="outline"
                   size="sm"
+                  className="h-8 gap-1.5 text-xs text-text-muted hover:text-text"
                   onClick={() => setShowTrash(true)}
                   title="View Trash"
                 >
-                  <Trash2 className="mr-1 h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Trash</span>
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Trash</span>
                 </Button>
               )}
             </div>
           </div>
 
-          {/* Sub Toolbar Filters */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5 border-border/60 border-t pt-2">
-            <div className="flex flex-wrap items-center gap-2">
-              {!showTrash && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant={statusFilter !== 'All' ? 'default' : 'outline'}
-                      size="sm"
-                      className="h-8 text-xs"
-                    >
-                      <Filter className="mr-1 h-3.5 w-3.5" />
-                      <span>{statusFilter === 'All' ? 'Status' : statusFilter}</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {['All', ...STATUSES].map((s) => (
-                      <DropdownMenuItem
-                        key={s}
-                        onClick={() => setStatusFilter(s)}
-                        className="flex items-center justify-between"
-                      >
-                        <span>{s}</span>
-                        <span className="ml-3 font-mono text-text-muted text-xs">
-                          {statusCounts[s] ?? 0}
-                        </span>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 text-xs"
-                onClick={toggleRatingMode}
-              >
-                <span>⭐ Rating: {ratingMode === 'stars' ? 'Stars' : 'Decimal'}</span>
-              </Button>
-
+          {/* Row 2: Filter Pills Bar (Horizontal Scroll on Mobile) */}
+          <div className="flex items-center justify-between gap-2 border-border/40 border-t pt-2.5">
+            <div className="flex flex-1 items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+              {/* Status Filter */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 text-xs">
-                    <ArrowUpDown className="mr-1 h-3.5 w-3.5" />
-                    <span>Sort</span>
+                  <Button variant="outline" size="sm" className="h-7 shrink-0 text-xs">
+                    <Filter className="mr-1.5 h-3 w-3 text-text-muted" />
+                    <span>{statusFilter === 'All' ? 'Status' : statusFilter}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                  <DropdownMenuLabel>Sort Presets</DropdownMenuLabel>
+                  <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {SORT_PRESETS.map((p) => (
-                    <DropdownMenuItem
-                      key={p.label}
-                      onClick={() => {
-                        setSortField(p.field);
-                        setSortDir(p.dir);
-                      }}
-                      className="flex items-center justify-between"
-                    >
-                      <span>{p.label}</span>
-                      {sortField === p.field && sortDir === p.dir && (
-                        <Check className="ml-2 h-3.5 w-3.5 text-accent-color" />
-                      )}
+                  <DropdownMenuItem onClick={() => setStatusFilter('All')}>
+                    All Statuses
+                  </DropdownMenuItem>
+                  {STATUSES.map((s) => (
+                    <DropdownMenuItem key={s} onClick={() => setStatusFilter(s)}>
+                      {s}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              {/* Rating Filter */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 shrink-0 text-xs"
+                onClick={() =>
+                  setRatingMode((m) => {
+                    const next = m === 'stars' ? 'decimal' : 'stars';
+                    window.localStorage.setItem('ratingMode', next);
+                    return next;
+                  })
+                }
+                title="Toggle rating mode"
+              >
+                <Sparkles className="mr-1.5 h-3 w-3 text-amber-400" />
+                <span>Rating: {ratingMode === 'stars' ? 'Stars' : 'Decimal'}</span>
+              </Button>
+
+              {/* Sort Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 shrink-0 text-xs">
+                    <ArrowUpDown className="mr-1.5 h-3 w-3 text-text-muted" />
+                    <span>Sort</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuLabel>Sort Options</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleSort('updated_at')}>
+                    Last Updated {sortField === 'updated_at' && (sortDir === 'desc' ? '↓' : '↑')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleSort('title')}>
+                    Title {sortField === 'title' && (sortDir === 'asc' ? 'A-Z' : 'Z-A')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleSort('rating')}>
+                    Rating {sortField === 'rating' && (sortDir === 'desc' ? 'High' : 'Low')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleSort('status')}>
+                    Status {sortField === 'status' && (sortDir === 'asc' ? 'A-Z' : 'Z-A')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleSort('date_finished')}>
+                    Finished Date{' '}
+                    {sortField === 'date_finished' && (sortDir === 'desc' ? 'Newest' : 'Oldest')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Up Next */}
               {!showTrash && (
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  className="h-8 text-accent-color text-xs"
+                  className="h-7 shrink-0 text-xs text-accent-color hover:bg-accent-color/10"
                   onClick={pickUpNext}
                 >
-                  <Sparkles className="mr-1 h-3.5 w-3.5" />
+                  <Sparkles className="mr-1.5 h-3 w-3" />
                   <span>Up Next</span>
                 </Button>
               )}
 
-              <div className="flex items-center gap-1.5">
+              {/* Selection Mode Button */}
+              <div className="flex items-center gap-1.5 shrink-0">
                 <Button
                   variant={selectMode ? 'secondary' : 'outline'}
                   size="sm"
-                  className="h-8 text-xs"
+                  className="h-7 text-xs"
                   onClick={() => {
                     setSelectMode((v) => !v);
                     setSelected(new Set());
@@ -712,7 +792,7 @@ export default function HomePage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 text-xs text-accent-color hover:bg-accent-color/10"
+                    className="h-7 text-xs text-accent-color hover:bg-accent-color/10"
                     onClick={() => {
                       const allSelected =
                         filtered.length > 0 && filtered.every((b) => selected.has(b.id));
@@ -731,23 +811,12 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 text-text-muted text-xs">
+            <div className="hidden sm:flex items-center gap-2 text-text-muted text-xs shrink-0">
               <span>
                 <strong>{filtered.length}</strong>
                 {filtered.length !== books.length && <span> / {books.length}</span>}{' '}
                 {filtered.length === 1 ? 'entry' : 'entries'}
               </span>
-
-              {!showTrash && filtersActive && (
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="h-auto p-0 text-accent-color text-xs"
-                  onClick={clearFilters}
-                >
-                  Clear filters
-                </Button>
-              )}
             </div>
           </div>
         </div>
