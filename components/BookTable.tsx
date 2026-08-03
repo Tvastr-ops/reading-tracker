@@ -142,7 +142,10 @@ export default function BookTable({
                   />
                 )}
 
-                <div className="relative shrink-0">
+                <div className="relative shrink-0 overflow-hidden rounded-md">
+                  <div
+                    className={`pointer-events-none absolute inset-y-0 left-0 w-0.5 z-10 bg-gradient-to-b ${statusCfg.sideGradient}`}
+                  />
                   {b.cover_url ? (
                     <img
                       src={b.cover_url}
@@ -274,7 +277,10 @@ export default function BookTable({
                     {/* Book Primary Info Cell: Cover + Title + Author/Type + Source Link */}
                     <td className="px-3.5 py-3 align-middle">
                       <div className="flex items-center gap-3">
-                        <div className="relative shrink-0">
+                        <div className="relative shrink-0 overflow-hidden rounded-md">
+                          <div
+                            className={`pointer-events-none absolute inset-y-0 left-0 w-0.5 z-10 bg-gradient-to-b ${statusCfg.sideGradient}`}
+                          />
                           {b.cover_url ? (
                             <img
                               src={b.cover_url}

@@ -12,6 +12,7 @@ create table if not exists books (
   genre_tags text,
   source_link text,
   cover_url text,                     -- optional cover image URL (fetched from Open Library)
+  reading_pace numeric,               -- denormalized units/week for Reading status
   date_started date,
   date_finished date,
   notes text,
