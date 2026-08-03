@@ -69,7 +69,7 @@ export default function BookGrid({
             className={`group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border bg-card-bg transition-all duration-300 ${
               isSelected
                 ? 'border-accent-color ring-2 ring-accent-color bg-accent-color/5 shadow-md'
-                : 'border-border/70 shadow-xs hover:-translate-y-1 hover:border-accent-color/70 hover:shadow-xl hover:shadow-accent-color/5'
+                : `border-border/70 shadow-xs hover:-translate-y-1 hover:shadow-xl ${statusCfg.glowShadow}`
             }`}
             onClick={() => {
               if (selectMode && onToggleSelect) {
@@ -80,6 +80,11 @@ export default function BookGrid({
             }}
           >
             <div className="relative aspect-[2/3] w-full overflow-hidden bg-surface">
+              {/* Subtle Status Gradient Side Border */}
+              <div
+                className={`pointer-events-none absolute inset-y-0 left-0 w-1 sm:w-1.5 z-10 bg-gradient-to-b ${statusCfg.sideGradient} border-r border-black/20`}
+              />
+
               {b.cover_url ? (
                 <>
                   <img

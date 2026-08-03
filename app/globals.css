@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 @theme {
+  --font-serif: var(--font-newsreader), Georgia, serif;
+  --font-sans: var(--font-jakarta), system-ui, sans-serif;
+
   --color-bg: var(--bg);
   --color-card-bg: var(--card-bg);
   --color-surface: var(--surface);
