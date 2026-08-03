@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase';
+import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
+import { supabaseServer } from '@/lib/supabase';
 
 // See app/api/export/route.ts for why this is required.
 export const dynamic = 'force-dynamic';
@@ -8,15 +8,25 @@ export const dynamic = 'force-dynamic';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const ALLOWED_FIELDS = [
-  'title', 'type', 'author', 'status', 'rating', 'progress', 'total_units',
-  'genre_tags', 'source_link', 'cover_url', 'date_started', 'date_finished', 'notes',
+  'title',
+  'type',
+  'author',
+  'status',
+  'rating',
+  'progress',
+  'total_units',
+  'genre_tags',
+  'source_link',
+  'cover_url',
+  'date_started',
+  'date_finished',
+  'notes',
 ];
 
 // Next.js 15+ made dynamic route `params` a Promise (was a plain object in 14).
 type RouteContext = { params: Promise<{ id: string }> };
 
 export const PATCH = withAuth(async (req: NextRequest, { params }: RouteContext) => {
-
   const { id } = await params;
   if (!UUID_RE.test(id)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
@@ -69,7 +79,6 @@ export const PATCH = withAuth(async (req: NextRequest, { params }: RouteContext)
 // Soft delete by default (sets deleted_at). Pass ?permanent=1 to actually
 // remove the row — used only from the trash view, after a confirm dialog.
 export const DELETE = withAuth(async (req: NextRequest, { params }: RouteContext) => {
-
   const { id } = await params;
   if (!UUID_RE.test(id)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });

@@ -1,12 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase';
+import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
+import { supabaseServer } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
 const KNOWN_COLUMNS = [
-  'title', 'type', 'author', 'status', 'rating', 'progress', 'total_units',
-  'genre_tags', 'source_link', 'cover_url', 'date_started', 'date_finished', 'notes',
+  'title',
+  'type',
+  'author',
+  'status',
+  'rating',
+  'progress',
+  'total_units',
+  'genre_tags',
+  'source_link',
+  'cover_url',
+  'date_started',
+  'date_finished',
+  'notes',
 ];
 
 const VALID_STATUSES = ['Plan to Read', 'Reading', 'On Hold', 'Completed', 'Dropped'];
@@ -24,8 +35,12 @@ function parseCSV(text: string): string[][] {
     const c = text[i];
     if (inQuotes) {
       if (c === '"') {
-        if (text[i + 1] === '"') { field += '"'; i++; }
-        else { inQuotes = false; }
+        if (text[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
       } else {
         field += c;
       }
@@ -59,16 +74,18 @@ function toNullableNumber(v: string | undefined): number | null {
 }
 
 export const POST = withAuth(async (req: NextRequest) => {
-
   const body = await req.json().catch(() => null);
   const csvText = typeof body?.csv === 'string' ? body.csv : null;
-  if (!csvText || !csvText.trim()) {
+  if (!csvText?.trim()) {
     return NextResponse.json({ error: 'No CSV content provided' }, { status: 400 });
   }
 
   const rows = parseCSV(csvText);
   if (rows.length < 2) {
-    return NextResponse.json({ error: 'CSV needs a header row plus at least one data row' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'CSV needs a header row plus at least one data row' },
+      { status: 400 },
+    );
   }
 
   const header = rows[0].map((h) => h.trim().toLowerCase());
@@ -78,7 +95,10 @@ export const POST = withAuth(async (req: NextRequest) => {
     if (idx !== -1) colIndex[col] = idx;
   }
   if (colIndex.title == null) {
-    return NextResponse.json({ error: 'CSV header must include a "title" column' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'CSV header must include a "title" column' },
+      { status: 400 },
+    );
   }
 
   const toInsert: Record<string, unknown>[] = [];
@@ -89,7 +109,10 @@ export const POST = withAuth(async (req: NextRequest) => {
     const get = (col: string) => (colIndex[col] != null ? cells[colIndex[col]]?.trim() : undefined);
 
     const title = get('title');
-    if (!title) { skipped.push(r + 1); continue; }
+    if (!title) {
+      skipped.push(r + 1);
+      continue;
+    }
 
     const status = get('status');
     const rating = toNullableNumber(get('rating'));
@@ -112,7 +135,10 @@ export const POST = withAuth(async (req: NextRequest) => {
   }
 
   if (toInsert.length === 0) {
-    return NextResponse.json({ error: 'No valid rows found (each row needs a title)' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'No valid rows found (each row needs a title)' },
+      { status: 400 },
+    );
   }
 
   const supabase = supabaseServer();
@@ -125,7 +151,9 @@ export const POST = withAuth(async (req: NextRequest) => {
     .is('deleted_at', null);
   if (existingError) return NextResponse.json({ error: existingError.message }, { status: 500 });
 
-  const existingTitles = new Set((existing || []).map((b: any) => String(b.title).trim().toLowerCase()));
+  const existingTitles = new Set(
+    (existing || []).map((b: any) => String(b.title).trim().toLowerCase()),
+  );
   const seenInBatch = new Set<string>();
   const deduped: typeof toInsert = [];
   let skippedDuplicates = 0;

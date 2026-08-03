@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase';
+import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
+import { supabaseServer } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +12,6 @@ const MAX_IDS = 500;
 // N individual requests from the client — fewer round trips, and it's one
 // atomic-ish operation server-side instead of N separate ones.
 export const POST = withAuth(async (req: NextRequest) => {
-
   const body = await req.json().catch(() => null);
   const action = body?.action;
   const ids: unknown = body?.ids;
