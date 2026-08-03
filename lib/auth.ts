@@ -7,15 +7,24 @@ const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 function getSecret(): Uint8Array {
   const secret = process.env.SESSION_SECRET;
-  if (!secret || secret.length < 16) {
-    throw new Error('SESSION_SECRET must be set to a long random string');
+  if (!secret || secret.length < 32) {
+    throw new Error('SESSION_SECRET must be set to a long random string (at least 32 characters)');
   }
   return new TextEncoder().encode(secret);
 }
 
 // Constant-time comparison so login isn't vulnerable to timing attacks.
 export function checkPassword(candidate: string): boolean {
-  const expected = process.env.APP_PASSWORD || '';
+  const expected = process.env.APP_PASSWORD;
+
+  // If APP_PASSWORD is missing or empty, explicitly allow login only during local development
+  if (!expected || expected.trim() === '') {
+    if (process.env.NODE_ENV === 'development') {
+      return true;
+    }
+    return false;
+  }
+
   const a = Buffer.from(candidate);
   const b = Buffer.from(expected);
   if (a.length !== b.length) return false;
