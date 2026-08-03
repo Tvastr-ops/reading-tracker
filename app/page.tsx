@@ -734,9 +734,9 @@ export default function HomePage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 shrink-0 px-2 text-xs sm:px-2.5"
+                    className="h-7 shrink-0 px-1.5 text-[11px] sm:px-2.5 sm:text-xs"
                   >
-                    <Filter className="mr-1 h-3 w-3 text-text-muted" />
+                    <Filter className="mr-0.5 h-3 w-3 text-text-muted sm:mr-1" />
                     <span>{statusFilter === 'All' ? 'Status' : statusFilter}</span>
                   </Button>
                 </DropdownMenuTrigger>
@@ -758,7 +758,7 @@ export default function HomePage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 shrink-0 px-2 text-xs sm:px-2.5"
+                className="h-7 shrink-0 px-1.5 text-[11px] sm:px-2.5 sm:text-xs"
                 onClick={() =>
                   setRatingMode((m) => {
                     const next = m === 'stars' ? 'decimal' : 'stars';
@@ -768,7 +768,7 @@ export default function HomePage() {
                 }
                 title="Toggle rating mode"
               >
-                <Sparkles className="mr-1 h-3 w-3 text-amber-400" />
+                <Sparkles className="mr-0.5 h-3 w-3 text-amber-400 sm:mr-1" />
                 <span>
                   <span className="hidden sm:inline">Rating: </span>
                   {ratingMode === 'stars' ? 'Stars' : 'Decimal'}
@@ -781,9 +781,9 @@ export default function HomePage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 shrink-0 px-2 text-xs sm:px-2.5"
+                    className="h-7 shrink-0 px-1.5 text-[11px] sm:px-2.5 sm:text-xs"
                   >
-                    <ArrowUpDown className="mr-1 h-3 w-3 text-text-muted" />
+                    <ArrowUpDown className="mr-0.5 h-3 w-3 text-text-muted sm:mr-1" />
                     <span>Sort</span>
                   </Button>
                 </DropdownMenuTrigger>
@@ -814,10 +814,10 @@ export default function HomePage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 shrink-0 px-2 text-xs text-accent-color hover:bg-accent-color/10 sm:px-2.5"
+                  className="h-7 shrink-0 px-1.5 text-[11px] text-accent-color hover:bg-accent-color/10 sm:px-2.5 sm:text-xs"
                   onClick={pickUpNext}
                 >
-                  <Sparkles className="mr-1 h-3 w-3" />
+                  <Sparkles className="mr-0.5 h-3 w-3 sm:mr-1" />
                   <span>
                     <span className="inline sm:hidden">Next</span>
                     <span className="hidden sm:inline">Up Next</span>
@@ -830,7 +830,7 @@ export default function HomePage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 shrink-0 px-2 text-xs sm:px-2.5"
+                  className="h-7 shrink-0 px-1.5 text-[11px] sm:px-2.5 sm:text-xs"
                   onClick={() => {
                     setSelectMode(true);
                     setSelected(new Set());
