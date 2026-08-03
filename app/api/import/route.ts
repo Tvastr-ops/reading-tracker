@@ -143,29 +143,37 @@ export const POST = withAuth(async (req: NextRequest) => {
 
   const supabase = supabaseServer();
 
-  // Skip rows whose title already matches an existing (non-deleted) book,
-  // case-insensitively, so re-importing an export doesn't create dupes.
-  const { data: existing, error: existingError } = await supabase
-    .from('books')
-    .select('title')
-    .is('deleted_at', null);
-  if (existingError) return NextResponse.json({ error: existingError.message }, { status: 500 });
-
-  const existingTitles = new Set(
-    (existing || []).map((b: any) => String(b.title).trim().toLowerCase()),
-  );
-  const seenInBatch = new Set<string>();
+  // Deduplicate titles in targeted batches to avoid loading full database into memory
+  const batchSize = 100;
   const deduped: typeof toInsert = [];
   let skippedDuplicates = 0;
+  const seenInBatch = new Set<string>();
 
-  for (const row of toInsert) {
-    const key = String(row.title).trim().toLowerCase();
-    if (existingTitles.has(key) || seenInBatch.has(key)) {
-      skippedDuplicates++;
-      continue;
+  for (let i = 0; i < toInsert.length; i += batchSize) {
+    const chunk = toInsert.slice(i, i + batchSize);
+    const chunkTitles = chunk.map((r) => String(r.title).trim());
+
+    const { data: existing, error: existingError } = await supabase
+      .from('books')
+      .select('title')
+      .is('deleted_at', null)
+      .in('title', chunkTitles);
+
+    if (existingError) return NextResponse.json({ error: existingError.message }, { status: 500 });
+
+    const existingTitles = new Set(
+      (existing || []).map((b: any) => String(b.title).trim().toLowerCase()),
+    );
+
+    for (const row of chunk) {
+      const key = String(row.title).trim().toLowerCase();
+      if (existingTitles.has(key) || seenInBatch.has(key)) {
+        skippedDuplicates++;
+        continue;
+      }
+      seenInBatch.add(key);
+      deduped.push(row);
     }
-    seenInBatch.add(key);
-    deduped.push(row);
   }
 
   if (deduped.length === 0) {
