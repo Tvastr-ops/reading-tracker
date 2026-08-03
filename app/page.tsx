@@ -691,14 +691,14 @@ export default function HomePage() {
 
           {/* Row 2: Filter Pills Bar */}
           <div className="flex items-center justify-between gap-2 border-border/40 border-t pt-2">
-            <div className="flex flex-1 items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 sm:flex-wrap sm:gap-2">
+            <div className="flex flex-1 items-center gap-1 overflow-x-auto no-scrollbar py-0.5 sm:flex-wrap sm:gap-2">
               {/* When Selection Mode is ACTIVE, show Done & Select All at the VERY FRONT */}
               {selectMode && (
                 <>
                   <Button
                     variant="default"
                     size="sm"
-                    className="h-7 shrink-0 px-3 text-xs shadow-xs font-semibold"
+                    className="h-7 shrink-0 px-2.5 text-xs shadow-xs font-semibold sm:px-3"
                     onClick={() => {
                       setSelectMode(false);
                       setSelected(new Set());
@@ -710,7 +710,7 @@ export default function HomePage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 shrink-0 px-2.5 text-xs text-accent-color hover:bg-accent-color/10"
+                    className="h-7 shrink-0 px-2 text-xs text-accent-color hover:bg-accent-color/10 sm:px-2.5"
                     onClick={() => {
                       const allSelected =
                         filtered.length > 0 && filtered.every((b) => selected.has(b.id));
@@ -731,7 +731,11 @@ export default function HomePage() {
               {/* Status Filter */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7 shrink-0 px-2.5 text-xs">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 shrink-0 px-2 text-xs sm:px-2.5"
+                  >
                     <Filter className="mr-1 h-3 w-3 text-text-muted" />
                     <span>{statusFilter === 'All' ? 'Status' : statusFilter}</span>
                   </Button>
@@ -754,7 +758,7 @@ export default function HomePage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 shrink-0 px-2.5 text-xs"
+                className="h-7 shrink-0 px-2 text-xs sm:px-2.5"
                 onClick={() =>
                   setRatingMode((m) => {
                     const next = m === 'stars' ? 'decimal' : 'stars';
@@ -774,7 +778,11 @@ export default function HomePage() {
               {/* Sort Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7 shrink-0 px-2.5 text-xs">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 shrink-0 px-2 text-xs sm:px-2.5"
+                  >
                     <ArrowUpDown className="mr-1 h-3 w-3 text-text-muted" />
                     <span>Sort</span>
                   </Button>
@@ -806,11 +814,14 @@ export default function HomePage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 shrink-0 px-2.5 text-xs text-accent-color hover:bg-accent-color/10"
+                  className="h-7 shrink-0 px-2 text-xs text-accent-color hover:bg-accent-color/10 sm:px-2.5"
                   onClick={pickUpNext}
                 >
                   <Sparkles className="mr-1 h-3 w-3" />
-                  <span>Up Next</span>
+                  <span>
+                    <span className="inline sm:hidden">Next</span>
+                    <span className="hidden sm:inline">Up Next</span>
+                  </span>
                 </Button>
               )}
 
@@ -819,7 +830,7 @@ export default function HomePage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 shrink-0 px-2.5 text-xs"
+                  className="h-7 shrink-0 px-2 text-xs sm:px-2.5"
                   onClick={() => {
                     setSelectMode(true);
                     setSelected(new Set());
