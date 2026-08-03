@@ -1,5 +1,6 @@
 import './globals.css';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { Toaster } from '@/components/ui/sonner';
 
 export const metadata = {
   title: 'Reading Tracker',
@@ -35,12 +36,13 @@ const THEME_INIT_SCRIPT = `
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body>
         {children}
+        <Toaster position="bottom-right" richColors closeButton />
         <SpeedInsights />
       </body>
     </html>
