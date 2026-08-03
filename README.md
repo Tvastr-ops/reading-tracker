@@ -23,12 +23,12 @@ export to CSV any time.
 
 ## Stack
 
-- [Next.js](https://nextjs.org/) (App Router) — deploys free on
+- [Next.js](https://nextjs.org/) (App Router, Node.js >= 20) — deploys free on
   [Vercel](https://vercel.com)
 - [Supabase](https://supabase.com) Postgres — free tier, no persistent
   disk needed since it's serverless
 - No third-party auth — a single app password gates access via a signed,
-  HttpOnly session cookie, independently re-checked in every API route
+  HttpOnly session cookie (`jose`), with proxy routing (`proxy.ts`) and route-level validation (`lib/auth.ts`)
 
 ## Getting started
 
@@ -39,10 +39,14 @@ Quick version, if you've done this before:
 
 ```bash
 # 1. Run supabase/schema.sql in your Supabase project's SQL editor
-#    (already deployed before? run supabase/migration_v2.sql instead)
+#    (upgrading an existing database? run supabase/migration_v2.sql and migration_v3.sql)
 # 2. Copy .env.example -> .env.local and fill in your values
 npm install
 npm run dev
+
+# Code formatting & lint checks
+npm run lint
+npm run format
 ```
 
 ## License

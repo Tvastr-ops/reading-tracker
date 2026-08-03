@@ -421,7 +421,7 @@ export default function HomePage() {
       {/* Header Bar */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-bold text-2xl text-text tracking-tight sm:text-3xl">
+          <h1 className="font-serif font-bold text-2xl text-text tracking-tight sm:text-3xl">
             Reading Tracker
           </h1>
           <p className="mt-1 text-text-muted text-xs sm:text-sm line-clamp-1 sm:line-clamp-none">
