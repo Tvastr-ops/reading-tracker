@@ -224,8 +224,12 @@ export default function HomePage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: next }),
     });
-    if (!res.ok) load();
-    else toast.info(`Marked "${b.title}" as ${next}`);
+    if (!res.ok) {
+      toast.error(`Failed to update status for "${b.title}"`);
+      load();
+    } else {
+      toast.info(`Marked "${b.title}" as ${next}`);
+    }
   }
 
   async function logout() {
@@ -388,6 +392,9 @@ export default function HomePage() {
     setSearch('');
   }
 
+  const filteredRef = useRef(filtered);
+  filteredRef.current = filtered;
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       const active = document.activeElement;
@@ -398,19 +405,20 @@ export default function HomePage() {
           active.tagName === 'SELECT');
       if (typing) return;
 
+      const currentFiltered = filteredRef.current;
       const rowNavActive = viewMode === 'table' && !showTrash && editing === undefined;
       if (rowNavActive && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
         e.preventDefault();
         setFocusedIndex((i) => {
           const delta = e.key === 'ArrowDown' ? 1 : -1;
           const next = i + delta;
-          return Math.max(0, Math.min(filtered.length - 1, next < 0 ? 0 : next));
+          return Math.max(0, Math.min(currentFiltered.length - 1, next < 0 ? 0 : next));
         });
         return;
       }
-      if (rowNavActive && e.key === 'Enter' && focusedIndex >= 0 && filtered[focusedIndex]) {
+      if (rowNavActive && e.key === 'Enter' && focusedIndex >= 0 && currentFiltered[focusedIndex]) {
         e.preventDefault();
-        setEditing(filtered[focusedIndex]);
+        setEditing(currentFiltered[focusedIndex]);
         return;
       }
 
@@ -424,7 +432,7 @@ export default function HomePage() {
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [showTrash, viewMode, editing, filtered, focusedIndex]);
+  }, [showTrash, viewMode, editing, focusedIndex]);
 
   return (
     <main className="mx-auto max-w-7xl 2xl:max-w-screen-2xl px-4 py-6 pb-20 sm:px-6 lg:px-8 xl:px-10">

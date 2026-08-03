@@ -57,11 +57,20 @@ export const PATCH = withAuth(async (req: NextRequest, { params }: RouteContext)
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
   }
+  if ('title' in update && (typeof update.title !== 'string' || !update.title.trim())) {
+    return NextResponse.json({ error: 'Title cannot be empty' }, { status: 400 });
+  }
   if ('rating' in update) {
     const r = update.rating as number | null;
     if (r != null && (r < 0 || r > 5)) {
       return NextResponse.json({ error: 'Rating must be between 0 and 5' }, { status: 400 });
     }
+  }
+  if ('progress' in update && (typeof update.progress !== 'number' || update.progress < 0)) {
+    return NextResponse.json({ error: 'Progress must be a non-negative number' }, { status: 400 });
+  }
+  if ('total_units' in update && update.total_units != null && (typeof update.total_units !== 'number' || update.total_units < 0)) {
+    return NextResponse.json({ error: 'Total units must be a non-negative number' }, { status: 400 });
   }
 
   const supabase = supabaseServer();

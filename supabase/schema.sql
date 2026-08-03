@@ -24,6 +24,13 @@ create table if not exists books (
 create index if not exists books_status_idx on books (status);
 create index if not exists books_updated_idx on books (updated_at desc);
 create index if not exists books_deleted_idx on books (deleted_at);
+create index if not exists books_active_updated_idx on books (updated_at desc) where deleted_at is null;
+
+alter table books drop constraint if exists chk_books_rating;
+alter table books add constraint chk_books_rating check (rating is null or (rating >= 0.0 and rating <= 5.0));
+
+alter table books drop constraint if exists chk_books_progress;
+alter table books add constraint chk_books_progress check (progress is null or progress >= 0);
 
 -- App-wide settings (single row per key). Used for the yearly reading goal.
 create table if not exists app_settings (
@@ -39,7 +46,7 @@ create table if not exists reading_log (
   id uuid primary key default gen_random_uuid(),
   book_id uuid not null references books(id) on delete cascade,
   from_progress numeric,
-  to_progress numeric not null,
+  to_progress numeric not null check (to_progress >= 0),
   note text,
   logged_at timestamptz not null default now()
 );
