@@ -60,13 +60,13 @@ create index if not exists reading_log_book_idx on reading_log (book_id, logged_
 alter table books enable row level security;
 
 -- keep updated_at fresh automatically
-create or replace function set_updated_at()
+create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
-set search_path = public, pg_temp
+set search_path = ''
 as $$
 begin
-  new.updated_at = now();
+  new.updated_at = pg_catalog.now();
   return new;
 end;
 $$;
