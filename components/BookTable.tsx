@@ -155,22 +155,15 @@ export default function BookTable({
                   )}
 
                   {/* Cover Image */}
-                  <div className="relative shrink-0 overflow-hidden rounded-xl shadow-md border border-white/10 bg-surface">
+                  <div className="relative shrink-0 self-start overflow-hidden rounded-xl shadow-sm border border-border/80">
                     {b.cover_url ? (
-                      <div className="relative h-18 w-13 overflow-hidden rounded-xl">
-                        <img
-                          src={b.cover_url}
-                          alt=""
-                          className="absolute inset-0 h-full w-full object-cover blur-sm scale-110 opacity-40 pointer-events-none"
-                        />
-                        <img
-                          src={b.cover_url}
-                          alt=""
-                          className="relative z-10 h-full w-full object-contain transition-transform group-hover:scale-105"
-                        />
-                      </div>
+                      <img
+                        src={b.cover_url}
+                        alt=""
+                        className="h-20 w-14 rounded-xl object-cover object-top transition-transform group-hover:scale-105"
+                      />
                     ) : (
-                      <div className="flex h-18 w-13 items-center justify-center rounded-xl border border-border bg-surface text-text-muted">
+                      <div className="flex h-20 w-14 items-center justify-center rounded-xl border border-border bg-surface text-text-muted">
                         <BookOpen className="h-5 w-5 opacity-40" />
                       </div>
                     )}
@@ -332,18 +325,11 @@ export default function BookTable({
                             className={`pointer-events-none absolute inset-y-0 left-0 w-0.5 z-10 bg-gradient-to-b ${statusCfg.sideGradient}`}
                           />
                           {b.cover_url ? (
-                            <div className="relative h-12 w-9 overflow-hidden rounded-md border border-border/80 bg-surface shadow-2xs">
-                              <img
-                                src={b.cover_url}
-                                alt=""
-                                className="absolute inset-0 h-full w-full object-cover blur-xs scale-110 opacity-40 pointer-events-none"
-                              />
-                              <img
-                                src={b.cover_url}
-                                alt=""
-                                className="relative z-10 h-full w-full object-contain transition-transform group-hover:scale-105"
-                              />
-                            </div>
+                            <img
+                              src={b.cover_url}
+                              alt=""
+                              className="h-12 w-9 rounded-md border border-border/80 object-cover object-top shadow-2xs transition-transform group-hover:scale-105"
+                            />
                           ) : (
                             <div className="flex h-12 w-9 items-center justify-center rounded-md border border-border bg-surface text-text-muted">
                               <BookOpen className="h-4 w-4 opacity-40" />
