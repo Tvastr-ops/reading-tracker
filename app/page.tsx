@@ -82,8 +82,6 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    const saved = window.localStorage.getItem('ratingMode');
-    if (saved === 'decimal' || saved === 'stars') setRatingMode(saved);
     const savedView = window.localStorage.getItem('viewMode');
     if (savedView === 'grid' || savedView === 'table') setViewMode(savedView);
     const savedStatus = window.localStorage.getItem('statusFilter');
