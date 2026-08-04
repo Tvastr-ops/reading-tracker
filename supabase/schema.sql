@@ -61,12 +61,15 @@ alter table books enable row level security;
 
 -- keep updated_at fresh automatically
 create or replace function set_updated_at()
-returns trigger as $$
+returns trigger
+language plpgsql
+set search_path = public, pg_temp
+as $$
 begin
   new.updated_at = now();
   return new;
 end;
-$$ language plpgsql;
+$$;
 
 drop trigger if exists books_updated_at on books;
 create trigger books_updated_at
