@@ -132,9 +132,9 @@ export default function BookTable({
                     onEdit(b);
                   }
                 }}
-                className={`group relative overflow-hidden rounded-2xl border border-border/80 border-t-white/15 dark:border-t-white/10 bg-card-bg/95 p-3.5 shadow-[0_6px_24px_-4px_rgba(0,0,0,0.35)] backdrop-blur-md transition-all hover:border-accent-color/50 hover:shadow-[0_12px_36px_-6px_rgba(0,0,0,0.45)] active:scale-[0.99] ${
+                className={`group relative overflow-hidden rounded-2xl border border-border/80 border-t-white/15 dark:border-t-white/10 bg-card-bg/95 p-3 shadow-[0_4px_16px_-4px_rgba(0,0,0,0.3)] backdrop-blur-md transition-all hover:border-accent-color/50 active:scale-[0.99] ${
                   isSelected
-                    ? 'border-accent-color bg-accent-color/10 ring-2 ring-accent-color/30 shadow-[0_12px_36px_-6px_rgba(0,0,0,0.5)]'
+                    ? 'border-accent-color bg-accent-color/10 ring-2 ring-accent-color/30 shadow-[0_8px_24px_-4px_rgba(0,0,0,0.4)]'
                     : ''
                 }`}
               >
@@ -143,7 +143,7 @@ export default function BookTable({
                   className={`pointer-events-none absolute inset-y-0 left-0 w-1 z-10 bg-gradient-to-b ${statusCfg.sideGradient}`}
                 />
 
-                <div className="flex items-start gap-3.5 pl-1">
+                <div className="flex items-start gap-3 pl-0.5">
                   {selectMode && (
                     <input
                       type="checkbox"
@@ -155,30 +155,30 @@ export default function BookTable({
                   )}
 
                   {/* Cover Image */}
-                  <div className="relative shrink-0 self-start overflow-hidden rounded-xl shadow-sm border border-border/80">
+                  <div className="relative shrink-0 self-start overflow-hidden rounded-xl shadow-xs border border-border/80">
                     {b.cover_url ? (
                       <img
                         src={b.cover_url}
                         alt=""
-                        className="h-20 w-14 rounded-xl object-cover object-top transition-transform group-hover:scale-105"
+                        className="h-[84px] w-14 rounded-xl object-cover object-top transition-transform group-hover:scale-105"
                       />
                     ) : (
-                      <div className="flex h-20 w-14 items-center justify-center rounded-xl border border-border bg-surface text-text-muted">
+                      <div className="flex h-[84px] w-14 items-center justify-center rounded-xl border border-border bg-surface text-text-muted">
                         <BookOpen className="h-5 w-5 opacity-40" />
                       </div>
                     )}
                   </div>
 
                   {/* Main Details */}
-                  <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className="min-w-0 flex-1 space-y-1">
                     {/* Header: Title & Status Badge */}
-                    <div className="flex items-start justify-between gap-2">
-                      <h4 className="line-clamp-2 font-bold text-text text-xs sm:text-sm leading-snug tracking-tight group-hover:text-accent-color transition-colors">
+                    <div className="flex items-start justify-between gap-1.5">
+                      <h4 className="line-clamp-2 font-bold text-text text-xs sm:text-sm leading-tight tracking-tight group-hover:text-accent-color transition-colors">
                         {b.title}
                       </h4>
                       <Badge
                         variant={statusCfg.variant}
-                        className="shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-wide gap-1.5 shadow-2xs"
+                        className="shrink-0 rounded-full px-2 py-0.5 text-[9px] font-semibold tracking-wide gap-1 shadow-2xs"
                       >
                         <span
                           className={`h-1.5 w-1.5 rounded-full shrink-0 ${statusCfg.dotColor}`}
@@ -189,28 +189,28 @@ export default function BookTable({
 
                     {/* Metadata Subtitle Row (Author · Type · Date · Duration) */}
                     {(b.author || b.type || b.date_finished || b.date_started) && (
-                      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-text-muted font-medium">
+                      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-text-muted font-medium leading-none">
                         {b.author && <span className="text-text-muted">{b.author}</span>}
                         {b.author && b.type && <span>·</span>}
                         {b.type && <span className="text-text-muted/80">{b.type}</span>}
 
                         {(b.date_finished || b.date_started) && (
-                          <div className="inline-flex items-center gap-1.5 text-[10px]">
+                          <div className="inline-flex items-center gap-1">
                             {(b.author || b.type) && <span>·</span>}
                             {b.date_finished ? (
                               <span className="inline-flex items-center gap-0.5 font-semibold text-emerald-500 dark:text-emerald-400">
-                                <CheckCircle2 className="h-3 w-3 shrink-0" />
+                                <CheckCircle2 className="h-2.5 w-2.5 shrink-0" />
                                 <span>{formatShortDate(b.date_finished)}</span>
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-0.5 text-text-muted">
-                                <CalendarDays className="h-3 w-3 shrink-0 text-sky-400" />
+                                <CalendarDays className="h-2.5 w-2.5 shrink-0 text-sky-400" />
                                 <span>{formatShortDate(b.date_started)}</span>
                               </span>
                             )}
                             {b.date_started && (
-                              <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.2 text-[9px] font-semibold text-amber-500 dark:text-amber-400">
-                                <Clock className="h-2.5 w-2.5" />
+                              <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-1 py-0.2 text-[8px] font-semibold text-amber-500 dark:text-amber-400">
+                                <Clock className="h-2 w-2" />
                                 {calculateReadingDuration(b.date_started, b.date_finished)}
                               </span>
                             )}
@@ -229,7 +229,7 @@ export default function BookTable({
                       )}
                     </div>
 
-                    {pct != null && <Progress value={pct} className="h-1.5 rounded-full" />}
+                    {pct != null && <Progress value={pct} className="h-1 rounded-full" />}
                   </div>
                 </div>
               </div>
