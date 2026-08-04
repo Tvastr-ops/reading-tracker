@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  Modal,
-  TouchableOpacity,
-  ScrollView,
-} from 'react-native';
+import { StyleSheet, Text, View, Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { Book } from '../types/book';
 
 interface StatsDashboardProps {

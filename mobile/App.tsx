@@ -18,11 +18,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { initDatabase } from './src/db/database';
 import { Book, BookStatus, BookFormatType } from './src/types/book';
-import {
-  formatProgressDisplay,
-  getUnitLabel,
-  getQuickChipOptions,
-} from './src/utils/formatters';
+import { formatProgressDisplay, getUnitLabel, getQuickChipOptions } from './src/utils/formatters';
 import { syncWithSupabase } from './src/db/syncEngine';
 import { StatsDashboardModal } from './src/components/StatsDashboardModal';
 import { BookEditModal } from './src/components/BookEditModal';
@@ -117,7 +113,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<BookStatus | 'All'>('Reading');
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
-  
+
   // Modals
   const [statsVisible, setStatsVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
@@ -184,7 +180,7 @@ export default function App() {
                 : b.status,
             updated_at: new Date().toISOString(),
           }
-        : b
+        : b,
     );
 
     setBooks(updatedBooks);
@@ -230,9 +226,7 @@ export default function App() {
   };
 
   const renderBookItem = ({ item }: { item: Book }) => {
-    const percentage = item.total_units
-      ? Math.round((item.progress / item.total_units) * 100)
-      : 0;
+    const percentage = item.total_units ? Math.round((item.progress / item.total_units) * 100) : 0;
 
     return (
       <TouchableOpacity
@@ -262,17 +256,13 @@ export default function App() {
             </Text>
 
             <Text style={styles.progressText}>
-              {formatProgressDisplay(item)}{' '}
-              {item.total_units ? `(${percentage}%)` : ''}
+              {formatProgressDisplay(item)} {item.total_units ? `(${percentage}%)` : ''}
             </Text>
 
             {item.total_units ? (
               <View style={styles.progressBarBg}>
                 <View
-                  style={[
-                    styles.progressBarFill,
-                    { width: `${Math.min(percentage, 100)}%` },
-                  ]}
+                  style={[styles.progressBarFill, { width: `${Math.min(percentage, 100)}%` }]}
                 />
               </View>
             ) : null}
@@ -318,11 +308,20 @@ export default function App() {
           </View>
 
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7} onPress={() => setStatsVisible(true)}>
+            <TouchableOpacity
+              style={styles.iconBtn}
+              activeOpacity={0.7}
+              onPress={() => setStatsVisible(true)}
+            >
               <Text style={styles.iconBtnText}>📊</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.offlineChip} activeOpacity={0.7} onPress={handleSync} disabled={syncing}>
+            <TouchableOpacity
+              style={styles.offlineChip}
+              activeOpacity={0.7}
+              onPress={handleSync}
+              disabled={syncing}
+            >
               {syncing ? (
                 <ActivityIndicator size="small" color="#D0BCFF" />
               ) : (
@@ -391,7 +390,11 @@ export default function App() {
         />
 
         {/* FAB - Add Book */}
-        <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => setAddModalVisible(true)}>
+        <TouchableOpacity
+          style={styles.fab}
+          activeOpacity={0.8}
+          onPress={() => setAddModalVisible(true)}
+        >
           <Text style={styles.fabIcon}>+</Text>
         </TouchableOpacity>
 
@@ -451,7 +454,9 @@ export default function App() {
                     ))}
                 </View>
 
-                <Text style={styles.inputLabel}>Or type exact amount read today (e.g. 29 or 54):</Text>
+                <Text style={styles.inputLabel}>
+                  Or type exact amount read today (e.g. 29 or 54):
+                </Text>
                 <TextInput
                   style={styles.textInput}
                   placeholder="How much did you read?"
@@ -495,7 +500,7 @@ export default function App() {
                 style={styles.modalContent}
               >
                 <Text style={styles.modalTitle}>Add New Book</Text>
-                
+
                 <Text style={styles.inputLabel}>Select Format:</Text>
                 <View style={styles.quickChipRow}>
                   {(['Novel', 'Light Novel', 'Web Novel', 'Non-Fiction'] as const).map((fmt) => (
@@ -541,7 +546,10 @@ export default function App() {
                 />
 
                 <View style={styles.modalActions}>
-                  <TouchableOpacity style={styles.cancelBtn} onPress={() => setAddModalVisible(false)}>
+                  <TouchableOpacity
+                    style={styles.cancelBtn}
+                    onPress={() => setAddModalVisible(false)}
+                  >
                     <Text style={styles.cancelBtnText}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.saveBtn} onPress={handleCreateBook}>
