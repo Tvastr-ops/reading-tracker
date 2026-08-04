@@ -24,18 +24,18 @@ export function RatingDisplay({
   for (let i = 1; i <= 5; i++) {
     const diff = rating - (i - 1);
     if (diff >= 1) {
-      stars.push(<Star key={i} className="inline-block h-4 w-4 fill-amber-400 text-amber-400" />);
+      stars.push(<Star key={i} className="h-4 w-4 shrink-0 fill-amber-400 text-amber-400" />);
     } else if (diff >= 0.5) {
       stars.push(
-        <div key={i} className="relative inline-block h-4 w-4">
-          <Star className="inline-block h-4 w-4 text-amber-400/30" />
-          <div className="absolute inset-0 w-1/2 overflow-hidden">
-            <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+        <div key={i} className="relative flex items-center shrink-0 h-4 w-4">
+          <Star className="h-4 w-4 shrink-0 text-amber-400/30" />
+          <div className="absolute top-0 left-0 h-4 w-[50%] overflow-hidden">
+            <Star className="h-4 w-4 shrink-0 max-w-none fill-amber-400 text-amber-400" />
           </div>
         </div>,
       );
     } else {
-      stars.push(<Star key={i} className="inline-block h-4 w-4 text-amber-400/30" />);
+      stars.push(<Star key={i} className="h-4 w-4 shrink-0 text-amber-400/30" />);
     }
   }
   return <div className="inline-flex items-center gap-0.5">{stars}</div>;

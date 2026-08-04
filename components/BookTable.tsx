@@ -5,7 +5,9 @@ import {
   ArrowUp,
   ArrowUpDown,
   BookOpen,
-  Calendar,
+  CalendarDays,
+  CheckCircle2,
+  Clock,
   Edit3,
   ExternalLink,
   RotateCcw,
@@ -17,7 +19,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getStatusConfig } from '@/lib/status';
 import { type Book, type SortDir, type SortField, STATUSES } from '@/lib/types';
-import { formatShortDate } from '@/lib/utils';
+import { calculateReadingDuration, formatShortDate } from '@/lib/utils';
 import { RatingDisplay } from './RatingInput';
 
 function hostnameOf(url: string): string {
@@ -110,9 +112,9 @@ export default function BookTable({
 
   return (
     <TooltipProvider>
-      <div className="overflow-hidden rounded-2xl border border-border/80 bg-card-bg shadow-xs">
-        {/* MOBILE COMPACT LIST VIEW (<640px) */}
-        <div className="block sm:hidden divide-y divide-border/60">
+      <div>
+        {/* MOBILE ELEVATED FLOATING CARD LIST VIEW (<640px) */}
+        <div className="block sm:hidden space-y-3">
           {books.map((b) => {
             const pct = b.total_units
               ? Math.min(100, Math.round(((b.progress || 0) / b.total_units) * 100))
@@ -130,77 +132,112 @@ export default function BookTable({
                     onEdit(b);
                   }
                 }}
-                className={`flex items-center gap-3 p-3 transition-colors cursor-pointer active:bg-surface/80 ${
-                  isSelected ? 'bg-accent-color/10 border-l-4 border-l-accent-color' : ''
+                className={`group relative overflow-hidden rounded-2xl border border-border/80 border-t-white/15 dark:border-t-white/10 bg-card-bg/95 p-3.5 shadow-[0_6px_24px_-4px_rgba(0,0,0,0.35)] backdrop-blur-md transition-all hover:border-accent-color/50 hover:shadow-[0_12px_36px_-6px_rgba(0,0,0,0.45)] active:scale-[0.99] ${
+                  isSelected
+                    ? 'border-accent-color bg-accent-color/10 ring-2 ring-accent-color/30 shadow-[0_12px_36px_-6px_rgba(0,0,0,0.5)]'
+                    : ''
                 }`}
               >
-                {selectMode && (
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 shrink-0 rounded border-border text-accent-color focus:ring-accent-color"
-                    checked={isSelected}
-                    onChange={() => onToggleSelect(b.id)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                )}
+                {/* Status Colored Accent Line on Left Edge */}
+                <div
+                  className={`pointer-events-none absolute inset-y-0 left-0 w-1 z-10 bg-gradient-to-b ${statusCfg.sideGradient}`}
+                />
 
-                <div className="relative shrink-0 overflow-hidden rounded-md">
-                  <div
-                    className={`pointer-events-none absolute inset-y-0 left-0 w-0.5 z-10 bg-gradient-to-b ${statusCfg.sideGradient}`}
-                  />
-                  {b.cover_url ? (
-                    <img
-                      src={b.cover_url}
-                      alt=""
-                      className="h-14 w-10 rounded-md border border-border/80 object-cover shadow-2xs"
+                <div className="flex gap-3.5 pl-1">
+                  {selectMode && (
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 shrink-0 rounded border-border text-accent-color focus:ring-accent-color self-center"
+                      checked={isSelected}
+                      onChange={() => onToggleSelect(b.id)}
+                      onClick={(e) => e.stopPropagation()}
                     />
-                  ) : (
-                    <div className="flex h-14 w-10 items-center justify-center rounded-md border border-border bg-surface text-text-muted">
-                      <BookOpen className="h-4 w-4 opacity-40" />
-                    </div>
                   )}
-                </div>
 
-                <div className="min-w-0 flex-1 space-y-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <h4 className="line-clamp-1 font-bold text-text text-xs tracking-tight">
-                      {b.title}
-                    </h4>
-                    <Badge
-                      variant={statusCfg.variant}
-                      className="shrink-0 px-1.5 py-0 text-[9px] font-medium gap-1"
-                    >
-                      <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${statusCfg.dotColor}`} />
-                      <span>{b.status}</span>
-                    </Badge>
+                  {/* Cover Image */}
+                  <div className="relative shrink-0 overflow-hidden rounded-xl shadow-md border border-white/10 bg-surface">
+                    {b.cover_url ? (
+                      <div className="relative h-18 w-13 overflow-hidden rounded-xl">
+                        <img
+                          src={b.cover_url}
+                          alt=""
+                          className="absolute inset-0 h-full w-full object-cover blur-sm scale-110 opacity-40 pointer-events-none"
+                        />
+                        <img
+                          src={b.cover_url}
+                          alt=""
+                          className="relative z-10 h-full w-full object-contain transition-transform group-hover:scale-105"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-18 w-13 items-center justify-center rounded-xl border border-border bg-surface text-text-muted">
+                        <BookOpen className="h-5 w-5 opacity-40" />
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-text-muted">
-                    <span className="truncate">
-                      {b.author || b.type || '—'}
-                      {(b.date_finished || b.date_started) && (
-                        <span className="ml-1.5 text-[10px] text-text-muted/70">
-                          ·{' '}
-                          {b.date_finished
-                            ? `🏁 ${formatShortDate(b.date_finished)}`
-                            : `📖 ${formatShortDate(b.date_started)}`}
+                  {/* Main Details */}
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    {/* Header: Title & Status Badge */}
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="line-clamp-2 font-bold text-text text-xs sm:text-sm leading-snug tracking-tight group-hover:text-accent-color transition-colors">
+                        {b.title}
+                      </h4>
+                      <Badge
+                        variant={statusCfg.variant}
+                        className="shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-wide gap-1.5 shadow-2xs"
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full shrink-0 ${statusCfg.dotColor}`}
+                        />
+                        <span>{b.status}</span>
+                      </Badge>
+                    </div>
+
+                    {/* Metadata Subtitle Row (Author · Type · Date · Duration) */}
+                    {(b.author || b.type || b.date_finished || b.date_started) && (
+                      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-text-muted font-medium">
+                        {b.author && <span className="text-text-muted">{b.author}</span>}
+                        {b.author && b.type && <span>·</span>}
+                        {b.type && <span className="text-text-muted/80">{b.type}</span>}
+
+                        {(b.date_finished || b.date_started) && (
+                          <div className="inline-flex items-center gap-1.5 text-[10px]">
+                            {(b.author || b.type) && <span>·</span>}
+                            {b.date_finished ? (
+                              <span className="inline-flex items-center gap-0.5 font-semibold text-emerald-500 dark:text-emerald-400">
+                                <CheckCircle2 className="h-3 w-3 shrink-0" />
+                                <span>{formatShortDate(b.date_finished)}</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-0.5 text-text-muted">
+                                <CalendarDays className="h-3 w-3 shrink-0 text-sky-400" />
+                                <span>{formatShortDate(b.date_started)}</span>
+                              </span>
+                            )}
+                            {b.date_started && (
+                              <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.2 text-[9px] font-semibold text-amber-500 dark:text-amber-400">
+                                <Clock className="h-2.5 w-2.5" />
+                                {calculateReadingDuration(b.date_started, b.date_finished)}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Rating & Progress Percentage Footer */}
+                    <div className="flex items-center justify-between gap-2 pt-0.5">
+                      <RatingDisplay rating={b.rating} mode={ratingMode} />
+                      {pct != null && (
+                        <span className="font-semibold text-[10px] text-text-muted tracking-tight">
+                          {b.progress ?? 0}/{b.total_units} ({pct}%)
                         </span>
                       )}
-                    </span>
-                    <RatingDisplay rating={b.rating} mode={ratingMode} />
-                  </div>
-
-                  {pct != null && (
-                    <div className="space-y-0.5 pt-0.5">
-                      <Progress value={pct} className="h-1" />
-                      <div className="flex justify-between text-[9px] font-semibold text-text-muted">
-                        <span>
-                          {b.progress ?? 0}/{b.total_units}
-                        </span>
-                        <span>{pct}%</span>
-                      </div>
                     </div>
-                  )}
+
+                    {pct != null && <Progress value={pct} className="h-1.5 rounded-full" />}
+                  </div>
                 </div>
               </div>
             );
@@ -208,7 +245,7 @@ export default function BookTable({
         </div>
 
         {/* DESKTOP TABLE VIEW (>=640px) */}
-        <div className="hidden sm:block overflow-x-auto">
+        <div className="hidden sm:block overflow-hidden rounded-2xl border border-border/80 border-t-white/15 dark:border-t-white/10 bg-card-bg shadow-[0_10px_40px_-10px_rgba(0,0,0,0.4)] backdrop-blur-md overflow-x-auto">
           <table className="w-full border-collapse text-xs sm:text-sm">
             <thead>
               <tr className="sticky top-0 z-10 border-border/80 border-b bg-card-bg/95 backdrop-blur-md">
@@ -236,7 +273,7 @@ export default function BookTable({
                 <th className="hidden md:table-cell border-border border-b px-3.5 py-3 text-left font-semibold text-text-muted text-xs uppercase tracking-wider">
                   Tags
                 </th>
-                {headerFor('date_finished', 'Dates', 'hidden lg:table-cell')}
+                {headerFor('date_finished', 'Dates', 'hidden md:table-cell')}
                 <th className="border-border border-b px-3.5 py-3 text-right font-semibold text-text-muted text-xs uppercase tracking-wider">
                   Actions
                 </th>
@@ -295,11 +332,18 @@ export default function BookTable({
                             className={`pointer-events-none absolute inset-y-0 left-0 w-0.5 z-10 bg-gradient-to-b ${statusCfg.sideGradient}`}
                           />
                           {b.cover_url ? (
-                            <img
-                              src={b.cover_url}
-                              alt=""
-                              className="h-12 w-9 rounded-md border border-border/80 object-cover shadow-2xs transition-transform group-hover:scale-105"
-                            />
+                            <div className="relative h-12 w-9 overflow-hidden rounded-md border border-border/80 bg-surface shadow-2xs">
+                              <img
+                                src={b.cover_url}
+                                alt=""
+                                className="absolute inset-0 h-full w-full object-cover blur-xs scale-110 opacity-40 pointer-events-none"
+                              />
+                              <img
+                                src={b.cover_url}
+                                alt=""
+                                className="relative z-10 h-full w-full object-contain transition-transform group-hover:scale-105"
+                              />
+                            </div>
                           ) : (
                             <div className="flex h-12 w-9 items-center justify-center rounded-md border border-border bg-surface text-text-muted">
                               <BookOpen className="h-4 w-4 opacity-40" />
@@ -422,21 +466,28 @@ export default function BookTable({
                     </td>
 
                     {/* Dates Column */}
-                    <td className="hidden lg:table-cell px-3.5 py-3 align-middle whitespace-nowrap text-xs text-text-muted">
+                    <td className="hidden md:table-cell px-3.5 py-3 align-middle whitespace-nowrap text-xs text-text-muted">
                       {b.date_finished || b.date_started ? (
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="flex flex-col gap-0.5 text-[11px]">
-                              {b.date_finished ? (
-                                <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
-                                  <span>🏁</span>
+                            <div className="flex flex-col gap-1 text-[11px]">
+                              {b.date_finished && (
+                                <div className="flex items-center gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400">
+                                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
                                   <span>{formatShortDate(b.date_finished)}</span>
-                                </span>
-                              ) : (
-                                <span className="flex items-center gap-1 text-text-muted">
-                                  <span>📖</span>
+                                </div>
+                              )}
+                              {b.date_started && (
+                                <div className="flex items-center gap-1.5 text-text-muted">
+                                  <CalendarDays className="h-3.5 w-3.5 shrink-0 text-sky-400" />
                                   <span>{formatShortDate(b.date_started)}</span>
-                                </span>
+                                  {b.date_started && (
+                                    <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.2 text-[9px] font-semibold text-amber-500 dark:text-amber-400">
+                                      <Clock className="h-2.5 w-2.5" />
+                                      {calculateReadingDuration(b.date_started, b.date_finished)}
+                                    </span>
+                                  )}
+                                </div>
                               )}
                             </div>
                           </TooltipTrigger>
@@ -444,6 +495,12 @@ export default function BookTable({
                             <div className="space-y-1 text-xs">
                               {b.date_started && <div>Started: {b.date_started}</div>}
                               {b.date_finished && <div>Finished: {b.date_finished}</div>}
+                              {b.date_started && (
+                                <div className="font-semibold text-amber-400">
+                                  Total Duration:{' '}
+                                  {calculateReadingDuration(b.date_started, b.date_finished)}
+                                </div>
+                              )}
                             </div>
                           </TooltipContent>
                         </Tooltip>
