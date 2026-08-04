@@ -166,11 +166,20 @@ export default function HomePage() {
   }
 
   async function saveBook(data: BookInput) {
+    const today = new Date().toISOString().split('T')[0];
+    const payload = { ...data };
+    if (payload.status === 'Reading' && !payload.date_started) {
+      payload.date_started = today;
+    } else if (payload.status === 'Completed') {
+      if (!payload.date_finished) payload.date_finished = today;
+      if (!payload.date_started) payload.date_started = today;
+    }
+
     const isEdit = editing?.id;
     const res = await fetch(isEdit ? `/api/books/${editing!.id}` : '/api/books', {
       method: isEdit ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
     const result = await res.json();
     if (!res.ok) throw new Error(result.error || 'Save failed');
@@ -216,11 +225,21 @@ export default function HomePage() {
 
   async function quickStatusChange(b: Book) {
     const next = STATUSES[(STATUSES.indexOf(b.status) + 1) % STATUSES.length];
-    setBooks((prev) => prev.map((x) => (x.id === b.id ? { ...x, status: next } : x)));
+    const today = new Date().toISOString().split('T')[0];
+    const patchData: Partial<Book> = { status: next };
+
+    if (next === 'Reading' && !b.date_started) {
+      patchData.date_started = today;
+    } else if (next === 'Completed') {
+      if (!b.date_finished) patchData.date_finished = today;
+      if (!b.date_started) patchData.date_started = today;
+    }
+
+    setBooks((prev) => prev.map((x) => (x.id === b.id ? { ...x, ...patchData } : x)));
     const res = await fetch(`/api/books/${b.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: next }),
+      body: JSON.stringify(patchData),
     });
     if (!res.ok) {
       toast.error(`Failed to update status for "${b.title}"`);

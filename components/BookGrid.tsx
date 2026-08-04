@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpen, Edit3, MoreVertical, RotateCcw, Trash2 } from 'lucide-react';
+import { BookOpen, Clock, Edit3, MoreVertical, RotateCcw, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,6 +13,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { getStatusConfig } from '@/lib/status';
 import type { Book } from '@/lib/types';
+import { calculateReadingDuration, formatShortDate } from '@/lib/utils';
 import { RatingDisplay } from './RatingInput';
 
 export default function BookGrid({
@@ -66,10 +67,10 @@ export default function BookGrid({
         return (
           <Card
             key={b.id}
-            className={`group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border bg-card-bg transition-all duration-300 ${
+            className={`group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border bg-card-bg/95 border-t-white/15 dark:border-t-white/10 backdrop-blur-md transition-all duration-300 ${
               isSelected
-                ? 'border-accent-color ring-2 ring-accent-color bg-accent-color/5 shadow-md'
-                : `border-border/70 shadow-xs hover:-translate-y-1 hover:shadow-xl ${statusCfg.glowShadow}`
+                ? 'border-accent-color ring-2 ring-accent-color bg-accent-color/10 shadow-[0_12px_36px_-6px_rgba(0,0,0,0.5)]'
+                : `border-border/80 shadow-[0_6px_24px_-4px_rgba(0,0,0,0.35)] hover:-translate-y-1.5 hover:border-accent-color/50 hover:shadow-[0_14px_40px_-6px_rgba(0,0,0,0.5)] ${statusCfg.glowShadow}`
             }`}
             onClick={() => {
               if (selectMode && onToggleSelect) {
@@ -180,6 +181,21 @@ export default function BookGrid({
                 </h4>
                 {b.author && (
                   <p className="mt-0.5 line-clamp-1 text-[11px] text-text-muted">{b.author}</p>
+                )}
+                {(b.date_finished || b.date_started) && (
+                  <div className="mt-1 flex items-center gap-1 text-[10px] text-text-muted/80">
+                    <Clock className="h-2.5 w-2.5 shrink-0 text-amber-500/80" />
+                    <span className="truncate">
+                      {b.date_finished
+                        ? `Fin ${formatShortDate(b.date_finished)}`
+                        : `Start ${formatShortDate(b.date_started)}`}
+                      {b.date_started && (
+                        <span className="ml-1 font-semibold text-amber-500">
+                          ({calculateReadingDuration(b.date_started, b.date_finished)})
+                        </span>
+                      )}
+                    </span>
+                  </div>
                 )}
               </div>
 
