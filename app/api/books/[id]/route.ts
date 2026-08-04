@@ -69,8 +69,15 @@ export const PATCH = withAuth(async (req: NextRequest, { params }: RouteContext)
   if ('progress' in update && (typeof update.progress !== 'number' || update.progress < 0)) {
     return NextResponse.json({ error: 'Progress must be a non-negative number' }, { status: 400 });
   }
-  if ('total_units' in update && update.total_units != null && (typeof update.total_units !== 'number' || update.total_units < 0)) {
-    return NextResponse.json({ error: 'Total units must be a non-negative number' }, { status: 400 });
+  if (
+    'total_units' in update &&
+    update.total_units != null &&
+    (typeof update.total_units !== 'number' || update.total_units < 0)
+  ) {
+    return NextResponse.json(
+      { error: 'Total units must be a non-negative number' },
+      { status: 400 },
+    );
   }
 
   const supabase = supabaseServer();
