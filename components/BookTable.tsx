@@ -5,6 +5,7 @@ import {
   ArrowUp,
   ArrowUpDown,
   BookOpen,
+  Calendar,
   Edit3,
   ExternalLink,
   RotateCcw,
@@ -16,6 +17,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getStatusConfig } from '@/lib/status';
 import { type Book, type SortDir, type SortField, STATUSES } from '@/lib/types';
+import { formatShortDate } from '@/lib/utils';
 import { RatingDisplay } from './RatingInput';
 
 function hostnameOf(url: string): string {
@@ -174,7 +176,17 @@ export default function BookTable({
                   </div>
 
                   <div className="flex items-center justify-between text-[11px] text-text-muted">
-                    <span className="truncate">{b.author || b.type || '—'}</span>
+                    <span className="truncate">
+                      {b.author || b.type || '—'}
+                      {(b.date_finished || b.date_started) && (
+                        <span className="ml-1.5 text-[10px] text-text-muted/70">
+                          ·{' '}
+                          {b.date_finished
+                            ? `🏁 ${formatShortDate(b.date_finished)}`
+                            : `📖 ${formatShortDate(b.date_started)}`}
+                        </span>
+                      )}
+                    </span>
                     <RatingDisplay rating={b.rating} mode={ratingMode} />
                   </div>
 
@@ -224,6 +236,7 @@ export default function BookTable({
                 <th className="hidden md:table-cell border-border border-b px-3.5 py-3 text-left font-semibold text-text-muted text-xs uppercase tracking-wider">
                   Tags
                 </th>
+                {headerFor('date_finished', 'Dates', 'hidden lg:table-cell')}
                 <th className="border-border border-b px-3.5 py-3 text-right font-semibold text-text-muted text-xs uppercase tracking-wider">
                   Actions
                 </th>
@@ -405,6 +418,37 @@ export default function BookTable({
                         </Tooltip>
                       ) : (
                         <span className="text-text-muted text-xs">—</span>
+                      )}
+                    </td>
+
+                    {/* Dates Column */}
+                    <td className="hidden lg:table-cell px-3.5 py-3 align-middle whitespace-nowrap text-xs text-text-muted">
+                      {b.date_finished || b.date_started ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex flex-col gap-0.5 text-[11px]">
+                              {b.date_finished ? (
+                                <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
+                                  <span>🏁</span>
+                                  <span>{formatShortDate(b.date_finished)}</span>
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1 text-text-muted">
+                                  <span>📖</span>
+                                  <span>{formatShortDate(b.date_started)}</span>
+                                </span>
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div className="space-y-1 text-xs">
+                              {b.date_started && <div>Started: {b.date_started}</div>}
+                              {b.date_finished && <div>Finished: {b.date_finished}</div>}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <span className="text-text-muted/50">—</span>
                       )}
                     </td>
 
