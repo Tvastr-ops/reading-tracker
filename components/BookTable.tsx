@@ -143,7 +143,7 @@ export default function BookTable({
                   className={`pointer-events-none absolute inset-y-0 left-0 w-1 z-10 bg-gradient-to-b ${statusCfg.sideGradient}`}
                 />
 
-                <div className="flex gap-3.5 pl-1">
+                <div className="flex items-start gap-3.5 pl-1">
                   {selectMode && (
                     <input
                       type="checkbox"
