@@ -41,7 +41,9 @@ export async function createSessionToken(): Promise<string> {
 
 export async function verifySessionToken(token: string): Promise<boolean> {
   try {
-    await jwtVerify(token, getSecret());
+    await jwtVerify(token, getSecret(), {
+      clockTolerance: '15s',
+    });
     return true;
   } catch {
     return false;
