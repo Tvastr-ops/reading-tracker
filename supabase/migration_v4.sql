@@ -14,14 +14,14 @@ alter table books add constraint chk_books_progress check (progress is null or p
 alter table reading_log drop constraint if exists chk_log_progress;
 alter table reading_log add constraint chk_log_progress check (to_progress >= 0);
 
--- Fix Supabase Security Advisor warning: set explicit search_path on functions
-create or replace function set_updated_at()
+-- Fix Supabase Security Advisor warning: set explicit empty search_path on functions
+create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
-set search_path = public, pg_temp
+set search_path = ''
 as $$
 begin
-  new.updated_at = now();
+  new.updated_at = pg_catalog.now();
   return new;
 end;
 $$;
