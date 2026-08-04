@@ -2,7 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import * as SQLite from 'expo-sqlite';
 import { Book } from '../types/book';
 
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://atbypkepocsugivskscn.supabase.co';
+const SUPABASE_URL =
+  process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://atbypkepocsugivskscn.supabase.co';
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -11,7 +12,7 @@ export async function fetchLocalBooks(): Promise<Book[]> {
   try {
     const db = await SQLite.openDatabaseAsync('reading_tracker.db');
     const all = await db.getAllAsync<Book>(
-      'SELECT * FROM books WHERE deleted_at IS NULL ORDER BY updated_at DESC'
+      'SELECT * FROM books WHERE deleted_at IS NULL ORDER BY updated_at DESC',
     );
     return all;
   } catch (err) {
@@ -26,7 +27,7 @@ export async function syncWithSupabase(): Promise<{ success: boolean; books: Boo
 
     // 1. Push pending local changes to Supabase
     const pending = await db.getAllAsync<Book>(
-      "SELECT * FROM books WHERE sync_status LIKE 'pending_%'"
+      "SELECT * FROM books WHERE sync_status LIKE 'pending_%'",
     );
 
     for (const b of pending) {
@@ -103,7 +104,7 @@ export async function syncWithSupabase(): Promise<{ success: boolean; books: Boo
             b.deleted_at,
             b.created_at || new Date().toISOString(),
             b.updated_at || new Date().toISOString(),
-          ]
+          ],
         );
       }
     }

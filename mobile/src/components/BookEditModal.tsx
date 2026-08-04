@@ -19,12 +19,7 @@ interface BookEditModalProps {
   onSave: (updatedBook: Book) => void;
 }
 
-export function BookEditModal({
-  visible,
-  onClose,
-  book,
-  onSave,
-}: BookEditModalProps) {
+export function BookEditModal({ visible, onClose, book, onSave }: BookEditModalProps) {
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [type, setType] = useState<BookFormatType>('Novel');
@@ -127,17 +122,19 @@ export function BookEditModal({
 
             <Text style={styles.inputLabel}>Reading Status:</Text>
             <View style={styles.chipRow}>
-              {(['Reading', 'Plan to Read', 'Completed', 'On Hold', 'Dropped'] as const).map((st) => (
-                <TouchableOpacity
-                  key={st}
-                  style={[styles.chip, status === st && styles.activeChip]}
-                  onPress={() => setStatus(st)}
-                >
-                  <Text style={[styles.chipText, status === st && styles.activeChipText]}>
-                    {st}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {(['Reading', 'Plan to Read', 'Completed', 'On Hold', 'Dropped'] as const).map(
+                (st) => (
+                  <TouchableOpacity
+                    key={st}
+                    style={[styles.chip, status === st && styles.activeChip]}
+                    onPress={() => setStatus(st)}
+                  >
+                    <Text style={[styles.chipText, status === st && styles.activeChipText]}>
+                      {st}
+                    </Text>
+                  </TouchableOpacity>
+                ),
+              )}
             </View>
 
             <View style={styles.numRow}>

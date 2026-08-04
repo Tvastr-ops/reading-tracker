@@ -1,6 +1,12 @@
 export type BookStatus = 'Plan to Read' | 'Reading' | 'Completed' | 'On Hold' | 'Dropped';
 
-export type BookFormatType = 'Novel' | 'Light Novel' | 'Web Novel' | 'Non-Fiction' | 'Serial' | 'Other';
+export type BookFormatType =
+  | 'Novel'
+  | 'Light Novel'
+  | 'Web Novel'
+  | 'Non-Fiction'
+  | 'Serial'
+  | 'Other';
 
 export interface Book {
   id: string;
