@@ -288,7 +288,30 @@ export default function BookForm({
             </div>
 
             <div>
-              <label className={labelClass}>Date started</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className={labelClass}>Date started</label>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => set('date_started', new Date().toISOString().split('T')[0])}
+                    className="text-[10px] text-accent-color hover:underline font-medium"
+                  >
+                    Today
+                  </button>
+                  {form.date_started && (
+                    <>
+                      <span className="text-[10px] text-text-muted">·</span>
+                      <button
+                        type="button"
+                        onClick={() => set('date_started', null)}
+                        className="text-[10px] text-rose-400 hover:underline font-medium"
+                      >
+                        Clear
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
               <input
                 className={inputClass}
                 type="date"
@@ -298,7 +321,30 @@ export default function BookForm({
             </div>
 
             <div>
-              <label className={labelClass}>Date finished</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className={labelClass}>Date finished</label>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => set('date_finished', new Date().toISOString().split('T')[0])}
+                    className="text-[10px] text-accent-color hover:underline font-medium"
+                  >
+                    Today
+                  </button>
+                  {form.date_finished && (
+                    <>
+                      <span className="text-[10px] text-text-muted">·</span>
+                      <button
+                        type="button"
+                        onClick={() => set('date_finished', null)}
+                        className="text-[10px] text-rose-400 hover:underline font-medium"
+                      >
+                        Clear
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
               <input
                 className={inputClass}
                 type="date"
