@@ -1,9 +1,34 @@
 export type Status = 'Plan to Read' | 'Reading' | 'On Hold' | 'Completed' | 'Dropped';
 
+export type UnitType = 'pages' | 'chapters' | 'words' | 'percent' | 'units';
+export type ProgressStructure = 'single' | 'volume_chapter' | 'part_chapter';
+
+export const PUBLICATION_TYPES = [
+  'Novel',
+  'Novella',
+  'Novelette',
+  'Web Novel',
+  'Light Novel',
+  'Short Story',
+  'Collection',
+  'Anthology',
+  'Essay',
+  'Fanfiction',
+  'Other',
+] as const;
+
+export type PublicationType = (typeof PUBLICATION_TYPES)[number] | (string & {});
+
 export interface Book {
   id: string;
   title: string;
   type: string;
+  unit_type?: UnitType | null;
+  progress_structure?: ProgressStructure | null;
+  parent_progress?: number | null;
+  parent_total?: number | null;
+  latest_units?: number | null;
+  is_ongoing?: boolean | null;
   author: string | null;
   status: Status;
   rating: number | null;
