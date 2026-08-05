@@ -1,6 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, View, Modal, TouchableOpacity, ScrollView } from 'react-native';
-import { Book } from '../types/book';
+import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import type { Book } from '../types/book';
 
 interface StatsDashboardProps {
   visible: boolean;

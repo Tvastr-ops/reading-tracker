@@ -1,27 +1,27 @@
+import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   StyleSheet,
   Text,
-  View,
-  TouchableOpacity,
   TextInput,
-  Modal,
-  ActivityIndicator,
-  Image,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
+  TouchableOpacity,
   TouchableWithoutFeedback,
-  Keyboard,
+  View,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { initDatabase } from './src/db/database';
-import { Book, BookStatus, BookFormatType } from './src/types/book';
-import { formatProgressDisplay, getUnitLabel, getQuickChipOptions } from './src/utils/formatters';
-import { syncWithSupabase } from './src/db/syncEngine';
-import { StatsDashboardModal } from './src/components/StatsDashboardModal';
 import { BookEditModal } from './src/components/BookEditModal';
+import { StatsDashboardModal } from './src/components/StatsDashboardModal';
+import { initDatabase } from './src/db/database';
+import { syncWithSupabase } from './src/db/syncEngine';
+import type { Book, BookFormatType, BookStatus } from './src/types/book';
+import { formatProgressDisplay, getQuickChipOptions, getUnitLabel } from './src/utils/formatters';
 
 const INITIAL_BOOKS: Book[] = [
   {

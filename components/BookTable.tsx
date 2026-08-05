@@ -1,5 +1,3 @@
-'use client';
-
 import {
   ArrowDown,
   ArrowUp,
@@ -13,6 +11,8 @@ import {
   RotateCcw,
   Trash2,
 } from 'lucide-react';
+import Image from 'next/image';
+import { memo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -32,7 +32,7 @@ function hostnameOf(url: string): string {
   }
 }
 
-export default function BookTable({
+function BookTable({
   books,
   ratingMode,
   sortField,
@@ -116,7 +116,7 @@ export default function BookTable({
       <div>
         {/* MOBILE ELEVATED FLOATING CARD LIST VIEW (<640px) */}
         <div className="block sm:hidden space-y-3">
-          {books.map((b) => {
+          {books.map((b, idx) => {
             const pct = calculateProgressPercentage(b);
             const formattedProgress = formatProgressText(b);
             const statusCfg = getStatusConfig(b.status);
@@ -157,9 +157,12 @@ export default function BookTable({
                   {/* Cover Image */}
                   <div className="relative shrink-0 self-start overflow-hidden rounded-xl shadow-xs border border-border/80">
                     {b.cover_url ? (
-                      <img
+                      <Image
                         src={b.cover_url}
                         alt=""
+                        width={56}
+                        height={84}
+                        priority={idx < 4}
                         className="h-[84px] w-14 rounded-xl object-cover object-top transition-transform group-hover:scale-105"
                       />
                     ) : (
@@ -277,7 +280,7 @@ export default function BookTable({
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
-              {books.map((b) => {
+              {books.map((b, idx) => {
                 const pct = calculateProgressPercentage(b);
                 const formattedProgress = formatProgressText(b);
                 const nextStatus = STATUSES[(STATUSES.indexOf(b.status) + 1) % STATUSES.length];
@@ -328,9 +331,12 @@ export default function BookTable({
                             className={`pointer-events-none absolute inset-y-0 left-0 w-0.5 z-10 bg-gradient-to-b ${statusCfg.sideGradient}`}
                           />
                           {b.cover_url ? (
-                            <img
+                            <Image
                               src={b.cover_url}
                               alt=""
+                              width={36}
+                              height={48}
+                              priority={idx < 4}
                               className="h-12 w-9 rounded-md border border-border/80 object-cover object-top shadow-2xs transition-transform group-hover:scale-105"
                             />
                           ) : (
@@ -555,3 +561,5 @@ export default function BookTable({
     </TooltipProvider>
   );
 }
+
+export default memo(BookTable);
