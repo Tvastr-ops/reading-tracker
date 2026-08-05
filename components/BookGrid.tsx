@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
+import { calculateProgressPercentage, formatProgressText } from '@/lib/progress';
 import { getStatusConfig } from '@/lib/status';
 import type { Book } from '@/lib/types';
 import { calculateReadingDuration, formatShortDate } from '@/lib/utils';
@@ -58,9 +59,8 @@ export default function BookGrid({
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 3xl:grid-cols-8">
       {books.map((b) => {
-        const pct = b.total_units
-          ? Math.min(100, Math.round(((b.progress || 0) / b.total_units) * 100))
-          : null;
+        const pct = calculateProgressPercentage(b);
+        const formattedProgress = formatProgressText(b);
         const statusCfg = getStatusConfig(b.status);
         const isSelected = selected.has(b.id);
 
@@ -200,6 +200,9 @@ export default function BookGrid({
               </div>
 
               <div className="mt-auto space-y-1.5 pt-1">
+                <p className="truncate text-[10px] font-medium text-text-muted">
+                  {formattedProgress}
+                </p>
                 <div className="flex items-center justify-between text-[11px]">
                   <RatingDisplay rating={b.rating} mode={ratingMode} />
                   {pct != null && (
@@ -207,7 +210,13 @@ export default function BookGrid({
                   )}
                 </div>
 
-                {pct != null && <Progress value={pct} className="h-1.5" />}
+                {pct != null ? (
+                  <Progress value={pct} className="h-1.5" />
+                ) : b.is_ongoing ? (
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
+                    <div className="h-full w-2/3 animate-pulse rounded-full bg-accent-color/60" />
+                  </div>
+                ) : null}
               </div>
             </CardContent>
           </Card>

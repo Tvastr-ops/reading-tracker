@@ -20,6 +20,12 @@ const COLUMNS = [
   'date_started',
   'date_finished',
   'notes',
+  'unit_type',
+  'progress_structure',
+  'parent_progress',
+  'parent_total',
+  'latest_units',
+  'is_ongoing',
 ];
 
 function csvEscape(val: unknown): string {
