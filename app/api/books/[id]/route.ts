@@ -10,6 +10,12 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const ALLOWED_FIELDS = [
   'title',
   'type',
+  'unit_type',
+  'progress_structure',
+  'parent_progress',
+  'parent_total',
+  'latest_units',
+  'is_ongoing',
   'author',
   'status',
   'rating',

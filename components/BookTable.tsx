@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { calculateProgressPercentage, formatProgressText } from '@/lib/progress';
 import { getStatusConfig } from '@/lib/status';
 import { type Book, type SortDir, type SortField, STATUSES } from '@/lib/types';
 import { calculateReadingDuration, formatShortDate } from '@/lib/utils';
@@ -116,9 +117,8 @@ export default function BookTable({
         {/* MOBILE ELEVATED FLOATING CARD LIST VIEW (<640px) */}
         <div className="block sm:hidden space-y-3">
           {books.map((b) => {
-            const pct = b.total_units
-              ? Math.min(100, Math.round(((b.progress || 0) / b.total_units) * 100))
-              : null;
+            const pct = calculateProgressPercentage(b);
+            const formattedProgress = formatProgressText(b);
             const statusCfg = getStatusConfig(b.status);
             const isSelected = selected.has(b.id);
 
@@ -222,14 +222,18 @@ export default function BookTable({
                     {/* Rating & Progress Percentage Footer */}
                     <div className="flex items-center justify-between gap-2 pt-0.5">
                       <RatingDisplay rating={b.rating} mode={ratingMode} />
-                      {pct != null && (
-                        <span className="font-semibold text-[10px] text-text-muted tracking-tight">
-                          {b.progress ?? 0}/{b.total_units} ({pct}%)
-                        </span>
-                      )}
+                      <span className="font-semibold text-[10px] text-text-muted tracking-tight">
+                        {formattedProgress} {pct != null ? `(${pct}%)` : ''}
+                      </span>
                     </div>
 
-                    {pct != null && <Progress value={pct} className="h-1 rounded-full" />}
+                    {pct != null ? (
+                      <Progress value={pct} className="h-1 rounded-full" />
+                    ) : b.is_ongoing ? (
+                      <div className="h-1 w-full overflow-hidden rounded-full bg-surface">
+                        <div className="h-full w-2/3 animate-pulse rounded-full bg-accent-color/60" />
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -274,9 +278,8 @@ export default function BookTable({
             </thead>
             <tbody className="divide-y divide-border/50">
               {books.map((b) => {
-                const pct = b.total_units
-                  ? Math.min(100, Math.round(((b.progress || 0) / b.total_units) * 100))
-                  : null;
+                const pct = calculateProgressPercentage(b);
+                const formattedProgress = formatProgressText(b);
                 const nextStatus = STATUSES[(STATUSES.indexOf(b.status) + 1) % STATUSES.length];
                 const statusCfg = getStatusConfig(b.status);
                 const isFocused = b.id === focusedId;
@@ -407,20 +410,22 @@ export default function BookTable({
                     </td>
 
                     {/* Progress */}
-                    <td className="px-3.5 py-3 align-middle min-w-[120px]">
-                      {b.total_units ? (
-                        <div className="space-y-1">
-                          <Progress value={pct ?? 0} className="h-1.5" />
-                          <div className="flex items-center justify-between text-[11px] text-text-muted font-medium">
-                            <span>
-                              {b.progress ?? 0}/{b.total_units}
-                            </span>
-                            <span className="font-semibold text-text">{pct}%</span>
+                    <td className="px-3.5 py-3 align-middle min-w-[140px]">
+                      <div className="space-y-1">
+                        {pct != null ? (
+                          <Progress value={pct} className="h-1.5" />
+                        ) : b.is_ongoing ? (
+                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
+                            <div className="h-full w-2/3 animate-pulse rounded-full bg-accent-color/60" />
                           </div>
+                        ) : null}
+                        <div className="flex items-center justify-between text-[11px] text-text-muted font-medium">
+                          <span>{formattedProgress}</span>
+                          {pct != null && (
+                            <span className="font-semibold text-text ml-1">{pct}%</span>
+                          )}
                         </div>
-                      ) : (
-                        <span className="text-text-muted text-xs">{b.progress ?? 0} units</span>
-                      )}
+                      </div>
                     </td>
 
                     {/* Tags */}
