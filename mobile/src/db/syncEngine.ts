@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import * as SQLite from 'expo-sqlite';
-import { Book } from '../types/book';
+import type { Book } from '../types/book';
 
 const SUPABASE_URL =
   process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://atbypkepocsugivskscn.supabase.co';
