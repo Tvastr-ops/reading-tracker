@@ -171,474 +171,478 @@ export default function BookForm({
         if (!open) onCancel();
       }}
     >
-      <DialogContent className="max-w-[580px] p-0 overflow-hidden rounded-2xl border border-border bg-card-bg shadow-2xl">
-        <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="w-full">
-          <DialogHeader className="px-6 pt-5 pb-3 border-b border-border/80 bg-surface/40">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="font-bold text-xl">
+      <DialogContent className="max-w-[580px] w-[calc(100%-1.5rem)] p-0 overflow-hidden rounded-2xl border border-border bg-card-bg shadow-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col">
+        <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="flex flex-col flex-1 overflow-hidden w-full">
+          <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-border/80 bg-surface/40 shrink-0">
+            <div className="flex items-center justify-between pr-6">
+              <DialogTitle className="font-bold text-lg sm:text-xl">
                 {initial?.id ? 'Edit Entry' : 'Add New Entry'}
               </DialogTitle>
             </div>
 
-            <TabsList className="grid w-full grid-cols-3 bg-surface/80 mt-2">
-              <TabsTrigger value="general" className="gap-1.5 text-xs">
-                <BookOpen className="h-3.5 w-3.5" />
-                <span>General</span>
+            <TabsList className="grid w-full grid-cols-3 bg-surface/80 mt-2 p-1">
+              <TabsTrigger value="general" className="gap-1 sm:gap-1.5 text-[11px] sm:text-xs px-1.5 sm:px-3">
+                <BookOpen className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                <span className="truncate">General</span>
               </TabsTrigger>
-              <TabsTrigger value="metadata" className="gap-1.5 text-xs">
-                <ImageIcon className="h-3.5 w-3.5" />
-                <span>Details & Cover</span>
+              <TabsTrigger value="metadata" className="gap-1 sm:gap-1.5 text-[11px] sm:text-xs px-1.5 sm:px-3">
+                <ImageIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                <span className="truncate">Details</span>
               </TabsTrigger>
               <TabsTrigger
                 value="log"
                 disabled={!initial?.id}
-                className="gap-1.5 text-xs disabled:opacity-40"
+                className="gap-1 sm:gap-1.5 text-[11px] sm:text-xs px-1.5 sm:px-3 disabled:opacity-40"
               >
-                <Clock className="h-3.5 w-3.5" />
-                <span>Reading Log</span>
+                <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                <span className="truncate">Reading Log</span>
               </TabsTrigger>
             </TabsList>
           </DialogHeader>
 
-          <form onSubmit={submit} className="p-6 pt-4 space-y-4">
-            {/* TAB 1: GENERAL INFO */}
-            <TabsContent value="general" className="space-y-4 mt-0">
-              <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-                <div className="col-span-full">
-                  <label className={labelClass}>Title *</label>
-                  <input
-                    className={inputClass}
-                    value={form.title}
-                    onChange={(e) => set('title', e.target.value)}
-                    placeholder="Publication title..."
-                    autoFocus
-                  />
-                  {isDuplicate && (
-                    <div className="mt-1.5 flex items-center gap-1.5 font-medium text-amber-600 text-xs dark:text-amber-400">
-                      <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                      <span>You already have an entry with this title.</span>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className={labelClass}>Format Type</label>
-                  <Select value={form.type} onValueChange={handleTypeChange}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select format type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PUBLICATION_TYPES.map((t) => (
-                        <SelectItem key={t} value={t}>
-                          {t}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className={labelClass}>Status</label>
-                  <Select value={form.status} onValueChange={(val) => set('status', val as any)}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUSES.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {s}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className={labelClass}>Author</label>
-                  <input
-                    className={inputClass}
-                    value={form.author || ''}
-                    onChange={(e) => set('author', e.target.value)}
-                    placeholder="Author name..."
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>Rating</label>
-                  <RatingSelect
-                    value={form.rating}
-                    onChange={(v) => set('rating', v)}
-                    mode={ratingMode}
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>Current Progress ({unitLabel} read)</label>
-                  <input
-                    className={inputClass}
-                    type="number"
-                    min={0}
-                    step="0.5"
-                    value={form.progress ?? ''}
-                    onChange={(e) =>
-                      set('progress', e.target.value === '' ? 0 : parseFloat(e.target.value))
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>
-                    Total {unitLabel} {form.is_ongoing ? '(expected)' : ''}
-                  </label>
-                  <input
-                    className={inputClass}
-                    type="number"
-                    min={0}
-                    step="0.5"
-                    value={form.total_units ?? ''}
-                    onChange={(e) =>
-                      set('total_units', e.target.value === '' ? null : parseFloat(e.target.value))
-                    }
-                    placeholder={form.is_ongoing ? 'Optional if ongoing' : 'e.g. 500'}
-                  />
-                </div>
-
-                {/* Inline Compact Tracking Settings Expander */}
-                <div className="col-span-full pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setShowAdvanced(!showAdvanced)}
-                    className="flex items-center gap-1.5 font-semibold text-accent-color hover:underline text-xs"
-                  >
-                    <Settings2 className="h-3.5 w-3.5" />
-                    <span>
-                      {showAdvanced
-                        ? 'Hide Units & Structure Settings'
-                        : 'Custom Units, Hierarchy & Serialization Settings'}
-                    </span>
-                  </button>
-
-                  {showAdvanced && (
-                    <div className="mt-2.5 space-y-3 rounded-xl border border-border/60 bg-surface/50 p-3 text-xs">
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div>
-                          <label className={labelClass}>Unit Type</label>
-                          <Select
-                            value={form.unit_type || 'pages'}
-                            onValueChange={(val) => set('unit_type', val as UnitType)}
-                          >
-                            <SelectTrigger className="w-full h-8 text-xs">
-                              <SelectValue placeholder="Select unit" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {UNIT_OPTIONS.map((u) => (
-                                <SelectItem key={u.value} value={u.value}>
-                                  {u.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <label className={labelClass}>Progress Structure</label>
-                          <Select
-                            value={form.progress_structure || 'single'}
-                            onValueChange={(val) =>
-                              set('progress_structure', val as ProgressStructure)
-                            }
-                          >
-                            <SelectTrigger className="w-full h-8 text-xs">
-                              <SelectValue placeholder="Select structure" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {STRUCTURE_OPTIONS.map((s) => (
-                                <SelectItem key={s.value} value={s.value}>
-                                  {s.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+          <form onSubmit={submit} className="flex flex-col flex-1 overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+              {/* TAB 1: GENERAL INFO */}
+              <TabsContent value="general" className="space-y-3.5 mt-0">
+                <div className="grid grid-cols-1 gap-3 sm:gap-3.5 sm:grid-cols-2">
+                  <div className="col-span-full">
+                    <label className={labelClass}>Title *</label>
+                    <input
+                      className={inputClass}
+                      value={form.title}
+                      onChange={(e) => set('title', e.target.value)}
+                      placeholder="Publication title..."
+                      autoFocus
+                    />
+                    {isDuplicate && (
+                      <div className="mt-1.5 flex items-center gap-1.5 font-medium text-amber-600 text-xs dark:text-amber-400">
+                        <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                        <span>You already have an entry with this title.</span>
                       </div>
+                    )}
+                  </div>
 
-                      {form.progress_structure && form.progress_structure !== 'single' && (
-                        <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/40 bg-card-bg p-2.5">
+                  <div>
+                    <label className={labelClass}>Format Type</label>
+                    <Select value={form.type} onValueChange={handleTypeChange}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select format type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PUBLICATION_TYPES.map((t) => (
+                          <SelectItem key={t} value={t}>
+                            {t}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Status</label>
+                    <Select value={form.status} onValueChange={(val) => set('status', val as any)}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUSES.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Author</label>
+                    <input
+                      className={inputClass}
+                      value={form.author || ''}
+                      onChange={(e) => set('author', e.target.value)}
+                      placeholder="Author name..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Rating</label>
+                    <RatingSelect
+                      value={form.rating}
+                      onChange={(v) => set('rating', v)}
+                      mode={ratingMode}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Current Progress ({unitLabel} read)</label>
+                    <input
+                      className={inputClass}
+                      type="number"
+                      min={0}
+                      step="0.5"
+                      value={form.progress ?? ''}
+                      onChange={(e) =>
+                        set('progress', e.target.value === '' ? 0 : parseFloat(e.target.value))
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>
+                      Total {unitLabel} {form.is_ongoing ? '(expected)' : ''}
+                    </label>
+                    <input
+                      className={inputClass}
+                      type="number"
+                      min={0}
+                      step="0.5"
+                      value={form.total_units ?? ''}
+                      onChange={(e) =>
+                        set('total_units', e.target.value === '' ? null : parseFloat(e.target.value))
+                      }
+                      placeholder={form.is_ongoing ? 'Optional if ongoing' : 'e.g. 500'}
+                    />
+                  </div>
+
+                  {/* Inline Compact Tracking Settings Expander */}
+                  <div className="col-span-full pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowAdvanced(!showAdvanced)}
+                      className="flex items-center gap-1.5 font-semibold text-accent-color hover:underline text-xs"
+                    >
+                      <Settings2 className="h-3.5 w-3.5" />
+                      <span>
+                        {showAdvanced
+                          ? 'Hide Units & Structure Settings'
+                          : 'Custom Units, Hierarchy & Serialization Settings'}
+                      </span>
+                    </button>
+
+                    {showAdvanced && (
+                      <div className="mt-2.5 space-y-3 rounded-xl border border-border/60 bg-surface/50 p-3 text-xs">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                           <div>
-                            <label className={labelClass}>
-                              {form.progress_structure === 'volume_chapter'
-                                ? 'Current Volume'
-                                : 'Current Part'}
-                            </label>
-                            <input
-                              className={inputClass}
-                              type="number"
-                              min={0}
-                              value={form.parent_progress ?? ''}
-                              onChange={(e) =>
-                                set(
-                                  'parent_progress',
-                                  e.target.value === '' ? null : parseFloat(e.target.value),
-                                )
-                              }
-                              placeholder="e.g. 3"
-                            />
+                            <label className={labelClass}>Unit Type</label>
+                            <Select
+                              value={form.unit_type || 'pages'}
+                              onValueChange={(val) => set('unit_type', val as UnitType)}
+                            >
+                              <SelectTrigger className="w-full h-8 text-xs">
+                                <SelectValue placeholder="Select unit" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {UNIT_OPTIONS.map((u) => (
+                                  <SelectItem key={u.value} value={u.value}>
+                                    {u.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
+
                           <div>
-                            <label className={labelClass}>
-                              {form.progress_structure === 'volume_chapter'
-                                ? 'Total Volumes'
-                                : 'Total Parts'}
-                            </label>
-                            <input
-                              className={inputClass}
-                              type="number"
-                              min={0}
-                              value={form.parent_total ?? ''}
-                              onChange={(e) =>
-                                set(
-                                  'parent_total',
-                                  e.target.value === '' ? null : parseFloat(e.target.value),
-                                )
+                            <label className={labelClass}>Progress Structure</label>
+                            <Select
+                              value={form.progress_structure || 'single'}
+                              onValueChange={(val) =>
+                                set('progress_structure', val as ProgressStructure)
                               }
-                              placeholder="e.g. 10"
-                            />
+                            >
+                              <SelectTrigger className="w-full h-8 text-xs">
+                                <SelectValue placeholder="Select structure" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {STRUCTURE_OPTIONS.map((s) => (
+                                  <SelectItem key={s.value} value={s.value}>
+                                    {s.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
-                      )}
 
-                      <div className="rounded-lg border border-border/40 bg-card-bg p-2.5 space-y-2">
-                        <label className="flex items-center gap-2 cursor-pointer font-semibold text-text">
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 rounded border-border text-accent-color focus:ring-accent-color"
-                            checked={form.is_ongoing || false}
-                            onChange={(e) => set('is_ongoing', e.target.checked)}
-                          />
-                          <span>Ongoing Serialization (Actively Releasing)</span>
-                        </label>
-
-                        {form.is_ongoing && (
-                          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 pt-1">
+                        {form.progress_structure && form.progress_structure !== 'single' && (
+                          <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/40 bg-card-bg p-2.5">
                             <div>
                               <label className={labelClass}>
-                                Latest Released by Author ({unitLabel})
+                                {form.progress_structure === 'volume_chapter'
+                                  ? 'Current Volume'
+                                  : 'Current Part'}
                               </label>
                               <input
                                 className={inputClass}
                                 type="number"
                                 min={0}
-                                value={form.latest_units ?? ''}
+                                value={form.parent_progress ?? ''}
                                 onChange={(e) =>
                                   set(
-                                    'latest_units',
+                                    'parent_progress',
                                     e.target.value === '' ? null : parseFloat(e.target.value),
                                   )
                                 }
-                                placeholder="e.g. 250"
+                                placeholder="e.g. 3"
                               />
                             </div>
-                            {form.latest_units != null && (
-                              <div className="flex items-end pb-0.5">
-                                <Button
-                                  type="button"
-                                  variant="secondary"
-                                  size="sm"
-                                  className="w-full text-xs gap-1 text-sky-600 dark:text-sky-400"
-                                  onClick={() => set('progress', form.latest_units!)}
-                                >
-                                  <span>I'm Caught Up</span>
-                                </Button>
-                              </div>
-                            )}
+                            <div>
+                              <label className={labelClass}>
+                                {form.progress_structure === 'volume_chapter'
+                                  ? 'Total Volumes'
+                                  : 'Total Parts'}
+                              </label>
+                              <input
+                                className={inputClass}
+                                type="number"
+                                min={0}
+                                value={form.parent_total ?? ''}
+                                onChange={(e) =>
+                                  set(
+                                    'parent_total',
+                                    e.target.value === '' ? null : parseFloat(e.target.value),
+                                  )
+                                }
+                                placeholder="e.g. 10"
+                              />
+                            </div>
                           </div>
                         )}
-                      </div>
-                    </div>
-                  )}
-                </div>
 
-                <div className="col-span-full">
-                  <label className={labelClass}>Notes</label>
-                  <textarea
-                    className={`${inputClass} min-h-[65px] resize-y py-2`}
-                    value={form.notes || ''}
-                    onChange={(e) => set('notes', e.target.value)}
-                    placeholder="Personal notes or review..."
-                  />
-                </div>
-              </div>
-            </TabsContent>
+                        <div className="rounded-lg border border-border/40 bg-card-bg p-2.5 space-y-2">
+                          <label className="flex items-center gap-2 cursor-pointer font-semibold text-text">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-border text-accent-color focus:ring-accent-color"
+                              checked={form.is_ongoing || false}
+                              onChange={(e) => set('is_ongoing', e.target.checked)}
+                            />
+                            <span>Ongoing Serialization (Actively Releasing)</span>
+                          </label>
 
-            {/* TAB 2: METADATA, LINKS & COVER */}
-            <TabsContent value="metadata" className="space-y-4 mt-0">
-              <div className="space-y-3.5">
-                <div className="space-y-1.5">
-                  <label className={labelClass}>Cover Image</label>
-                  <div className="flex items-center gap-2">
-                    {form.cover_url ? (
-                      <img
-                        src={form.cover_url}
-                        alt=""
-                        className="h-11 w-8 shrink-0 rounded border border-border object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-11 w-8 shrink-0 items-center justify-center rounded border border-border bg-surface text-text-muted text-xs">
-                        No img
+                          {form.is_ongoing && (
+                            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 pt-1">
+                              <div>
+                                <label className={labelClass}>
+                                  Latest Released by Author ({unitLabel})
+                                </label>
+                                <input
+                                  className={inputClass}
+                                  type="number"
+                                  min={0}
+                                  value={form.latest_units ?? ''}
+                                  onChange={(e) =>
+                                    set(
+                                      'latest_units',
+                                      e.target.value === '' ? null : parseFloat(e.target.value),
+                                    )
+                                  }
+                                  placeholder="e.g. 250"
+                                />
+                              </div>
+                              {form.latest_units != null && (
+                                <div className="flex items-end pb-0.5">
+                                  <Button
+                                    type="button"
+                                    variant="secondary"
+                                    size="sm"
+                                    className="w-full text-xs gap-1 text-sky-600 dark:text-sky-400"
+                                    onClick={() => set('progress', form.latest_units!)}
+                                  >
+                                    <span>I'm Caught Up</span>
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
-                    <input
-                      className={`${inputClass} flex-1`}
-                      value={form.cover_url || ''}
-                      onChange={(e) => set('cover_url', e.target.value)}
-                      placeholder="Paste image URL, or search Open Library..."
-                    />
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={searchCover}
-                      disabled={coverSearching || !form.title.trim()}
-                    >
-                      {coverSearching ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Search className="h-3.5 w-3.5" />
-                      )}
-                      <span>Search</span>
-                    </Button>
-                  </div>
-                  {coverResults.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {coverResults.map((r) => (
-                        <button
-                          type="button"
-                          key={r.cover_url}
-                          onClick={() => {
-                            set('cover_url', r.cover_url);
-                            setCoverResults([]);
-                          }}
-                          title={`${r.title}${r.author ? ` — ${r.author}` : ''}`}
-                          className="cursor-pointer rounded-lg border border-border bg-card-bg p-0.5 transition-colors hover:border-accent-color"
-                        >
-                          <img
-                            src={r.cover_url}
-                            alt=""
-                            className="block h-14 w-10 rounded object-cover"
-                          />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className={labelClass}>Genre / Tags</label>
-                  <input
-                    className={inputClass}
-                    value={form.genre_tags || ''}
-                    onChange={(e) => set('genre_tags', e.target.value)}
-                    placeholder="e.g. Fantasy, Sci-Fi, Time Loop"
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>Source / Website Link</label>
-                  <input
-                    className={inputClass}
-                    value={form.source_link || ''}
-                    onChange={(e) => set('source_link', e.target.value)}
-                    placeholder="royalroad.com or reading web link"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className={labelClass}>Date started</label>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => set('date_started', new Date().toISOString().split('T')[0])}
-                          className="text-[10px] text-accent-color hover:underline font-medium"
-                        >
-                          Today
-                        </button>
-                        {form.date_started && (
-                          <>
-                            <span className="text-[10px] text-text-muted">·</span>
-                            <button
-                              type="button"
-                              onClick={() => set('date_started', null)}
-                              className="text-[10px] text-rose-400 hover:underline font-medium"
-                            >
-                              Clear
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <input
-                      className={inputClass}
-                      type="date"
-                      value={form.date_started || ''}
-                      onChange={(e) => set('date_started', e.target.value)}
-                    />
                   </div>
 
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className={labelClass}>Date finished</label>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => set('date_finished', new Date().toISOString().split('T')[0])}
-                          className="text-[10px] text-accent-color hover:underline font-medium"
-                        >
-                          Today
-                        </button>
-                        {form.date_finished && (
-                          <>
-                            <span className="text-[10px] text-text-muted">·</span>
-                            <button
-                              type="button"
-                              onClick={() => set('date_finished', null)}
-                              className="text-[10px] text-rose-400 hover:underline font-medium"
-                            >
-                              Clear
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <input
-                      className={inputClass}
-                      type="date"
-                      value={form.date_finished || ''}
-                      onChange={(e) => set('date_finished', e.target.value)}
+                  <div className="col-span-full">
+                    <label className={labelClass}>Notes</label>
+                    <textarea
+                      className={`${inputClass} min-h-[65px] resize-y py-2`}
+                      value={form.notes || ''}
+                      onChange={(e) => set('notes', e.target.value)}
+                      placeholder="Personal notes or review..."
                     />
                   </div>
                 </div>
-              </div>
-            </TabsContent>
-
-            {/* TAB 3: READING LOG */}
-            {initial?.id && (
-              <TabsContent value="log" className="mt-0">
-                <ReadingLog
-                  bookId={initial.id}
-                  currentProgress={form.progress ?? 0}
-                  totalUnits={form.total_units ?? null}
-                  onProgressUpdated={(p) => set('progress', p)}
-                />
               </TabsContent>
-            )}
+
+              {/* TAB 2: METADATA, LINKS & COVER */}
+              <TabsContent value="metadata" className="space-y-4 mt-0">
+                <div className="space-y-3.5">
+                  <div className="space-y-1.5">
+                    <label className={labelClass}>Cover Image</label>
+                    <div className="flex items-center gap-2">
+                      {form.cover_url ? (
+                        <img
+                          src={form.cover_url}
+                          alt=""
+                          className="h-11 w-8 shrink-0 rounded border border-border object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-11 w-8 shrink-0 items-center justify-center rounded border border-border bg-surface text-text-muted text-xs">
+                          No img
+                        </div>
+                      )}
+                      <input
+                        className={`${inputClass} flex-1`}
+                        value={form.cover_url || ''}
+                        onChange={(e) => set('cover_url', e.target.value)}
+                        placeholder="Paste image URL, or search Open Library..."
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={searchCover}
+                        disabled={coverSearching || !form.title.trim()}
+                      >
+                        {coverSearching ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Search className="h-3.5 w-3.5" />
+                        )}
+                        <span>Search</span>
+                      </Button>
+                    </div>
+                    {coverResults.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {coverResults.map((r) => (
+                          <button
+                            type="button"
+                            key={r.cover_url}
+                            onClick={() => {
+                              set('cover_url', r.cover_url);
+                              setCoverResults([]);
+                            }}
+                            title={`${r.title}${r.author ? ` — ${r.author}` : ''}`}
+                            className="cursor-pointer rounded-lg border border-border bg-card-bg p-0.5 transition-colors hover:border-accent-color"
+                          >
+                            <img
+                              src={r.cover_url}
+                              alt=""
+                              className="block h-14 w-10 rounded object-cover"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Genre / Tags</label>
+                    <input
+                      className={inputClass}
+                      value={form.genre_tags || ''}
+                      onChange={(e) => set('genre_tags', e.target.value)}
+                      placeholder="e.g. Fantasy, Sci-Fi, Time Loop"
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Source / Website Link</label>
+                    <input
+                      className={inputClass}
+                      value={form.source_link || ''}
+                      onChange={(e) => set('source_link', e.target.value)}
+                      placeholder="royalroad.com or reading web link"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className={labelClass}>Date started</label>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => set('date_started', new Date().toISOString().split('T')[0])}
+                            className="text-[10px] text-accent-color hover:underline font-medium"
+                          >
+                            Today
+                          </button>
+                          {form.date_started && (
+                            <>
+                              <span className="text-[10px] text-text-muted">·</span>
+                              <button
+                                type="button"
+                                onClick={() => set('date_started', null)}
+                                className="text-[10px] text-rose-400 hover:underline font-medium"
+                              >
+                                Clear
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <input
+                        className={inputClass}
+                        type="date"
+                        value={form.date_started || ''}
+                        onChange={(e) => set('date_started', e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className={labelClass}>Date finished</label>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => set('date_finished', new Date().toISOString().split('T')[0])}
+                            className="text-[10px] text-accent-color hover:underline font-medium"
+                          >
+                            Today
+                          </button>
+                          {form.date_finished && (
+                            <>
+                              <span className="text-[10px] text-text-muted">·</span>
+                              <button
+                                type="button"
+                                onClick={() => set('date_finished', null)}
+                                className="text-[10px] text-rose-400 hover:underline font-medium"
+                              >
+                                Clear
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <input
+                        className={inputClass}
+                        type="date"
+                        value={form.date_finished || ''}
+                        onChange={(e) => set('date_finished', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* TAB 3: READING LOG */}
+              {initial?.id && (
+                <TabsContent value="log" className="mt-0">
+                  <ReadingLog
+                    bookId={initial.id}
+                    currentProgress={form.progress ?? 0}
+                    totalUnits={form.total_units ?? null}
+                    onProgressUpdated={(p) => set('progress', p)}
+                  />
+                </TabsContent>
+              )}
+            </div>
 
             {error && (
-              <div className="font-semibold text-rose-600 text-xs dark:text-rose-400">{error}</div>
+              <div className="px-4 sm:px-6 pt-2 font-semibold text-rose-600 text-xs dark:text-rose-400">
+                {error}
+              </div>
             )}
 
-            <div className="sticky bottom-0 z-10 flex justify-end gap-2.5 border-border border-t bg-card-bg pt-3 pb-1">
+            <div className="shrink-0 flex justify-end gap-2.5 border-border border-t bg-card-bg p-4 sm:px-6 sm:py-3">
               <Button type="button" variant="outline" onClick={onCancel}>
                 Cancel
               </Button>
