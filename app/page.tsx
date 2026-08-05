@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   ArrowUpDown,
@@ -18,15 +19,17 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { cn } from '@/lib/utils';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import BookForm from '@/components/BookForm';
 import BookGrid from '@/components/BookGrid';
 import BookTable from '@/components/BookTable';
 import StatsSummary from '@/components/StatsSummary';
+import { cn } from '@/lib/utils';
+
+const BookForm = dynamic(() => import('@/components/BookForm'), { ssr: false });
+
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -352,6 +355,8 @@ export default function HomePage() {
     return c;
   }, [books]);
 
+  const deferredSearch = useDeferredValue(search);
+
   const filtered = useMemo(() => {
     let list = books;
 
@@ -367,8 +372,8 @@ export default function HomePage() {
       }
     }
 
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
+    if (deferredSearch.trim()) {
+      const q = deferredSearch.trim().toLowerCase();
       list = list.filter(
         (b) =>
           b.title.toLowerCase().includes(q) ||
@@ -399,7 +404,7 @@ export default function HomePage() {
       if (va > vb) return sortDir === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [books, statusFilter, ratingFilter, search, sortField, sortDir]);
+  }, [books, statusFilter, ratingFilter, deferredSearch, sortField, sortDir]);
 
   const filtersActive = statusFilter !== 'All' || ratingFilter !== 'All' || search.trim() !== '';
 
