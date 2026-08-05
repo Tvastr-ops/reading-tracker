@@ -7,6 +7,12 @@ export const dynamic = 'force-dynamic';
 const KNOWN_COLUMNS = [
   'title',
   'type',
+  'unit_type',
+  'progress_structure',
+  'parent_progress',
+  'parent_total',
+  'latest_units',
+  'is_ongoing',
   'author',
   'status',
   'rating',
@@ -116,10 +122,18 @@ export const POST = withAuth(async (req: NextRequest) => {
 
     const status = get('status');
     const rating = toNullableNumber(get('rating'));
+    const isOngoingStr = get('is_ongoing')?.toLowerCase();
+    const is_ongoing = isOngoingStr === 'true' || isOngoingStr === '1';
 
     toInsert.push({
       title,
       type: get('type') || 'Novel',
+      unit_type: get('unit_type') || 'pages',
+      progress_structure: get('progress_structure') || 'single',
+      parent_progress: toNullableNumber(get('parent_progress')),
+      parent_total: toNullableNumber(get('parent_total')),
+      latest_units: toNullableNumber(get('latest_units')),
+      is_ongoing,
       author: get('author') || null,
       status: status && VALID_STATUSES.includes(status) ? status : 'Plan to Read',
       rating: rating != null && rating >= 0 && rating <= 5 ? rating : null,
