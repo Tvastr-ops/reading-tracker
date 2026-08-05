@@ -1,6 +1,6 @@
 export type Status = 'Plan to Read' | 'Reading' | 'On Hold' | 'Completed' | 'Dropped';
 
-export type UnitType = 'pages' | 'chapters' | 'words' | 'percent' | 'units';
+export type UnitType = 'pages' | 'chapters' | 'words' | 'percent' | 'volumes' | 'units';
 export type ProgressStructure = 'single' | 'volume_chapter' | 'part_chapter';
 
 export const PUBLICATION_TYPES = [

@@ -50,10 +50,14 @@ function toRoman(num: number): string {
 }
 
 export function isCaughtUp(book: Book): boolean {
-  if (!book.is_ongoing || book.latest_units == null || book.progress == null) {
-    return false;
+  if (!book.is_ongoing) return false;
+  if (book.latest_units != null && book.progress != null) {
+    return book.progress >= book.latest_units;
   }
-  return book.progress >= book.latest_units;
+  if (book.parent_total != null && book.parent_progress != null) {
+    return book.parent_progress >= book.parent_total;
+  }
+  return false;
 }
 
 export function calculateProgressPercentage(book: Book): number | null {
@@ -64,6 +68,10 @@ export function calculateProgressPercentage(book: Book): number | null {
   if (book.is_ongoing && book.latest_units && book.latest_units > 0) {
     return Math.min(100, Math.round((current / book.latest_units) * 100));
   }
+  // Volume level percentage fallback if volume count is provided
+  if (book.parent_progress != null && book.parent_total != null && book.parent_total > 0) {
+    return Math.min(100, Math.round((book.parent_progress / book.parent_total) * 100));
+  }
   return null;
 }
 
@@ -73,32 +81,47 @@ export function formatProgressText(book: Book): string {
   const current = book.progress ?? 0;
   const total = book.total_units;
   const parentProg = book.parent_progress;
+  const parentTot = book.parent_total;
 
   let baseText = '';
 
   if (structure === 'volume_chapter') {
-    const volStr = parentProg != null ? `Vol. ${parentProg}` : '';
-    const chStr = `Ch. ${current}`;
-    if (volStr && current > 0) {
+    let volStr = '';
+    if (parentProg != null && parentTot != null) {
+      volStr = `Vol. ${parentProg}/${parentTot}`;
+    } else if (parentProg != null) {
+      volStr = `Vol. ${parentProg}`;
+    }
+
+    const chStr = current > 0 ? `Ch. ${current}` : '';
+    if (volStr && chStr) {
       baseText = `${volStr} • ${chStr}`;
     } else if (volStr) {
       baseText = volStr;
     } else {
-      baseText = chStr;
+      baseText = chStr || 'Ch. 0';
     }
+
     if (total != null && total > 0) {
       baseText += ` / ${total}`;
     }
   } else if (structure === 'part_chapter') {
-    const partStr = parentProg != null ? `Part ${toRoman(parentProg)}` : '';
-    const chStr = `Ch. ${current}`;
-    if (partStr && current > 0) {
+    let partStr = '';
+    if (parentProg != null && parentTot != null) {
+      partStr = `Part ${toRoman(parentProg)}/${toRoman(parentTot)}`;
+    } else if (parentProg != null) {
+      partStr = `Part ${toRoman(parentProg)}`;
+    }
+
+    const chStr = current > 0 ? `Ch. ${current}` : '';
+    if (partStr && chStr) {
       baseText = `${partStr} • ${chStr}`;
     } else if (partStr) {
       baseText = partStr;
     } else {
-      baseText = chStr;
+      baseText = chStr || 'Ch. 0';
     }
+
     if (total != null && total > 0) {
       baseText += ` / ${total}`;
     }
@@ -106,6 +129,8 @@ export function formatProgressText(book: Book): string {
     // Single level
     if (unit === 'chapters') {
       baseText = total != null && total > 0 ? `Ch. ${current} / ${total}` : `Ch. ${current}`;
+    } else if (unit === 'volumes') {
+      baseText = total != null && total > 0 ? `Vol. ${current} / ${total}` : `Vol. ${current}`;
     } else if (unit === 'words') {
       const formattedCurrent = current.toLocaleString('en-US');
       baseText =
@@ -131,6 +156,8 @@ export function formatProgressText(book: Book): string {
         const behind = book.latest_units - current;
         baseText += ` (${behind} behind)`;
       }
+    } else if (parentProg != null && parentTot != null && parentProg >= parentTot) {
+      baseText += ' • Caught Up';
     } else {
       baseText += ' (Ongoing)';
     }

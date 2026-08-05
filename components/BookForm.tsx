@@ -36,6 +36,7 @@ import ReadingLog from './ReadingLog';
 const UNIT_OPTIONS: { label: string; value: UnitType }[] = [
   { label: 'Pages', value: 'pages' },
   { label: 'Chapters', value: 'chapters' },
+  { label: 'Volumes', value: 'volumes' },
   { label: 'Words', value: 'words' },
   { label: 'Percent (%)', value: 'percent' },
   { label: 'Units', value: 'units' },
@@ -158,11 +159,13 @@ export default function BookForm({
   const unitLabel =
     form.unit_type === 'chapters'
       ? 'chapters'
-      : form.unit_type === 'words'
-        ? 'words'
-        : form.unit_type === 'percent'
-          ? '%'
-          : 'pages';
+      : form.unit_type === 'volumes'
+        ? 'volumes'
+        : form.unit_type === 'words'
+          ? 'words'
+          : form.unit_type === 'percent'
+            ? '%'
+            : 'pages';
 
   return (
     <Dialog
@@ -172,7 +175,11 @@ export default function BookForm({
       }}
     >
       <DialogContent className="max-w-[580px] w-[calc(100%-1.5rem)] p-0 overflow-hidden rounded-2xl border border-border bg-card-bg shadow-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col">
-        <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="flex flex-col flex-1 overflow-hidden w-full">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v: any) => setActiveTab(v)}
+          className="flex flex-col flex-1 overflow-hidden w-full"
+        >
           <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-border/80 bg-surface/40 shrink-0">
             <div className="flex items-center justify-between pr-6">
               <DialogTitle className="font-bold text-lg sm:text-xl">
@@ -181,11 +188,17 @@ export default function BookForm({
             </div>
 
             <TabsList className="grid w-full grid-cols-3 bg-surface/80 mt-2 p-1">
-              <TabsTrigger value="general" className="gap-1 sm:gap-1.5 text-[11px] sm:text-xs px-1.5 sm:px-3">
+              <TabsTrigger
+                value="general"
+                className="gap-1 sm:gap-1.5 text-[11px] sm:text-xs px-1.5 sm:px-3"
+              >
                 <BookOpen className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 <span className="truncate">General</span>
               </TabsTrigger>
-              <TabsTrigger value="metadata" className="gap-1 sm:gap-1.5 text-[11px] sm:text-xs px-1.5 sm:px-3">
+              <TabsTrigger
+                value="metadata"
+                className="gap-1 sm:gap-1.5 text-[11px] sm:text-xs px-1.5 sm:px-3"
+              >
                 <ImageIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 <span className="truncate">Details</span>
               </TabsTrigger>
@@ -298,7 +311,10 @@ export default function BookForm({
                       step="0.5"
                       value={form.total_units ?? ''}
                       onChange={(e) =>
-                        set('total_units', e.target.value === '' ? null : parseFloat(e.target.value))
+                        set(
+                          'total_units',
+                          e.target.value === '' ? null : parseFloat(e.target.value),
+                        )
                       }
                       placeholder={form.is_ongoing ? 'Optional if ongoing' : 'e.g. 500'}
                     />
@@ -560,7 +576,9 @@ export default function BookForm({
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
-                            onClick={() => set('date_started', new Date().toISOString().split('T')[0])}
+                            onClick={() =>
+                              set('date_started', new Date().toISOString().split('T')[0])
+                            }
                             className="text-[10px] text-accent-color hover:underline font-medium"
                           >
                             Today
@@ -593,7 +611,9 @@ export default function BookForm({
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
-                            onClick={() => set('date_finished', new Date().toISOString().split('T')[0])}
+                            onClick={() =>
+                              set('date_finished', new Date().toISOString().split('T')[0])
+                            }
                             className="text-[10px] text-accent-color hover:underline font-medium"
                           >
                             Today
