@@ -25,8 +25,8 @@ import { getDefaultUnitType } from '@/lib/progress';
 import {
   type Book,
   type BookInput,
-  PUBLICATION_TYPES,
   type ProgressStructure,
+  PUBLICATION_TYPES,
   STATUSES,
   type UnitType,
 } from '@/lib/types';

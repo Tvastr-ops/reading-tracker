@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
+  Modal,
+  ScrollView,
   StyleSheet,
   Text,
-  View,
-  Modal,
-  TouchableOpacity,
   TextInput,
-  ScrollView,
-  ActivityIndicator,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Book, BookStatus, BookFormatType } from '../types/book';
 import { searchOpenLibraryCovers } from '../services/openLibrary';
+import type { Book, BookFormatType, BookStatus } from '../types/book';
 
 interface BookEditModalProps {
   visible: boolean;
