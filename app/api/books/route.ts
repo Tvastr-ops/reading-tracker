@@ -15,7 +15,14 @@ export const GET = withAuth(async (req: NextRequest) => {
   const { data, error } = await query.order('updated_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ books: data });
+  return NextResponse.json(
+    { books: data },
+    {
+      headers: {
+        'Cache-Control': 'private, no-cache, must-revalidate',
+      },
+    },
+  );
 });
 
 function sanitize(input: Partial<BookInput>) {

@@ -1,7 +1,7 @@
 import './globals.css';
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import { Toaster } from '@/components/ui/sonner';
 import { Newsreader, Plus_Jakarta_Sans } from 'next/font/google';
+import { Toaster } from '@/components/ui/sonner';
 
 const newsreader = Newsreader({
   subsets: ['latin'],
@@ -56,6 +56,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${newsreader.variable} ${jakarta.variable}`}
     >
       <head>
+        <link rel="preconnect" href="https://covers.openlibrary.org" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://covers.openlibrary.org" />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="bg-bg font-sans text-text antialiased">

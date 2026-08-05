@@ -1,6 +1,6 @@
-'use client';
-
 import { BookOpen, Clock, Edit3, MoreVertical, RotateCcw, Trash2 } from 'lucide-react';
+import Image from 'next/image';
+import { memo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,7 +17,7 @@ import type { Book } from '@/lib/types';
 import { calculateReadingDuration, formatShortDate } from '@/lib/utils';
 import { RatingDisplay } from './RatingInput';
 
-export default function BookGrid({
+function BookGrid({
   books,
   ratingMode,
   hasAnyBooks = true,
@@ -58,7 +58,7 @@ export default function BookGrid({
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 3xl:grid-cols-8">
-      {books.map((b) => {
+      {books.map((b, idx) => {
         const pct = calculateProgressPercentage(b);
         const formattedProgress = formatProgressText(b);
         const statusCfg = getStatusConfig(b.status);
@@ -88,9 +88,12 @@ export default function BookGrid({
 
               {b.cover_url ? (
                 <>
-                  <img
+                  <Image
                     src={b.cover_url}
                     alt={b.title}
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                    priority={idx < 4}
                     className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                   />
                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60 transition-opacity group-hover:opacity-40" />
@@ -225,3 +228,5 @@ export default function BookGrid({
     </div>
   );
 }
+
+export default memo(BookGrid);
