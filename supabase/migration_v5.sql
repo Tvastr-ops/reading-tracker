@@ -11,7 +11,7 @@ ALTER TABLE books ADD COLUMN IF NOT EXISTS is_ongoing boolean NOT NULL DEFAULT f
 -- Data integrity check constraints
 ALTER TABLE books DROP CONSTRAINT IF EXISTS chk_books_unit_type;
 ALTER TABLE books ADD CONSTRAINT chk_books_unit_type 
-  CHECK (unit_type IN ('pages', 'chapters', 'words', 'percent', 'units'));
+  CHECK (unit_type IN ('pages', 'chapters', 'words', 'percent', 'volumes', 'units'));
 
 ALTER TABLE books DROP CONSTRAINT IF EXISTS chk_books_progress_structure;
 ALTER TABLE books ADD CONSTRAINT chk_books_progress_structure 
