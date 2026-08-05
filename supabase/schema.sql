@@ -9,6 +9,12 @@ create table if not exists books (
   rating numeric(2,1),                -- 0.0 - 5.0, in .5 steps, nullable
   progress numeric default 0,         -- units read
   total_units numeric,                -- total units (chapters/pages/etc), nullable if unknown
+  unit_type text not null default 'pages',
+  progress_structure text not null default 'single',
+  parent_progress numeric,
+  parent_total numeric,
+  latest_units numeric,
+  is_ongoing boolean not null default false,
   genre_tags text,
   source_link text,
   cover_url text,                     -- optional cover image URL (fetched from Open Library)
