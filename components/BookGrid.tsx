@@ -15,6 +15,7 @@ import { calculateProgressPercentage, formatProgressText } from '@/lib/progress'
 import { getStatusConfig } from '@/lib/status';
 import type { Book } from '@/lib/types';
 import { calculateReadingDuration, formatShortDate } from '@/lib/utils';
+import CoverImage from './CoverImage';
 import { RatingDisplay } from './RatingInput';
 
 function BookGrid({
@@ -86,23 +87,16 @@ function BookGrid({
                 className={`pointer-events-none absolute inset-y-0 left-0 w-1 sm:w-1.5 z-10 bg-gradient-to-b ${statusCfg.sideGradient} border-r border-black/20`}
               />
 
-              {b.cover_url ? (
-                <>
-                  <Image
-                    src={b.cover_url}
-                    alt={b.title}
-                    fill
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                    priority={idx < 4}
-                    className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                  />
-                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60 transition-opacity group-hover:opacity-40" />
-                </>
-              ) : (
-                <div className="flex h-full w-full flex-col items-center justify-center bg-surface/80 p-2 text-center text-text-muted">
-                  <BookOpen className="mb-1 h-8 w-8 opacity-40" />
-                  <span className="line-clamp-2 text-[10px]">{b.title}</span>
-                </div>
+              <CoverImage
+                src={b.cover_url}
+                title={b.title}
+                fill
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                priority={idx < 4}
+                className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+              />
+              {b.cover_url && (
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60 transition-opacity group-hover:opacity-40" />
               )}
 
               {/* Checkbox for Select Mode */}
