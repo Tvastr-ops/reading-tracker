@@ -56,10 +56,13 @@ export default function LoginPage() {
         <h1 className="m-0 mb-1 font-bold font-serif text-[24px]">Reading Tracker</h1>
         <p className="m-0 mb-5 text-[13px] text-text-muted">Enter your password to continue.</p>
         <input
+          id="password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
+          aria-label="Password"
+          autoComplete="current-password"
           className="w-full rounded-[var(--radius-sm)] border border-input-border bg-input-bg px-[var(--space-3)] py-[var(--space-2)] font-inherit text-text-main"
         />
         {error && <div className="mt-2 font-medium text-[13px] text-danger">{error}</div>}
