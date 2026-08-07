@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 export function sanitizeCoverUrl(url: string | null | undefined): string | null {
-  if (!url || !url.trim()) return null;
+  if (!url?.trim()) return null;
   let clean = url.trim();
   if (clean.startsWith('http://')) {
     clean = `https://${clean.slice(7)}`;
