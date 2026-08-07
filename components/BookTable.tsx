@@ -22,6 +22,7 @@ import { getStatusConfig } from '@/lib/status';
 import { type Book, type SortDir, type SortField, STATUSES } from '@/lib/types';
 import { calculateReadingDuration, formatShortDate } from '@/lib/utils';
 import { RatingDisplay } from './RatingInput';
+import CoverImage from './CoverImage';
 
 function hostnameOf(url: string): string {
   try {
@@ -156,20 +157,15 @@ function BookTable({
 
                   {/* Cover Image */}
                   <div className="relative shrink-0 self-start overflow-hidden rounded-xl shadow-xs border border-border/80">
-                    {b.cover_url ? (
-                      <Image
-                        src={b.cover_url}
-                        alt=""
-                        width={56}
-                        height={84}
-                        priority={idx < 4}
-                        className="h-[84px] w-14 rounded-xl object-cover object-top transition-transform group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="flex h-[84px] w-14 items-center justify-center rounded-xl border border-border bg-surface text-text-muted">
-                        <BookOpen className="h-5 w-5 opacity-40" />
-                      </div>
-                    )}
+                    <CoverImage
+                      src={b.cover_url}
+                      title={b.title}
+                      width={56}
+                      height={84}
+                      priority={idx < 4}
+                      className="h-[84px] w-14 rounded-xl object-cover object-top transition-transform group-hover:scale-105"
+                      fallbackClassName="flex h-[84px] w-14 flex-col items-center justify-center rounded-xl border border-border bg-surface text-text-muted text-[9px] p-1 text-center font-medium leading-tight"
+                    />
                   </div>
 
                   {/* Main Details */}
@@ -330,20 +326,15 @@ function BookTable({
                           <div
                             className={`pointer-events-none absolute inset-y-0 left-0 w-0.5 z-10 bg-gradient-to-b ${statusCfg.sideGradient}`}
                           />
-                          {b.cover_url ? (
-                            <Image
-                              src={b.cover_url}
-                              alt=""
-                              width={36}
-                              height={48}
-                              priority={idx < 4}
-                              className="h-12 w-9 rounded-md border border-border/80 object-cover object-top shadow-2xs transition-transform group-hover:scale-105"
-                            />
-                          ) : (
-                            <div className="flex h-12 w-9 items-center justify-center rounded-md border border-border bg-surface text-text-muted">
-                              <BookOpen className="h-4 w-4 opacity-40" />
-                            </div>
-                          )}
+                          <CoverImage
+                            src={b.cover_url}
+                            title={b.title}
+                            width={36}
+                            height={48}
+                            priority={idx < 4}
+                            className="h-12 w-9 rounded-md border border-border/80 object-cover object-top shadow-2xs transition-transform group-hover:scale-105"
+                            fallbackClassName="flex h-12 w-9 flex-col items-center justify-center rounded-md border border-border bg-surface text-text-muted text-[8px] p-0.5 text-center font-medium leading-none"
+                          />
                         </div>
 
                         <div className="min-w-0 flex-1 space-y-0.5">

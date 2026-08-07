@@ -28,7 +28,7 @@ export const GET = withAuth(async (req: NextRequest) => {
   const docs: any[] = Array.isArray(data?.docs) ? data.docs : [];
 
   const results = docs
-    .filter((d) => d.cover_i)
+    .filter((d) => d.cover_i && typeof d.cover_i === 'number' && d.cover_i > 0)
     .slice(0, 5)
     .map((d) => ({
       title: d.title as string,
