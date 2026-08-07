@@ -17,6 +17,7 @@ const COLUMNS = [
   'total_units',
   'genre_tags',
   'source_link',
+  'cover_url',
   'date_started',
   'date_finished',
   'notes',

@@ -236,6 +236,16 @@ export default function HomePage() {
     } else if (next === 'Completed') {
       if (!b.date_finished) patchData.date_finished = today;
       if (!b.date_started) patchData.date_started = today;
+      patchData.is_ongoing = false;
+      if (b.total_units != null) {
+        patchData.progress = b.total_units;
+      } else if (b.latest_units != null) {
+        patchData.total_units = b.latest_units;
+        patchData.progress = b.latest_units;
+      }
+      if (b.progress_structure && b.progress_structure !== 'single' && b.parent_total != null) {
+        patchData.parent_progress = b.parent_total;
+      }
     }
 
     setBooks((prev) => prev.map((x) => (x.id === b.id ? { ...x, ...patchData } : x)));

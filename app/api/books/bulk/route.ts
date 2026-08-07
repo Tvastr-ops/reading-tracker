@@ -34,7 +34,17 @@ export const POST = withAuth(async (req: NextRequest) => {
     if (!VALID_STATUSES.includes(status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
-    const { error } = await supabase.from('books').update({ status }).in('id', cleanIds);
+    const today = new Date().toISOString().split('T')[0];
+    const updateData: Record<string, unknown> = { status };
+    if (status === 'Completed') {
+      updateData.date_finished = today;
+      updateData.date_started = today;
+      updateData.is_ongoing = false;
+    } else if (status === 'Reading') {
+      updateData.date_started = today;
+    }
+
+    const { error } = await supabase.from('books').update(updateData).in('id', cleanIds);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ updated: cleanIds.length });
   }
