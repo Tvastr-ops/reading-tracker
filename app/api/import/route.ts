@@ -27,6 +27,8 @@ const KNOWN_COLUMNS = [
 ];
 
 const VALID_STATUSES = ['Plan to Read', 'Reading', 'On Hold', 'Completed', 'Dropped'];
+const VALID_UNIT_TYPES = ['pages', 'chapters', 'words', 'percent', 'volumes', 'units'];
+const VALID_STRUCTURES = ['single', 'volume_chapter', 'part_chapter'];
 
 // Minimal RFC4180-style CSV parser: handles quoted fields, escaped quotes
 // (""), and commas/newlines inside quotes. No external dependency needed
@@ -125,11 +127,14 @@ export const POST = withAuth(async (req: NextRequest) => {
     const isOngoingStr = get('is_ongoing')?.toLowerCase();
     const is_ongoing = isOngoingStr === 'true' || isOngoingStr === '1';
 
+    const rawUnit = get('unit_type');
+    const rawStruct = get('progress_structure');
+
     toInsert.push({
       title,
       type: get('type') || 'Novel',
-      unit_type: get('unit_type') || 'pages',
-      progress_structure: get('progress_structure') || 'single',
+      unit_type: rawUnit && VALID_UNIT_TYPES.includes(rawUnit) ? rawUnit : 'pages',
+      progress_structure: rawStruct && VALID_STRUCTURES.includes(rawStruct) ? rawStruct : 'single',
       parent_progress: toNullableNumber(get('parent_progress')),
       parent_total: toNullableNumber(get('parent_total')),
       latest_units: toNullableNumber(get('latest_units')),

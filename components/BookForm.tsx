@@ -143,8 +143,34 @@ export default function BookForm({
     }
     setSaving(true);
     setError('');
+
+    const payload = { ...form };
+
+    // Sanitization rule 1: If structure is single, clear parent progress/total
+    if (payload.progress_structure === 'single') {
+      payload.parent_progress = null;
+      payload.parent_total = null;
+    }
+
+    // Sanitization rule 2: If status is Completed
+    if (payload.status === 'Completed') {
+      payload.is_ongoing = false;
+      if (payload.total_units != null) {
+        payload.progress = payload.total_units;
+      } else if (payload.latest_units != null) {
+        payload.total_units = payload.latest_units;
+        payload.progress = payload.latest_units;
+      }
+      if (payload.progress_structure !== 'single' && payload.parent_total != null) {
+        payload.parent_progress = payload.parent_total;
+      }
+    } else if (!payload.is_ongoing && payload.total_units == null && payload.latest_units != null) {
+      // If ongoing is unchecked and total_units is null, copy latest_units to total_units
+      payload.total_units = payload.latest_units;
+    }
+
     try {
-      await onSave(form);
+      await onSave(payload);
     } catch (err: any) {
       setError(err.message || 'Failed to save');
     } finally {

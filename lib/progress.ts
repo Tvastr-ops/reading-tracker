@@ -54,22 +54,24 @@ export function isCaughtUp(book: Book): boolean {
   if (book.latest_units != null && book.progress != null) {
     return book.progress >= book.latest_units;
   }
-  if (book.parent_total != null && book.parent_progress != null) {
-    return book.parent_progress >= book.parent_total;
-  }
   return false;
 }
 
 export function calculateProgressPercentage(book: Book): number | null {
   const current = book.progress ?? 0;
-  if (book.total_units && book.total_units > 0) {
+  if (book.total_units != null && book.total_units > 0) {
     return Math.min(100, Math.round((current / book.total_units) * 100));
   }
-  if (book.is_ongoing && book.latest_units && book.latest_units > 0) {
+  if (book.is_ongoing && book.latest_units != null && book.latest_units > 0) {
     return Math.min(100, Math.round((current / book.latest_units) * 100));
   }
-  // Volume level percentage fallback if volume count is provided
-  if (book.parent_progress != null && book.parent_total != null && book.parent_total > 0) {
+  // Container level percentage fallback if container count is provided and structure is not single
+  if (
+    book.progress_structure !== 'single' &&
+    book.parent_progress != null &&
+    book.parent_total != null &&
+    book.parent_total > 0
+  ) {
     return Math.min(100, Math.round((book.parent_progress / book.parent_total) * 100));
   }
   return null;
@@ -85,52 +87,91 @@ export function formatProgressText(book: Book): string {
 
   let baseText = '';
 
-  if (structure === 'volume_chapter') {
+  // 1. When primary unit is volumes:
+  if (unit === 'volumes') {
+    if (parentTot != null) {
+      const volNum = parentProg ?? current;
+      baseText = `Vol. ${volNum} / ${parentTot}`;
+    } else if (total != null && total > 0) {
+      baseText = `Vol. ${current} / ${total}`;
+    } else {
+      baseText = `Vol. ${current}`;
+    }
+  } else if (structure === 'volume_chapter') {
+    // 2. Volume -> Chapter (or Volume -> Page/Word/Percent/Unit)
     let volStr = '';
     if (parentProg != null && parentTot != null) {
       volStr = `Vol. ${parentProg}/${parentTot}`;
     } else if (parentProg != null) {
       volStr = `Vol. ${parentProg}`;
+    } else if (parentTot != null) {
+      volStr = `Vol. 0/${parentTot}`;
     }
 
-    const chStr = current > 0 ? `Ch. ${current}` : '';
-    if (volStr && chStr) {
-      baseText = `${volStr} • ${chStr}`;
+    let unitStr = '';
+    if (unit === 'chapters') {
+      unitStr = `Ch. ${current}`;
+    } else if (unit === 'words') {
+      unitStr = `${current.toLocaleString('en-US')} words`;
+    } else if (unit === 'percent') {
+      unitStr = `${current}%`;
+    } else if (unit === 'units') {
+      unitStr = `${current} units`;
+    } else {
+      // Default: pages
+      unitStr = `${current} pages`;
+    }
+
+    if (volStr && (current > 0 || unit === 'chapters')) {
+      baseText = `${volStr} • ${unitStr}`;
     } else if (volStr) {
       baseText = volStr;
     } else {
-      baseText = chStr || 'Ch. 0';
+      baseText = unitStr;
     }
 
     if (total != null && total > 0) {
       baseText += ` / ${total}`;
     }
   } else if (structure === 'part_chapter') {
+    // 3. Part -> Chapter (or Part -> Page/Word/Percent/Unit)
     let partStr = '';
     if (parentProg != null && parentTot != null) {
       partStr = `Part ${toRoman(parentProg)}/${toRoman(parentTot)}`;
     } else if (parentProg != null) {
       partStr = `Part ${toRoman(parentProg)}`;
+    } else if (parentTot != null) {
+      partStr = `Part I/${toRoman(parentTot)}`;
     }
 
-    const chStr = current > 0 ? `Ch. ${current}` : '';
-    if (partStr && chStr) {
-      baseText = `${partStr} • ${chStr}`;
+    let unitStr = '';
+    if (unit === 'chapters') {
+      unitStr = `Ch. ${current}`;
+    } else if (unit === 'words') {
+      unitStr = `${current.toLocaleString('en-US')} words`;
+    } else if (unit === 'percent') {
+      unitStr = `${current}%`;
+    } else if (unit === 'units') {
+      unitStr = `${current} units`;
+    } else {
+      unitStr = `${current} pages`;
+    }
+
+    if (partStr && (current > 0 || unit === 'chapters')) {
+      baseText = `${partStr} • ${unitStr}`;
     } else if (partStr) {
       baseText = partStr;
     } else {
-      baseText = chStr || 'Ch. 0';
+      baseText = unitStr;
     }
 
     if (total != null && total > 0) {
       baseText += ` / ${total}`;
     }
   } else {
-    // Single level
+    // 4. Single level
     if (unit === 'chapters') {
       baseText = total != null && total > 0 ? `Ch. ${current} / ${total}` : `Ch. ${current}`;
-    } else if (unit === 'volumes') {
-      baseText = total != null && total > 0 ? `Vol. ${current} / ${total}` : `Vol. ${current}`;
     } else if (unit === 'words') {
       const formattedCurrent = current.toLocaleString('en-US');
       baseText =
@@ -156,8 +197,6 @@ export function formatProgressText(book: Book): string {
         const behind = book.latest_units - current;
         baseText += ` (${behind} behind)`;
       }
-    } else if (parentProg != null && parentTot != null && parentProg >= parentTot) {
-      baseText += ' • Caught Up';
     } else {
       baseText += ' (Ongoing)';
     }
