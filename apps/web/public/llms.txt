@@ -1,0 +1,9 @@
+# Reading Tracker
+
+> Personal literature reading tracker web application for organizing, logging, and tracking reading progress.
+
+## Features
+- Book Library Management (Grid and Table Views)
+- Reading Log and Session Tracking
+- Progress Analytics and Goal Setting
+- Filter by status: Want to Read, Reading, Completed, Dropped

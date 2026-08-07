@@ -61,7 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="bg-bg font-sans text-text antialiased">
-        {children}
+        <main>{children}</main>
         <Toaster position="bottom-right" richColors closeButton />
         <SpeedInsights />
       </body>

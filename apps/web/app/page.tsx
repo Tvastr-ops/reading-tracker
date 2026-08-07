@@ -467,7 +467,7 @@ export default function HomePage() {
   }, [showTrash, viewMode, editing, focusedIndex]);
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-6 pb-20 sm:px-6 lg:px-8 xl:px-10 2xl:max-w-screen-2xl">
+    <div className="mx-auto max-w-7xl px-4 py-6 pb-20 sm:px-6 lg:px-8 xl:px-10 2xl:max-w-screen-2xl">
       {/* Header Bar */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -1100,6 +1100,6 @@ export default function HomePage() {
           onSave={saveBook}
         />
       )}
-    </main>
+    </div>
   );
 }
