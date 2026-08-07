@@ -42,11 +42,34 @@ const UNIT_OPTIONS: { label: string; value: UnitType }[] = [
   { label: 'Units', value: 'units' },
 ];
 
-const STRUCTURE_OPTIONS: { label: string; value: ProgressStructure }[] = [
-  { label: 'Single Level (Pages, Chapters, %)', value: 'single' },
-  { label: 'Volume → Chapter', value: 'volume_chapter' },
-  { label: 'Part → Chapter', value: 'part_chapter' },
-];
+function getStructureOptions(unitType: UnitType): { label: string; value: ProgressStructure }[] {
+  const singularUnit =
+    unitType === 'chapters'
+      ? 'Chapter'
+      : unitType === 'volumes'
+        ? 'Volume'
+        : unitType === 'words'
+          ? 'Word'
+          : unitType === 'percent'
+            ? '%'
+            : unitType === 'units'
+              ? 'Unit'
+              : 'Page';
+
+  if (unitType === 'volumes') {
+    return [
+      { label: 'Single Level (Volumes)', value: 'single' },
+      { label: 'Volume Hierarchy (Vol. X / Total)', value: 'volume_chapter' },
+      { label: 'Part → Volume (Part II • Vol. 3)', value: 'part_chapter' },
+    ];
+  }
+
+  return [
+    { label: `Single Level (${singularUnit}s)`, value: 'single' },
+    { label: `Volume → ${singularUnit} (Vol. X • ${singularUnit} Y)`, value: 'volume_chapter' },
+    { label: `Part → ${singularUnit} (Part X • ${singularUnit} Y)`, value: 'part_chapter' },
+  ];
+}
 
 export default function BookForm({
   initial,
@@ -395,7 +418,7 @@ export default function BookForm({
                                 <SelectValue placeholder="Select structure" />
                               </SelectTrigger>
                               <SelectContent>
-                                {STRUCTURE_OPTIONS.map((s) => (
+                                {getStructureOptions(form.unit_type || 'pages').map((s) => (
                                   <SelectItem key={s.value} value={s.value}>
                                     {s.label}
                                   </SelectItem>
