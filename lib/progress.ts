@@ -87,65 +87,69 @@ export function formatProgressText(book: Book): string {
 
   let baseText = '';
 
-  // 1. When primary unit is volumes:
-  if (unit === 'volumes') {
-    if (parentTot != null) {
-      const volNum = parentProg ?? current;
-      baseText = `Vol. ${volNum} / ${parentTot}`;
-    } else if (total != null && total > 0) {
-      baseText = `Vol. ${current} / ${total}`;
+  if (structure === 'volume_chapter') {
+    // 1. Volume -> Chapter (or Volume -> Page/Word/Percent/Unit/Volume)
+    if (unit === 'volumes') {
+      if (parentProg != null && parentTot != null) {
+        baseText = `Vol. ${parentProg} / ${parentTot}`;
+      } else if (parentTot != null) {
+        baseText = `Vol. ${parentProg ?? current} / ${parentTot}`;
+      } else if (total != null && total > 0) {
+        baseText = `Vol. ${current} / ${total}`;
+      } else {
+        baseText = `Vol. ${current}`;
+      }
     } else {
-      baseText = `Vol. ${current}`;
-    }
-  } else if (structure === 'volume_chapter') {
-    // 2. Volume -> Chapter (or Volume -> Page/Word/Percent/Unit)
-    let volStr = '';
-    if (parentProg != null && parentTot != null) {
-      volStr = `Vol. ${parentProg}/${parentTot}`;
-    } else if (parentProg != null) {
-      volStr = `Vol. ${parentProg}`;
-    } else if (parentTot != null) {
-      volStr = `Vol. 0/${parentTot}`;
-    }
+      let volStr = '';
+      if (parentProg != null && parentTot != null) {
+        volStr = `Vol. ${parentProg} / ${parentTot}`;
+      } else if (parentProg != null) {
+        volStr = `Vol. ${parentProg}`;
+      } else if (parentTot != null) {
+        volStr = `Vol. 0 / ${parentTot}`;
+      }
 
-    let unitStr = '';
-    if (unit === 'chapters') {
-      unitStr = `Ch. ${current}`;
-    } else if (unit === 'words') {
-      unitStr = `${current.toLocaleString('en-US')} words`;
-    } else if (unit === 'percent') {
-      unitStr = `${current}%`;
-    } else if (unit === 'units') {
-      unitStr = `${current} units`;
-    } else {
-      // Default: pages
-      unitStr = `${current} pages`;
-    }
+      let unitStr = '';
+      if (unit === 'chapters') {
+        unitStr = `Ch. ${current}`;
+      } else if (unit === 'words') {
+        unitStr = `${current.toLocaleString('en-US')} words`;
+      } else if (unit === 'percent') {
+        unitStr = `${current}%`;
+      } else if (unit === 'units') {
+        unitStr = `${current} units`;
+      } else {
+        // Default: pages
+        unitStr = `${current} pages`;
+      }
 
-    if (volStr && (current > 0 || unit === 'chapters')) {
-      baseText = `${volStr} • ${unitStr}`;
-    } else if (volStr) {
-      baseText = volStr;
-    } else {
-      baseText = unitStr;
-    }
+      if (volStr && (current > 0 || unit === 'chapters')) {
+        baseText = `${volStr} • ${unitStr}`;
+      } else if (volStr) {
+        baseText = volStr;
+      } else {
+        baseText = unitStr;
+      }
 
-    if (total != null && total > 0) {
-      baseText += ` / ${total}`;
+      if (total != null && total > 0) {
+        baseText += ` / ${total}`;
+      }
     }
   } else if (structure === 'part_chapter') {
-    // 3. Part -> Chapter (or Part -> Page/Word/Percent/Unit)
+    // 2. Part -> Chapter (or Part -> Page/Word/Percent/Unit/Volume)
     let partStr = '';
     if (parentProg != null && parentTot != null) {
-      partStr = `Part ${toRoman(parentProg)}/${toRoman(parentTot)}`;
+      partStr = `Part ${toRoman(parentProg)} / ${toRoman(parentTot)}`;
     } else if (parentProg != null) {
       partStr = `Part ${toRoman(parentProg)}`;
     } else if (parentTot != null) {
-      partStr = `Part I/${toRoman(parentTot)}`;
+      partStr = `Part I / ${toRoman(parentTot)}`;
     }
 
     let unitStr = '';
-    if (unit === 'chapters') {
+    if (unit === 'volumes') {
+      unitStr = `Vol. ${current}`;
+    } else if (unit === 'chapters') {
       unitStr = `Ch. ${current}`;
     } else if (unit === 'words') {
       unitStr = `${current.toLocaleString('en-US')} words`;
@@ -157,7 +161,7 @@ export function formatProgressText(book: Book): string {
       unitStr = `${current} pages`;
     }
 
-    if (partStr && (current > 0 || unit === 'chapters')) {
+    if (partStr && (current > 0 || unit === 'chapters' || unit === 'volumes')) {
       baseText = `${partStr} • ${unitStr}`;
     } else if (partStr) {
       baseText = partStr;
@@ -169,9 +173,11 @@ export function formatProgressText(book: Book): string {
       baseText += ` / ${total}`;
     }
   } else {
-    // 4. Single level
+    // 3. Single level
     if (unit === 'chapters') {
       baseText = total != null && total > 0 ? `Ch. ${current} / ${total}` : `Ch. ${current}`;
+    } else if (unit === 'volumes') {
+      baseText = total != null && total > 0 ? `Vol. ${current} / ${total}` : `Vol. ${current}`;
     } else if (unit === 'words') {
       const formattedCurrent = current.toLocaleString('en-US');
       baseText =

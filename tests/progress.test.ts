@@ -122,7 +122,7 @@ test('Light Novel (Chapters + Volume -> Chapter) - Multi-Tier Progress', () => {
     total_units: 80,
     status: 'Reading',
   });
-  assert.strictEqual(formatProgressText(book), 'Vol. 3/5 • Ch. 18 / 80');
+  assert.strictEqual(formatProgressText(book), 'Vol. 3 / 5 • Ch. 18 / 80');
   assert.strictEqual(calculateProgressPercentage(book), 23);
 });
 
@@ -137,7 +137,7 @@ test('Web Novel (Pages + Volume -> Chapter) - Multi-Tier Progress', () => {
     total_units: 1200,
     status: 'Reading',
   });
-  assert.strictEqual(formatProgressText(book), 'Vol. 3/5 • 450 pages / 1200');
+  assert.strictEqual(formatProgressText(book), 'Vol. 3 / 5 • 450 pages / 1200');
   assert.strictEqual(calculateProgressPercentage(book), 38);
 });
 
@@ -179,4 +179,19 @@ test('Ongoing Serialization - Unknown Total Units', () => {
   assert.strictEqual(formatProgressText(book), 'Ch. 182 (Ongoing)');
   assert.strictEqual(calculateProgressPercentage(book), null);
   assert.strictEqual(isCaughtUp(book), false);
+});
+
+test('Part -> Chapter with Volumes Unit Type', () => {
+  const book = createBook({
+    type: 'Collection',
+    unit_type: 'volumes',
+    progress_structure: 'part_chapter',
+    parent_progress: 2,
+    parent_total: 4,
+    progress: 3,
+    total_units: 10,
+    status: 'Reading',
+  });
+  assert.strictEqual(formatProgressText(book), 'Part II / IV • Vol. 3 / 10');
+  assert.strictEqual(calculateProgressPercentage(book), 30);
 });
