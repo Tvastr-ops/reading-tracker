@@ -171,9 +171,9 @@ function BookTable({
                   <div className="min-w-0 flex-1 space-y-1">
                     {/* Header: Title & Status Badge */}
                     <div className="flex items-start justify-between gap-1.5">
-                      <h4 className="line-clamp-2 font-bold text-text text-xs leading-tight tracking-tight transition-colors group-hover:text-accent-color sm:text-sm">
+                      <h2 className="line-clamp-2 font-bold text-text text-xs leading-tight tracking-tight transition-colors group-hover:text-accent-color sm:text-sm">
                         {b.title}
-                      </h4>
+                      </h2>
                       <Badge
                         variant={statusCfg.variant}
                         className="shrink-0 gap-1 rounded-full px-2 py-0.5 font-semibold text-[9px] tracking-wide shadow-2xs"
@@ -522,6 +522,7 @@ function BookTable({
                             <Button
                               variant="ghost"
                               size="icon"
+                              aria-label={`Edit ${b.title}`}
                               className="h-8 w-8 rounded-lg text-accent-color hover:bg-accent-color/10"
                               onClick={() => onEdit(b)}
                               title="Edit entry"
@@ -531,6 +532,7 @@ function BookTable({
                             <Button
                               variant="ghost"
                               size="icon"
+                              aria-label={`Delete ${b.title}`}
                               className="h-8 w-8 rounded-lg text-rose-500 hover:bg-rose-500/10 dark:text-rose-400"
                               onClick={() => onDelete(b)}
                               title="Delete entry"

@@ -130,6 +130,7 @@ function BookGrid({
                     <Button
                       variant="ghost"
                       size="icon"
+                      aria-label={`Actions for ${b.title}`}
                       className="h-7 w-7 rounded-full border border-white/20 bg-black/40 text-white shadow-md backdrop-blur-md transition-all hover:bg-black/65 group-hover:scale-105"
                     >
                       <MoreVertical className="h-3.5 w-3.5" />
@@ -172,9 +173,9 @@ function BookGrid({
 
             <CardContent className="flex flex-1 flex-col justify-between gap-2 p-3 sm:p-3.5">
               <div>
-                <h4 className="line-clamp-2 font-bold text-text text-xs leading-snug tracking-tight transition-colors group-hover:text-accent-color">
+                <h2 className="line-clamp-2 font-bold text-text text-xs leading-snug tracking-tight transition-colors group-hover:text-accent-color">
                   {b.title}
-                </h4>
+                </h2>
                 {b.author && (
                   <p className="mt-0.5 line-clamp-1 text-[11px] text-text-muted">{b.author}</p>
                 )}
