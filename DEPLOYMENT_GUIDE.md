@@ -116,9 +116,9 @@ type to log into your reading tracker. Make it something only you know
    your repositories.
 3. Once logged in, click **Add New** → **Project**.
 4. Find `reading-tracker` in the list of repositories and click **Import**.
-5. You'll land on a configuration screen. Before clicking Deploy, expand
-   **Environment Variables** and add these four, one at a time (Name on the
-   left, Value on the right, click **Add** after each):
+5. You'll land on a configuration screen.
+   - Set **Root Directory** to `apps/web` (click **Edit** next to Root Directory, type `apps/web`, and click Save).
+   - Before clicking Deploy, expand **Environment Variables** and add these four, one at a time (Name on the left, Value on the right, click **Add** after each):
 
    | Name | Value |
    |---|---|
