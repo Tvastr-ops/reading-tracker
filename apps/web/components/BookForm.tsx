@@ -9,6 +9,7 @@ import {
   Search,
   Settings2,
 } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -575,24 +576,30 @@ export default function BookForm({
                     </div>
                     {coverResults.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {coverResults.map((r) => (
-                          <button
-                            type="button"
-                            key={r.cover_url}
-                            onClick={() => {
-                              set('cover_url', r.cover_url);
-                              setCoverResults([]);
-                            }}
-                            title={`${r.title}${r.author ? ` — ${r.author}` : ''}`}
-                            className="cursor-pointer rounded-lg border border-border bg-card-bg p-0.5 transition-colors hover:border-accent-color"
-                          >
-                            <img
-                              src={r.cover_url}
-                              alt=""
-                              className="block h-14 w-10 rounded object-cover"
-                            />
-                          </button>
-                        ))}
+                        <AnimatePresence>
+                          {coverResults.map((r, idx) => (
+                            <motion.button
+                              type="button"
+                              key={r.cover_url}
+                              initial={{ opacity: 0, scale: 0.8, y: 6 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.8 }}
+                              transition={{ duration: 0.2, delay: idx * 0.04 }}
+                              onClick={() => {
+                                set('cover_url', r.cover_url);
+                                setCoverResults([]);
+                              }}
+                              title={`${r.title}${r.author ? ` — ${r.author}` : ''}`}
+                              className="cursor-pointer rounded-lg border border-border bg-card-bg p-0.5 transition-colors hover:border-accent-color"
+                            >
+                              <img
+                                src={r.cover_url}
+                                alt=""
+                                className="block h-14 w-10 rounded object-cover"
+                              />
+                            </motion.button>
+                          ))}
+                        </AnimatePresence>
                       </div>
                     )}
                   </div>

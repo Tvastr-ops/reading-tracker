@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   ArrowUpDown,
@@ -603,6 +602,12 @@ export default function HomePage() {
               <div className="flex items-center gap-1.5 sm:hidden">
                 {!showTrash && (
                   <div className="relative flex items-center rounded-xl border border-border/80 bg-surface/80 p-0.5 backdrop-blur-md">
+                    <div
+                      className={cn(
+                        'absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] rounded-lg bg-accent-color shadow-xs transition-all duration-200 ease-out',
+                        viewMode === 'grid' ? 'left-0.5' : 'left-[calc(50%+1px)]',
+                      )}
+                    />
                     <button
                       type="button"
                       onClick={() => toggleViewMode('grid')}
@@ -614,13 +619,6 @@ export default function HomePage() {
                       )}
                       title="Grid view"
                     >
-                      {viewMode === 'grid' && (
-                        <motion.div
-                          layoutId="mobileViewModePill"
-                          className="absolute inset-0 rounded-lg bg-accent-color shadow-xs"
-                          transition={{ type: 'spring', stiffness: 450, damping: 32 }}
-                        />
-                      )}
                       <LayoutGrid className="relative z-10 h-4 w-4" />
                     </button>
                     <button
@@ -634,13 +632,6 @@ export default function HomePage() {
                       )}
                       title="Table view"
                     >
-                      {viewMode === 'table' && (
-                        <motion.div
-                          layoutId="mobileViewModePill"
-                          className="absolute inset-0 rounded-lg bg-accent-color shadow-xs"
-                          transition={{ type: 'spring', stiffness: 450, damping: 32 }}
-                        />
-                      )}
                       <List className="relative z-10 h-4 w-4" />
                     </button>
                   </div>
@@ -685,6 +676,12 @@ export default function HomePage() {
             <div className="hidden sm:flex sm:items-center sm:gap-2">
               {!showTrash && (
                 <div className="relative flex items-center rounded-xl border border-border/80 bg-surface/80 p-1 shadow-xs backdrop-blur-md">
+                  <div
+                    className={cn(
+                      'absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-accent-color shadow-xs transition-all duration-200 ease-out',
+                      viewMode === 'grid' ? 'left-1' : 'left-[calc(50%+2px)]',
+                    )}
+                  />
                   <button
                     type="button"
                     onClick={() => toggleViewMode('grid')}
@@ -694,13 +691,6 @@ export default function HomePage() {
                     )}
                     title="Grid view"
                   >
-                    {viewMode === 'grid' && (
-                      <motion.div
-                        layoutId="viewModePill"
-                        className="absolute inset-0 rounded-lg bg-accent-color shadow-xs"
-                        transition={{ type: 'spring', stiffness: 450, damping: 32 }}
-                      />
-                    )}
                     <LayoutGrid className="relative z-10 h-3.5 w-3.5" />
                     <span className="relative z-10 hidden sm:inline">Grid</span>
                   </button>
@@ -714,13 +704,6 @@ export default function HomePage() {
                     )}
                     title="Table view"
                   >
-                    {viewMode === 'table' && (
-                      <motion.div
-                        layoutId="viewModePill"
-                        className="absolute inset-0 rounded-lg bg-accent-color shadow-xs"
-                        transition={{ type: 'spring', stiffness: 450, damping: 32 }}
-                      />
-                    )}
                     <List className="relative z-10 h-3.5 w-3.5" />
                     <span className="relative z-10 hidden sm:inline">Table</span>
                   </button>
