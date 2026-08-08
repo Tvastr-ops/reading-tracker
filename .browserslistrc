@@ -1,4 +1,5 @@
-# Explicit modern browser targets for monorepo SWC transpilation
+# Explicit modern browser targets (Baseline Widely Available) for Next.js / SWC transpilation
+baseline widely available
 last 2 Chrome versions
 last 2 Firefox versions
 last 2 Safari versions
