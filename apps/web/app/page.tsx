@@ -1052,58 +1052,118 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.96 }}
             transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-            className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 flex-wrap items-center gap-2.5 rounded-full border border-border/80 border-t-white/25 bg-card-bg/95 px-4 py-2 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl dark:border-t-amber-100/20"
+            className="fixed bottom-4 sm:bottom-6 left-1/2 z-50 flex w-[calc(100%-1.25rem)] max-w-xl -translate-x-1/2 items-center justify-between gap-1.5 rounded-2xl border border-border/80 border-t-white/30 bg-card-bg/95 p-2 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl dark:border-t-amber-100/20 sm:w-auto sm:gap-2.5 sm:rounded-full sm:px-4 sm:py-2"
           >
-            <span className="font-semibold text-text text-xs">
-              {selected.size} item{selected.size > 1 ? 's' : ''} selected
-            </span>
-            <div className="h-4 w-px bg-border/60" />
-            {!showTrash && (
-              <Select
-                onValueChange={(val) => {
-                  bulkAction('status', val);
+            <div className="flex shrink-0 items-center gap-1.5 pl-1 text-xs">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent-color/15 font-mono font-bold text-accent-color text-[11px]">
+                {selected.size}
+              </span>
+              <span className="hidden font-medium text-text sm:inline">
+                {selected.size === 1 ? 'item' : 'items'} selected
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-1.5 text-accent-color text-[11px] hover:bg-accent-color/10"
+                onClick={() => {
+                  const allSelected =
+                    filtered.length > 0 && filtered.every((b) => selected.has(b.id));
+                  if (allSelected) {
+                    setSelected(new Set());
+                  } else {
+                    setSelected(new Set(filtered.map((b) => b.id)));
+                  }
                 }}
               >
-                <SelectTrigger className="h-7 w-28 rounded-full border-border text-xs">
-                  <SelectValue placeholder="Set Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUSES.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            {showTrash && (
+                {filtered.length > 0 && filtered.every((b) => selected.has(b.id)) ? 'None' : 'All'}
+              </Button>
+            </div>
+
+            <div className="h-4 w-px bg-border/60" />
+
+            <div className="flex items-center gap-1.5">
+              {!showTrash && (
+                <>
+                  {/* Batch Status */}
+                  <Select
+                    onValueChange={(val) => {
+                      bulkAction('status', val);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-22 rounded-xl border-border text-xs sm:w-28 sm:rounded-full">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUSES.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Batch Rating */}
+                  <Select
+                    onValueChange={(val) => {
+                      const r = val === 'unrated' ? 0 : Number(val);
+                      const list = books.filter((b) => selected.has(b.id));
+                      list.forEach((b) => {
+                        void saveBook({ ...b, rating: r });
+                      });
+                      setSelected(new Set());
+                      toast.success(`Updated rating for ${list.length} entries`);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-20 rounded-xl border-border text-xs sm:w-24 sm:rounded-full">
+                      <SelectValue placeholder="Rating" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5★ (5.0)</SelectItem>
+                      <SelectItem value="4">4★ (4.0)</SelectItem>
+                      <SelectItem value="3">3★ (3.0)</SelectItem>
+                      <SelectItem value="2">2★ (2.0)</SelectItem>
+                      <SelectItem value="1">1★ (1.0)</SelectItem>
+                      <SelectItem value="unrated">Clear Rating</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
+
+              {showTrash && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 rounded-xl text-xs sm:rounded-full"
+                  onClick={() => bulkAction('restore')}
+                >
+                  Restore
+                </Button>
+              )}
+
               <Button
                 size="sm"
-                variant="outline"
-                className="h-7 rounded-full text-xs"
-                onClick={() => bulkAction('restore')}
+                variant="destructive"
+                className="h-8 rounded-xl px-2.5 text-xs shadow-xs sm:rounded-full sm:px-3"
+                onClick={() => bulkAction(showTrash ? 'delete_permanent' : 'delete')}
+                title={showTrash ? 'Delete Permanently' : 'Move to Trash'}
               >
-                Restore Selected
+                <Trash2 className="h-3.5 w-3.5 sm:mr-1.5" />
+                <span className="hidden sm:inline">
+                  {showTrash ? 'Delete Permanently' : 'Move to Trash'}
+                </span>
+                <span className="inline sm:hidden">{showTrash ? 'Delete' : 'Trash'}</span>
               </Button>
-            )}
-            <Button
-              size="sm"
-              variant="destructive"
-              className="h-7 rounded-full px-3 text-xs shadow-xs"
-              onClick={() => bulkAction(showTrash ? 'delete_permanent' : 'delete')}
-            >
-              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-              {showTrash ? 'Delete Permanently' : 'Move to Trash'}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 w-7 rounded-full p-0 text-text-muted hover:text-text"
-              onClick={() => setSelected(new Set())}
-              title="Deselect all"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 w-8 shrink-0 rounded-full p-0 text-text-muted hover:bg-surface/60 hover:text-text"
+                onClick={() => setSelected(new Set())}
+                title="Deselect all"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
