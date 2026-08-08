@@ -321,6 +321,7 @@ export default function HomePage() {
   async function bulkAction(
     action: 'status' | 'rating' | 'delete' | 'restore' | 'delete_permanent',
     overrideValue?: string | number,
+    keepSelection = false,
   ) {
     if (selected.size === 0) return;
     if (
@@ -345,7 +346,9 @@ export default function HomePage() {
       );
     }
 
-    setSelected(new Set());
+    if (!keepSelection) {
+      setSelected(new Set());
+    }
 
     const body: Record<string, unknown> = { action, ids: Array.from(targetIds) };
     if (action === 'status' && typeof overrideValue === 'string') body.status = overrideValue;
@@ -1113,7 +1116,7 @@ export default function HomePage() {
                   {/* Batch Status */}
                   <Select
                     onValueChange={(val) => {
-                      bulkAction('status', val);
+                      bulkAction('status', val, true);
                     }}
                   >
                     <SelectTrigger className="h-8 w-22 rounded-xl border-border text-xs sm:w-28 sm:rounded-full">
@@ -1132,7 +1135,7 @@ export default function HomePage() {
                   <Select
                     onValueChange={(val) => {
                       const r = val === 'unrated' ? 0 : Number(val);
-                      bulkAction('rating', r);
+                      bulkAction('rating', r, true);
                     }}
                   >
                     <SelectTrigger className="h-8 w-20 rounded-xl border-border text-xs sm:w-24 sm:rounded-full">
@@ -1178,11 +1181,15 @@ export default function HomePage() {
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-8 w-8 shrink-0 rounded-full p-0 text-text-muted hover:bg-surface/60 hover:text-text"
-                onClick={() => setSelected(new Set())}
-                title="Deselect all"
+                className="h-8 shrink-0 rounded-full px-2.5 font-semibold text-xs text-text-muted hover:bg-surface/60 hover:text-text"
+                onClick={() => {
+                  setSelectMode(false);
+                  setSelected(new Set());
+                }}
+                title="Done selecting"
               >
-                <X className="h-4 w-4" />
+                <Check className="mr-1 h-3.5 w-3.5 text-emerald-500" />
+                <span>Done</span>
               </Button>
             </div>
           </motion.div>
