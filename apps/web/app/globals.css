@@ -61,9 +61,9 @@
   color-scheme: light;
 
   --bg: #f1ebdd;
-  --card-bg: #fbf8f1;
   --surface: #e9e0c9;
-  --border: #ddd2b8;
+  --card-bg: #ffffff;
+  --border: #dcd0b5;
   --border-soft: #e8dfc9;
   --text: #24201a;
   --text-muted: #6f6553;
@@ -71,17 +71,17 @@
   --accent-bg: #24201a;
   --accent-bg-hover: #3c362b;
   --accent-text: #f1ebdd;
-  --input-bg: #fbf8f1;
-  --input-border: #ddd2b8;
-  --btn-border: #ddd2b8;
+  --input-bg: #ffffff;
+  --input-border: #dcd0b5;
+  --btn-border: #dcd0b5;
   --secondary-hover: #e9e0c9;
   --danger: #8a3b30;
   --danger-hover: #6e2f27;
-  --row-hover: #ece2c8;
+  --row-hover: #f4eee2;
   --progress-track: #e2d7bd;
   --star-empty: #d3c6a3;
   --star-filled: #8a3b30;
-  --shadow: 0 1px 2px rgba(40, 30, 10, 0.08);
+  --shadow: 0 4px 14px rgba(40, 30, 10, 0.06);
   --shadow-modal: 0 16px 44px rgba(30, 22, 8, 0.24);
   --font-serif: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, serif;
 
@@ -110,29 +110,29 @@
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --bg: #1b1712;
-  --card-bg: #241f17;
-  --surface: #2d271c;
-  --border: #3d3527;
-  --border-soft: #2d271c;
+  --bg: #15120e;
+  --surface: #1e1913;
+  --card-bg: #2a231b;
+  --border: #423727;
+  --border-soft: #2e261a;
   --text: #ece4d3;
   --text-muted: #b1a68c;
   --text-faint: #8a7f68;
   --accent-bg: #ece4d3;
   --accent-bg-hover: #ffffff;
-  --accent-text: #1b1712;
-  --input-bg: #241f17;
-  --input-border: #453c2c;
-  --btn-border: #5c503a;
-  --secondary-hover: #2d271c;
+  --accent-text: #15120e;
+  --input-bg: #221c15;
+  --input-border: #423727;
+  --btn-border: #564834;
+  --secondary-hover: #2a231b;
   --danger: #d68276;
   --danger-hover: #e2988d;
-  --row-hover: #29241a;
-  --progress-track: #3d3527;
+  --row-hover: #262018;
+  --progress-track: #3d3324;
   --star-empty: #453c2c;
   --star-filled: #d18a72;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-  --shadow-modal: 0 16px 44px rgba(0, 0, 0, 0.55);
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  --shadow-modal: 0 16px 44px rgba(0, 0, 0, 0.65);
 }
 
 * {
