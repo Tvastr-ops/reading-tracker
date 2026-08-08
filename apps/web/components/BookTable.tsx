@@ -133,9 +133,9 @@ function BookTable({
                     onEdit(b);
                   }
                 }}
-                className={`group relative overflow-hidden rounded-2xl border border-border/80 border-t-white/15 bg-card-bg/95 p-3 shadow-[0_4px_16px_-4px_rgba(0,0,0,0.3)] backdrop-blur-md transition-all hover:border-accent-color/50 active:scale-[0.99] dark:border-t-white/10 ${idx >= 4 ? 'cv-mobile-card' : ''} ${
+                className={`group relative overflow-hidden rounded-2xl border border-border bg-card-bg p-3 shadow-md backdrop-blur-md transition-all hover:border-accent-color/60 active:scale-[0.99] ${idx >= 4 ? 'cv-mobile-card' : ''} ${
                   isSelected
-                    ? 'border-accent-color bg-accent-color/10 shadow-[0_8px_24px_-4px_rgba(0,0,0,0.4)] ring-2 ring-accent-color/30'
+                    ? 'border-accent-color bg-accent-color/10 shadow-lg ring-2 ring-accent-color/30'
                     : ''
                 }`}
               >
@@ -241,7 +241,7 @@ function BookTable({
         </div>
 
         {/* DESKTOP TABLE VIEW (>=640px) */}
-        <div className="hidden overflow-hidden overflow-x-auto rounded-2xl border border-border/80 border-t-white/15 bg-card-bg shadow-[0_10px_40px_-10px_rgba(0,0,0,0.4)] backdrop-blur-md sm:block dark:border-t-white/10">
+        <div className="hidden overflow-hidden overflow-x-auto rounded-2xl border border-border bg-card-bg shadow-xl backdrop-blur-md sm:block">
           <table className="w-full border-collapse text-xs sm:text-sm">
             <thead>
               <tr className="sticky top-0 z-10 border-border/80 border-b bg-card-bg/95 backdrop-blur-md">
