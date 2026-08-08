@@ -12,7 +12,7 @@ async function isValidSession(token: string | undefined): Promise<boolean> {
   try {
     const secret = new TextEncoder().encode(process.env.SESSION_SECRET);
     await jwtVerify(token, secret, {
-      clockTolerance: '60s', // 60s clock skew tolerance to prevent premature token rejections
+      clockTolerance: '300s', // 300s clock skew tolerance to prevent premature token rejections
     });
     return true;
   } catch {
