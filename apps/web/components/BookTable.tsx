@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import {
   ArrowDown,
   ArrowUp,
@@ -290,10 +291,16 @@ function BookTable({
                       .filter(Boolean)
                   : [];
 
+                const delay = idx < 24 ? idx * 0.025 : 0;
+
                 return (
-                  <tr
+                  <motion.tr
                     key={b.id}
                     data-row-id={b.id}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -12 }}
+                    transition={{ duration: 0.2, delay, ease: [0.16, 1, 0.3, 1] }}
                     onClick={() => {
                       if (selectMode) {
                         onToggleSelect(b.id);
@@ -543,7 +550,7 @@ function BookTable({
                         )}
                       </div>
                     </td>
-                  </tr>
+                  </motion.tr>
                 );
               })}
             </tbody>
