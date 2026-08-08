@@ -105,8 +105,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${newsreader.variable} ${jakarta.variable}`}
     >
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="bg-bg font-sans text-text antialiased">
