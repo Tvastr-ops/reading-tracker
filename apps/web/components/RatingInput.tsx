@@ -40,7 +40,15 @@ export function RatingDisplay({
       stars.push(<Star key={i} className="h-4 w-4 shrink-0 text-amber-400/30" />);
     }
   }
-  return <div className="inline-flex items-center gap-0.5">{stars}</div>;
+  return (
+    <motion.div
+      whileHover={{ scale: 1.1 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+      className="inline-flex items-center gap-0.5 cursor-default"
+    >
+      {stars}
+    </motion.div>
+  );
 }
 
 export function InteractiveStarRating({
@@ -104,6 +112,17 @@ export function RatingSelect({
   onChange: (v: number | null) => void;
   mode: 'stars' | 'decimal';
 }) {
+  if (mode === 'stars') {
+    return (
+      <div className="flex items-center gap-3 py-1">
+        <InteractiveStarRating value={value} onChange={onChange} />
+        <span className="font-semibold text-text-muted text-xs">
+          {value != null ? `${value.toFixed(1)} / 5` : 'Not rated'}
+        </span>
+      </div>
+    );
+  }
+
   const options: (number | null)[] = [null];
   for (let v = 0.5; v <= 5; v += 0.5) options.push(Math.round(v * 10) / 10);
 
@@ -123,7 +142,6 @@ export function RatingSelect({
             <SelectItem key={opt} value={opt.toString()}>
               <div className="flex items-center gap-2">
                 <span>{opt.toFixed(1)}</span>
-                {mode === 'stars' && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />}
               </div>
             </SelectItem>
           ))}
