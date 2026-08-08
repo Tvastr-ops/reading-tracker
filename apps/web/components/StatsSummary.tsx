@@ -346,6 +346,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                       <Button
                         variant="ghost"
                         size="sm"
+                        aria-label="Edit reading goal"
                         onClick={() => {
                           setGoalInput(String(targetGoal));
                           setEditingGoal(true);
