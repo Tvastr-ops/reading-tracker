@@ -1,8 +1,6 @@
-# Explicit modern browser targets (Baseline Widely Available) for Next.js / SWC transpilation
-baseline widely available
-last 2 Chrome versions
-last 2 Firefox versions
-last 2 Safari versions
-last 2 Edge versions
-last 2 iOS versions
-not dead
+# Target modern browser versions (Chrome 111+, Firefox 111+, Safari 16.4+, Edge 111+, iOS 16.4+)
+chrome >= 111
+firefox >= 111
+safari >= 16.4
+edge >= 111
+ios >= 16.4
