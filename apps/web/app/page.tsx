@@ -141,8 +141,8 @@ export default function HomePage() {
     setSelectMode(false);
   }, [showTrash]);
 
-  async function load() {
-    setLoading(true);
+  async function load(quiet = false) {
+    if (!quiet) setLoading(true);
     setError('');
     const res = await fetch(`/api/books${showTrash ? '?trash=1' : ''}`);
     if (res.status === 401) {
@@ -152,11 +152,11 @@ export default function HomePage() {
     const data = await res.json();
     if (!res.ok) {
       setError(data.error || 'Failed to load');
-      setLoading(false);
+      if (!quiet) setLoading(false);
       return;
     }
     setBooks(data.books);
-    setLoading(false);
+    if (!quiet) setLoading(false);
   }
 
   function _toggleRatingMode() {
@@ -328,18 +328,37 @@ export default function HomePage() {
       !confirm(`Permanently delete ${selected.size} entries? This can't be undone.`)
     )
       return;
-    const body: Record<string, unknown> = { action, ids: Array.from(selected) };
+
+    const targetIds = new Set(selected);
+    const count = targetIds.size;
+
+    // ⚡ Optimistic UI Update (Instant 0ms visual feedback)
+    if (action === 'status' && typeof overrideValue === 'string') {
+      setBooks((prev) =>
+        prev.map((b) =>
+          targetIds.has(b.id) ? { ...b, status: overrideValue as Book['status'] } : b,
+        ),
+      );
+    } else if (action === 'rating' && typeof overrideValue === 'number') {
+      setBooks((prev) =>
+        prev.map((b) => (targetIds.has(b.id) ? { ...b, rating: overrideValue } : b)),
+      );
+    }
+
+    setSelected(new Set());
+
+    const body: Record<string, unknown> = { action, ids: Array.from(targetIds) };
     if (action === 'status' && typeof overrideValue === 'string') body.status = overrideValue;
     if (action === 'rating' && overrideValue !== undefined) body.rating = overrideValue;
+
     const res = await fetch('/api/books/bulk', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
+
     if (res.ok) {
-      const count = selected.size;
-      setSelected(new Set());
-      load();
+      load(true);
       if (action === 'delete') {
         toast(`Moved ${count} entries to trash`);
       } else if (action === 'status') {
@@ -347,6 +366,10 @@ export default function HomePage() {
       } else if (action === 'rating') {
         toast.success(`Updated rating for ${count} entries`);
       }
+    } else {
+      // Rollback on failure
+      load();
+      toast.error('Bulk update failed');
     }
   }
 
