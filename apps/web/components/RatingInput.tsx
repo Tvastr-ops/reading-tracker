@@ -64,8 +64,23 @@ export function InteractiveStarRating({
 
   const displayRating = hoverVal ?? value ?? 0;
 
+  const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>, starIdx: number) => {
+    if (disabled) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const isLeftHalf = e.clientX - rect.left < rect.width / 2;
+    setHoverVal(isLeftHalf ? starIdx - 0.5 : starIdx);
+  };
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>, starIdx: number) => {
+    if (disabled) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const isLeftHalf = e.clientX - rect.left < rect.width / 2;
+    const targetVal = isLeftHalf ? starIdx - 0.5 : starIdx;
+    onChange(value === targetVal ? null : targetVal);
+  };
+
   return (
-    <div className="inline-flex items-center gap-1">
+    <div className="inline-flex items-center gap-1" onMouseLeave={() => setHoverVal(null)}>
       {[1, 2, 3, 4, 5].map((starIdx) => {
         const isFilled = displayRating >= starIdx;
         const isHalf = displayRating >= starIdx - 0.5 && displayRating < starIdx;
@@ -78,11 +93,10 @@ export function InteractiveStarRating({
             whileHover={{ scale: 1.25, rotate: 6 }}
             whileTap={{ scale: 0.85 }}
             transition={{ type: 'spring', stiffness: 450, damping: 20 }}
-            onMouseEnter={() => setHoverVal(starIdx)}
-            onMouseLeave={() => setHoverVal(null)}
-            onClick={() => onChange(value === starIdx ? null : starIdx)}
+            onPointerMove={(e) => handlePointerMove(e, starIdx)}
+            onClick={(e) => handleClick(e, starIdx)}
             aria-label={`Rate ${starIdx} stars`}
-            className="p-0.5 focus:outline-hidden disabled:opacity-50"
+            className="relative cursor-pointer p-0.5 focus:outline-hidden disabled:opacity-50"
           >
             {isFilled ? (
               <Star className="h-5 w-5 fill-amber-400 text-amber-400 drop-shadow-xs" />
