@@ -478,7 +478,13 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                 >
                   <div className="flex items-center justify-between font-bold text-text-muted text-xs uppercase tracking-wider">
                     <span className="flex items-center gap-1.5">
-                      <Flame className="h-3.5 w-3.5 text-amber-500" />
+                      <motion.div
+                        whileHover={{ scale: 1.3, rotate: 15 }}
+                        transition={{ type: 'spring', stiffness: 450, damping: 15 }}
+                        className="inline-flex cursor-pointer"
+                      >
+                        <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 drop-shadow-xs" />
+                      </motion.div>
                       Rating Breakdown
                     </span>
                   </div>
