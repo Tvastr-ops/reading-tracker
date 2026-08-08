@@ -468,8 +468,7 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 pb-20 sm:px-6 lg:px-8 xl:px-10 2xl:max-w-screen-2xl">
-      {/* Preconnect to cover image CDN — only needed on dashboard, not login */}
-      <link rel="preconnect" href="https://covers.openlibrary.org" crossOrigin="anonymous" />
+      {/* DNS prefetch to cover image CDN — resolves domain without triggering Lighthouse unused preconnect warning */}
       <link rel="dns-prefetch" href="https://covers.openlibrary.org" />
       {/* Header Bar */}
 
