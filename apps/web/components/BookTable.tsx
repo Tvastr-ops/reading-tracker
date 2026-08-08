@@ -132,7 +132,7 @@ function BookTable({
                     onEdit(b);
                   }
                 }}
-                className={`group relative overflow-hidden rounded-2xl border border-border/80 border-t-white/15 bg-card-bg/95 p-3 shadow-[0_4px_16px_-4px_rgba(0,0,0,0.3)] backdrop-blur-md transition-all hover:border-accent-color/50 active:scale-[0.99] dark:border-t-white/10 ${
+                className={`group relative overflow-hidden rounded-2xl border border-border/80 border-t-white/15 bg-card-bg/95 p-3 shadow-[0_4px_16px_-4px_rgba(0,0,0,0.3)] backdrop-blur-md transition-all hover:border-accent-color/50 active:scale-[0.99] dark:border-t-white/10 ${idx >= 4 ? 'cv-mobile-card' : ''} ${
                   isSelected
                     ? 'border-accent-color bg-accent-color/10 shadow-[0_8px_24px_-4px_rgba(0,0,0,0.4)] ring-2 ring-accent-color/30'
                     : ''
@@ -301,7 +301,7 @@ function BookTable({
                         onEdit(b);
                       }
                     }}
-                    className={`group cursor-pointer transition-all hover:bg-surface/60 ${
+                    className={`group cursor-pointer transition-all hover:bg-surface/60 ${idx >= 4 ? 'cv-table-row' : ''} ${
                       isSelected ? 'border-l-4 border-l-accent-color bg-accent-color/10' : ''
                     } ${isFocused ? 'ring-2 ring-accent-color' : ''}`}
                   >

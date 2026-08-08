@@ -738,3 +738,28 @@ textarea:focus-visible {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ==========================================
+   CONTENT-VISIBILITY: skip off-screen layout
+   Apply to list items that appear below the fold.
+   contain-intrinsic-size reserves space so the
+   scrollbar doesn't jump as items render in.
+   ========================================== */
+
+/* Desktop table rows (~52px: 48px cover + padding) */
+.cv-table-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 52px;
+}
+
+/* Mobile card rows (~120px: 84px cover + padding) */
+.cv-mobile-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 120px;
+}
+
+/* Grid cards (~300px tall including cover, title, progress) */
+.cv-grid-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 300px;
+}
