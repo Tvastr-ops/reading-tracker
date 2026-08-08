@@ -55,10 +55,12 @@ export function InteractiveStarRating({
   value,
   onChange,
   disabled = false,
+  showStepper = true,
 }: {
   value: number | null;
   onChange: (val: number | null) => void;
   disabled?: boolean;
+  showStepper?: boolean;
 }) {
   const [hoverVal, setHoverVal] = useState<number | null>(null);
 
@@ -66,6 +68,9 @@ export function InteractiveStarRating({
 
   const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>, starIdx: number) => {
     if (disabled) return;
+    if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) {
+      return;
+    }
     const rect = e.currentTarget.getBoundingClientRect();
     const isLeftHalf = e.clientX - rect.left < rect.width / 2;
     setHoverVal(isLeftHalf ? starIdx - 0.5 : starIdx);
@@ -79,40 +84,89 @@ export function InteractiveStarRating({
     onChange(value === targetVal ? null : targetVal);
   };
 
-  return (
-    <div className="inline-flex items-center gap-1" onMouseLeave={() => setHoverVal(null)}>
-      {[1, 2, 3, 4, 5].map((starIdx) => {
-        const isFilled = displayRating >= starIdx;
-        const isHalf = displayRating >= starIdx - 0.5 && displayRating < starIdx;
+  const stepBy = (delta: number) => {
+    if (disabled) return;
+    const curr = value ?? 0;
+    const next = Math.min(5, Math.max(0.5, Math.round((curr + delta) * 2) / 2));
+    onChange(next);
+  };
 
-        return (
-          <motion.button
-            key={starIdx}
-            type="button"
-            disabled={disabled}
-            whileHover={{ scale: 1.25, rotate: 6 }}
-            whileTap={{ scale: 0.85 }}
-            transition={{ type: 'spring', stiffness: 450, damping: 20 }}
-            onPointerMove={(e) => handlePointerMove(e, starIdx)}
-            onClick={(e) => handleClick(e, starIdx)}
-            aria-label={`Rate ${starIdx} stars`}
-            className="relative cursor-pointer p-0.5 focus:outline-hidden disabled:opacity-50"
-          >
-            {isFilled ? (
-              <Star className="h-5 w-5 fill-amber-400 text-amber-400 drop-shadow-xs" />
-            ) : isHalf ? (
-              <div className="relative flex h-5 w-5 items-center">
-                <Star className="h-5 w-5 text-amber-400/30" />
-                <div className="absolute top-0 left-0 h-5 w-[50%] overflow-hidden">
-                  <Star className="h-5 w-5 max-w-none fill-amber-400 text-amber-400" />
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <div
+        className="inline-flex items-center gap-1 sm:gap-1.5"
+        onMouseLeave={() => setHoverVal(null)}
+      >
+        {[1, 2, 3, 4, 5].map((starIdx) => {
+          const isFilled = displayRating >= starIdx;
+          const isHalf = displayRating >= starIdx - 0.5 && displayRating < starIdx;
+
+          return (
+            <motion.button
+              key={starIdx}
+              type="button"
+              disabled={disabled}
+              whileHover={{ scale: 1.2, rotate: 4 }}
+              whileTap={{ scale: 0.85 }}
+              transition={{ type: 'spring', stiffness: 450, damping: 20 }}
+              onPointerMove={(e) => handlePointerMove(e, starIdx)}
+              onClick={(e) => handleClick(e, starIdx)}
+              aria-label={`Rate ${starIdx} stars`}
+              className="relative cursor-pointer touch-manipulation p-1 focus:outline-hidden disabled:opacity-50 sm:p-0.5"
+            >
+              {isFilled ? (
+                <Star className="h-7 w-7 fill-amber-400 text-amber-400 drop-shadow-xs sm:h-5 sm:w-5" />
+              ) : isHalf ? (
+                <div className="relative flex h-7 w-7 items-center sm:h-5 sm:w-5">
+                  <Star className="h-7 w-7 text-amber-400/30 sm:h-5 sm:w-5" />
+                  <div className="absolute top-0 left-0 h-7 w-[50%] overflow-hidden sm:h-5">
+                    <Star className="h-7 w-7 max-w-none fill-amber-400 text-amber-400 sm:h-5 sm:w-5" />
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <Star className="h-5 w-5 text-amber-400/30 transition-colors hover:text-amber-400/70" />
-            )}
+              ) : (
+                <Star className="h-7 w-7 text-amber-400/30 transition-colors hover:text-amber-400/70 sm:h-5 sm:w-5" />
+              )}
+            </motion.button>
+          );
+        })}
+      </div>
+
+      {/* Mobile-Friendly Stepper Buttons (-½ / +½) */}
+      {showStepper && (
+        <div className="flex items-center gap-1.5">
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.9 }}
+            disabled={disabled || (value ?? 0) <= 0.5}
+            onClick={() => stepBy(-0.5)}
+            className="flex h-8 items-center justify-center rounded-lg border border-border bg-surface/80 px-2.5 font-semibold text-text-muted text-xs shadow-2xs hover:bg-surface disabled:opacity-40"
+            title="Decrease rating by 0.5"
+          >
+            -½
           </motion.button>
-        );
-      })}
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.9 }}
+            disabled={disabled || (value ?? 0) >= 5}
+            onClick={() => stepBy(0.5)}
+            className="flex h-8 items-center justify-center rounded-lg border border-border bg-surface/80 px-2.5 font-semibold text-text-muted text-xs shadow-2xs hover:bg-surface disabled:opacity-40"
+            title="Increase rating by 0.5"
+          >
+            +½
+          </motion.button>
+          {value != null && (
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.9 }}
+              disabled={disabled}
+              onClick={() => onChange(null)}
+              className="flex h-8 items-center justify-center rounded-lg px-2 font-medium text-rose-500 text-xs hover:bg-rose-500/10 dark:text-rose-400"
+            >
+              Clear
+            </motion.button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
