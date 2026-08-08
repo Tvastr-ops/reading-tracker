@@ -67,7 +67,7 @@ function BookGrid({
         return (
           <Card
             key={b.id}
-            className={`group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-t-white/15 bg-card-bg/95 backdrop-blur-md transition-all duration-300 dark:border-t-white/10 ${
+            className={`group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-t-white/15 bg-card-bg/95 backdrop-blur-md transition-all duration-300 dark:border-t-white/10 ${idx >= 6 ? 'cv-grid-card' : ''} ${
               isSelected
                 ? 'border-accent-color bg-accent-color/10 shadow-[0_12px_36px_-6px_rgba(0,0,0,0.5)] ring-2 ring-accent-color'
                 : `border-border/80 shadow-[0_6px_24px_-4px_rgba(0,0,0,0.35)] hover:-translate-y-1.5 hover:border-accent-color/50 hover:shadow-[0_14px_40px_-6px_rgba(0,0,0,0.5)] ${statusCfg.glowShadow}`
