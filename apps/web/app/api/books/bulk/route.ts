@@ -49,6 +49,16 @@ export const POST = withAuth(async (req: NextRequest) => {
     return NextResponse.json({ updated: cleanIds.length });
   }
 
+  if (action === 'rating') {
+    const rating = Number(body?.rating);
+    if (Number.isNaN(rating) || rating < 0 || rating > 5) {
+      return NextResponse.json({ error: 'Invalid rating' }, { status: 400 });
+    }
+    const { error } = await supabase.from('books').update({ rating }).in('id', cleanIds);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ updated: cleanIds.length });
+  }
+
   if (action === 'delete') {
     const { error } = await supabase
       .from('books')
