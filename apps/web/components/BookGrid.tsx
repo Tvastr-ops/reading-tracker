@@ -79,10 +79,10 @@ function BookGrid({
               className="h-full"
             >
               <Card
-                className={`group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border bg-card-bg backdrop-blur-md transition-all duration-300 ${idx >= 6 ? 'cv-grid-card' : ''} ${
+                className={`group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-border/80 border-t-white/20 bg-card-bg/95 backdrop-blur-xl transition-all duration-300 dark:border-t-white/12 ${idx >= 6 ? 'cv-grid-card' : ''} ${
                   isSelected
-                    ? 'border-accent-color bg-accent-color/10 shadow-lg ring-2 ring-accent-color'
-                    : `border-border shadow-md hover:-translate-y-1 hover:border-accent-color/60 hover:shadow-xl ${statusCfg.glowShadow}`
+                    ? 'border-accent-color bg-accent-color/10 shadow-[0_12px_36px_-6px_rgba(0,0,0,0.5)] ring-2 ring-accent-color'
+                    : `shadow-[0_8px_30px_-6px_rgba(0,0,0,0.35)] hover:-translate-y-1.5 hover:border-accent-color/60 hover:shadow-[0_18px_48px_-8px_rgba(0,0,0,0.5)] ${statusCfg.glowShadow}`
                 }`}
                 onClick={() => {
                   if (selectMode && onToggleSelect) {
