@@ -1,5 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /api/
-
-Sitemap: https://reading-tracker-git-dev-tvastr-ops-projects.vercel.app/sitemap.xml
