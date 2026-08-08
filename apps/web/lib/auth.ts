@@ -42,7 +42,7 @@ export async function createSessionToken(): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   return new SignJWT({ sub: 'app-user' })
     .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt(now - 10) // 10s buffer in the past to eliminate clock skew "issued in future" errors
+    .setIssuedAt(now - 60) // 60s buffer in the past to eliminate clock skew "issued in future" errors
     .setExpirationTime(`${SESSION_TTL_SECONDS}s`)
     .sign(getSecret());
 }
@@ -50,7 +50,7 @@ export async function createSessionToken(): Promise<string> {
 export async function verifySessionToken(token: string): Promise<boolean> {
   try {
     await jwtVerify(token, getSecret(), {
-      clockTolerance: '60s', // 60s tolerance for server clock drift
+      clockTolerance: '300s', // 300s (5m) clock skew tolerance for device wake-up and serverless clock drift
     });
     return true;
   } catch {
