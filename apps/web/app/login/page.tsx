@@ -55,6 +55,9 @@ export default function LoginPage() {
       <form className="card mx-auto w-full max-w-[320px] p-[var(--space-6)]" onSubmit={submit}>
         <h1 className="m-0 mb-1 font-bold font-serif text-[24px]">Reading Tracker</h1>
         <p className="m-0 mb-5 text-[13px] text-text-muted">Enter your password to continue.</p>
+        <label htmlFor="password" className="sr-only">
+          Password
+        </label>
         <input
           id="password"
           type="password"
