@@ -1,5 +1,6 @@
 'use client';
 
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   BarChart2,
   BookCheck,
@@ -12,13 +13,42 @@ import {
   Star,
   Trophy,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Book } from '@/lib/types';
 import { parseLocalDate } from '@/lib/utils';
+
+function useAnimatedNumber(value: number, duration = 500): number {
+  const [display, setDisplay] = useState(value);
+  const startTimeRef = useRef<number | null>(null);
+  const startValRef = useRef(display);
+
+  useEffect(() => {
+    startValRef.current = display;
+    startTimeRef.current = null;
+    let frameId: number;
+
+    const step = (timestamp: number) => {
+      if (!startTimeRef.current) startTimeRef.current = timestamp;
+      const progress = Math.min((timestamp - startTimeRef.current) / duration, 1);
+      const ease = 1 - (1 - progress) ** 3;
+      const current = Math.round(startValRef.current + (value - startValRef.current) * ease);
+      setDisplay(current);
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(step);
+      }
+    };
+
+    frameId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frameId);
+  }, [value, duration]);
+
+  return display;
+}
 
 const MONTH_LABELS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 const MONTH_NAMES = [
@@ -156,6 +186,11 @@ export default function StatsSummary({ books }: { books: Book[] }) {
 
   const goalPct = goal ? Math.min(100, Math.round((completedThisYear / goal) * 100)) : 0;
 
+  const animatedTotalCount = useAnimatedNumber(totalCount);
+  const animatedCompletedCount = useAnimatedNumber(completedCount);
+  const animatedReadingCount = useAnimatedNumber(readingCount);
+  const animatedCompletedThisYear = useAnimatedNumber(completedThisYear);
+
   return (
     <Card className="mb-6 border-border shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
@@ -178,275 +213,307 @@ export default function StatsSummary({ books }: { books: Book[] }) {
         </Button>
       </CardHeader>
 
-      {isExpanded ? (
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {/* CARD 1: STATUS BREAKDOWN */}
-            <div className="flex flex-col justify-between rounded-xl border border-border bg-surface/50 p-4">
-              <div className="flex items-center justify-between font-bold text-text-muted text-xs uppercase tracking-wider">
-                <span>Status Breakdown</span>
-                <BookCheck className="h-4 w-4 text-accent-color" />
-              </div>
-
-              {/* Progress Stack Bar */}
-              <div className="my-3 space-y-1.5">
-                <div className="flex h-3 overflow-hidden rounded-full bg-border/40">
-                  <div
-                    className="bg-emerald-500 transition-all duration-300"
-                    style={{ width: `${compPct}%` }}
-                    title={`Completed: ${completedCount}`}
-                  />
-                  <div
-                    className="bg-sky-500 transition-all duration-300"
-                    style={{ width: `${readPct}%` }}
-                    title={`Reading: ${readingCount}`}
-                  />
-                  <div
-                    className="bg-orange-500 transition-all duration-300"
-                    style={{ width: `${holdPct}%` }}
-                    title={`On Hold: ${onHoldCount}`}
-                  />
-                  <div
-                    className="bg-amber-500 transition-all duration-300"
-                    style={{ width: `${planPct}%` }}
-                    title={`Plan to Read: ${planToReadCount}`}
-                  />
-                  <div
-                    className="bg-rose-500 transition-all duration-300"
-                    style={{ width: `${dropPct}%` }}
-                    title={`Dropped: ${droppedCount}`}
-                  />
-                </div>
-              </div>
-
-              {/* Status Pills */}
-              <div className="mb-3 grid grid-cols-2 gap-2 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-xs bg-emerald-500" />
-                  <span className="text-text-muted">
-                    Completed: <strong className="text-text">{completedCount}</strong>{' '}
-                    <span className="text-[11px] text-text-muted/80">
-                      ({totalCount ? Math.round((completedCount / totalCount) * 100) : 0}%)
-                    </span>
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-xs bg-sky-500" />
-                  <span className="text-text-muted">
-                    Reading: <strong className="text-text">{readingCount}</strong>{' '}
-                    <span className="text-[11px] text-text-muted/80">
-                      ({totalCount ? Math.round((readingCount / totalCount) * 100) : 0}%)
-                    </span>
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-xs bg-orange-500" />
-                  <span className="text-text-muted">
-                    On Hold: <strong className="text-text">{onHoldCount}</strong>{' '}
-                    <span className="text-[11px] text-text-muted/80">
-                      ({totalCount ? Math.round((onHoldCount / totalCount) * 100) : 0}%)
-                    </span>
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-xs bg-amber-500" />
-                  <span className="text-text-muted">
-                    Plan to Read: <strong className="text-text">{planToReadCount}</strong>{' '}
-                    <span className="text-[11px] text-text-muted/80">
-                      ({totalCount ? Math.round((planToReadCount / totalCount) * 100) : 0}%)
-                    </span>
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-xs bg-rose-500" />
-                  <span className="text-text-muted">
-                    Dropped: <strong className="text-text">{droppedCount}</strong>{' '}
-                    <span className="text-[11px] text-text-muted/80">
-                      ({totalCount ? Math.round((droppedCount / totalCount) * 100) : 0}%)
-                    </span>
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between border-border/80 border-t pt-3 text-xs">
-                <span className="text-text-muted">
-                  Total Entries: <strong className="text-text">{totalCount}</strong>
-                </span>
-                <span className="flex items-center gap-1 text-text-muted">
-                  Avg Rating: <strong className="text-text">{avgRating}</strong>
-                  <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                </span>
-              </div>
-            </div>
-
-            {/* CARD 2: ANNUAL SHELF & GOALS */}
-            <div className="flex flex-col justify-between rounded-xl border border-border bg-surface/50 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 font-bold text-text-muted text-xs uppercase tracking-wider">
-                  <Trophy className="h-4 w-4 text-amber-500" />
-                  <span>{thisYear} Goal & Pace</span>
-                </div>
-
-                {/* Ultra-Minimal Animated Glyph Hint */}
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex h-6 w-6 cursor-help items-center justify-center rounded-full border border-border/60 bg-surface/80 shadow-2xs transition-all hover:scale-110 hover:border-accent-color/50">
-                        {isOnTrack ? (
-                          <Sparkles className="h-3.5 w-3.5 animate-pulse text-emerald-500" />
-                        ) : (
-                          <Flame className="h-3.5 w-3.5 animate-pulse text-amber-500" />
-                        )}
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {isOnTrack
-                        ? `⚡ Excellent pace! You've finished ${completedThisYear} books out of ${targetGoal}.`
-                        : `📈 Keep going! Target pace requires ~${Math.max(1, Math.round((targetGoal - completedThisYear) / Math.max(1, 12 - new Date().getMonth())))} bks/mo.`}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-
-              {/* Mini Shelf Monthly Histogram */}
-              <div className="my-3 space-y-1">
-                <div className="grid h-14 grid-cols-12 items-end gap-1">
-                  {monthlyData.map((d, mIdx) => (
-                    <div
-                      key={mIdx}
-                      className="group relative flex h-full flex-col items-center justify-end"
-                      title={`${d.monthName}: ${d.count} finished`}
-                    >
-                      <div
-                        className="w-full rounded-xs bg-accent-color/75 transition-all duration-200 group-hover:scale-y-105 group-hover:bg-accent-color"
-                        style={{
-                          height:
-                            d.count === 0
-                              ? '2px'
-                              : `${Math.round((d.count / Math.max(1, ...monthlyData.map((m) => m.count))) * 100)}%`,
-                        }}
-                      />
-                      <span className="mt-1 font-mono text-[9px] text-text-muted">{d.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Goal Progress Ring & Edit */}
-              <div className="flex items-center gap-3 border-border/80 border-t pt-3">
-                <div className="w-full space-y-1">
-                  {!editingGoal ? (
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-1">
-                        <span className="text-text-muted">Target:</span>
-                        <strong className="text-text">
-                          {completedThisYear} / {targetGoal} books
-                        </strong>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        aria-label="Edit reading goal"
-                        onClick={() => {
-                          setGoalInput(String(targetGoal));
-                          setEditingGoal(true);
-                        }}
-                        className="h-6 px-1.5 text-accent-color text-xs"
-                      >
-                        <Edit2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        type="number"
-                        min={0}
-                        value={goalInput}
-                        onChange={(e) => setGoalInput(e.target.value)}
-                        className="h-7 w-16 rounded border border-border bg-card-bg px-2 text-xs"
-                      />
-                      <Button
-                        size="sm"
-                        className="h-7 px-2 text-xs"
-                        onClick={saveGoal}
-                        disabled={savingGoal}
-                      >
-                        <Check className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => setEditingGoal(false)}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  )}
-
-                  <Progress value={goalPct} className="h-2" />
-
-                  <div className="flex items-center justify-between pt-0.5 text-[11px] text-text-muted">
-                    <span>{goalPct}% Achieved</span>
-                    <span>
-                      Pace: {avgPacePerMonth} bks/mo (Req: {requiredPace})
-                    </span>
+      <AnimatePresence initial={false}>
+        {isExpanded ? (
+          <motion.div
+            key="expanded-dashboard"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="overflow-hidden"
+          >
+            <CardContent className="space-y-4 pt-0">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                {/* CARD 1: STATUS BREAKDOWN */}
+                <div className="flex flex-col justify-between rounded-xl border border-border bg-surface/50 p-4">
+                  <div className="flex items-center justify-between font-bold text-text-muted text-xs uppercase tracking-wider">
+                    <span>Status Breakdown</span>
+                    <BookCheck className="h-4 w-4 text-accent-color" />
                   </div>
-                </div>
-              </div>
-            </div>
 
-            {/* CARD 3: RATING DISTRIBUTION */}
-            <div className="flex flex-col justify-between rounded-xl border border-border bg-surface/50 p-4">
-              <div className="flex items-center justify-between font-bold text-text-muted text-xs uppercase tracking-wider">
-                <span>Rating Breakdown</span>
-                <Flame className="h-4 w-4 text-amber-500" />
-              </div>
+                  {/* Progress Stack Bar */}
+                  <div className="my-3 space-y-1.5">
+                    <div className="flex h-3 overflow-hidden rounded-full bg-border/40">
+                      <motion.div
+                        className="bg-emerald-500"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${compPct}%` }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+                        title={`Completed: ${completedCount}`}
+                      />
+                      <motion.div
+                        className="bg-sky-500"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${readPct}%` }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+                        title={`Reading: ${readingCount}`}
+                      />
+                      <motion.div
+                        className="bg-orange-500"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${holdPct}%` }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+                        title={`On Hold: ${onHoldCount}`}
+                      />
+                      <motion.div
+                        className="bg-amber-500"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${planPct}%` }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+                        title={`Plan to Read: ${planToReadCount}`}
+                      />
+                      <motion.div
+                        className="bg-rose-500"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${dropPct}%` }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+                        title={`Dropped: ${droppedCount}`}
+                      />
+                    </div>
+                  </div>
 
-              <div className="my-2 space-y-2">
-                {ratingDistribution.map(({ star, count, percentage }) => (
-                  <div
-                    key={star}
-                    className="grid grid-cols-[24px_1fr_60px] items-center gap-2 text-xs"
-                  >
-                    <span className="flex items-center gap-0.5 font-semibold text-text">
-                      {star}
+                  {/* Status Pills */}
+                  <div className="mb-3 grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-xs bg-emerald-500" />
+                      <span className="text-text-muted">
+                        Completed: <strong className="text-text">{animatedCompletedCount}</strong>{' '}
+                        <span className="text-[11px] text-text-muted/80">
+                          ({totalCount ? Math.round((completedCount / totalCount) * 100) : 0}%)
+                        </span>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-xs bg-sky-500" />
+                      <span className="text-text-muted">
+                        Reading: <strong className="text-text">{animatedReadingCount}</strong>{' '}
+                        <span className="text-[11px] text-text-muted/80">
+                          ({totalCount ? Math.round((readingCount / totalCount) * 100) : 0}%)
+                        </span>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-xs bg-orange-500" />
+                      <span className="text-text-muted">
+                        On Hold: <strong className="text-text">{onHoldCount}</strong>{' '}
+                        <span className="text-[11px] text-text-muted/80">
+                          ({totalCount ? Math.round((onHoldCount / totalCount) * 100) : 0}%)
+                        </span>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-xs bg-amber-500" />
+                      <span className="text-text-muted">
+                        Plan to Read: <strong className="text-text">{planToReadCount}</strong>{' '}
+                        <span className="text-[11px] text-text-muted/80">
+                          ({totalCount ? Math.round((planToReadCount / totalCount) * 100) : 0}%)
+                        </span>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-xs bg-rose-500" />
+                      <span className="text-text-muted">
+                        Dropped: <strong className="text-text">{droppedCount}</strong>{' '}
+                        <span className="text-[11px] text-text-muted/80">
+                          ({totalCount ? Math.round((droppedCount / totalCount) * 100) : 0}%)
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between border-border/80 border-t pt-3 text-xs">
+                    <span className="text-text-muted">
+                      Total Entries: <strong className="text-text">{totalCount}</strong>
+                    </span>
+                    <span className="flex items-center gap-1 text-text-muted">
+                      Avg Rating: <strong className="text-text">{avgRating}</strong>
                       <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                     </span>
-                    <Progress value={percentage} className="h-2" />
-                    <span className="text-right font-mono text-[11px] text-text-muted">
-                      {count}x ({percentage}%)
-                    </span>
                   </div>
-                ))}
+                </div>
+
+                {/* CARD 2: ANNUAL SHELF & GOALS */}
+                <div className="flex flex-col justify-between rounded-xl border border-border bg-surface/50 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 font-bold text-text-muted text-xs uppercase tracking-wider">
+                      <Trophy className="h-4 w-4 text-amber-500" />
+                      <span>{thisYear} Goal & Pace</span>
+                    </div>
+
+                    {/* Ultra-Minimal Animated Glyph Hint */}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex h-6 w-6 cursor-help items-center justify-center rounded-full border border-border/60 bg-surface/80 shadow-2xs transition-all hover:scale-110 hover:border-accent-color/50">
+                            {isOnTrack ? (
+                              <Sparkles className="h-3.5 w-3.5 animate-pulse text-emerald-500" />
+                            ) : (
+                              <Flame className="h-3.5 w-3.5 animate-pulse text-amber-500" />
+                            )}
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {isOnTrack
+                            ? `⚡ Excellent pace! You've finished ${completedThisYear} books out of ${targetGoal}.`
+                            : `📈 Keep going! Target pace requires ~${Math.max(1, Math.round((targetGoal - completedThisYear) / Math.max(1, 12 - new Date().getMonth())))} bks/mo.`}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+
+                  {/* Mini Shelf Monthly Histogram */}
+                  <div className="my-3 space-y-1">
+                    <div className="grid h-14 grid-cols-12 items-end gap-1">
+                      {monthlyData.map((d, mIdx) => (
+                        <div
+                          key={mIdx}
+                          className="group relative flex h-full flex-col items-center justify-end"
+                          title={`${d.monthName}: ${d.count} finished`}
+                        >
+                          <div
+                            className="w-full rounded-xs bg-accent-color/75 transition-all duration-200 group-hover:scale-y-105 group-hover:bg-accent-color"
+                            style={{
+                              height:
+                                d.count === 0
+                                  ? '2px'
+                                  : `${Math.round((d.count / Math.max(1, ...monthlyData.map((m) => m.count))) * 100)}%`,
+                            }}
+                          />
+                          <span className="mt-1 font-mono text-[9px] text-text-muted">
+                            {d.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Goal Progress Ring & Edit */}
+                  <div className="flex items-center gap-3 border-border/80 border-t pt-3">
+                    <div className="w-full space-y-1">
+                      {!editingGoal ? (
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-1">
+                            <span className="text-text-muted">Target:</span>
+                            <strong className="text-text">
+                              {completedThisYear} / {targetGoal} books
+                            </strong>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            aria-label="Edit reading goal"
+                            onClick={() => {
+                              setGoalInput(String(targetGoal));
+                              setEditingGoal(true);
+                            }}
+                            className="h-6 px-1.5 text-accent-color text-xs"
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="number"
+                            min={0}
+                            value={goalInput}
+                            onChange={(e) => setGoalInput(e.target.value)}
+                            className="h-7 w-16 rounded border border-border bg-card-bg px-2 text-xs"
+                          />
+                          <Button
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={saveGoal}
+                            disabled={savingGoal}
+                          >
+                            <Check className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => setEditingGoal(false)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      )}
+
+                      <Progress value={goalPct} className="h-2" />
+
+                      <div className="flex items-center justify-between pt-0.5 text-[11px] text-text-muted">
+                        <span>{goalPct}% Achieved</span>
+                        <span>
+                          Pace: {avgPacePerMonth} bks/mo (Req: {requiredPace})
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CARD 3: RATING DISTRIBUTION */}
+                <div className="flex flex-col justify-between rounded-xl border border-border bg-surface/50 p-4">
+                  <div className="flex items-center justify-between font-bold text-text-muted text-xs uppercase tracking-wider">
+                    <span>Rating Breakdown</span>
+                    <Flame className="h-4 w-4 text-amber-500" />
+                  </div>
+
+                  <div className="my-2 space-y-2">
+                    {ratingDistribution.map(({ star, count, percentage }) => (
+                      <div
+                        key={star}
+                        className="grid grid-cols-[24px_1fr_60px] items-center gap-2 text-xs"
+                      >
+                        <span className="flex items-center gap-0.5 font-semibold text-text">
+                          {star}
+                          <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                        </span>
+                        <Progress value={percentage} className="h-2" />
+                        <span className="text-right font-mono text-[11px] text-text-muted">
+                          {count}x ({percentage}%)
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </CardContent>
-      ) : (
-        <CardContent className="py-2">
-          <div className="flex flex-wrap items-center gap-4 text-text-muted text-xs">
-            <span>
-              Total: <strong className="text-text">{totalCount}</strong>
-            </span>
-            <span>
-              Completed ({thisYear}): <strong className="text-text">{completedThisYear}</strong>
-            </span>
-            <span>
-              Reading: <strong className="text-text">{readingCount}</strong>
-            </span>
-            <span>
-              Avg Rating: <strong className="text-text">{avgRating}★</strong>
-            </span>
-            <span>
-              Goal:{' '}
-              <strong className="text-text">
-                {completedThisYear}/{targetGoal} ({goalPct}%)
-              </strong>
-            </span>
-          </div>
-        </CardContent>
-      )}
+            </CardContent>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="collapsed-dashboard"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            <CardContent className="py-2">
+              <div className="flex flex-wrap items-center gap-4 text-text-muted text-xs">
+                <span>
+                  Total: <strong className="text-text">{animatedTotalCount}</strong>
+                </span>
+                <span>
+                  Completed ({thisYear}):{' '}
+                  <strong className="text-text">{animatedCompletedThisYear}</strong>
+                </span>
+                <span>
+                  Reading: <strong className="text-text">{animatedReadingCount}</strong>
+                </span>
+                <span>
+                  Avg Rating: <strong className="text-text">{avgRating}★</strong>
+                </span>
+                <span>
+                  Goal:{' '}
+                  <strong className="text-text">
+                    {completedThisYear}/{targetGoal} ({goalPct}%)
+                  </strong>
+                </span>
+              </div>
+            </CardContent>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Card>
   );
 }

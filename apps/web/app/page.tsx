@@ -1,5 +1,6 @@
 'use client';
 
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowLeft,
   ArrowUpDown,
@@ -112,7 +113,15 @@ export default function HomePage() {
   }, [sortDir]);
 
   function toggleViewMode(mode: 'table' | 'grid') {
-    setViewMode(mode);
+    if (typeof document !== 'undefined' && 'startViewTransition' in document) {
+      (
+        document as unknown as { startViewTransition: (cb: () => void) => void }
+      ).startViewTransition(() => {
+        setViewMode(mode);
+      });
+    } else {
+      setViewMode(mode);
+    }
     window.localStorage.setItem('viewMode', mode);
     if (mode === 'grid') {
       setSelectMode(false);
@@ -543,38 +552,60 @@ export default function HomePage() {
       {/* Dashboard Stats */}
       {!showTrash && <StatsSummary books={books} />}
 
-      {/* Up Next Card Popup */}
-      {!showTrash && upNext && (
-        <Card className="mb-6 flex flex-col items-center gap-4 border-accent-color/40 bg-accent-color/5 p-4 shadow-sm sm:flex-row">
-          {upNext.cover_url ? (
-            <img
-              src={upNext.cover_url}
-              alt=""
-              className="h-14 w-10 shrink-0 rounded border border-border object-cover"
-            />
-          ) : (
-            <div className="h-14 w-10 shrink-0 rounded border border-border bg-surface" />
-          )}
-          <div className="flex-1 text-center sm:text-left">
-            <span className="font-bold text-accent-color text-xs uppercase tracking-wider">
-              Up Next
-            </span>
-            <h4 className="line-clamp-1 font-bold text-sm text-text">{upNext.title}</h4>
-            {upNext.author && <p className="text-text-muted text-xs">{upNext.author}</p>}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={pickUpNext}>
-              Pick another
-            </Button>
-            <Button size="sm" onClick={startReadingUpNext}>
-              Start reading
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setUpNext(null)}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </Card>
-      )}
+      {/* Up Next Banner with Celebration Spring Pop */}
+      <AnimatePresence>
+        {upNext && (
+          <motion.div
+            key="up-next-banner"
+            initial={{ opacity: 0, y: -20, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.96 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <Card className="relative mb-6 flex flex-col items-center gap-4 overflow-hidden border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-accent-color/5 to-transparent p-4 shadow-sm backdrop-blur-md sm:flex-row">
+              {upNext.cover_url ? (
+                <img
+                  src={upNext.cover_url}
+                  alt=""
+                  className="h-14 w-10 shrink-0 rounded border border-border object-cover shadow-xs"
+                />
+              ) : (
+                <div className="h-14 w-10 shrink-0 rounded border border-border bg-surface" />
+              )}
+              <div className="flex-1 text-center sm:text-left">
+                <div className="flex items-center justify-center gap-1.5 sm:justify-start">
+                  <Sparkles className="h-4 w-4 animate-pulse text-amber-500" />
+                  <span className="font-bold text-amber-600 text-xs uppercase tracking-wider dark:text-amber-400">
+                    Up Next Picked!
+                  </span>
+                </div>
+                <h4 className="line-clamp-1 font-bold text-sm text-text">{upNext.title}</h4>
+                {upNext.author && <p className="text-text-muted text-xs">{upNext.author}</p>}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={pickUpNext}>
+                  Pick another
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={startReadingUpNext}
+                  className="bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600"
+                >
+                  Start reading
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setUpNext(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main Content Area */}
       <Card className="p-2.5 shadow-xs sm:p-5">
@@ -1026,55 +1057,101 @@ export default function HomePage() {
         {/* Content View */}
         {error && <div className="mb-3 font-semibold text-rose-600 text-xs">{error}</div>}
 
-        {loading ? (
-          <div className="space-y-3 py-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-12 animate-pulse rounded-lg bg-surface/60" />
-            ))}
-          </div>
-        ) : viewMode === 'grid' ? (
-          <BookGrid
-            books={filtered}
-            ratingMode={ratingMode}
-            hasAnyBooks={books.length > 0}
-            selectMode={selectMode}
-            selected={selected}
-            onToggleSelect={toggleSelect}
-            trashMode={showTrash}
-            onEdit={(b) => setEditing(b)}
-            onDelete={deleteBook}
-            onRestore={restoreBook}
-            onPermanentDelete={permanentlyDeleteBook}
-          />
-        ) : (
-          <BookTable
-            books={filtered}
-            ratingMode={ratingMode}
-            sortField={sortField}
-            sortDir={sortDir}
-            onSort={handleSort}
-            trashMode={showTrash}
-            hasAnyBooks={books.length > 0}
-            selectMode={selectMode}
-            selected={selected}
-            onToggleSelect={toggleSelect}
-            onToggleSelectAll={() => {
-              const allSelected = filtered.length > 0 && filtered.every((b) => selected.has(b.id));
-              if (allSelected) {
-                setSelected(new Set());
-              } else {
-                setSelected(new Set(filtered.map((b) => b.id)));
-              }
-            }}
-            focusedId={focusedIndex >= 0 ? (filtered[focusedIndex]?.id ?? null) : null}
-            onEdit={(b) => setEditing(b)}
-            onDelete={deleteBook}
-            onRestore={restoreBook}
-            onPermanentDelete={permanentlyDeleteBook}
-            onQuickStatus={quickStatusChange}
-          />
-        )}
+        <div className="view-transition-shelf">
+          {loading ? (
+            <div className="space-y-3 py-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-12 animate-pulse rounded-lg bg-surface/60" />
+              ))}
+            </div>
+          ) : viewMode === 'grid' ? (
+            <BookGrid
+              books={filtered}
+              ratingMode={ratingMode}
+              hasAnyBooks={books.length > 0}
+              selectMode={selectMode}
+              selected={selected}
+              onToggleSelect={toggleSelect}
+              trashMode={showTrash}
+              onEdit={(b) => setEditing(b)}
+              onDelete={deleteBook}
+              onRestore={restoreBook}
+              onPermanentDelete={permanentlyDeleteBook}
+            />
+          ) : (
+            <BookTable
+              books={filtered}
+              ratingMode={ratingMode}
+              sortField={sortField}
+              sortDir={sortDir}
+              onSort={handleSort}
+              trashMode={showTrash}
+              hasAnyBooks={books.length > 0}
+              selectMode={selectMode}
+              selected={selected}
+              onToggleSelect={toggleSelect}
+              onToggleSelectAll={() => {
+                const allSelected =
+                  filtered.length > 0 && filtered.every((b) => selected.has(b.id));
+                if (allSelected) {
+                  setSelected(new Set());
+                } else {
+                  setSelected(new Set(filtered.map((b) => b.id)));
+                }
+              }}
+              focusedId={focusedIndex >= 0 ? (filtered[focusedIndex]?.id ?? null) : null}
+              onEdit={(b) => setEditing(b)}
+              onDelete={deleteBook}
+              onRestore={restoreBook}
+              onPermanentDelete={permanentlyDeleteBook}
+              onQuickStatus={quickStatusChange}
+            />
+          )}
+        </div>
       </Card>
+
+      {/* Floating Bulk-Action Selection Toolbar */}
+      <AnimatePresence>
+        {selected.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 40, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 40, scale: 0.96 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+            className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border border-border bg-card-bg/95 px-5 py-2.5 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+          >
+            <span className="font-semibold text-text text-xs">
+              {selected.size} item{selected.size > 1 ? 's' : ''} selected
+            </span>
+            <div className="h-4 w-px bg-border" />
+            <Button
+              size="sm"
+              variant="destructive"
+              className="h-8 rounded-full px-3 text-xs shadow-xs"
+              onClick={() => {
+                const list = books.filter((b) => selected.has(b.id));
+                if (showTrash) {
+                  list.forEach(permanentlyDeleteBook);
+                } else {
+                  list.forEach(deleteBook);
+                }
+                setSelected(new Set());
+              }}
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+              {showTrash ? 'Delete Permanently' : 'Move to Trash'}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 rounded-full px-2 text-xs text-text-muted hover:text-text"
+              onClick={() => setSelected(new Set())}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Book Form Modal Dialog */}
       {editing !== undefined && (
