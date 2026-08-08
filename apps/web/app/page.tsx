@@ -78,7 +78,6 @@ export default function HomePage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [selectMode, setSelectMode] = useState(false);
-  const [bulkStatus, setBulkStatus] = useState<string>(STATUSES[0]);
   const [upNext, setUpNext] = useState<Book | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -319,7 +318,10 @@ export default function HomePage() {
     });
   }
 
-  async function bulkAction(action: 'status' | 'delete' | 'restore' | 'delete_permanent') {
+  async function bulkAction(
+    action: 'status' | 'delete' | 'restore' | 'delete_permanent',
+    statusOverride?: string,
+  ) {
     if (selected.size === 0) return;
     if (
       action === 'delete_permanent' &&
@@ -327,7 +329,7 @@ export default function HomePage() {
     )
       return;
     const body: Record<string, unknown> = { action, ids: Array.from(selected) };
-    if (action === 'status') body.status = bulkStatus;
+    if (action === 'status' && statusOverride) body.status = statusOverride;
     const res = await fetch('/api/books/bulk', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -951,74 +953,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Bulk Action Bar */}
-        {selectMode && selected.size > 0 && (
-          <div className="mb-4 flex flex-col gap-2.5 rounded-xl border border-accent-color/40 bg-accent-color/10 p-3 text-xs sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-text">{selected.size} selected</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-text-muted text-xs hover:text-text sm:hidden"
-                onClick={() => setSelected(new Set())}
-              >
-                Clear
-              </Button>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {!showTrash && (
-                <>
-                  <Select value={bulkStatus} onValueChange={(val) => setBulkStatus(val)}>
-                    <SelectTrigger className="h-8 w-32 text-xs sm:w-36">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUSES.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {s}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled={!bulkStatus}
-                    onClick={() => bulkAction('status')}
-                  >
-                    Set Status
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => bulkAction('delete')}>
-                    Move to Trash
-                  </Button>
-                </>
-              )}
-              {showTrash && (
-                <>
-                  <Button variant="secondary" size="sm" onClick={() => bulkAction('restore')}>
-                    Restore Selected
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => bulkAction('delete_permanent')}
-                  >
-                    Delete Permanently
-                  </Button>
-                </>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="hidden h-8 sm:inline-flex"
-                onClick={() => setSelected(new Set())}
-              >
-                Clear
-              </Button>
-            </div>
-          </div>
-        )}
-
         {/* Filters Quick Action Bar */}
         {filtersActive && (
           <div className="mb-3 flex items-center justify-between rounded-lg border border-border bg-surface/50 p-2 text-xs">
@@ -1118,25 +1052,45 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.96 }}
             transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-            className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border border-border bg-card-bg/95 px-5 py-2.5 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+            className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 flex-wrap items-center gap-2.5 rounded-full border border-border/80 border-t-white/25 bg-card-bg/95 px-4 py-2 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl dark:border-t-amber-100/20"
           >
             <span className="font-semibold text-text text-xs">
               {selected.size} item{selected.size > 1 ? 's' : ''} selected
             </span>
-            <div className="h-4 w-px bg-border" />
+            <div className="h-4 w-px bg-border/60" />
+            {!showTrash && (
+              <Select
+                onValueChange={(val) => {
+                  bulkAction('status', val);
+                }}
+              >
+                <SelectTrigger className="h-7 w-28 rounded-full border-border text-xs">
+                  <SelectValue placeholder="Set Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUSES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {showTrash && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 rounded-full text-xs"
+                onClick={() => bulkAction('restore')}
+              >
+                Restore Selected
+              </Button>
+            )}
             <Button
               size="sm"
               variant="destructive"
-              className="h-8 rounded-full px-3 text-xs shadow-xs"
-              onClick={() => {
-                const list = books.filter((b) => selected.has(b.id));
-                if (showTrash) {
-                  list.forEach(permanentlyDeleteBook);
-                } else {
-                  list.forEach(deleteBook);
-                }
-                setSelected(new Set());
-              }}
+              className="h-7 rounded-full px-3 text-xs shadow-xs"
+              onClick={() => bulkAction(showTrash ? 'delete_permanent' : 'delete')}
             >
               <Trash2 className="mr-1.5 h-3.5 w-3.5" />
               {showTrash ? 'Delete Permanently' : 'Move to Trash'}
@@ -1144,8 +1098,9 @@ export default function HomePage() {
             <Button
               size="sm"
               variant="ghost"
-              className="h-8 rounded-full px-2 text-xs text-text-muted hover:text-text"
+              className="h-7 w-7 rounded-full p-0 text-text-muted hover:text-text"
               onClick={() => setSelected(new Set())}
+              title="Deselect all"
             >
               <X className="h-4 w-4" />
             </Button>
