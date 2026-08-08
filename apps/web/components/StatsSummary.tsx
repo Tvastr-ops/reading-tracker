@@ -192,7 +192,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
   const animatedCompletedThisYear = useAnimatedNumber(completedThisYear);
 
   return (
-    <Card className="mb-6 border-border shadow-sm">
+    <Card className="mb-6 border-border shadow-xs">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
         <div className="flex items-center gap-2">
           <BarChart2 className="h-5 w-5 text-accent-color" />
@@ -225,104 +225,106 @@ export default function StatsSummary({ books }: { books: Book[] }) {
           >
             <CardContent className="space-y-4 pt-0">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                {/* CARD 1: STATUS BREAKDOWN */}
-                <div className="flex flex-col justify-between rounded-xl border border-border bg-surface/50 p-4">
+                {/* WIDGET 1: STATUS BREAKDOWN */}
+                <div className="flex flex-col justify-between rounded-2xl border border-border/60 bg-surface/40 p-4 transition-all duration-300 hover:border-accent-color/40 hover:bg-surface/60 dark:bg-surface/30">
                   <div className="flex items-center justify-between font-bold text-text-muted text-xs uppercase tracking-wider">
-                    <span>Status Breakdown</span>
-                    <BookCheck className="h-4 w-4 text-accent-color" />
+                    <span className="flex items-center gap-1.5">
+                      <BookCheck className="h-3.5 w-3.5 text-accent-color" />
+                      Status Breakdown
+                    </span>
                   </div>
 
                   {/* Progress Stack Bar */}
                   <div className="my-3 space-y-1.5">
-                    <div className="flex h-3 overflow-hidden rounded-full bg-border/40">
+                    <div className="flex h-3.5 overflow-hidden rounded-full bg-border/40 p-0.5 shadow-xs">
                       <motion.div
-                        className="bg-emerald-500"
+                        className="rounded-l-full bg-emerald-500"
                         initial={{ width: 0 }}
                         animate={{ width: `${compPct}%` }}
-                        transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+                        transition={{ type: 'spring', stiffness: 180, damping: 24 }}
                         title={`Completed: ${completedCount}`}
                       />
                       <motion.div
                         className="bg-sky-500"
                         initial={{ width: 0 }}
                         animate={{ width: `${readPct}%` }}
-                        transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+                        transition={{ type: 'spring', stiffness: 180, damping: 24 }}
                         title={`Reading: ${readingCount}`}
                       />
                       <motion.div
                         className="bg-orange-500"
                         initial={{ width: 0 }}
                         animate={{ width: `${holdPct}%` }}
-                        transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+                        transition={{ type: 'spring', stiffness: 180, damping: 24 }}
                         title={`On Hold: ${onHoldCount}`}
                       />
                       <motion.div
                         className="bg-amber-500"
                         initial={{ width: 0 }}
                         animate={{ width: `${planPct}%` }}
-                        transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+                        transition={{ type: 'spring', stiffness: 180, damping: 24 }}
                         title={`Plan to Read: ${planToReadCount}`}
                       />
                       <motion.div
-                        className="bg-rose-500"
+                        className="rounded-r-full bg-rose-500"
                         initial={{ width: 0 }}
                         animate={{ width: `${dropPct}%` }}
-                        transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+                        transition={{ type: 'spring', stiffness: 180, damping: 24 }}
                         title={`Dropped: ${droppedCount}`}
                       />
                     </div>
                   </div>
 
                   {/* Status Pills */}
-                  <div className="mb-3 grid grid-cols-2 gap-2 text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-xs bg-emerald-500" />
+                  <div className="mb-2 grid grid-cols-2 gap-1.5 text-xs">
+                    <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-surface/50">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
                       <span className="text-text-muted">
                         Completed: <strong className="text-text">{animatedCompletedCount}</strong>{' '}
-                        <span className="text-[11px] text-text-muted/80">
+                        <span className="text-[10px] text-text-muted/70">
                           ({totalCount ? Math.round((completedCount / totalCount) * 100) : 0}%)
                         </span>
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-xs bg-sky-500" />
+                    <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-surface/50">
+                      <span className="h-2 w-2 rounded-full bg-sky-500" />
                       <span className="text-text-muted">
                         Reading: <strong className="text-text">{animatedReadingCount}</strong>{' '}
-                        <span className="text-[11px] text-text-muted/80">
+                        <span className="text-[10px] text-text-muted/70">
                           ({totalCount ? Math.round((readingCount / totalCount) * 100) : 0}%)
                         </span>
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-xs bg-orange-500" />
+                    <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-surface/50">
+                      <span className="h-2 w-2 rounded-full bg-orange-500" />
                       <span className="text-text-muted">
                         On Hold: <strong className="text-text">{onHoldCount}</strong>{' '}
-                        <span className="text-[11px] text-text-muted/80">
+                        <span className="text-[10px] text-text-muted/70">
                           ({totalCount ? Math.round((onHoldCount / totalCount) * 100) : 0}%)
                         </span>
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-xs bg-amber-500" />
+                    <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-surface/50">
+                      <span className="h-2 w-2 rounded-full bg-amber-500" />
                       <span className="text-text-muted">
                         Plan to Read: <strong className="text-text">{planToReadCount}</strong>{' '}
-                        <span className="text-[11px] text-text-muted/80">
+                        <span className="text-[10px] text-text-muted/70">
                           ({totalCount ? Math.round((planToReadCount / totalCount) * 100) : 0}%)
                         </span>
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-xs bg-rose-500" />
+                    <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-surface/50">
+                      <span className="h-2 w-2 rounded-full bg-rose-500" />
                       <span className="text-text-muted">
                         Dropped: <strong className="text-text">{droppedCount}</strong>{' '}
-                        <span className="text-[11px] text-text-muted/80">
+                        <span className="text-[10px] text-text-muted/70">
                           ({totalCount ? Math.round((droppedCount / totalCount) * 100) : 0}%)
                         </span>
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between border-border/80 border-t pt-3 text-xs">
+                  <div className="flex items-center justify-between border-border/50 border-t pt-2.5 text-xs">
                     <span className="text-text-muted">
                       Total Entries: <strong className="text-text">{totalCount}</strong>
                     </span>
@@ -333,19 +335,19 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                   </div>
                 </div>
 
-                {/* CARD 2: ANNUAL SHELF & GOALS */}
-                <div className="flex flex-col justify-between rounded-xl border border-border bg-surface/50 p-4">
+                {/* WIDGET 2: ANNUAL SHELF & GOALS */}
+                <div className="flex flex-col justify-between rounded-2xl border border-border/60 bg-surface/40 p-4 transition-all duration-300 hover:border-accent-color/40 hover:bg-surface/60 dark:bg-surface/30">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 font-bold text-text-muted text-xs uppercase tracking-wider">
-                      <Trophy className="h-4 w-4 text-amber-500" />
+                      <Trophy className="h-3.5 w-3.5 text-amber-500" />
                       <span>{thisYear} Goal & Pace</span>
                     </div>
 
-                    {/* Ultra-Minimal Animated Glyph Hint */}
+                    {/* Animated Pace Indicator */}
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <div className="flex h-6 w-6 cursor-help items-center justify-center rounded-full border border-border/60 bg-surface/80 shadow-2xs transition-all hover:scale-110 hover:border-accent-color/50">
+                          <div className="flex h-6 w-6 cursor-help items-center justify-center rounded-full border border-border/50 bg-surface/80 shadow-2xs transition-transform hover:scale-110">
                             {isOnTrack ? (
                               <Sparkles className="h-3.5 w-3.5 animate-pulse text-emerald-500" />
                             ) : (
@@ -362,25 +364,32 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                     </TooltipProvider>
                   </div>
 
-                  {/* Mini Shelf Monthly Histogram */}
+                  {/* Monthly Histogram Bars */}
                   <div className="my-3 space-y-1">
-                    <div className="grid h-14 grid-cols-12 items-end gap-1">
+                    <div className="grid h-14 grid-cols-12 items-end gap-1 px-1">
                       {monthlyData.map((d, mIdx) => (
                         <div
                           key={mIdx}
                           className="group relative flex h-full flex-col items-center justify-end"
                           title={`${d.monthName}: ${d.count} finished`}
                         >
-                          <div
-                            className="w-full rounded-xs bg-accent-color/75 transition-all duration-200 group-hover:scale-y-105 group-hover:bg-accent-color"
-                            style={{
+                          <motion.div
+                            className="w-full rounded-t-xs bg-gradient-to-t from-accent-color/85 to-accent-color/60 transition-colors group-hover:from-accent-color group-hover:to-accent-color/80"
+                            initial={{ height: 0 }}
+                            animate={{
                               height:
                                 d.count === 0
                                   ? '2px'
                                   : `${Math.round((d.count / Math.max(1, ...monthlyData.map((m) => m.count))) * 100)}%`,
                             }}
+                            transition={{
+                              type: 'spring',
+                              stiffness: 200,
+                              damping: 20,
+                              delay: mIdx * 0.02,
+                            }}
                           />
-                          <span className="mt-1 font-mono text-[9px] text-text-muted">
+                          <span className="mt-1 font-mono text-[9px] text-text-muted/80 transition-colors group-hover:text-text">
                             {d.label}
                           </span>
                         </div>
@@ -389,7 +398,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                   </div>
 
                   {/* Goal Progress Ring & Edit */}
-                  <div className="flex items-center gap-3 border-border/80 border-t pt-3">
+                  <div className="flex items-center gap-3 border-border/50 border-t pt-2.5">
                     <div className="w-full space-y-1">
                       {!editingGoal ? (
                         <div className="flex items-center justify-between text-xs">
@@ -407,7 +416,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                               setGoalInput(String(targetGoal));
                               setEditingGoal(true);
                             }}
-                            className="h-6 px-1.5 text-accent-color text-xs"
+                            className="h-5 px-1 text-accent-color text-xs hover:bg-accent-color/10"
                           >
                             <Edit2 className="h-3 w-3" />
                           </Button>
@@ -440,7 +449,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                         </div>
                       )}
 
-                      <Progress value={goalPct} className="h-2" />
+                      <Progress value={goalPct} className="h-1.5 bg-border/40" />
 
                       <div className="flex items-center justify-between pt-0.5 text-[11px] text-text-muted">
                         <span>{goalPct}% Achieved</span>
@@ -452,24 +461,38 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                   </div>
                 </div>
 
-                {/* CARD 3: RATING DISTRIBUTION */}
-                <div className="flex flex-col justify-between rounded-xl border border-border bg-surface/50 p-4">
+                {/* WIDGET 3: RATING DISTRIBUTION */}
+                <div className="flex flex-col justify-between rounded-2xl border border-border/60 bg-surface/40 p-4 transition-all duration-300 hover:border-accent-color/40 hover:bg-surface/60 dark:bg-surface/30">
                   <div className="flex items-center justify-between font-bold text-text-muted text-xs uppercase tracking-wider">
-                    <span>Rating Breakdown</span>
-                    <Flame className="h-4 w-4 text-amber-500" />
+                    <span className="flex items-center gap-1.5">
+                      <Flame className="h-3.5 w-3.5 text-amber-500" />
+                      Rating Breakdown
+                    </span>
                   </div>
 
-                  <div className="my-2 space-y-2">
+                  <div className="my-2 space-y-1.5">
                     {ratingDistribution.map(({ star, count, percentage }) => (
                       <div
                         key={star}
-                        className="grid grid-cols-[24px_1fr_60px] items-center gap-2 text-xs"
+                        className="grid grid-cols-[24px_1fr_60px] items-center gap-2 rounded-md px-1 py-0.5 text-xs transition-colors hover:bg-surface/50"
                       >
                         <span className="flex items-center gap-0.5 font-semibold text-text">
                           {star}
                           <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                         </span>
-                        <Progress value={percentage} className="h-2" />
+                        <div className="relative h-2 overflow-hidden rounded-full bg-border/40">
+                          <motion.div
+                            className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${percentage}%` }}
+                            transition={{
+                              type: 'spring',
+                              stiffness: 180,
+                              damping: 24,
+                              delay: (5 - star) * 0.04,
+                            }}
+                          />
+                        </div>
                         <span className="text-right font-mono text-[11px] text-text-muted">
                           {count}x ({percentage}%)
                         </span>
