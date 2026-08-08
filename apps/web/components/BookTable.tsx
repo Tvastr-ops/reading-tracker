@@ -241,7 +241,7 @@ function BookTable({
         </div>
 
         {/* DESKTOP TABLE VIEW (>=640px) */}
-        <div className="hidden overflow-hidden overflow-x-auto rounded-2xl border border-border/80 border-t-white/20 bg-card-bg/95 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.4)] backdrop-blur-xl sm:block dark:border-t-white/12">
+        <div className="hidden overflow-hidden overflow-x-auto rounded-2xl border border-border/80 border-t-white/20 bg-card-bg/95 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.4)] backdrop-blur-xl sm:block dark:border-t-white/20 dark:shadow-[0_16px_50px_rgba(0,0,0,0.8)]">
           <table className="w-full border-collapse text-xs sm:text-sm">
             <thead>
               <tr className="sticky top-0 z-10 border-border/80 border-b bg-card-bg/95 backdrop-blur-md">

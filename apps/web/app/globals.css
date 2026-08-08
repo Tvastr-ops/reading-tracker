@@ -111,9 +111,9 @@
   color-scheme: dark;
 
   --bg: #15120e;
-  --surface: #1e1913;
-  --card-bg: #2a231b;
-  --border: #423727;
+  --surface: #1d1813;
+  --card-bg: #262019;
+  --border: #443828;
   --border-soft: #2e261a;
   --text: #ece4d3;
   --text-muted: #b1a68c;
@@ -121,18 +121,18 @@
   --accent-bg: #ece4d3;
   --accent-bg-hover: #ffffff;
   --accent-text: #15120e;
-  --input-bg: #221c15;
-  --input-border: #423727;
+  --input-bg: #211b14;
+  --input-border: #443828;
   --btn-border: #564834;
-  --secondary-hover: #2a231b;
+  --secondary-hover: #2c251c;
   --danger: #d68276;
   --danger-hover: #e2988d;
   --row-hover: #262018;
   --progress-track: #3d3324;
   --star-empty: #453c2c;
   --star-filled: #d18a72;
-  --shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
-  --shadow-modal: 0 16px 44px rgba(0, 0, 0, 0.65);
+  --shadow: 0 10px 32px -4px rgba(0, 0, 0, 0.75);
+  --shadow-modal: 0 20px 50px -10px rgba(0, 0, 0, 0.85);
 }
 
 * {
