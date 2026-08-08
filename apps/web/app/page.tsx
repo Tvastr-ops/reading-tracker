@@ -468,7 +468,11 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 pb-20 sm:px-6 lg:px-8 xl:px-10 2xl:max-w-screen-2xl">
+      {/* Preconnect to cover image CDN — only needed on dashboard, not login */}
+      <link rel="preconnect" href="https://covers.openlibrary.org" crossOrigin="anonymous" />
+      <link rel="dns-prefetch" href="https://covers.openlibrary.org" />
       {/* Header Bar */}
+
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-bold font-serif text-2xl text-text tracking-tight sm:text-3xl">
