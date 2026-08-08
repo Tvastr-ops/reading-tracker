@@ -1,0 +1,21 @@
+# Reading Tracker
+
+> A minimal, self-hosted, password-protected literature reading tracker web application for web novels, light novels, books, fanfiction, short stories, and essays.
+
+## Overview
+Reading Tracker is a modern web application for organizing, logging, and tracking literature reading progress. It features live progress percentage metrics, timestamped reading session logs, rating distribution charts, yearly reading goals, Open Library cover search, soft deletes with trash recovery, CSV import/export, and full PWA support.
+
+## Key Features
+- **Literature Library Management**: Track titles, authors, formats (Novel, Light Novel, Web Novel, Fanfiction, Essay, etc.), status, ratings, progress, and custom tags in Grid or Table views.
+- **Multi-Tier Progress Tracking**: Support for single-level units (pages, chapters, words, percent) as well as multi-tier structures (Volume → Chapter, Part → Chapter).
+- **Per-Book Timestamped Reading Log**: Keep a complete history of reading sessions with dates, page updates, and notes rather than a single static progress number.
+- **Dashboard Analytics**: Live status breakdown, rating distributions, monthly reading completion bar charts, and editable yearly reading goal progress.
+- **Open Library Integration**: Search and attach high-resolution book cover images directly from Open Library.
+- **Privacy & Single-User Auth**: Single app password protection using JOSE signed HttpOnly session cookies with constant-time verification.
+- **CSV Data Backups**: Full export to CSV and bulk CSV import with title deduplication.
+
+## Tech Stack
+- **Framework**: Next.js 16 (App Router, Turbopack, React 19)
+- **Database**: Supabase Postgres
+- **Styling**: Tailwind CSS v4, Framer Motion, Radix UI
+- **Monorepo**: pnpm Workspaces
