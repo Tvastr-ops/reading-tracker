@@ -185,16 +185,16 @@ export default function HomePage() {
       if (!payload.date_started) payload.date_started = today;
     }
 
-    const isEdit = editing?.id;
-    const res = await fetch(isEdit ? `/api/books/${editing!.id}` : '/api/books', {
-      method: isEdit ? 'PATCH' : 'POST',
+    const targetId = (data as any).id || editing?.id;
+    const res = await fetch(targetId ? `/api/books/${targetId}` : '/api/books', {
+      method: targetId ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     const result = await res.json();
     if (!res.ok) throw new Error(result.error || 'Save failed');
     setEditing(undefined);
-    toast.success(isEdit ? `Updated "${data.title}"` : `Added "${data.title}" to library`);
+    toast.success(targetId ? `Updated "${data.title}"` : `Added "${data.title}" to library`);
     load();
   }
 
@@ -319,8 +319,8 @@ export default function HomePage() {
   }
 
   async function bulkAction(
-    action: 'status' | 'delete' | 'restore' | 'delete_permanent',
-    statusOverride?: string,
+    action: 'status' | 'rating' | 'delete' | 'restore' | 'delete_permanent',
+    overrideValue?: string | number,
   ) {
     if (selected.size === 0) return;
     if (
@@ -329,7 +329,8 @@ export default function HomePage() {
     )
       return;
     const body: Record<string, unknown> = { action, ids: Array.from(selected) };
-    if (action === 'status' && statusOverride) body.status = statusOverride;
+    if (action === 'status' && typeof overrideValue === 'string') body.status = overrideValue;
+    if (action === 'rating' && overrideValue !== undefined) body.rating = overrideValue;
     const res = await fetch('/api/books/bulk', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -343,6 +344,8 @@ export default function HomePage() {
         toast(`Moved ${count} entries to trash`);
       } else if (action === 'status') {
         toast.success(`Updated status for ${count} entries`);
+      } else if (action === 'rating') {
+        toast.success(`Updated rating for ${count} entries`);
       }
     }
   }
@@ -1106,12 +1109,7 @@ export default function HomePage() {
                   <Select
                     onValueChange={(val) => {
                       const r = val === 'unrated' ? 0 : Number(val);
-                      const list = books.filter((b) => selected.has(b.id));
-                      list.forEach((b) => {
-                        void saveBook({ ...b, rating: r });
-                      });
-                      setSelected(new Set());
-                      toast.success(`Updated rating for ${list.length} entries`);
+                      bulkAction('rating', r);
                     }}
                   >
                     <SelectTrigger className="h-8 w-20 rounded-xl border-border text-xs sm:w-24 sm:rounded-full">
