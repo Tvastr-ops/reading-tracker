@@ -105,6 +105,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${newsreader.variable} ${jakarta.variable}`}
     >
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://covers.openlibrary.org" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://covers.openlibrary.org" />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
