@@ -1,6 +1,8 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { Star } from 'lucide-react';
+import { useState } from 'react';
 import {
   Select,
   SelectContent,
@@ -39,6 +41,58 @@ export function RatingDisplay({
     }
   }
   return <div className="inline-flex items-center gap-0.5">{stars}</div>;
+}
+
+export function InteractiveStarRating({
+  value,
+  onChange,
+  disabled = false,
+}: {
+  value: number | null;
+  onChange: (val: number | null) => void;
+  disabled?: boolean;
+}) {
+  const [hoverVal, setHoverVal] = useState<number | null>(null);
+
+  const displayRating = hoverVal ?? value ?? 0;
+
+  return (
+    <div className="inline-flex items-center gap-1">
+      {[1, 2, 3, 4, 5].map((starIdx) => {
+        const isFilled = displayRating >= starIdx;
+        const isHalf = displayRating >= starIdx - 0.5 && displayRating < starIdx;
+
+        return (
+          <motion.button
+            key={starIdx}
+            type="button"
+            disabled={disabled}
+            whileHover={{ scale: 1.25, rotate: 6 }}
+            whileTap={{ scale: 0.85 }}
+            transition={{ type: 'spring', stiffness: 450, damping: 20 }}
+            onMouseEnter={() => setHoverVal(starIdx)}
+            onMouseLeave={() => setHoverVal(null)}
+            onClick={() => onChange(value === starIdx ? null : starIdx)}
+            aria-label={`Rate ${starIdx} stars`}
+            className="p-0.5 focus:outline-hidden disabled:opacity-50"
+          >
+            {isFilled ? (
+              <Star className="h-5 w-5 fill-amber-400 text-amber-400 drop-shadow-xs" />
+            ) : isHalf ? (
+              <div className="relative flex h-5 w-5 items-center">
+                <Star className="h-5 w-5 text-amber-400/30" />
+                <div className="absolute top-0 left-0 h-5 w-[50%] overflow-hidden">
+                  <Star className="h-5 w-5 max-w-none fill-amber-400 text-amber-400" />
+                </div>
+              </div>
+            ) : (
+              <Star className="h-5 w-5 text-amber-400/30 transition-colors hover:text-amber-400/70" />
+            )}
+          </motion.button>
+        );
+      })}
+    </div>
+  );
 }
 
 export function RatingSelect({

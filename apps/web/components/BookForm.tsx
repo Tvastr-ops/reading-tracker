@@ -1,5 +1,6 @@
 'use client';
 
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
   BookOpen,
@@ -9,7 +10,6 @@ import {
   Search,
   Settings2,
 } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
