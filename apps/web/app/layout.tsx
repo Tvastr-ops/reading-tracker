@@ -16,12 +16,62 @@ const jakarta = Plus_Jakarta_Sans({
   display: 'swap',
 });
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://reading-tracker.vercel.app';
+
 export const metadata = {
-  title: 'Reading Tracker',
-  description: 'Personal literature reading tracker',
+  metadataBase: new URL(appUrl),
+  title: {
+    default: 'Reading Tracker — Literature & Book Progress Log',
+    template: '%s | Reading Tracker',
+  },
+  description:
+    'A minimal, password-protected tracker for web novels, light novels, books, fanfiction, and essays with live progress metrics and reading logs.',
+  keywords: [
+    'reading tracker',
+    'book log',
+    'web novel tracker',
+    'light novel tracker',
+    'reading list',
+    'literature log',
+  ],
+  authors: [{ name: 'Reading Tracker' }],
+  creator: 'Reading Tracker',
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: appUrl,
+    siteName: 'Reading Tracker',
+    title: 'Reading Tracker — Literature & Book Progress Log',
+    description:
+      'A minimal, password-protected tracker for web novels, light novels, books, fanfiction, and essays.',
+    images: [
+      {
+        url: '/icon-512.png',
+        width: 512,
+        height: 512,
+        alt: 'Reading Tracker App Icon',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Reading Tracker — Literature & Book Progress Log',
+    description:
+      'A minimal, password-protected tracker for web novels, light novels, books, and fanfiction.',
+    images: ['/icon-512.png'],
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'Reading Tracker',
+    statusBarStyle: 'black-translucent',
+  },
   icons: {
-    icon: [{ url: '/icon-192.png', sizes: '192x192', type: 'image/png' }],
-    apple: [{ url: '/icon-192.png', sizes: '192x192', type: 'image/png' }],
+    icon: [
+      { url: '/icon.png', type: 'image/png' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [{ url: '/apple-icon.png', sizes: '180x180', type: 'image/png' }],
   },
 };
 
