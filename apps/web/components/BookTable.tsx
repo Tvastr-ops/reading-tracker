@@ -133,7 +133,7 @@ function BookTable({
                     onEdit(b);
                   }
                 }}
-                className={`group relative overflow-hidden rounded-2xl border border-border/80 bg-card-bg p-3 shadow-[0_4px_16px_-2px_rgba(40,30,10,0.08)] backdrop-blur-xl transition-all hover:border-accent-color/60 hover:shadow-[0_8px_24px_-4px_rgba(40,30,10,0.14)] active:scale-[0.99] dark:border-border dark:border-t-amber-100/25 dark:bg-card-bg/95 dark:shadow-[0_10px_32px_rgba(0,0,0,0.85)] ${idx >= 4 ? 'cv-mobile-card' : ''} ${
+                className={`group relative overflow-hidden rounded-2xl border border-border/80 bg-card-bg/95 p-3 shadow-[0_6px_24px_-4px_rgba(40,30,10,0.14)] backdrop-blur-xl transition-all hover:border-accent-color/60 active:scale-[0.99] dark:border-border dark:border-t-amber-100/20 dark:shadow-[0_10px_32px_rgba(0,0,0,0.85)] ${idx >= 4 ? 'cv-mobile-card' : ''} ${
                   isSelected
                     ? 'border-accent-color bg-accent-color/10 shadow-[0_12px_32px_-6px_rgba(0,0,0,0.4)] ring-2 ring-accent-color/30'
                     : ''
@@ -241,7 +241,7 @@ function BookTable({
         </div>
 
         {/* DESKTOP TABLE VIEW (>=640px) */}
-        <div className="hidden overflow-hidden overflow-x-auto rounded-2xl border border-border/80 bg-card-bg shadow-[0_4px_20px_-2px_rgba(40,30,10,0.08)] backdrop-blur-xl sm:block dark:border-border dark:border-t-amber-100/25 dark:bg-card-bg/95 dark:shadow-[0_14px_44px_rgba(0,0,0,0.85)]">
+        <div className="hidden overflow-hidden overflow-x-auto rounded-2xl border border-border/80 bg-card-bg/95 shadow-[0_12px_40px_-8px_rgba(40,30,10,0.16)] backdrop-blur-xl sm:block dark:border-border dark:border-t-amber-100/20 dark:shadow-[0_18px_56px_rgba(0,0,0,0.9)]">
           <table className="w-full border-collapse text-xs sm:text-sm">
             <thead>
               <tr className="sticky top-0 z-10 border-border/80 border-b bg-card-bg/95 backdrop-blur-md">
