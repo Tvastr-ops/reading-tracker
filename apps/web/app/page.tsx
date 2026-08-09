@@ -535,6 +535,8 @@ export default function HomePage() {
 
   const filteredRef = useRef(filtered);
   filteredRef.current = filtered;
+  const inspectedBookRef = useRef(inspectedBook);
+  inspectedBookRef.current = inspectedBook;
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -547,6 +549,7 @@ export default function HomePage() {
       if (typing) return;
 
       const currentFiltered = filteredRef.current;
+      const currentInspected = inspectedBookRef.current;
       const rowNavActive = viewMode === 'table' && !showTrash && editing === undefined;
       if (rowNavActive && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
         e.preventDefault();
@@ -564,9 +567,10 @@ export default function HomePage() {
       }
 
       if ((e.key === 'e' || e.key === 'E') && !showTrash && editing === undefined) {
-        if (inspectedBook) {
+        const target = currentInspected || (focusedIndex >= 0 ? currentFiltered[focusedIndex] : null);
+        if (target) {
           e.preventDefault();
-          setEditing(inspectedBook);
+          setEditing(target);
         }
       }
 

@@ -106,10 +106,14 @@ export default function BookInspectorDrawer({
               variant="ghost"
               size="sm"
               onClick={() => onEdit(book)}
-              className="h-8 gap-1.5 text-xs"
+              className="h-8 gap-1.5 text-xs font-medium"
+              title="Press E to edit"
             >
               <Edit3 className="h-3.5 w-3.5" />
               <span>Full Edit</span>
+              <kbd className="font-mono text-[9px] font-semibold bg-surface border border-border px-1 rounded text-text-muted">
+                E
+              </kbd>
             </Button>
             <Button
               variant="ghost"
