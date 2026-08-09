@@ -5,19 +5,22 @@ import {
   BookOpen,
   Calendar,
   CalendarDays,
+  Check,
   CheckCircle2,
   Clock,
   Edit3,
   ExternalLink,
   Plus,
   RotateCcw,
+  Save,
   Sparkles,
   Star,
   TrendingUp,
   Trash2,
+  Undo2,
   X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -33,16 +36,13 @@ import { getStatusConfig } from '@/lib/status';
 import { type Book, STATUSES } from '@/lib/types';
 import { calculateReadingDuration, formatShortDate } from '@/lib/utils';
 import CoverImage from './CoverImage';
-import { InteractiveStarRating, RatingDisplay } from './RatingInput';
+import { InteractiveStarRating } from './RatingInput';
 
 interface BookInspectorDrawerProps {
   book: Book | null;
   onClose: () => void;
   onEdit: (book: Book) => void;
-  onUpdateProgress: (book: Book, newProgress: number) => void;
-  onUpdateDates: (book: Book, startDate: string | null, finishDate: string | null) => void;
-  onUpdateStatus: (book: Book, newStatus: Book['status']) => void;
-  onUpdateRating: (book: Book, newRating: number | null) => void;
+  onSaveInspectorBook: (updatedBook: Book) => Promise<void>;
   onDelete: (book: Book) => void;
 }
 
@@ -50,19 +50,32 @@ export default function BookInspectorDrawer({
   book,
   onClose,
   onEdit,
-  onUpdateProgress,
-  onUpdateDates,
-  onUpdateStatus,
-  onUpdateRating,
+  onSaveInspectorBook,
   onDelete,
 }: BookInspectorDrawerProps) {
-  if (!book) return null;
+  const [draft, setDraft] = useState<Book | null>(book);
+  const [saving, setSaving] = useState(false);
 
-  const pct = calculateProgressPercentage(book);
-  const formattedProgress = formatProgressText(book);
-  const statusCfg = getStatusConfig(book.status);
+  // Sync draft when target book changes
+  useEffect(() => {
+    setDraft(book);
+  }, [book?.id, book?.updated_at]);
 
-  // Helper for quick date chips
+  if (!book || !draft) return null;
+
+  // Check if draft has unsaved changes compared to original book
+  const isDirty =
+    draft.status !== book.status ||
+    draft.rating !== book.rating ||
+    draft.progress !== book.progress ||
+    draft.date_started !== book.date_started ||
+    draft.date_finished !== book.date_finished;
+
+  const pct = calculateProgressPercentage(draft);
+  const formattedProgress = formatProgressText(draft);
+  const statusCfg = getStatusConfig(draft.status);
+
+  // Date helper chips
   const getTodayISO = () => new Date().toISOString().split('T')[0];
   const getYesterdayISO = () => {
     const d = new Date();
@@ -76,15 +89,28 @@ export default function BookInspectorDrawer({
   };
 
   const handleIncrementProgress = (delta: number) => {
-    const current = book.progress ?? 0;
-    const max = book.total_units ?? 999999;
+    const current = draft.progress ?? 0;
+    const max = draft.total_units ?? 999999;
     const nextVal = Math.min(max, Math.max(0, current + delta));
-    onUpdateProgress(book, nextVal);
+    setDraft((prev) => (prev ? { ...prev, progress: nextVal } : null));
   };
 
-  // Estimate completion calculation
-  const remainingUnits = (book.total_units ?? 0) - (book.progress ?? 0);
-  const durationText = calculateReadingDuration(book.date_started, book.date_finished);
+  const handleDiscard = () => {
+    setDraft(book);
+  };
+
+  const handleSave = async () => {
+    if (!draft || !isDirty) return;
+    setSaving(true);
+    try {
+      await onSaveInspectorBook(draft);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remainingUnits = (draft.total_units ?? 0) - (draft.progress ?? 0);
+  const durationText = calculateReadingDuration(draft.date_started, draft.date_finished);
 
   return (
     <AnimatePresence>
@@ -100,6 +126,11 @@ export default function BookInspectorDrawer({
           <div className="flex items-center gap-2 text-xs font-semibold text-text-muted">
             <Sparkles className="h-4 w-4 text-amber-500" />
             <span>Desktop Book Inspector</span>
+            {isDirty && (
+              <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                Unsaved Draft
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -131,17 +162,19 @@ export default function BookInspectorDrawer({
           <div className="flex items-start gap-4">
             <div className="relative h-28 w-20 shrink-0 overflow-hidden rounded-xl border border-border shadow-md bg-surface">
               <CoverImage
-                src={book.cover_url}
-                title={book.title}
+                src={draft.cover_url}
+                title={draft.title}
                 fill
                 sizes="80px"
               />
             </div>
             <div className="min-w-0 flex-1 space-y-2">
-              {/* Interactive 1-Tap Status Dropdown Selector */}
+              {/* Interactive Status Selector (Draft State) */}
               <Select
-                value={book.status}
-                onValueChange={(val) => onUpdateStatus(book, val as Book['status'])}
+                value={draft.status}
+                onValueChange={(val) =>
+                  setDraft((prev) => (prev ? { ...prev, status: val as Book['status'] } : null))
+                }
               >
                 <SelectTrigger className="h-7 w-auto inline-flex rounded-full px-2.5 text-[11px] font-semibold tracking-wide gap-1 shadow-2xs border-border bg-surface">
                   <span className={`h-1.5 w-1.5 rounded-full ${statusCfg.dotColor}`} />
@@ -157,16 +190,16 @@ export default function BookInspectorDrawer({
               </Select>
 
               <h3 className="font-bold text-text text-base leading-snug tracking-tight">
-                {book.title}
+                {draft.title}
               </h3>
 
               <p className="text-xs text-text-muted">
-                {book.author || 'Unknown Author'} {book.type ? `· ${book.type}` : ''}
+                {draft.author || 'Unknown Author'} {draft.type ? `· ${draft.type}` : ''}
               </p>
 
-              {book.source_link && (
+              {draft.source_link && (
                 <a
-                  href={book.source_link.startsWith('http') ? book.source_link : `https://${book.source_link}`}
+                  href={draft.source_link.startsWith('http') ? draft.source_link : `https://${draft.source_link}`}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-600 dark:text-amber-400 hover:underline"
@@ -178,7 +211,7 @@ export default function BookInspectorDrawer({
             </div>
           </div>
 
-          {/* Interactive Rating Stars Selector */}
+          {/* Interactive Rating Stars Selector (Draft State) */}
           <div className="rounded-xl border border-border bg-surface/50 p-3.5 space-y-2">
             <div className="flex items-center justify-between text-xs font-semibold text-text">
               <span className="inline-flex items-center gap-1.5">
@@ -186,18 +219,20 @@ export default function BookInspectorDrawer({
                 <span>Rating</span>
               </span>
               <span className="text-text-muted font-medium">
-                {book.rating ? `${book.rating.toFixed(1)} / 5.0` : 'Unrated'}
+                {draft.rating ? `${draft.rating.toFixed(1)} / 5.0` : 'Unrated'}
               </span>
             </div>
             <div className="flex items-center justify-between pt-1">
               <InteractiveStarRating
-                value={book.rating}
-                onChange={(r) => onUpdateRating(book, r)}
+                value={draft.rating}
+                onChange={(r) =>
+                  setDraft((prev) => (prev ? { ...prev, rating: r } : null))
+                }
               />
-              {book.rating != null && (
+              {draft.rating != null && (
                 <button
                   type="button"
-                  onClick={() => onUpdateRating(book, null)}
+                  onClick={() => setDraft((prev) => (prev ? { ...prev, rating: null } : null))}
                   className="text-[10px] font-semibold text-rose-400 hover:underline"
                 >
                   Clear
@@ -206,7 +241,7 @@ export default function BookInspectorDrawer({
             </div>
           </div>
 
-          {/* Quick Progress Steppers & Progress Bar */}
+          {/* Quick Progress Steppers (Draft State) */}
           <div className="rounded-xl border border-border bg-surface/50 p-4 space-y-3">
             <div className="flex items-center justify-between text-xs font-semibold">
               <span className="text-text">Reading Progress</span>
@@ -254,7 +289,7 @@ export default function BookInspectorDrawer({
             </div>
           </div>
 
-          {/* Desktop Quick Date Editor & Custom Date Pickers */}
+          {/* Quick Desktop Date Editor & Custom Date Pickers (Draft State) */}
           <div className="rounded-xl border border-border bg-surface/50 p-4 space-y-4">
             <div className="flex items-center justify-between text-xs font-semibold text-text">
               <span className="inline-flex items-center gap-1.5">
@@ -270,9 +305,11 @@ export default function BookInspectorDrawer({
                 <span className="text-text-muted font-medium">Start Date</span>
                 <input
                   type="date"
-                  value={book.date_started || ''}
+                  value={draft.date_started || ''}
                   onChange={(e) =>
-                    onUpdateDates(book, e.target.value || null, book.date_finished)
+                    setDraft((prev) =>
+                      prev ? { ...prev, date_started: e.target.value || null } : null,
+                    )
                   }
                   className="bg-card-bg border border-border text-text rounded px-1.5 py-0.5 text-[11px] outline-none"
                 />
@@ -282,29 +319,41 @@ export default function BookInspectorDrawer({
               <div className="flex flex-wrap items-center gap-1">
                 <button
                   type="button"
-                  onClick={() => onUpdateDates(book, getTodayISO(), book.date_finished)}
+                  onClick={() =>
+                    setDraft((prev) => (prev ? { ...prev, date_started: getTodayISO() } : null))
+                  }
                   className="px-2 py-0.5 text-[10px] font-semibold rounded-md border border-sky-500/30 bg-sky-500/10 text-sky-400 hover:bg-sky-500/20"
                 >
                   Today
                 </button>
                 <button
                   type="button"
-                  onClick={() => onUpdateDates(book, getYesterdayISO(), book.date_finished)}
+                  onClick={() =>
+                    setDraft((prev) =>
+                      prev ? { ...prev, date_started: getYesterdayISO() } : null,
+                    )
+                  }
                   className="px-2 py-0.5 text-[10px] font-semibold rounded-md border border-border bg-card-bg text-text-muted hover:text-text"
                 >
                   Yesterday
                 </button>
                 <button
                   type="button"
-                  onClick={() => onUpdateDates(book, getDaysAgoISO(7), book.date_finished)}
+                  onClick={() =>
+                    setDraft((prev) =>
+                      prev ? { ...prev, date_started: getDaysAgoISO(7) } : null,
+                    )
+                  }
                   className="px-2 py-0.5 text-[10px] font-semibold rounded-md border border-border bg-card-bg text-text-muted hover:text-text"
                 >
                   7 Days Ago
                 </button>
-                {book.date_started && (
+                {draft.date_started && (
                   <button
                     type="button"
-                    onClick={() => onUpdateDates(book, null, book.date_finished)}
+                    onClick={() =>
+                      setDraft((prev) => (prev ? { ...prev, date_started: null } : null))
+                    }
                     className="px-2 py-0.5 text-[10px] font-semibold rounded-md border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20"
                   >
                     Clear
@@ -319,9 +368,11 @@ export default function BookInspectorDrawer({
                 <span className="text-text-muted font-medium">Finish Date</span>
                 <input
                   type="date"
-                  value={book.date_finished || ''}
+                  value={draft.date_finished || ''}
                   onChange={(e) =>
-                    onUpdateDates(book, book.date_started, e.target.value || null)
+                    setDraft((prev) =>
+                      prev ? { ...prev, date_finished: e.target.value || null } : null,
+                    )
                   }
                   className="bg-card-bg border border-border text-emerald-400 rounded px-1.5 py-0.5 text-[11px] outline-none"
                 />
@@ -331,22 +382,30 @@ export default function BookInspectorDrawer({
               <div className="flex flex-wrap items-center gap-1">
                 <button
                   type="button"
-                  onClick={() => onUpdateDates(book, book.date_started, getTodayISO())}
+                  onClick={() =>
+                    setDraft((prev) => (prev ? { ...prev, date_finished: getTodayISO() } : null))
+                  }
                   className="px-2 py-0.5 text-[10px] font-semibold rounded-md border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
                 >
                   Completed Today
                 </button>
                 <button
                   type="button"
-                  onClick={() => onUpdateDates(book, book.date_started, getYesterdayISO())}
+                  onClick={() =>
+                    setDraft((prev) =>
+                      prev ? { ...prev, date_finished: getYesterdayISO() } : null,
+                    )
+                  }
                   className="px-2 py-0.5 text-[10px] font-semibold rounded-md border border-border bg-card-bg text-text-muted hover:text-text"
                 >
                   Yesterday
                 </button>
-                {book.date_finished && (
+                {draft.date_finished && (
                   <button
                     type="button"
-                    onClick={() => onUpdateDates(book, book.date_started, null)}
+                    onClick={() =>
+                      setDraft((prev) => (prev ? { ...prev, date_finished: null } : null))
+                    }
                     className="px-2 py-0.5 text-[10px] font-semibold rounded-md border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20"
                   >
                     Clear
@@ -370,17 +429,17 @@ export default function BookInspectorDrawer({
               <span className="text-text-muted text-[11px]">Remaining</span>
               <div className="font-semibold text-text flex items-center gap-1">
                 <TrendingUp className="h-3.5 w-3.5 text-sky-400" />
-                <span>{remainingUnits > 0 ? `${remainingUnits} ${book.unit_type || 'units'}` : 'Finished'}</span>
+                <span>{remainingUnits > 0 ? `${remainingUnits} ${draft.unit_type || 'units'}` : 'Finished'}</span>
               </div>
             </div>
           </div>
 
           {/* Genre / Tags */}
-          {book.genre_tags && (
+          {draft.genre_tags && (
             <div className="space-y-1.5">
               <span className="text-xs font-semibold text-text-muted">Genre & Tags</span>
               <div className="flex flex-wrap gap-1.5">
-                {book.genre_tags.split(',').map((tag) => (
+                {draft.genre_tags.split(',').map((tag) => (
                   <span
                     key={tag}
                     className="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-border bg-surface text-text-muted"
@@ -393,37 +452,65 @@ export default function BookInspectorDrawer({
           )}
 
           {/* Notes Preview */}
-          {book.notes && (
+          {draft.notes && (
             <div className="space-y-1.5">
               <span className="text-xs font-semibold text-text-muted">Notes</span>
               <div className="p-3 rounded-xl border border-border bg-surface/40 text-xs text-text leading-relaxed whitespace-pre-wrap">
-                {book.notes}
+                {draft.notes}
               </div>
             </div>
           )}
         </div>
 
-        {/* Footer Actions */}
+        {/* Footer Actions — Staged Draft Save Bar */}
         <div className="p-4 border-t border-border bg-surface/40 flex items-center justify-between gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onDelete(book)}
-            className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 border-rose-500/20 text-xs gap-1.5"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            <span>Delete</span>
-          </Button>
+          {isDirty ? (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDiscard}
+                disabled={saving}
+                className="text-xs gap-1.5 border-border text-text-muted hover:text-text"
+              >
+                <Undo2 className="h-3.5 w-3.5" />
+                <span>Discard</span>
+              </Button>
 
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => onEdit(book)}
-            className="text-xs gap-1.5"
-          >
-            <Edit3 className="h-3.5 w-3.5" />
-            <span>Edit Full Book</span>
-          </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleSave}
+                disabled={saving}
+                className="text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-md"
+              >
+                <Save className="h-3.5 w-3.5" />
+                <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onDelete(book)}
+                className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 border-rose-500/20 text-xs gap-1.5"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>Delete</span>
+              </Button>
+
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => onEdit(book)}
+                className="text-xs gap-1.5"
+              >
+                <Edit3 className="h-3.5 w-3.5" />
+                <span>Edit Full Book</span>
+              </Button>
+            </>
+          )}
         </div>
       </motion.aside>
     </AnimatePresence>
