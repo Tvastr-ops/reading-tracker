@@ -288,15 +288,14 @@ export default function StatsSummary({
                         .map((s, idx) => (
                           <motion.div
                             key={s.label}
-                            className={`h-full rounded-full ${s.gradient} relative cursor-pointer border-white/30 border-t shadow-2xs transition-all`}
+                            className={`h-full rounded-full ${s.gradient} relative cursor-pointer border-white/30 border-t shadow-2xs transition-opacity hover:opacity-90 active:scale-95`}
                             initial={{ width: 0 }}
                             animate={{ width: `${s.pct}%` }}
-                            whileHover={{ scaleY: 1.18 }}
                             transition={{
                               type: 'spring',
-                              stiffness: 250,
-                              damping: 20,
-                              delay: idx * 0.05,
+                              stiffness: 200,
+                              damping: 25,
+                              delay: idx * 0.04,
                             }}
                             onClick={() => onStatusSelect?.(s.label)}
                             title={`${s.label}: ${s.count} (${totalCount ? Math.round((s.count / totalCount) * 100) : 0}%)`}
@@ -629,16 +628,15 @@ export default function StatsSummary({
                           {star}
                           <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                         </span>
-                        <div className="groove-inset relative h-4 overflow-hidden rounded-full border border-border/40 bg-border/40 p-0.5 shadow-inner">
+                        <div className="groove-inset relative h-3.5 overflow-hidden rounded-full border border-border/40 bg-border/40 p-0.5 shadow-inner">
                           <motion.div
-                            className="relative h-full rounded-full border-white/35 border-t bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-400 shadow-2xs transition-all"
+                            className="relative h-full rounded-full border-white/35 border-t bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-400 shadow-2xs transition-opacity hover:opacity-90"
                             initial={{ width: 0 }}
                             animate={{ width: `${percentage}%` }}
-                            whileHover={{ scaleY: 1.25, filter: 'brightness(1.15)' }}
                             transition={{
                               type: 'spring',
-                              stiffness: 250,
-                              damping: 20,
+                              stiffness: 200,
+                              damping: 25,
                               delay: (5 - star) * 0.04,
                             }}
                           >
