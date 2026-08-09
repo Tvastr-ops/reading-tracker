@@ -228,9 +228,9 @@ export default function StatsSummary({ books }: { books: Book[] }) {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 {/* WIDGET 1: STATUS BREAKDOWN */}
                 <motion.div
-                  whileHover={{ y: -4 }}
-                  transition={{ type: 'spring', stiffness: 450, damping: 25 }}
-                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-surface/50 p-4 shadow-[0_4px_16px_-2px_rgba(40,30,10,0.06)] backdrop-blur-md transition-[border-color,box-shadow] duration-300 hover:border-accent-color/60 hover:shadow-[0_14px_32px_-4px_rgba(40,30,10,0.14)] dark:border-border/80 dark:border-t-amber-100/20 dark:bg-surface/40 dark:shadow-[0_6px_20px_-4px_rgba(0,0,0,0.5)] dark:hover:shadow-[0_16px_40px_-4px_rgba(0,0,0,0.85)]"
+                  whileHover={{ y: -2 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-surface/50 p-4 shadow-[0_2px_8px_rgba(40,30,10,0.04)] backdrop-blur-md transition-[border-color,box-shadow] duration-200 hover:border-accent-color/40 hover:shadow-[0_6px_16px_-2px_rgba(40,30,10,0.08)] dark:border-border/80 dark:border-t-amber-100/20 dark:bg-surface/40 dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
                 >
                   <div className="flex items-center justify-between font-bold text-text-muted text-xs uppercase tracking-wider">
                     <span className="flex items-center gap-1.5">
@@ -342,9 +342,9 @@ export default function StatsSummary({ books }: { books: Book[] }) {
 
                 {/* WIDGET 2: ANNUAL SHELF & GOALS */}
                 <motion.div
-                  whileHover={{ y: -4 }}
-                  transition={{ type: 'spring', stiffness: 450, damping: 25 }}
-                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-surface/50 p-4 shadow-[0_4px_16px_-2px_rgba(40,30,10,0.06)] backdrop-blur-md transition-[border-color,box-shadow] duration-300 hover:border-accent-color/60 hover:shadow-[0_14px_32px_-4px_rgba(40,30,10,0.14)] dark:border-border/80 dark:border-t-amber-100/20 dark:bg-surface/40 dark:shadow-[0_6px_20px_-4px_rgba(0,0,0,0.5)] dark:hover:shadow-[0_16px_40px_-4px_rgba(0,0,0,0.85)]"
+                  whileHover={{ y: -2 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-surface/50 p-4 shadow-[0_2px_8px_rgba(40,30,10,0.04)] backdrop-blur-md transition-[border-color,box-shadow] duration-200 hover:border-accent-color/40 hover:shadow-[0_6px_16px_-2px_rgba(40,30,10,0.08)] dark:border-border/80 dark:border-t-amber-100/20 dark:bg-surface/40 dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 font-bold text-text-muted text-xs uppercase tracking-wider">
@@ -472,9 +472,9 @@ export default function StatsSummary({ books }: { books: Book[] }) {
 
                 {/* WIDGET 3: RATING DISTRIBUTION */}
                 <motion.div
-                  whileHover={{ y: -4 }}
-                  transition={{ type: 'spring', stiffness: 450, damping: 25 }}
-                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-surface/50 p-4 shadow-[0_4px_16px_-2px_rgba(40,30,10,0.06)] backdrop-blur-md transition-[border-color,box-shadow] duration-300 hover:border-accent-color/60 hover:shadow-[0_14px_32px_-4px_rgba(40,30,10,0.14)] dark:border-border/80 dark:border-t-amber-100/20 dark:bg-surface/40 dark:shadow-[0_6px_20px_-4px_rgba(0,0,0,0.5)] dark:hover:shadow-[0_16px_40px_-4px_rgba(0,0,0,0.85)]"
+                  whileHover={{ y: -2 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-surface/50 p-4 shadow-[0_2px_8px_rgba(40,30,10,0.04)] backdrop-blur-md transition-[border-color,box-shadow] duration-200 hover:border-accent-color/40 hover:shadow-[0_6px_16px_-2px_rgba(40,30,10,0.08)] dark:border-border/80 dark:border-t-amber-100/20 dark:bg-surface/40 dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
                 >
                   <div className="flex items-center justify-between font-bold text-text-muted text-xs uppercase tracking-wider">
                     <span className="flex items-center gap-1.5">
