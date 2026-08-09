@@ -241,10 +241,10 @@ function BookTable({
         </div>
 
         {/* DESKTOP TABLE VIEW (>=640px) */}
-        <div className="hidden overflow-hidden overflow-x-auto rounded-2xl border border-border/80 bg-card-bg/95 shadow-[0_12px_40px_-8px_rgba(40,30,10,0.16)] backdrop-blur-xl sm:block dark:border-border dark:border-t-amber-100/20 dark:shadow-[0_18px_56px_rgba(0,0,0,0.9)]">
+        <div className="hidden overflow-hidden overflow-x-auto rounded-2xl border border-border/80 bg-card-bg/80 shadow-2xs sm:block dark:border-border dark:bg-card-bg/90">
           <table className="w-full border-collapse text-xs sm:text-sm">
             <thead>
-              <tr className="sticky top-0 z-10 border-border/80 border-b bg-card-bg/95 backdrop-blur-md">
+              <tr className="sticky top-0 z-10 border-border/70 border-b bg-surface/70 backdrop-blur-md">
                 {selectMode && (
                   <th className="w-8 border-border border-b px-3.5 py-3 text-left">
                     <input
@@ -308,7 +308,7 @@ function BookTable({
                         onEdit(b);
                       }
                     }}
-                    className={`group cursor-pointer transition-all hover:bg-surface/60 ${idx >= 4 ? 'cv-table-row' : ''} ${
+                    className={`group cursor-pointer border-border/40 border-b transition-colors hover:bg-surface/50 ${idx >= 4 ? 'cv-table-row' : ''} ${
                       isSelected ? 'border-l-4 border-l-accent-color bg-accent-color/10' : ''
                     } ${isFocused ? 'ring-2 ring-accent-color' : ''}`}
                   >
