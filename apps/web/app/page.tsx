@@ -1083,7 +1083,7 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.96 }}
             transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-            className="surface-t3 fixed bottom-3 left-1/2 z-50 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 items-center justify-between gap-1 overflow-x-auto rounded-full p-1.5 sm:bottom-6 sm:max-w-3xl sm:gap-2.5 sm:px-4 sm:py-2"
+            className="surface-t3 fixed bottom-5 left-1/2 z-50 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 items-center justify-between gap-1 rounded-full p-1.5 shadow-t3 sm:bottom-6 sm:max-w-3xl sm:gap-2.5 sm:px-4 sm:py-2"
           >
             <div className="flex shrink-0 items-center gap-1 pl-0.5 text-xs sm:gap-1.5 sm:pl-1">
               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent-color/15 font-bold font-mono text-[11px] text-accent-color">
@@ -1122,7 +1122,7 @@ export default function HomePage() {
                       setPendingStatus(val as Book['status']);
                     }}
                   >
-                    <SelectTrigger className="h-8 w-18 rounded-full border-border px-1.5 text-xs sm:w-28 sm:px-3">
+                    <SelectTrigger className="h-8 w-[72px] rounded-full border-border px-1.5 text-xs sm:w-28 sm:px-3">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1148,7 +1148,7 @@ export default function HomePage() {
                       setPendingRating(r);
                     }}
                   >
-                    <SelectTrigger className="h-8 w-16 rounded-full border-border px-1 text-xs sm:w-24 sm:px-3">
+                    <SelectTrigger className="h-8 w-[60px] rounded-full border-border px-1 text-xs sm:w-24 sm:px-3">
                       <SelectValue placeholder="Rating" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1165,7 +1165,7 @@ export default function HomePage() {
                   {(pendingStatus !== '' || pendingRating !== null) && (
                     <Button
                       size="sm"
-                      className="h-8 shrink-0 rounded-full bg-accent-color px-2.5 font-bold text-accent-text text-xs shadow-xs hover:bg-accent-color/90 sm:px-3"
+                      className="h-8 shrink-0 rounded-full bg-accent-color px-2 font-bold text-accent-text text-xs shadow-xs hover:bg-accent-color/90 sm:px-3"
                       onClick={async () => {
                         if (pendingStatus) {
                           await bulkAction('status', pendingStatus, true);
@@ -1220,8 +1220,8 @@ export default function HomePage() {
                 }}
                 title="Done selecting"
               >
-                <Check className="mr-0.5 h-3.5 w-3.5 text-emerald-500" />
-                <span>Done</span>
+                <Check className="h-4 w-4 text-emerald-500 sm:mr-1 sm:h-3.5 sm:w-3.5" />
+                <span className="hidden sm:inline">Done</span>
               </Button>
             </div>
           </motion.div>
