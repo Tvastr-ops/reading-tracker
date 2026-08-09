@@ -247,7 +247,7 @@ export default function StatsSummary({
 
                   {/* Refined Matte-Satin 3D Progress Bar */}
                   <div className="my-3">
-                    <div className="groove-inset relative flex h-5 items-center gap-1.5 overflow-hidden rounded-full border border-border/40 bg-border/40 p-0.5 shadow-inner">
+                    <div className="groove-inset relative flex h-5 items-center gap-[2px] overflow-hidden rounded-full border border-border/40 bg-border/40 p-0.5 shadow-inner">
                       {[
                         {
                           label: 'Completed',
