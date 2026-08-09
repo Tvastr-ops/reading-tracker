@@ -1,5 +1,4 @@
 import './globals.css';
-import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Newsreader, Plus_Jakarta_Sans } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -110,7 +109,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-bg font-sans text-text antialiased">
         <main>{children}</main>
         <Toaster position="bottom-right" richColors closeButton />
-        <SpeedInsights debug={process.env.NODE_ENV === 'development'} />
       </body>
     </html>
   );
