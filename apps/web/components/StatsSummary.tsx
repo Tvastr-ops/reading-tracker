@@ -251,47 +251,57 @@ export default function StatsSummary({
 
                   {/* Progress Stack Bar */}
                   <div className="my-3">
-                    <div className="groove-inset flex h-3.5 items-center gap-1.5 overflow-hidden rounded-full bg-border/40 p-0.5">
-                      <motion.div
-                        className="h-full rounded-full bg-emerald-500 transition-shadow hover:shadow-xs"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${compPct}%` }}
-                        whileHover={{ scaleY: 1.15 }}
-                        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                        title={`Completed: ${completedCount} (${totalCount ? Math.round((completedCount / totalCount) * 100) : 0}%)`}
-                      />
-                      <motion.div
-                        className="h-full rounded-full bg-sky-500 transition-shadow hover:shadow-xs"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${readPct}%` }}
-                        whileHover={{ scaleY: 1.15 }}
-                        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                        title={`Reading: ${readingCount} (${totalCount ? Math.round((readingCount / totalCount) * 100) : 0}%)`}
-                      />
-                      <motion.div
-                        className="h-full rounded-full bg-orange-500 transition-shadow hover:shadow-xs"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${holdPct}%` }}
-                        whileHover={{ scaleY: 1.15 }}
-                        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                        title={`On Hold: ${onHoldCount} (${totalCount ? Math.round((onHoldCount / totalCount) * 100) : 0}%)`}
-                      />
-                      <motion.div
-                        className="h-full rounded-full bg-amber-500 transition-shadow hover:shadow-xs"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${planPct}%` }}
-                        whileHover={{ scaleY: 1.15 }}
-                        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                        title={`Plan to Read: ${planToReadCount} (${totalCount ? Math.round((planToReadCount / totalCount) * 100) : 0}%)`}
-                      />
-                      <motion.div
-                        className="h-full rounded-full bg-rose-500 transition-shadow hover:shadow-xs"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${dropPct}%` }}
-                        whileHover={{ scaleY: 1.15 }}
-                        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                        title={`Dropped: ${droppedCount} (${totalCount ? Math.round((droppedCount / totalCount) * 100) : 0}%)`}
-                      />
+                    <div className="groove-inset flex h-4 items-center gap-1 overflow-hidden rounded-full bg-border/40 p-0.5">
+                      {[
+                        {
+                          label: 'Completed',
+                          count: completedCount,
+                          pct: compPct,
+                          color: 'bg-emerald-500',
+                          hoverColor: 'hover:bg-emerald-400',
+                        },
+                        {
+                          label: 'Reading',
+                          count: readingCount,
+                          pct: readPct,
+                          color: 'bg-sky-500',
+                          hoverColor: 'hover:bg-sky-400',
+                        },
+                        {
+                          label: 'On Hold',
+                          count: onHoldCount,
+                          pct: holdPct,
+                          color: 'bg-orange-500',
+                          hoverColor: 'hover:bg-orange-400',
+                        },
+                        {
+                          label: 'Plan to Read',
+                          count: planToReadCount,
+                          pct: planPct,
+                          color: 'bg-amber-500',
+                          hoverColor: 'hover:bg-amber-400',
+                        },
+                        {
+                          label: 'Dropped',
+                          count: droppedCount,
+                          pct: dropPct,
+                          color: 'bg-rose-500',
+                          hoverColor: 'hover:bg-rose-400',
+                        },
+                      ]
+                        .filter((s) => s.count > 0)
+                        .map((s, idx) => (
+                          <motion.div
+                            key={s.label}
+                            className={`h-full rounded-full ${s.color} ${s.hoverColor} cursor-pointer transition-all`}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${s.pct}%` }}
+                            whileHover={{ scaleY: 1.2 }}
+                            transition={{ type: 'spring', stiffness: 220, damping: 20, delay: idx * 0.05 }}
+                            onClick={() => onStatusSelect?.(s.label)}
+                            title={`${s.label}: ${s.count} (${totalCount ? Math.round((s.count / totalCount) * 100) : 0}%)`}
+                          />
+                        ))}
                     </div>
                   </div>
 
