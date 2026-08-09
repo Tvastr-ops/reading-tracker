@@ -333,6 +333,32 @@ export default function HomePage() {
     }
   }
 
+  async function handleSaveInspectorBook(draft: Book) {
+    const patchData = {
+      status: draft.status,
+      rating: draft.rating,
+      progress: draft.progress,
+      date_started: draft.date_started,
+      date_finished: draft.date_finished,
+    };
+
+    setBooks((prev) => prev.map((x) => (x.id === draft.id ? { ...x, ...patchData } : x)));
+    setInspectedBook(draft);
+
+    const res = await fetch(`/api/books/${draft.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patchData),
+    });
+
+    if (!res.ok) {
+      toast.error('Failed to save changes');
+      load(true);
+    } else {
+      toast.success(`Saved changes for "${draft.title}"`);
+    }
+  }
+
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/login');
@@ -1199,10 +1225,7 @@ export default function HomePage() {
               book={inspectedBook}
               onClose={() => setInspectedBook(null)}
               onEdit={(b) => setEditing(b)}
-              onUpdateProgress={handleUpdateProgress}
-              onUpdateDates={handleUpdateDates}
-              onUpdateStatus={quickStatusChange}
-              onUpdateRating={handleUpdateRating}
+              onSaveInspectorBook={handleSaveInspectorBook}
               onDelete={deleteBook}
             />
           )}
