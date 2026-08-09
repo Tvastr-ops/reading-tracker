@@ -81,13 +81,14 @@
   --progress-track: #e2d7bd;
   --star-empty: #d3c6a3;
   --star-filled: #8a3b30;
-  --shadow-t1: 0 1px 3px 0 rgba(40, 30, 10, 0.06), 0 1px 2px -1px rgba(40, 30, 10, 0.04);
-  --shadow-t2: 0 1px 2px 0 rgba(40, 30, 10, 0.06), 0 4px 16px -2px rgba(40, 30, 10, 0.08);
-  --shadow-t2-hover: 0 2px 4px 0 rgba(40, 30, 10, 0.08), 0 10px 28px -4px rgba(40, 30, 10, 0.14);
-  --shadow-t3: 0 4px 8px 0 rgba(30, 22, 8, 0.08), 0 16px 40px -4px rgba(30, 22, 8, 0.18);
-  --shadow-groove: inset 0 1px 2px rgba(40, 30, 10, 0.12);
+  --shadow-t1: 0 1px 3px 0 rgba(40, 30, 10, 0.07), 0 1px 2px -1px rgba(40, 30, 10, 0.05);
+  --shadow-t2: 0 1px 3px 0 rgba(40, 30, 10, 0.08), 0 5px 20px -2px rgba(40, 30, 10, 0.13);
+  --shadow-t2-hover: 0 3px 6px 0 rgba(40, 30, 10, 0.1), 0 12px 32px -4px rgba(40, 30, 10, 0.18);
+  --shadow-t3: 0 4px 10px 0 rgba(30, 22, 8, 0.1), 0 18px 44px -4px rgba(30, 22, 8, 0.22);
+  --shadow-groove: inset 0 1px 3px rgba(40, 30, 10, 0.18);
+  --shadow-vignette: inset 0 0 12px rgba(0, 0, 0, 0.25);
   --card-glass-bg: rgba(251, 248, 241, 0.88);
-  --rim-highlight: rgba(255, 255, 255, 0.55);
+  --rim-highlight: rgba(255, 255, 255, 0.85);
   --font-serif: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, serif;
 
   --space-1: 4px;
@@ -121,8 +122,8 @@
   --border: #4d3f2c;
   --border-soft: #382d1f;
   --text: #ece4d3;
-  --text-muted: #b8ac92;
-  --text-faint: #8e826b;
+  --text-muted: #c4b89e;
+  --text-faint: #9b8f78;
   --accent-bg: #ece4d3;
   --accent-bg-hover: #ffffff;
   --accent-text: #120e0a;
@@ -191,6 +192,11 @@
 /* Inset groove channels — progress tracks, histogram backgrounds */
 .groove-inset {
   box-shadow: var(--shadow-groove);
+}
+
+/* Inset vignette shadow for recessed cover image framing */
+.vignette-inset {
+  box-shadow: var(--shadow-vignette);
 }
 
 * {

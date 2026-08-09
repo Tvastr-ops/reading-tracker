@@ -309,7 +309,11 @@ function BookTable({
                       }
                     }}
                     className={`group cursor-pointer border-border/40 border-b transition-colors hover:bg-surface/50 ${idx >= 4 ? 'cv-table-row' : ''} ${
-                      isSelected ? 'border-l-4 border-l-accent-color bg-accent-color/10' : ''
+                      isSelected
+                        ? 'border-l-4 border-l-accent-color bg-accent-color/10'
+                        : idx % 2 === 1
+                          ? 'bg-surface/25'
+                          : ''
                     } ${isFocused ? 'ring-2 ring-accent-color' : ''}`}
                   >
                     {/* Selection Checkbox */}

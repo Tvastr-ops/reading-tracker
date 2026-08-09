@@ -92,7 +92,7 @@ function BookGrid({
                   }
                 }}
               >
-                <div className="relative aspect-[2/3] w-full overflow-hidden bg-surface">
+                <div className="vignette-inset relative aspect-[2/3] w-full overflow-hidden bg-surface">
                   {/* Subtle Status Gradient Side Border */}
                   <div
                     className={`pointer-events-none absolute inset-y-0 left-0 z-10 w-1 bg-gradient-to-b sm:w-1.5 ${statusCfg.sideGradient} border-black/20 border-r`}
