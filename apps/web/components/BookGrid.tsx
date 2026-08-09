@@ -55,6 +55,17 @@ function BookGrid({
       return;
     }
 
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+
+    if (isMobile) {
+      if (onFullEdit) {
+        onFullEdit(b);
+      } else {
+        onEdit(b);
+      }
+      return;
+    }
+
     if (clickTimerRef.current) {
       clearTimeout(clickTimerRef.current);
       clickTimerRef.current = null;
