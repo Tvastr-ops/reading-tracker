@@ -221,7 +221,15 @@ function BookGrid({
                           </>
                         ) : (
                           <>
-                            <DropdownMenuItem onClick={() => (onFullEdit ? onFullEdit(b) : onEdit(b))}>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                if (window.innerWidth < 1024) {
+                                  (onFullEdit ?? onEdit)(b);
+                                } else {
+                                  onEdit(b);
+                                }
+                              }}
+                            >
                               <Edit3 className="mr-2 h-4 w-4 text-accent-color" />
                               <span>Edit</span>
                             </DropdownMenuItem>
