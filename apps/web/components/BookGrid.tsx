@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { BookOpen, Clock, Edit3, MoreVertical, RotateCcw, Trash2 } from 'lucide-react';
-import { memo } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -31,6 +31,7 @@ function BookGrid({
   onDelete,
   onRestore,
   onPermanentDelete,
+  focusedId = null,
 }: {
   books: Book[];
   ratingMode: 'stars' | 'decimal';
@@ -44,7 +45,38 @@ function BookGrid({
   onDelete: (b: Book) => void;
   onRestore?: (b: Book) => void;
   onPermanentDelete?: (b: Book) => void;
+  focusedId?: string | null;
 }) {
+  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleClick = (e: React.MouseEvent, b: Book) => {
+    if (selectMode && onToggleSelect) {
+      onToggleSelect(b.id);
+      return;
+    }
+
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+    }
+
+    if (e.detail === 1) {
+      clickTimerRef.current = setTimeout(() => {
+        onEdit(b);
+      }, 200);
+    } else if (e.detail === 2 && onFullEdit) {
+      onFullEdit(b);
+    }
+  };
+  useEffect(() => {
+    if (focusedId) {
+      const el = document.querySelector(`[data-card-id="${focusedId}"]`);
+      if (el) {
+        el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  }, [focusedId]);
+
   if (books.length === 0) {
     let message = 'No entries match your filters.';
     if (trashMode) message = 'Nothing in the trash.';
@@ -67,6 +99,7 @@ function BookGrid({
           const formattedProgress = formatProgressText(b);
           const statusCfg = getStatusConfig(b.status);
           const isSelected = selected.has(b.id);
+          const isFocused = focusedId === b.id;
           const delay = idx < 6 ? idx * 0.015 : 0;
 
           return (
@@ -81,23 +114,13 @@ function BookGrid({
               className="h-full"
             >
               <Card
+                data-card-id={b.id}
                 className={`surface-t2 group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl ${idx >= 6 ? 'cv-grid-card' : ''} ${
                   isSelected
                     ? 'border-accent-color bg-accent-color/10 ring-2 ring-accent-color'
                     : statusCfg.glowShadow
-                }`}
-                onClick={() => {
-                  if (selectMode && onToggleSelect) {
-                    onToggleSelect(b.id);
-                  } else {
-                    onEdit(b);
-                  }
-                }}
-                onDoubleClick={() => {
-                  if (!selectMode && onFullEdit) {
-                    onFullEdit(b);
-                  }
-                }}
+                } ${isFocused ? 'ring-2 ring-amber-500 scale-[1.02] shadow-xl' : ''}`}
+                onClick={(e) => handleClick(e, b)}
               >
                 <div className="vignette-inset relative aspect-[2/3] w-full overflow-hidden bg-surface">
                   {/* Subtle Status Gradient Side Border */}

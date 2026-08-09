@@ -550,17 +550,31 @@ export default function HomePage() {
 
       const currentFiltered = filteredRef.current;
       const currentInspected = inspectedBookRef.current;
-      const rowNavActive = viewMode === 'table' && !showTrash && editing === undefined;
-      if (rowNavActive && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+      const navActive = !showTrash && editing === undefined;
+      if (navActive && ['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft'].includes(e.key)) {
         e.preventDefault();
         setFocusedIndex((i) => {
-          const delta = e.key === 'ArrowDown' ? 1 : -1;
-          const next = i + delta;
-          return Math.max(0, Math.min(currentFiltered.length - 1, next < 0 ? 0 : next));
+          const start = i < 0 ? 0 : i;
+          let delta = 0;
+
+          if (viewMode === 'grid') {
+            const w = window.innerWidth;
+            const cols = w >= 1280 ? 6 : w >= 1024 ? 5 : w >= 768 ? 4 : w >= 640 ? 3 : 2;
+            if (e.key === 'ArrowRight') delta = 1;
+            else if (e.key === 'ArrowLeft') delta = -1;
+            else if (e.key === 'ArrowDown') delta = cols;
+            else if (e.key === 'ArrowUp') delta = -cols;
+          } else {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowRight') delta = 1;
+            else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') delta = -1;
+          }
+
+          const next = start + delta;
+          return Math.max(0, Math.min(currentFiltered.length - 1, next));
         });
         return;
       }
-      if (rowNavActive && e.key === 'Enter' && focusedIndex >= 0 && currentFiltered[focusedIndex]) {
+      if (navActive && e.key === 'Enter' && focusedIndex >= 0 && currentFiltered[focusedIndex]) {
         e.preventDefault();
         setEditing(currentFiltered[focusedIndex]);
         return;
@@ -1134,6 +1148,7 @@ export default function HomePage() {
                 selected={selected}
                 onToggleSelect={toggleSelect}
                 trashMode={showTrash}
+                focusedId={focusedIndex >= 0 ? (filtered[focusedIndex]?.id ?? null) : null}
                 onEdit={(b) => setInspectedBook(b)}
                 onFullEdit={(b) => setEditing(b)}
                 onDelete={deleteBook}
