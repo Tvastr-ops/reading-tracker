@@ -249,55 +249,55 @@ export default function StatsSummary({
                     </span>
                   </div>
 
-                  {/* Progress Stack Bar */}
+                  {/* Seamless 3D Liquid Glass Progress Bar */}
                   <div className="my-3">
-                    <div className="groove-inset flex h-4 items-center gap-1 overflow-hidden rounded-full bg-border/40 p-0.5">
+                    <div className="groove-inset flex h-4 items-center gap-1.5 overflow-hidden rounded-full bg-border/25 p-0.5">
                       {[
                         {
                           label: 'Completed',
                           count: completedCount,
                           pct: compPct,
-                          color: 'bg-emerald-500',
-                          hoverColor: 'hover:bg-emerald-400',
+                          gradient: 'bg-gradient-to-r from-emerald-500 to-teal-400',
+                          glow: 'hover:shadow-[0_0_12px_rgba(16,185,129,0.6)]',
                         },
                         {
                           label: 'Reading',
                           count: readingCount,
                           pct: readPct,
-                          color: 'bg-sky-500',
-                          hoverColor: 'hover:bg-sky-400',
+                          gradient: 'bg-gradient-to-r from-sky-400 to-blue-500',
+                          glow: 'hover:shadow-[0_0_12px_rgba(56,189,248,0.6)]',
                         },
                         {
                           label: 'On Hold',
                           count: onHoldCount,
                           pct: holdPct,
-                          color: 'bg-orange-500',
-                          hoverColor: 'hover:bg-orange-400',
+                          gradient: 'bg-gradient-to-r from-orange-400 to-amber-500',
+                          glow: 'hover:shadow-[0_0_12px_rgba(251,146,60,0.6)]',
                         },
                         {
                           label: 'Plan to Read',
                           count: planToReadCount,
                           pct: planPct,
-                          color: 'bg-amber-500',
-                          hoverColor: 'hover:bg-amber-400',
+                          gradient: 'bg-gradient-to-r from-amber-400 to-yellow-500',
+                          glow: 'hover:shadow-[0_0_12px_rgba(251,191,36,0.6)]',
                         },
                         {
                           label: 'Dropped',
                           count: droppedCount,
                           pct: dropPct,
-                          color: 'bg-rose-500',
-                          hoverColor: 'hover:bg-rose-400',
+                          gradient: 'bg-gradient-to-r from-rose-500 to-red-600',
+                          glow: 'hover:shadow-[0_0_12px_rgba(244,63,94,0.6)]',
                         },
                       ]
                         .filter((s) => s.count > 0)
                         .map((s, idx) => (
                           <motion.div
                             key={s.label}
-                            className={`h-full rounded-full ${s.color} ${s.hoverColor} cursor-pointer transition-all`}
+                            className={`relative h-full rounded-full ${s.gradient} ${s.glow} cursor-pointer border-t border-white/40 shadow-xs transition-all`}
                             initial={{ width: 0 }}
                             animate={{ width: `${s.pct}%` }}
-                            whileHover={{ scaleY: 1.2 }}
-                            transition={{ type: 'spring', stiffness: 220, damping: 20, delay: idx * 0.05 }}
+                            whileHover={{ scaleY: 1.25, y: -0.5 }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 20, delay: idx * 0.04 }}
                             onClick={() => onStatusSelect?.(s.label)}
                             title={`${s.label}: ${s.count} (${totalCount ? Math.round((s.count / totalCount) * 100) : 0}%)`}
                           />
