@@ -24,7 +24,9 @@ import { useRouter } from 'next/navigation';
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import BookGrid from '@/components/BookGrid';
+import BookInspectorDrawer from '@/components/BookInspectorDrawer';
 import BookTable from '@/components/BookTable';
+import CommandPalette from '@/components/CommandPalette';
 import StatsSummary from '@/components/StatsSummary';
 import { cn } from '@/lib/utils';
 
@@ -81,6 +83,8 @@ export default function HomePage() {
   const [pendingStatus, setPendingStatus] = useState<Book['status'] | ''>('');
   const [pendingRating, setPendingRating] = useState<number | 'unrated' | null>(null);
   const [upNext, setUpNext] = useState<Book | null>(null);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [inspectedBook, setInspectedBook] = useState<Book | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -264,10 +268,49 @@ export default function HomePage() {
       body: JSON.stringify(patchData),
     });
     if (!res.ok) {
-      toast.error(`Failed to update status for "${b.title}"`);
-      load();
+      toast.error('Failed to update status');
+      load(true);
     } else {
-      toast.info(`Marked "${b.title}" as ${next}`);
+      toast.success(`Updated "${b.title}" to ${next}`);
+      if (inspectedBook?.id === b.id) {
+        setInspectedBook((prev) => (prev ? { ...prev, ...patchData } : null));
+      }
+    }
+  }
+
+  async function handleUpdateDates(book: Book, date_started: string | null, date_finished: string | null) {
+    const patchData = { date_started, date_finished };
+    setBooks((prev) => prev.map((x) => (x.id === book.id ? { ...x, ...patchData } : x)));
+    if (inspectedBook?.id === book.id) {
+      setInspectedBook((prev) => (prev ? { ...prev, ...patchData } : null));
+    }
+    const res = await fetch(`/api/books/${book.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patchData),
+    });
+    if (!res.ok) {
+      toast.error('Failed to update dates');
+      load(true);
+    } else {
+      toast.success(`Updated dates for "${book.title}"`);
+    }
+  }
+
+  async function handleUpdateProgress(book: Book, progress: number) {
+    const patchData = { progress };
+    setBooks((prev) => prev.map((x) => (x.id === book.id ? { ...x, ...patchData } : x)));
+    if (inspectedBook?.id === book.id) {
+      setInspectedBook((prev) => (prev ? { ...prev, ...patchData } : null));
+    }
+    const res = await fetch(`/api/books/${book.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patchData),
+    });
+    if (!res.ok) {
+      toast.error('Failed to update progress');
+      load(true);
     }
   }
 
@@ -530,6 +573,19 @@ export default function HomePage() {
         </div>
 
         <div className="flex items-center justify-between gap-2 border-border/60 border-t pt-3 sm:w-auto sm:border-0 sm:pt-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsCommandPaletteOpen(true)}
+            className="hidden lg:inline-flex items-center gap-1.5 h-8 text-xs font-medium border-border/80 shadow-2xs hover:bg-surface"
+          >
+            <Search className="h-3.5 w-3.5 text-text-muted" />
+            <span>Search</span>
+            <kbd className="font-mono text-[10px] font-semibold bg-surface border border-border px-1.5 py-0.2 rounded text-text-muted">
+              ⌘K
+            </kbd>
+          </Button>
+
           <Button variant="outline" size="icon" onClick={toggleTheme} title="Toggle dark mode">
             {theme === 'dark' ? (
               <Sun className="h-4 w-4 text-amber-400" />
@@ -1030,57 +1086,69 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Content View */}
-        {error && <div className="mb-3 font-semibold text-rose-600 text-xs">{error}</div>}
+        {/* Content View + Desktop Side Inspector Drawer */}
+        <div className="flex items-start gap-4">
+          <div className="flex-1 min-w-0 view-transition-shelf">
+            {loading ? (
+              <div className="space-y-3 py-6">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-12 animate-pulse rounded-lg bg-surface/60" />
+                ))}
+              </div>
+            ) : viewMode === 'grid' ? (
+              <BookGrid
+                books={filtered}
+                ratingMode={ratingMode}
+                hasAnyBooks={books.length > 0}
+                selectMode={selectMode}
+                selected={selected}
+                onToggleSelect={toggleSelect}
+                trashMode={showTrash}
+                onEdit={(b) => setInspectedBook(b)}
+                onDelete={deleteBook}
+                onRestore={restoreBook}
+                onPermanentDelete={permanentlyDeleteBook}
+              />
+            ) : (
+              <BookTable
+                books={filtered}
+                ratingMode={ratingMode}
+                sortField={sortField}
+                sortDir={sortDir}
+                onSort={handleSort}
+                trashMode={showTrash}
+                hasAnyBooks={books.length > 0}
+                selectMode={selectMode}
+                selected={selected}
+                onToggleSelect={toggleSelect}
+                onToggleSelectAll={() => {
+                  const allSelected =
+                    filtered.length > 0 && filtered.every((b) => selected.has(b.id));
+                  if (allSelected) {
+                    setSelected(new Set());
+                  } else {
+                    setSelected(new Set(filtered.map((b) => b.id)));
+                  }
+                }}
+                focusedId={focusedIndex >= 0 ? (filtered[focusedIndex]?.id ?? null) : null}
+                onEdit={(b) => setInspectedBook(b)}
+                onDelete={deleteBook}
+                onRestore={restoreBook}
+                onPermanentDelete={permanentlyDeleteBook}
+                onQuickStatus={quickStatusChange}
+              />
+            )}
+          </div>
 
-        <div className="view-transition-shelf">
-          {loading ? (
-            <div className="space-y-3 py-6">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-12 animate-pulse rounded-lg bg-surface/60" />
-              ))}
-            </div>
-          ) : viewMode === 'grid' ? (
-            <BookGrid
-              books={filtered}
-              ratingMode={ratingMode}
-              hasAnyBooks={books.length > 0}
-              selectMode={selectMode}
-              selected={selected}
-              onToggleSelect={toggleSelect}
-              trashMode={showTrash}
+          {/* Desktop Side Inspector Drawer */}
+          {inspectedBook && (
+            <BookInspectorDrawer
+              book={inspectedBook}
+              onClose={() => setInspectedBook(null)}
               onEdit={(b) => setEditing(b)}
+              onUpdateProgress={handleUpdateProgress}
+              onUpdateDates={handleUpdateDates}
               onDelete={deleteBook}
-              onRestore={restoreBook}
-              onPermanentDelete={permanentlyDeleteBook}
-            />
-          ) : (
-            <BookTable
-              books={filtered}
-              ratingMode={ratingMode}
-              sortField={sortField}
-              sortDir={sortDir}
-              onSort={handleSort}
-              trashMode={showTrash}
-              hasAnyBooks={books.length > 0}
-              selectMode={selectMode}
-              selected={selected}
-              onToggleSelect={toggleSelect}
-              onToggleSelectAll={() => {
-                const allSelected =
-                  filtered.length > 0 && filtered.every((b) => selected.has(b.id));
-                if (allSelected) {
-                  setSelected(new Set());
-                } else {
-                  setSelected(new Set(filtered.map((b) => b.id)));
-                }
-              }}
-              focusedId={focusedIndex >= 0 ? (filtered[focusedIndex]?.id ?? null) : null}
-              onEdit={(b) => setEditing(b)}
-              onDelete={deleteBook}
-              onRestore={restoreBook}
-              onPermanentDelete={permanentlyDeleteBook}
-              onQuickStatus={quickStatusChange}
             />
           )}
         </div>
@@ -1249,6 +1317,25 @@ export default function HomePage() {
           onSave={saveBook}
         />
       )}
+
+      {/* Desktop Command Palette (Ctrl+K / Cmd+K) */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        books={books}
+        onSelectBook={(b) => {
+          setInspectedBook(b);
+          setEditing(b);
+        }}
+        onAddEntry={() => setEditing(null)}
+        onToggleView={toggleViewMode}
+        currentView={viewMode}
+        onFilterStatus={(s) => setStatusFilter(s || 'All')}
+        onToggleTheme={toggleTheme}
+        onExport={() => {
+          window.location.href = '/api/export';
+        }}
+      />
     </div>
   );
 }
