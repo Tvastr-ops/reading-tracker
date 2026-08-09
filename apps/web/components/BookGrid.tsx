@@ -148,7 +148,7 @@ function BookGrid({
                           variant="ghost"
                           size="icon"
                           aria-label={`Actions for ${b.title}`}
-                          className="h-7 w-7 rounded-full border border-white/20 bg-black/40 text-white shadow-md backdrop-blur-md transition-all hover:bg-black/65 hover:scale-110"
+                          className="h-7 w-7 rounded-full border border-white/20 bg-black/40 text-white shadow-md backdrop-blur-md transition-all hover:scale-110 hover:bg-black/65"
                         >
                           <MoreVertical className="h-3.5 w-3.5" />
                         </Button>

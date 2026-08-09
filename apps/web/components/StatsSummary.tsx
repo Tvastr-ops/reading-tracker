@@ -424,7 +424,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                               setGoalInput(String(targetGoal));
                               setEditingGoal(true);
                             }}
-                            className="h-6 w-6 rounded-md p-0 text-accent-color text-xs transition-transform hover:bg-accent-color/10 hover:scale-110 active:scale-95"
+                            className="h-6 w-6 rounded-md p-0 text-accent-color text-xs transition-transform hover:scale-110 hover:bg-accent-color/10 active:scale-95"
                           >
                             <Edit2 className="h-3 w-3" />
                           </Button>
