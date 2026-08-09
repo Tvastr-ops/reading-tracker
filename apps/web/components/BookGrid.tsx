@@ -74,15 +74,15 @@ function BookGrid({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.25, delay, ease: [0.16, 1, 0.3, 1] }}
-              whileHover={{ y: -6 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ y: -2.5 }}
+              whileTap={{ scale: 0.99 }}
               className="h-full"
             >
               <Card
-                className={`group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-border/80 bg-card-bg/95 backdrop-blur-xl transition-[border-color,box-shadow] duration-300 dark:border-border dark:border-t-amber-100/20 ${idx >= 6 ? 'cv-grid-card' : ''} ${
+                className={`group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-border/80 bg-card-bg/95 backdrop-blur-xl transition-[border-color,box-shadow] duration-200 dark:border-border dark:border-t-amber-100/20 ${idx >= 6 ? 'cv-grid-card' : ''} ${
                   isSelected
-                    ? 'border-accent-color bg-accent-color/10 shadow-[0_12px_36px_-6px_rgba(0,0,0,0.5)] ring-2 ring-accent-color'
-                    : `shadow-[0_8px_30px_-6px_rgba(40,30,10,0.14)] hover:border-accent-color/60 hover:shadow-[0_18px_48px_-8px_rgba(40,30,10,0.22)] dark:shadow-[0_12px_36px_-4px_rgba(0,0,0,0.85)] dark:hover:shadow-[0_22px_56px_-6px_rgba(0,0,0,0.95)] ${statusCfg.glowShadow}`
+                    ? 'border-accent-color bg-accent-color/10 shadow-[0_8px_24px_-4px_rgba(0,0,0,0.4)] ring-2 ring-accent-color'
+                    : `shadow-[0_4px_16px_-2px_rgba(40,30,10,0.08)] hover:border-accent-color/50 hover:shadow-[0_8px_24px_-4px_rgba(40,30,10,0.12)] dark:shadow-[0_6px_20px_-4px_rgba(0,0,0,0.6)] dark:hover:shadow-[0_12px_32px_-4px_rgba(0,0,0,0.75)] ${statusCfg.glowShadow}`
                 }`}
                 onClick={() => {
                   if (selectMode && onToggleSelect) {
