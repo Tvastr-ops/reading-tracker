@@ -249,63 +249,61 @@ export default function StatsSummary({
                     </span>
                   </div>
 
-                  {/* Progress Stack Bar */}
+                  {/* Refined Matte-Satin 3D Progress Bar */}
                   <div className="my-3">
-                    <div className="groove-inset flex h-4 items-center gap-1 overflow-hidden rounded-full bg-border/40 p-0.5">
+                    <div className="groove-inset relative flex h-4 items-center gap-1.5 overflow-hidden rounded-full border border-border/40 bg-border/40 p-0.5 shadow-inner">
                       {[
                         {
                           label: 'Completed',
                           count: completedCount,
                           pct: compPct,
-                          color: 'bg-emerald-500',
-                          hoverColor: 'hover:bg-emerald-400',
+                          gradient: 'bg-gradient-to-r from-emerald-600 to-emerald-500',
                         },
                         {
                           label: 'Reading',
                           count: readingCount,
                           pct: readPct,
-                          color: 'bg-sky-500',
-                          hoverColor: 'hover:bg-sky-400',
+                          gradient: 'bg-gradient-to-r from-sky-600 to-sky-500',
                         },
                         {
                           label: 'On Hold',
                           count: onHoldCount,
                           pct: holdPct,
-                          color: 'bg-orange-500',
-                          hoverColor: 'hover:bg-orange-400',
+                          gradient: 'bg-gradient-to-r from-orange-600 to-amber-500',
                         },
                         {
                           label: 'Plan to Read',
                           count: planToReadCount,
                           pct: planPct,
-                          color: 'bg-amber-500',
-                          hoverColor: 'hover:bg-amber-400',
+                          gradient: 'bg-gradient-to-r from-amber-500 to-yellow-400',
                         },
                         {
                           label: 'Dropped',
                           count: droppedCount,
                           pct: dropPct,
-                          color: 'bg-rose-500',
-                          hoverColor: 'hover:bg-rose-400',
+                          gradient: 'bg-gradient-to-r from-rose-600 to-pink-500',
                         },
                       ]
                         .filter((s) => s.count > 0)
                         .map((s, idx) => (
                           <motion.div
                             key={s.label}
-                            className={`h-full rounded-full ${s.color} ${s.hoverColor} cursor-pointer transition-all`}
+                            className={`h-full rounded-full ${s.gradient} relative cursor-pointer border-white/30 border-t shadow-2xs transition-all`}
                             initial={{ width: 0 }}
                             animate={{ width: `${s.pct}%` }}
-                            whileHover={{ scaleY: 1.2 }}
+                            whileHover={{ scaleY: 1.18 }}
                             transition={{
                               type: 'spring',
-                              stiffness: 220,
+                              stiffness: 250,
                               damping: 20,
                               delay: idx * 0.05,
                             }}
                             onClick={() => onStatusSelect?.(s.label)}
                             title={`${s.label}: ${s.count} (${totalCount ? Math.round((s.count / totalCount) * 100) : 0}%)`}
-                          />
+                          >
+                            {/* Subtle Inner Top Catch-light Reflection */}
+                            <div className="absolute inset-x-1 top-[1px] h-[1px] rounded-full bg-white/35" />
+                          </motion.div>
                         ))}
                     </div>
                   </div>
