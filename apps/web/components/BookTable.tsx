@@ -177,7 +177,11 @@ function BookTable({
                   if (selectMode) {
                     onToggleSelect(b.id);
                   } else {
-                    onEdit(b);
+                    if (onFullEdit) {
+                      onFullEdit(b);
+                    } else {
+                      onEdit(b);
+                    }
                   }
                 }}
                 className={`surface-t2 group relative overflow-hidden rounded-2xl p-3 transition-[border-color,box-shadow] hover:border-accent-color/60 active:scale-[0.99] ${idx >= 4 ? 'cv-mobile-card' : ''} ${
