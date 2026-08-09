@@ -540,6 +540,12 @@ export default function HomePage() {
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      if ((e.key.toLowerCase() === 'k' || e.code === 'KeyK') && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+        return;
+      }
+
       const active = document.activeElement;
       const typing =
         active &&
