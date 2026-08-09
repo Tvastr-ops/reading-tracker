@@ -65,7 +65,7 @@ function BookGrid({
           const formattedProgress = formatProgressText(b);
           const statusCfg = getStatusConfig(b.status);
           const isSelected = selected.has(b.id);
-          const delay = idx < 24 ? idx * 0.03 : 0;
+          const delay = idx < 6 ? idx * 0.015 : 0;
 
           return (
             <motion.div
@@ -102,8 +102,8 @@ function BookGrid({
                     src={b.cover_url}
                     title={b.title}
                     fill
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                    priority={idx < 4}
+                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 15vw"
+                    priority={idx < 2}
                     className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                   />
                   {b.cover_url && (
