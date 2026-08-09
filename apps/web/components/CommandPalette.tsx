@@ -47,21 +47,6 @@ export default function CommandPalette({
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  // Global hotkey listener: Ctrl+K, Cmd+K, or "/" when not typing in an input
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        (e.key === 'k' || e.key === 'K') &&
-        (e.metaKey || e.ctrlKey)
-      ) {
-        e.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
   // Reset search when opened
   useEffect(() => {
     if (isOpen) {
@@ -146,30 +131,48 @@ export default function CommandPalette({
     setSelectedIndex(0);
   }, [query]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setSelectedIndex((prev) => (prev + 1) % Math.max(1, totalItems));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setSelectedIndex((prev) => (prev - 1 + totalItems) % Math.max(1, totalItems));
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (selectedIndex < filteredBooks.length) {
-        const book = filteredBooks[selectedIndex];
-        if (book) {
-          onSelectBook(book);
-          onClose();
-        }
-      } else {
-        const actionIdx = selectedIndex - filteredBooks.length;
-        const action = systemActions[actionIdx];
-        if (action) action.run();
-      }
-    } else if (e.key === 'Escape') {
-      onClose();
+  // Auto-scroll selected item into view inside palette list
+  useEffect(() => {
+    if (!isOpen) return;
+    const el = document.getElementById(`cmd-item-${selectedIndex}`);
+    if (el) {
+      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
-  };
+  }, [selectedIndex, isOpen]);
+
+  // Window-level keydown handler for ArrowDown, ArrowUp, Enter, and Escape
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleWindowKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex((prev) => (totalItems > 0 ? (prev + 1) % totalItems : 0));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex((prev) => (totalItems > 0 ? (prev - 1 + totalItems) % totalItems : 0));
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (selectedIndex < filteredBooks.length) {
+          const book = filteredBooks[selectedIndex];
+          if (book) {
+            onSelectBook(book);
+            onClose();
+          }
+        } else {
+          const actionIdx = selectedIndex - filteredBooks.length;
+          const action = systemActions[actionIdx];
+          if (action) action.run();
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleWindowKeyDown);
+    return () => window.removeEventListener('keydown', handleWindowKeyDown);
+  }, [isOpen, selectedIndex, totalItems, filteredBooks, systemActions, onSelectBook, onClose]);
 
   if (!isOpen) return null;
 
@@ -196,7 +199,6 @@ export default function CommandPalette({
               placeholder="Search books, author, tags, or type a command... (Press Esc to exit)"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
             />
             {query && (
               <button
@@ -226,14 +228,17 @@ export default function CommandPalette({
                     return (
                       <div
                         key={b.id}
+                        id={`cmd-item-${idx}`}
                         onClick={() => {
                           onSelectBook(b);
                           onClose();
                         }}
-                        onMouseEnter={() => setSelectedIndex(idx)}
+                        onMouseMove={() => {
+                          if (selectedIndex !== idx) setSelectedIndex(idx);
+                        }}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
                           isSelected
-                            ? 'bg-accent-color/15 border border-accent-color/40 text-text'
+                            ? 'bg-accent-color/20 border border-accent-color/50 text-text ring-1 ring-accent-color/40'
                             : 'hover:bg-surface/80 text-text'
                         }`}
                       >
@@ -284,11 +289,14 @@ export default function CommandPalette({
                     return (
                       <div
                         key={action.id}
+                        id={`cmd-item-${itemIndex}`}
                         onClick={() => action.run()}
-                        onMouseEnter={() => setSelectedIndex(itemIndex)}
+                        onMouseMove={() => {
+                          if (selectedIndex !== itemIndex) setSelectedIndex(itemIndex);
+                        }}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
                           isSelected
-                            ? 'bg-accent-color/15 border border-accent-color/40 text-text'
+                            ? 'bg-accent-color/20 border border-accent-color/50 text-text ring-1 ring-accent-color/40'
                             : 'hover:bg-surface/80 text-text'
                         }`}
                       >
@@ -320,23 +328,26 @@ export default function CommandPalette({
             )}
           </div>
 
-          {/* Footer Shortcuts Hint */}
-          <div className="border-t border-border bg-surface/50 px-4 py-2 flex items-center justify-between text-[11px] text-text-muted">
+          {/* Footer Controls Hint */}
+          <div className="flex items-center justify-between border-t border-border px-4 py-2 bg-surface/30 text-[11px] text-text-muted font-medium">
             <div className="flex items-center gap-3">
               <span className="inline-flex items-center gap-1">
-                <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-[10px]">
-                  ↑↓
-                </kbd>{' '}
-                Navigate
+                <kbd className="rounded border border-border bg-card-bg px-1 py-0.5 text-[9px] font-mono">
+                  ↑
+                </kbd>
+                <kbd className="rounded border border-border bg-card-bg px-1 py-0.5 text-[9px] font-mono">
+                  ↓
+                </kbd>
+                <span>Navigate</span>
               </span>
               <span className="inline-flex items-center gap-1">
-                <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-[10px]">
+                <kbd className="rounded border border-border bg-card-bg px-1 py-0.5 text-[9px] font-mono">
                   ↵
-                </kbd>{' '}
-                Select
+                </kbd>
+                <span>Select</span>
               </span>
             </div>
-            <span className="text-text-faint font-medium">Desktop Power Search</span>
+            <span>Desktop Power Search</span>
           </div>
         </motion.div>
       </div>
