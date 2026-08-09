@@ -265,13 +265,13 @@ export default function StatsSummary({
                           label: 'On Hold',
                           count: onHoldCount,
                           pct: holdPct,
-                          gradient: 'bg-gradient-to-r from-orange-600 to-amber-500',
+                          gradient: 'bg-gradient-to-r from-orange-600 via-orange-500 to-red-500',
                         },
                         {
                           label: 'Plan to Read',
                           count: planToReadCount,
                           pct: planPct,
-                          gradient: 'bg-gradient-to-r from-amber-500 to-yellow-400',
+                          gradient: 'bg-gradient-to-r from-amber-400 via-yellow-400 to-yellow-300',
                         },
                         {
                           label: 'Dropped',
