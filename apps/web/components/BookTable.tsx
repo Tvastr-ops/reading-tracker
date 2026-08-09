@@ -162,7 +162,7 @@ function BookTable({
                       title={b.title}
                       width={56}
                       height={84}
-                      priority={idx < 4}
+                      priority={idx < 2}
                       className="h-[84px] w-14 rounded-xl object-cover object-top transition-transform group-hover:scale-105"
                       fallbackClassName="flex h-[84px] w-14 flex-col items-center justify-center rounded-xl border border-border bg-surface text-text-muted text-[9px] p-1 text-center font-medium leading-tight"
                     />
@@ -291,7 +291,7 @@ function BookTable({
                       .filter(Boolean)
                   : [];
 
-                const delay = idx < 24 ? idx * 0.025 : 0;
+                const delay = idx < 6 ? idx * 0.015 : 0;
 
                 return (
                   <motion.tr
@@ -341,7 +341,7 @@ function BookTable({
                             title={b.title}
                             width={36}
                             height={48}
-                            priority={idx < 4}
+                            priority={idx < 2}
                             className="h-12 w-9 rounded-md border border-border/80 object-cover object-top shadow-2xs transition-transform group-hover:scale-105"
                             fallbackClassName="flex h-12 w-9 flex-col items-center justify-center rounded-md border border-border bg-surface text-text-muted text-[8px] p-0.5 text-center font-medium leading-none"
                           />

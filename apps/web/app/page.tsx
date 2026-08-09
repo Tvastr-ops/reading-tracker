@@ -439,16 +439,22 @@ export default function HomePage() {
       let vb: any = b[sortField];
 
       if (sortField === 'title' || sortField === 'author') {
-        va = (va || '').toString().toLowerCase();
-        vb = (vb || '').toString().toLowerCase();
-        return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+        const sa = (va || '').toString().toLowerCase();
+        const sb = (vb || '').toString().toLowerCase();
+        if (sa < sb) return sortDir === 'asc' ? -1 : 1;
+        if (sa > sb) return sortDir === 'asc' ? 1 : -1;
+        return 0;
       }
 
       if (va == null) va = sortDir === 'asc' ? Infinity : -Infinity;
       if (vb == null) vb = sortDir === 'asc' ? Infinity : -Infinity;
 
       if (typeof va === 'string' && typeof vb === 'string') {
-        return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+        const sa = va.toLowerCase();
+        const sb = vb.toLowerCase();
+        if (sa < sb) return sortDir === 'asc' ? -1 : 1;
+        if (sa > sb) return sortDir === 'asc' ? 1 : -1;
+        return 0;
       }
 
       if (va < vb) return sortDir === 'asc' ? -1 : 1;
