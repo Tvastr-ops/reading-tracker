@@ -251,7 +251,7 @@ export default function StatsSummary({
 
                   {/* Refined Matte-Satin 3D Progress Bar */}
                   <div className="my-3">
-                    <div className="groove-inset relative flex h-4 items-center gap-1.5 overflow-hidden rounded-full border border-border/40 bg-border/40 p-0.5 shadow-inner">
+                    <div className="groove-inset relative flex h-5 items-center gap-1.5 overflow-hidden rounded-full border border-border/40 bg-border/40 p-0.5 shadow-inner">
                       {[
                         {
                           label: 'Completed',
@@ -629,18 +629,22 @@ export default function StatsSummary({
                           {star}
                           <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                         </span>
-                        <div className="groove-inset relative h-2 overflow-hidden rounded-full bg-border/40">
+                        <div className="groove-inset relative h-4 overflow-hidden rounded-full border border-border/40 bg-border/40 p-0.5 shadow-inner">
                           <motion.div
-                            className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500"
+                            className="relative h-full rounded-full border-white/35 border-t bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-400 shadow-2xs transition-all"
                             initial={{ width: 0 }}
                             animate={{ width: `${percentage}%` }}
+                            whileHover={{ scaleY: 1.25, filter: 'brightness(1.15)' }}
                             transition={{
                               type: 'spring',
-                              stiffness: 180,
-                              damping: 24,
+                              stiffness: 250,
+                              damping: 20,
                               delay: (5 - star) * 0.04,
                             }}
-                          />
+                          >
+                            {/* Inner Satin Glass Reflection Line */}
+                            <div className="absolute inset-x-1 top-[1px] h-[1px] rounded-full bg-white/40" />
+                          </motion.div>
                         </div>
                         <span className="text-right font-mono text-[11px] text-text-muted">
                           {count}x ({percentage}%)
