@@ -340,10 +340,11 @@ export default function HomePage() {
       progress: draft.progress,
       date_started: draft.date_started,
       date_finished: draft.date_finished,
+      updated_at: new Date().toISOString(),
     };
 
     setBooks((prev) => prev.map((x) => (x.id === draft.id ? { ...x, ...patchData } : x)));
-    setInspectedBook(draft);
+    setInspectedBook((prev) => (prev ? { ...prev, ...patchData } : null));
 
     const res = await fetch(`/api/books/${draft.id}`, {
       method: 'PATCH',
