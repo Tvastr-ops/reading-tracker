@@ -1081,10 +1081,10 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.96 }}
             transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-            className="fixed bottom-4 sm:bottom-6 left-1/2 z-50 flex w-[calc(100%-1.25rem)] max-w-xl -translate-x-1/2 items-center justify-between gap-1.5 rounded-2xl border border-border/80 border-t-white/30 bg-card-bg/95 p-2 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl dark:border-t-amber-100/20 sm:w-auto sm:gap-2.5 sm:rounded-full sm:px-4 sm:py-2"
+            className="fixed bottom-4 left-1/2 z-50 flex w-[calc(100%-1.25rem)] max-w-xl -translate-x-1/2 items-center justify-between gap-1.5 rounded-2xl border border-border/80 bg-card-bg/95 p-2 shadow-[0_16px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl sm:bottom-6 sm:w-auto sm:gap-2.5 sm:rounded-full sm:px-4 sm:py-2 dark:border-t-amber-100/20"
           >
             <div className="flex shrink-0 items-center gap-1.5 pl-1 text-xs">
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent-color/15 font-mono font-bold text-accent-color text-[11px]">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent-color/15 font-bold font-mono text-[11px] text-accent-color">
                 {selected.size}
               </span>
               <span className="hidden font-medium text-text sm:inline">
@@ -1093,7 +1093,7 @@ export default function HomePage() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 px-1.5 text-accent-color text-[11px] hover:bg-accent-color/10"
+                className="h-6 px-1.5 text-[11px] text-accent-color hover:bg-accent-color/10"
                 onClick={() => {
                   const allSelected =
                     filtered.length > 0 && filtered.every((b) => selected.has(b.id));
@@ -1181,7 +1181,7 @@ export default function HomePage() {
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-8 shrink-0 rounded-full px-2.5 font-semibold text-xs text-text-muted hover:bg-surface/60 hover:text-text"
+                className="h-8 shrink-0 rounded-full px-2.5 font-semibold text-text-muted text-xs hover:bg-surface/60 hover:text-text"
                 onClick={() => {
                   setSelectMode(false);
                   setSelected(new Set());

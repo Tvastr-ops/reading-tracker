@@ -44,7 +44,7 @@ export function RatingDisplay({
     <motion.div
       whileHover={{ scale: 1.1 }}
       transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-      className="inline-flex items-center gap-0.5 cursor-default"
+      className="inline-flex cursor-default items-center gap-0.5"
     >
       {stars}
     </motion.div>
