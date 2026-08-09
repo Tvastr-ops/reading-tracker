@@ -192,7 +192,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
   const animatedCompletedThisYear = useAnimatedNumber(completedThisYear);
 
   return (
-    <Card className="mb-6 border-border shadow-xs">
+    <Card className="surface-t1 mb-6">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
         <div className="flex items-center gap-2">
           <BarChart2 className="h-5 w-5 text-accent-color" />
@@ -228,9 +228,9 @@ export default function StatsSummary({ books }: { books: Book[] }) {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 {/* WIDGET 1: STATUS BREAKDOWN */}
                 <motion.div
-                  whileHover={{ y: -2 }}
+                  whileHover={{ y: -2.5 }}
                   transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                  className="surface-card surface-card-hover group relative flex flex-col justify-between overflow-hidden rounded-2xl p-4 backdrop-blur-md"
+                  className="surface-t2 group relative flex flex-col justify-between overflow-hidden rounded-2xl p-4"
                 >
                   <div className="flex items-center justify-between font-bold text-text-muted text-xs uppercase tracking-wider">
                     <span className="flex items-center gap-1.5">
@@ -241,7 +241,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
 
                   {/* Progress Stack Bar */}
                   <div className="my-3 space-y-1.5">
-                    <div className="flex h-3.5 overflow-hidden rounded-full bg-border/40 p-0.5 shadow-inner">
+                    <div className="groove-inset flex h-3.5 overflow-hidden rounded-full bg-border/40 p-0.5">
                       <motion.div
                         className="rounded-l-full bg-emerald-500"
                         initial={{ width: 0 }}
@@ -342,9 +342,9 @@ export default function StatsSummary({ books }: { books: Book[] }) {
 
                 {/* WIDGET 2: ANNUAL SHELF & GOALS */}
                 <motion.div
-                  whileHover={{ y: -2 }}
+                  whileHover={{ y: -2.5 }}
                   transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                  className="surface-card surface-card-hover group relative flex flex-col justify-between overflow-hidden rounded-2xl p-4 backdrop-blur-md"
+                  className="surface-t2 group relative flex flex-col justify-between overflow-hidden rounded-2xl p-4"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 font-bold text-text-muted text-xs uppercase tracking-wider">
@@ -458,7 +458,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                         </div>
                       )}
 
-                      <Progress value={goalPct} className="h-1.5 bg-border/40 shadow-inner" />
+                      <Progress value={goalPct} className="groove-inset h-1.5 bg-border/40" />
 
                       <div className="flex items-center justify-between pt-0.5 text-[11px] text-text-muted">
                         <span>{goalPct}% Achieved</span>
@@ -472,9 +472,9 @@ export default function StatsSummary({ books }: { books: Book[] }) {
 
                 {/* WIDGET 3: RATING DISTRIBUTION */}
                 <motion.div
-                  whileHover={{ y: -2 }}
+                  whileHover={{ y: -2.5 }}
                   transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                  className="surface-card surface-card-hover group relative flex flex-col justify-between overflow-hidden rounded-2xl p-4 backdrop-blur-md"
+                  className="surface-t2 group relative flex flex-col justify-between overflow-hidden rounded-2xl p-4"
                 >
                   <div className="flex items-center justify-between font-bold text-text-muted text-xs uppercase tracking-wider">
                     <span className="flex items-center gap-1.5">
@@ -499,7 +499,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                           {star}
                           <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                         </span>
-                        <div className="relative h-2 overflow-hidden rounded-full bg-border/40 shadow-inner">
+                        <div className="groove-inset relative h-2 overflow-hidden rounded-full bg-border/40">
                           <motion.div
                             className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500"
                             initial={{ width: 0 }}
