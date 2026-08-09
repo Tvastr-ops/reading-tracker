@@ -24,6 +24,7 @@ const KNOWN_COLUMNS = [
   'date_started',
   'date_finished',
   'notes',
+  'is_favorite',
 ];
 
 const VALID_STATUSES = ['Plan to Read', 'Reading', 'On Hold', 'Completed', 'Dropped'];
@@ -130,6 +131,9 @@ export const POST = withAuth(async (req: NextRequest) => {
     const rawUnit = get('unit_type');
     const rawStruct = get('progress_structure');
 
+    const isFavStr = get('is_favorite')?.toLowerCase();
+    const is_favorite = isFavStr === 'true' || isFavStr === '1';
+
     toInsert.push({
       title,
       type: get('type') || 'Novel',
@@ -150,6 +154,7 @@ export const POST = withAuth(async (req: NextRequest) => {
       date_started: get('date_started') || null,
       date_finished: get('date_finished') || null,
       notes: get('notes') || null,
+      is_favorite,
     });
   }
 

@@ -13,7 +13,7 @@ export const GET = withAuth(async (req: NextRequest) => {
   let query = supabase
     .from('books')
     .select(
-      'id, title, type, unit_type, progress_structure, parent_progress, parent_total, latest_units, is_ongoing, author, status, rating, progress, total_units, genre_tags, source_link, cover_url, date_started, date_finished, notes, created_at, updated_at',
+      'id, title, type, unit_type, progress_structure, parent_progress, parent_total, latest_units, is_ongoing, author, status, rating, progress, total_units, genre_tags, source_link, cover_url, date_started, date_finished, notes, is_favorite, created_at, updated_at',
     );
   query = showTrash ? query.not('deleted_at', 'is', null) : query.is('deleted_at', null);
   const { data, error } = await query.order('updated_at', { ascending: false });
@@ -52,6 +52,7 @@ function sanitize(input: Partial<BookInput>) {
     date_started,
     date_finished,
     notes,
+    is_favorite,
   } = input;
 
   if (!title || typeof title !== 'string' || !title.trim()) {
@@ -81,6 +82,7 @@ function sanitize(input: Partial<BookInput>) {
     date_started: date_started || null,
     date_finished: date_finished || null,
     notes: notes || null,
+    is_favorite: is_favorite ?? false,
   };
 }
 

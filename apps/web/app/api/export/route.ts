@@ -27,6 +27,7 @@ const COLUMNS = [
   'parent_total',
   'latest_units',
   'is_ongoing',
+  'is_favorite',
 ];
 
 function csvEscape(val: unknown): string {
