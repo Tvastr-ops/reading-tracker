@@ -2,8 +2,10 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+  Award,
   BarChart2,
   BookCheck,
+  BookOpen,
   Check,
   ChevronDown,
   ChevronUp,
@@ -75,7 +77,13 @@ const _SPINE_COLORS = [
   '#994e36', // Rust
 ];
 
-export default function StatsSummary({ books }: { books: Book[] }) {
+export default function StatsSummary({
+  books,
+  onStatusSelect,
+}: {
+  books: Book[];
+  onStatusSelect?: (status: string) => void;
+}) {
   const [goal, setGoal] = useState<number | null>(null);
   const [goalInput, setGoalInput] = useState('');
   const [editingGoal, setEditingGoal] = useState(false);
@@ -153,6 +161,9 @@ export default function StatsSummary({ books }: { books: Book[] }) {
     const percentage = Math.round((count / totalRated) * 100);
     return { star, count, percentage };
   });
+
+  const ratedCount = rated.length;
+  const fiveStarPct = ratingDistribution.find((r) => r.star === 5)?.percentage || 0;
 
   const monthlyData = useMemo(() => {
     const counts = Array.from({ length: 12 }, () => 0);
@@ -239,103 +250,181 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                   </div>
 
                   {/* Progress Stack Bar */}
-                  <div className="my-3 space-y-1.5">
-                    <div className="groove-inset flex h-3.5 overflow-hidden rounded-full bg-border/40 p-0.5">
+                  <div className="my-3">
+                    <div className="groove-inset flex h-3.5 items-center gap-1.5 overflow-hidden rounded-full bg-border/40 p-0.5">
                       <motion.div
-                        className="rounded-l-full bg-emerald-500"
+                        className="h-full rounded-full bg-emerald-500 transition-shadow hover:shadow-xs"
                         initial={{ width: 0 }}
                         animate={{ width: `${compPct}%` }}
-                        transition={{ type: 'spring', stiffness: 180, damping: 24 }}
-                        title={`Completed: ${completedCount}`}
+                        whileHover={{ scaleY: 1.15 }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                        title={`Completed: ${completedCount} (${totalCount ? Math.round((completedCount / totalCount) * 100) : 0}%)`}
                       />
                       <motion.div
-                        className="bg-sky-500"
+                        className="h-full rounded-full bg-sky-500 transition-shadow hover:shadow-xs"
                         initial={{ width: 0 }}
                         animate={{ width: `${readPct}%` }}
-                        transition={{ type: 'spring', stiffness: 180, damping: 24 }}
-                        title={`Reading: ${readingCount}`}
+                        whileHover={{ scaleY: 1.15 }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                        title={`Reading: ${readingCount} (${totalCount ? Math.round((readingCount / totalCount) * 100) : 0}%)`}
                       />
                       <motion.div
-                        className="bg-orange-500"
+                        className="h-full rounded-full bg-orange-500 transition-shadow hover:shadow-xs"
                         initial={{ width: 0 }}
                         animate={{ width: `${holdPct}%` }}
-                        transition={{ type: 'spring', stiffness: 180, damping: 24 }}
-                        title={`On Hold: ${onHoldCount}`}
+                        whileHover={{ scaleY: 1.15 }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                        title={`On Hold: ${onHoldCount} (${totalCount ? Math.round((onHoldCount / totalCount) * 100) : 0}%)`}
                       />
                       <motion.div
-                        className="bg-amber-500"
+                        className="h-full rounded-full bg-amber-500 transition-shadow hover:shadow-xs"
                         initial={{ width: 0 }}
                         animate={{ width: `${planPct}%` }}
-                        transition={{ type: 'spring', stiffness: 180, damping: 24 }}
-                        title={`Plan to Read: ${planToReadCount}`}
+                        whileHover={{ scaleY: 1.15 }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                        title={`Plan to Read: ${planToReadCount} (${totalCount ? Math.round((planToReadCount / totalCount) * 100) : 0}%)`}
                       />
                       <motion.div
-                        className="rounded-r-full bg-rose-500"
+                        className="h-full rounded-full bg-rose-500 transition-shadow hover:shadow-xs"
                         initial={{ width: 0 }}
                         animate={{ width: `${dropPct}%` }}
-                        transition={{ type: 'spring', stiffness: 180, damping: 24 }}
-                        title={`Dropped: ${droppedCount}`}
+                        whileHover={{ scaleY: 1.15 }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                        title={`Dropped: ${droppedCount} (${totalCount ? Math.round((droppedCount / totalCount) * 100) : 0}%)`}
                       />
                     </div>
                   </div>
 
-                  {/* Status Pills */}
-                  <div className="mb-2 grid grid-cols-2 gap-1.5 text-xs">
-                    <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-text/5">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                      <span className="text-text-muted">
-                        Completed: <strong className="text-text">{animatedCompletedCount}</strong>{' '}
-                        <span className="text-[10px] text-text-muted/70">
-                          ({totalCount ? Math.round((completedCount / totalCount) * 100) : 0}%)
+                  {/* 3-Row Breakdown Grid matching design mockup */}
+                  <div className="my-2.5 space-y-1 text-xs">
+                    {/* Row 1: Completed & Reading */}
+                    <div className="grid grid-cols-2 gap-2 border-border/30 border-b pb-2">
+                      <div
+                        onClick={() => onStatusSelect?.('Completed')}
+                        className="flex cursor-pointer items-center justify-between rounded-lg border-border/30 border-r pr-2 pl-1 transition-colors hover:bg-text/5"
+                        title="Filter by Completed"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500" />
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-semibold text-text leading-tight">Completed</span>
+                            <span className="text-[10px] text-text-muted">
+                              ({totalCount ? Math.round((completedCount / totalCount) * 100) : 0}%)
+                            </span>
+                          </div>
+                        </div>
+                        <span className="font-bold text-sm text-text shrink-0">
+                          {animatedCompletedCount}
                         </span>
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-text/5">
-                      <span className="h-2 w-2 rounded-full bg-sky-500" />
-                      <span className="text-text-muted">
-                        Reading: <strong className="text-text">{animatedReadingCount}</strong>{' '}
-                        <span className="text-[10px] text-text-muted/70">
-                          ({totalCount ? Math.round((readingCount / totalCount) * 100) : 0}%)
+                      </div>
+
+                      <div
+                        onClick={() => onStatusSelect?.('Reading')}
+                        className="flex cursor-pointer items-center justify-between rounded-lg pl-1 transition-colors hover:bg-text/5"
+                        title="Filter by Reading"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-sky-500" />
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-semibold text-text leading-tight">Reading</span>
+                            <span className="text-[10px] text-text-muted">
+                              ({totalCount ? Math.round((readingCount / totalCount) * 100) : 0}%)
+                            </span>
+                          </div>
+                        </div>
+                        <span className="font-bold text-sm text-text shrink-0">
+                          {animatedReadingCount}
                         </span>
-                      </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-text/5">
-                      <span className="h-2 w-2 rounded-full bg-orange-500" />
-                      <span className="text-text-muted">
-                        On Hold: <strong className="text-text">{onHoldCount}</strong>{' '}
-                        <span className="text-[10px] text-text-muted/70">
-                          ({totalCount ? Math.round((onHoldCount / totalCount) * 100) : 0}%)
+
+                    {/* Row 2: On Hold & Plan to Read */}
+                    <div className="grid grid-cols-2 gap-2 border-border/30 border-b py-2">
+                      <div
+                        onClick={() => onStatusSelect?.('On Hold')}
+                        className="flex cursor-pointer items-center justify-between rounded-lg border-border/30 border-r pr-2 pl-1 transition-colors hover:bg-text/5"
+                        title="Filter by On Hold"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-orange-500" />
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-semibold text-text leading-tight">On Hold</span>
+                            <span className="text-[10px] text-text-muted">
+                              ({totalCount ? Math.round((onHoldCount / totalCount) * 100) : 0}%)
+                            </span>
+                          </div>
+                        </div>
+                        <span className="font-bold text-sm text-text shrink-0">{onHoldCount}</span>
+                      </div>
+
+                      <div
+                        onClick={() => onStatusSelect?.('Plan to Read')}
+                        className="flex cursor-pointer items-center justify-between rounded-lg pl-1 transition-colors hover:bg-text/5"
+                        title="Filter by Plan to Read"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500" />
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-semibold text-text leading-tight truncate">
+                              Plan to Read
+                            </span>
+                            <span className="text-[10px] text-text-muted">
+                              ({totalCount ? Math.round((planToReadCount / totalCount) * 100) : 0}%)
+                            </span>
+                          </div>
+                        </div>
+                        <span className="font-bold text-sm text-text shrink-0">
+                          {planToReadCount}
                         </span>
-                      </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-text/5">
-                      <span className="h-2 w-2 rounded-full bg-amber-500" />
-                      <span className="text-text-muted">
-                        Plan to Read: <strong className="text-text">{planToReadCount}</strong>{' '}
-                        <span className="text-[10px] text-text-muted/70">
-                          ({totalCount ? Math.round((planToReadCount / totalCount) * 100) : 0}%)
-                        </span>
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-text/5">
-                      <span className="h-2 w-2 rounded-full bg-rose-500" />
-                      <span className="text-text-muted">
-                        Dropped: <strong className="text-text">{droppedCount}</strong>{' '}
-                        <span className="text-[10px] text-text-muted/70">
+
+                    {/* Row 3: Dropped */}
+                    <div className="pt-1.5 pb-0.5">
+                      <div
+                        onClick={() => onStatusSelect?.('Dropped')}
+                        className="flex w-max cursor-pointer items-center gap-2 rounded-lg px-1.5 py-1 transition-colors hover:bg-text/5"
+                        title="Filter by Dropped"
+                      >
+                        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-rose-500" />
+                        <span className="font-semibold text-text">Dropped</span>
+                        <span className="font-bold text-sm text-text ml-1">{droppedCount}</span>
+                        <span className="text-[10px] text-text-muted">
                           ({totalCount ? Math.round((droppedCount / totalCount) * 100) : 0}%)
                         </span>
-                      </span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between border-border/50 border-t pt-2.5 text-xs">
-                    <span className="text-text-muted">
-                      Total Entries: <strong className="text-text">{totalCount}</strong>
-                    </span>
-                    <span className="flex items-center gap-1 text-text-muted">
-                      Avg Rating: <strong className="text-text">{avgRating}</strong>
-                      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                    </span>
+                  {/* Widget 1 Footer Badges */}
+                  <div className="mt-2 grid grid-cols-2 gap-2 border-border/40 border-t pt-2.5 text-xs">
+                    <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface/70 p-2 shadow-2xs">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-card-bg text-text-muted">
+                        <BookOpen className="h-3.5 w-3.5" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-medium text-[10px] text-text-muted leading-tight">
+                          Total Entries
+                        </span>
+                        <span className="font-bold text-sm text-text leading-tight">
+                          {totalCount}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface/70 p-2 shadow-2xs">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-card-bg text-text-muted">
+                        <Star className="h-3.5 w-3.5 text-amber-400" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-medium text-[10px] text-text-muted leading-tight">
+                          Avg Rating
+                        </span>
+                        <span className="flex items-center gap-1 font-bold text-sm text-text leading-tight">
+                          {avgRating} <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
 
@@ -461,8 +550,37 @@ export default function StatsSummary({ books }: { books: Book[] }) {
 
                       <div className="flex items-center justify-between pt-0.5 text-[11px] text-text-muted">
                         <span>{goalPct}% Achieved</span>
-                        <span>
-                          Pace: {avgPacePerMonth} bks/mo (Req: {requiredPace})
+                        <span>Pace: {avgPacePerMonth} bks/mo</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Widget 2 Footer Badges */}
+                  <div className="mt-2 grid grid-cols-2 gap-2 border-border/40 border-t pt-2.5 text-xs">
+                    <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface/70 p-2 shadow-2xs">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-card-bg text-text-muted">
+                        <Trophy className="h-3.5 w-3.5 text-amber-500" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-medium text-[10px] text-text-muted leading-tight">
+                          Annual Goal
+                        </span>
+                        <span className="font-bold text-xs text-text leading-tight">
+                          {completedThisYear} / {targetGoal}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface/70 p-2 shadow-2xs">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-card-bg text-text-muted">
+                        <Flame className="h-3.5 w-3.5 text-rose-500" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-medium text-[10px] text-text-muted leading-tight">
+                          Pace Needed
+                        </span>
+                        <span className="font-bold text-xs text-text leading-tight">
+                          {requiredPace} bks/mo
                         </span>
                       </div>
                     </div>
@@ -516,6 +634,37 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                         </span>
                       </div>
                     ))}
+                  </div>
+
+                  {/* Widget 3 Footer Badges */}
+                  <div className="mt-2 grid grid-cols-2 gap-2 border-border/40 border-t pt-2.5 text-xs">
+                    <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface/70 p-2 shadow-2xs">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-card-bg text-text-muted">
+                        <Award className="h-3.5 w-3.5 text-emerald-500" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-medium text-[10px] text-text-muted leading-tight">
+                          Top Rating
+                        </span>
+                        <span className="font-bold text-xs text-text leading-tight">
+                          5★ ({fiveStarPct}%)
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface/70 p-2 shadow-2xs">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-card-bg text-text-muted">
+                        <BarChart2 className="h-3.5 w-3.5 text-sky-500" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-medium text-[10px] text-text-muted leading-tight">
+                          Rated Books
+                        </span>
+                        <span className="font-bold text-xs text-text leading-tight">
+                          {ratedCount} / {totalCount}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               </div>

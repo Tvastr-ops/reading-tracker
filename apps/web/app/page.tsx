@@ -583,7 +583,12 @@ export default function HomePage() {
       )}
 
       {/* Dashboard Stats */}
-      {!showTrash && <StatsSummary books={books} />}
+      {!showTrash && (
+        <StatsSummary
+          books={books}
+          onStatusSelect={(s) => setStatusFilter(s as Book['status'] | 'all')}
+        />
+      )}
 
       {/* Up Next Banner with Celebration Spring Pop */}
       <AnimatePresence>
