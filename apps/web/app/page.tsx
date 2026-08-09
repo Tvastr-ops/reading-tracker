@@ -87,11 +87,15 @@ export default function HomePage() {
   const [upNext, setUpNext] = useState<Book | null>(null);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [inspectedBook, setInspectedBook] = useState<Book | null>(null);
+  const [modKey, setModKey] = useState('Ctrl+K');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent)) {
+      setModKey('⌘K');
+    }
     const savedView = window.localStorage.getItem('viewMode');
     if (savedView === 'grid' || savedView === 'table') setViewMode(savedView);
     const savedStatus = window.localStorage.getItem('statusFilter');
@@ -697,18 +701,6 @@ export default function HomePage() {
         </div>
 
         <div className="flex items-center justify-between gap-2 border-border/60 border-t pt-3 sm:w-auto sm:border-0 sm:pt-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsCommandPaletteOpen(true)}
-            className="hidden lg:inline-flex items-center gap-1.5 h-8 text-xs font-medium border-border/80 shadow-2xs hover:bg-surface"
-          >
-            <Search className="h-3.5 w-3.5 text-text-muted" />
-            <span>Search</span>
-            <kbd className="font-mono text-[10px] font-semibold bg-surface border border-border px-1.5 py-0.2 rounded text-text-muted">
-              ⌘K
-            </kbd>
-          </Button>
 
           <Button variant="outline" size="icon" onClick={toggleTheme} title="Toggle dark mode">
             {theme === 'dark' ? (
@@ -911,7 +903,7 @@ export default function HomePage() {
               <input
                 ref={searchInputRef}
                 type="text"
-                placeholder="Search title, author, tags... (/)"
+                placeholder={`Search title, author, tags... (/ or ${modKey})`}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="h-9 w-full rounded-lg border border-border bg-card-bg pr-8 pl-9 text-text text-xs transition-all focus:outline-none focus:ring-2 focus:ring-accent-color sm:text-sm"
