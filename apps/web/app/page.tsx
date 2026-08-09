@@ -78,6 +78,8 @@ export default function HomePage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [selectMode, setSelectMode] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<Book['status'] | ''>('');
+  const [pendingRating, setPendingRating] = useState<number | 'unrated' | null>(null);
   const [upNext, setUpNext] = useState<Book | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -1081,7 +1083,7 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.96 }}
             transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-            className="surface-t3 fixed bottom-4 left-1/2 z-50 flex w-[calc(100%-1.25rem)] max-w-xl -translate-x-1/2 items-center justify-between gap-1.5 rounded-2xl p-2 sm:bottom-6 sm:w-auto sm:gap-2.5 sm:rounded-full sm:px-4 sm:py-2"
+            className="surface-t3 fixed bottom-3 left-1/2 z-50 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 flex-wrap items-center justify-between gap-1.5 rounded-2xl p-2 sm:bottom-6 sm:max-w-3xl sm:gap-2.5 sm:rounded-full sm:px-4 sm:py-2"
           >
             <div className="flex shrink-0 items-center gap-1.5 pl-1 text-xs">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent-color/15 font-bold font-mono text-[11px] text-accent-color">
@@ -1108,15 +1110,16 @@ export default function HomePage() {
               </Button>
             </div>
 
-            <div className="h-4 w-px bg-border/60" />
+            <div className="hidden h-4 w-px bg-border/60 sm:block" />
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex shrink-0 items-center gap-1.5">
               {!showTrash && (
                 <>
-                  {/* Batch Status */}
+                  {/* Staged Batch Status */}
                   <Select
+                    value={pendingStatus}
                     onValueChange={(val) => {
-                      bulkAction('status', val, true);
+                      setPendingStatus(val as Book['status']);
                     }}
                   >
                     <SelectTrigger className="h-8 w-22 rounded-xl border-border text-xs sm:w-28 sm:rounded-full">
@@ -1131,11 +1134,18 @@ export default function HomePage() {
                     </SelectContent>
                   </Select>
 
-                  {/* Batch Rating */}
+                  {/* Staged Batch Rating */}
                   <Select
+                    value={
+                      pendingRating === null
+                        ? ''
+                        : pendingRating === 0
+                          ? 'unrated'
+                          : String(pendingRating)
+                    }
                     onValueChange={(val) => {
                       const r = val === 'unrated' ? 0 : Number(val);
-                      bulkAction('rating', r, true);
+                      setPendingRating(r);
                     }}
                   >
                     <SelectTrigger className="h-8 w-20 rounded-xl border-border text-xs sm:w-24 sm:rounded-full">
@@ -1150,6 +1160,26 @@ export default function HomePage() {
                       <SelectItem value="unrated">Clear Rating</SelectItem>
                     </SelectContent>
                   </Select>
+
+                  {/* Staged Apply Button */}
+                  {(pendingStatus !== '' || pendingRating !== null) && (
+                    <Button
+                      size="sm"
+                      className="h-8 rounded-xl bg-accent-color px-3 font-bold text-accent-text text-xs shadow-xs hover:bg-accent-color/90 sm:rounded-full"
+                      onClick={async () => {
+                        if (pendingStatus) {
+                          await bulkAction('status', pendingStatus, true);
+                        }
+                        if (pendingRating !== null) {
+                          await bulkAction('rating', pendingRating, true);
+                        }
+                        setPendingStatus('');
+                        setPendingRating(null);
+                      }}
+                    >
+                      Apply
+                    </Button>
+                  )}
                 </>
               )}
 
@@ -1181,8 +1211,10 @@ export default function HomePage() {
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-8 shrink-0 rounded-full px-2.5 font-semibold text-text-muted text-xs hover:bg-surface/60 hover:text-text"
+                className="h-8 shrink-0 rounded-full px-2.5 font-semibold text-text-muted text-xs hover:bg-text/10 hover:text-text"
                 onClick={() => {
+                  setPendingStatus('');
+                  setPendingRating(null);
                   setSelectMode(false);
                   setSelected(new Set());
                 }}
