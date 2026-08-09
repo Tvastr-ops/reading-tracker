@@ -74,12 +74,12 @@ function BookGrid({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.25, delay, ease: [0.16, 1, 0.3, 1] }}
-              whileHover={{ y: -2.5 }}
+              whileHover={{ y: -3, scale: 1.008 }}
               whileTap={{ scale: 0.99 }}
               className="h-full"
             >
               <Card
-                className={`surface-card surface-card-hover group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl ${idx >= 6 ? 'cv-grid-card' : ''} ${
+                className={`surface-t2 group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl ${idx >= 6 ? 'cv-grid-card' : ''} ${
                   isSelected
                     ? 'border-accent-color bg-accent-color/10 ring-2 ring-accent-color'
                     : statusCfg.glowShadow

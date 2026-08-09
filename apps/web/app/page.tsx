@@ -593,7 +593,7 @@ export default function HomePage() {
             exit={{ opacity: 0, y: -20, scale: 0.96 }}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           >
-            <Card className="relative mb-6 flex flex-col items-center gap-4 overflow-hidden border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-accent-color/5 to-transparent p-4 shadow-sm backdrop-blur-md sm:flex-row">
+            <Card className="surface-t2 relative mb-6 flex flex-col items-center gap-4 overflow-hidden border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-accent-color/5 to-transparent p-4 sm:flex-row">
               {upNext.cover_url ? (
                 <img
                   src={upNext.cover_url}
@@ -639,7 +639,7 @@ export default function HomePage() {
       </AnimatePresence>
 
       {/* Main Content Area */}
-      <Card className="p-2.5 shadow-xs sm:p-5">
+      <Card className="surface-t1 p-2.5 sm:p-5">
         {/* Toolbar */}
         <div className="mb-4 space-y-3">
           {/* Row 1: Add Entry / Search / View Toggle */}
@@ -1081,7 +1081,7 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.96 }}
             transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-            className="surface-dock fixed bottom-4 left-1/2 z-50 flex w-[calc(100%-1.25rem)] max-w-xl -translate-x-1/2 items-center justify-between gap-1.5 rounded-2xl p-2 sm:bottom-6 sm:w-auto sm:gap-2.5 sm:rounded-full sm:px-4 sm:py-2"
+            className="surface-t3 fixed bottom-4 left-1/2 z-50 flex w-[calc(100%-1.25rem)] max-w-xl -translate-x-1/2 items-center justify-between gap-1.5 rounded-2xl p-2 sm:bottom-6 sm:w-auto sm:gap-2.5 sm:rounded-full sm:px-4 sm:py-2"
           >
             <div className="flex shrink-0 items-center gap-1.5 pl-1 text-xs">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent-color/15 font-bold font-mono text-[11px] text-accent-color">
