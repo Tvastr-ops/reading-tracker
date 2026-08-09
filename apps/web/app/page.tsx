@@ -314,6 +314,25 @@ export default function HomePage() {
     }
   }
 
+  async function handleUpdateRating(book: Book, rating: number | null) {
+    const patchData = { rating };
+    setBooks((prev) => prev.map((x) => (x.id === book.id ? { ...x, ...patchData } : x)));
+    if (inspectedBook?.id === book.id) {
+      setInspectedBook((prev) => (prev ? { ...prev, ...patchData } : null));
+    }
+    const res = await fetch(`/api/books/${book.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patchData),
+    });
+    if (!res.ok) {
+      toast.error('Failed to update rating');
+      load(true);
+    } else {
+      toast.success(`Updated rating for "${book.title}"`);
+    }
+  }
+
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/login');
@@ -1148,6 +1167,8 @@ export default function HomePage() {
               onEdit={(b) => setEditing(b)}
               onUpdateProgress={handleUpdateProgress}
               onUpdateDates={handleUpdateDates}
+              onUpdateStatus={quickStatusChange}
+              onUpdateRating={handleUpdateRating}
               onDelete={deleteBook}
             />
           )}

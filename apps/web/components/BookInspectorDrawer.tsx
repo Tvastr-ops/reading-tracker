@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BookOpen,
+  Calendar,
   CalendarDays,
   CheckCircle2,
   Clock,
@@ -11,6 +12,8 @@ import {
   Plus,
   RotateCcw,
   Sparkles,
+  Star,
+  TrendingUp,
   Trash2,
   X,
 } from 'lucide-react';
@@ -18,12 +21,19 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { calculateProgressPercentage, formatProgressText } from '@/lib/progress';
 import { getStatusConfig } from '@/lib/status';
-import type { Book } from '@/lib/types';
+import { type Book, STATUSES } from '@/lib/types';
 import { calculateReadingDuration, formatShortDate } from '@/lib/utils';
 import CoverImage from './CoverImage';
-import { RatingDisplay } from './RatingInput';
+import { InteractiveStarRating, RatingDisplay } from './RatingInput';
 
 interface BookInspectorDrawerProps {
   book: Book | null;
@@ -31,6 +41,8 @@ interface BookInspectorDrawerProps {
   onEdit: (book: Book) => void;
   onUpdateProgress: (book: Book, newProgress: number) => void;
   onUpdateDates: (book: Book, startDate: string | null, finishDate: string | null) => void;
+  onUpdateStatus: (book: Book, newStatus: Book['status']) => void;
+  onUpdateRating: (book: Book, newRating: number | null) => void;
   onDelete: (book: Book) => void;
 }
 
@@ -40,11 +52,10 @@ export default function BookInspectorDrawer({
   onEdit,
   onUpdateProgress,
   onUpdateDates,
+  onUpdateStatus,
+  onUpdateRating,
   onDelete,
 }: BookInspectorDrawerProps) {
-  const [quickStartDate, setQuickStartDate] = useState<string>('');
-  const [quickFinishDate, setQuickFinishDate] = useState<string>('');
-
   if (!book) return null;
 
   const pct = calculateProgressPercentage(book);
@@ -71,6 +82,10 @@ export default function BookInspectorDrawer({
     onUpdateProgress(book, nextVal);
   };
 
+  // Estimate completion calculation
+  const remainingUnits = (book.total_units ?? 0) - (book.progress ?? 0);
+  const durationText = calculateReadingDuration(book.date_started, book.date_finished);
+
   return (
     <AnimatePresence>
       <motion.aside
@@ -78,13 +93,13 @@ export default function BookInspectorDrawer({
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: 40 }}
         transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-        className="hidden lg:flex flex-col w-96 shrink-0 border-l border-border bg-card-bg/95 backdrop-blur-md h-[calc(100vh-4rem)] sticky top-16 right-0 overflow-y-auto shadow-2xl z-20"
+        className="hidden lg:flex flex-col w-[380px] shrink-0 border-l border-border bg-card-bg/95 backdrop-blur-md h-[calc(100vh-4rem)] sticky top-16 right-0 overflow-y-auto shadow-2xl z-20"
       >
         {/* Top Header Controls */}
         <div className="flex items-center justify-between p-4 border-b border-border bg-surface/40">
           <div className="flex items-center gap-2 text-xs font-semibold text-text-muted">
             <Sparkles className="h-4 w-4 text-amber-500" />
-            <span>Desktop Inspector</span>
+            <span>Desktop Book Inspector</span>
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -118,14 +133,24 @@ export default function BookInspectorDrawer({
                 sizes="80px"
               />
             </div>
-            <div className="min-w-0 flex-1 space-y-1.5">
-              <Badge
-                variant={statusCfg.variant}
-                className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-wide gap-1 shadow-2xs"
+            <div className="min-w-0 flex-1 space-y-2">
+              {/* Interactive 1-Tap Status Dropdown Selector */}
+              <Select
+                value={book.status}
+                onValueChange={(val) => onUpdateStatus(book, val as Book['status'])}
               >
-                <span className={`h-1.5 w-1.5 rounded-full ${statusCfg.dotColor}`} />
-                <span>{book.status}</span>
-              </Badge>
+                <SelectTrigger className="h-7 w-auto inline-flex rounded-full px-2.5 text-[11px] font-semibold tracking-wide gap-1 shadow-2xs border-border bg-surface">
+                  <span className={`h-1.5 w-1.5 rounded-full ${statusCfg.dotColor}`} />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUSES.map((s) => (
+                    <SelectItem key={s} value={s} className="text-xs">
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
               <h3 className="font-bold text-text text-base leading-snug tracking-tight">
                 {book.title}
@@ -137,7 +162,7 @@ export default function BookInspectorDrawer({
 
               {book.source_link && (
                 <a
-                  href={book.source_link}
+                  href={book.source_link.startsWith('http') ? book.source_link : `https://${book.source_link}`}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-600 dark:text-amber-400 hover:underline"
@@ -149,7 +174,35 @@ export default function BookInspectorDrawer({
             </div>
           </div>
 
-          {/* Quick Progress Steppers */}
+          {/* Interactive Rating Stars Selector */}
+          <div className="rounded-xl border border-border bg-surface/50 p-3.5 space-y-2">
+            <div className="flex items-center justify-between text-xs font-semibold text-text">
+              <span className="inline-flex items-center gap-1.5">
+                <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+                <span>Rating</span>
+              </span>
+              <span className="text-text-muted font-medium">
+                {book.rating ? `${book.rating.toFixed(1)} / 5.0` : 'Unrated'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between pt-1">
+              <InteractiveStarRating
+                value={book.rating}
+                onChange={(r) => onUpdateRating(book, r)}
+              />
+              {book.rating != null && (
+                <button
+                  type="button"
+                  onClick={() => onUpdateRating(book, null)}
+                  className="text-[10px] font-semibold text-rose-400 hover:underline"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Progress Steppers & Progress Bar */}
           <div className="rounded-xl border border-border bg-surface/50 p-4 space-y-3">
             <div className="flex items-center justify-between text-xs font-semibold">
               <span className="text-text">Reading Progress</span>
@@ -197,23 +250,28 @@ export default function BookInspectorDrawer({
             </div>
           </div>
 
-          {/* Quick Desktop Date Picker Section */}
-          <div className="rounded-xl border border-border bg-surface/50 p-4 space-y-3">
+          {/* Desktop Quick Date Editor & Custom Date Pickers */}
+          <div className="rounded-xl border border-border bg-surface/50 p-4 space-y-4">
             <div className="flex items-center justify-between text-xs font-semibold text-text">
               <span className="inline-flex items-center gap-1.5">
                 <CalendarDays className="h-4 w-4 text-sky-400" />
                 <span>Quick Date Editor</span>
               </span>
-              <span className="text-[10px] text-text-muted">Desktop Fast Chips</span>
+              <span className="text-[10px] font-medium text-text-muted">Desktop Fast Chips</span>
             </div>
 
-            {/* Start Date Row */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-[11px] text-text-muted">
-                <span>Start Date</span>
-                <span className="font-semibold text-text">
-                  {book.date_started ? formatShortDate(book.date_started) : 'Not set'}
-                </span>
+            {/* Start Date Section */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-text-muted font-medium">Start Date</span>
+                <input
+                  type="date"
+                  value={book.date_started || ''}
+                  onChange={(e) =>
+                    onUpdateDates(book, e.target.value || null, book.date_finished)
+                  }
+                  className="bg-card-bg border border-border text-text rounded px-1.5 py-0.5 text-[11px] outline-none"
+                />
               </div>
 
               {/* Quick Chips */}
@@ -251,13 +309,18 @@ export default function BookInspectorDrawer({
               </div>
             </div>
 
-            {/* Finish Date Row */}
-            <div className="space-y-1.5 pt-2 border-t border-border/50">
-              <div className="flex items-center justify-between text-[11px] text-text-muted">
-                <span>Finish Date</span>
-                <span className="font-semibold text-emerald-400">
-                  {book.date_finished ? formatShortDate(book.date_finished) : 'Not finished'}
-                </span>
+            {/* Finish Date Section */}
+            <div className="space-y-2 pt-3 border-t border-border/50">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-text-muted font-medium">Finish Date</span>
+                <input
+                  type="date"
+                  value={book.date_finished || ''}
+                  onChange={(e) =>
+                    onUpdateDates(book, book.date_started, e.target.value || null)
+                  }
+                  className="bg-card-bg border border-border text-emerald-400 rounded px-1.5 py-0.5 text-[11px] outline-none"
+                />
               </div>
 
               {/* Quick Chips */}
@@ -267,7 +330,7 @@ export default function BookInspectorDrawer({
                   onClick={() => onUpdateDates(book, book.date_started, getTodayISO())}
                   className="px-2 py-0.5 text-[10px] font-semibold rounded-md border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
                 >
-                  Mark Completed Today
+                  Completed Today
                 </button>
                 <button
                   type="button"
@@ -282,29 +345,28 @@ export default function BookInspectorDrawer({
                     onClick={() => onUpdateDates(book, book.date_started, null)}
                     className="px-2 py-0.5 text-[10px] font-semibold rounded-md border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20"
                   >
-                    Clear Finish Date
+                    Clear
                   </button>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Metadata Grid */}
+          {/* Reading Stats Grid */}
           <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="rounded-xl border border-border bg-surface/40 p-3">
-              <span className="text-text-muted text-[11px]">Rating</span>
-              <div className="mt-1">
-                <RatingDisplay rating={book.rating} mode="stars" />
+            <div className="rounded-xl border border-border bg-surface/40 p-3 space-y-1">
+              <span className="text-text-muted text-[11px]">Total Duration</span>
+              <div className="font-semibold text-text flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5 text-amber-500" />
+                <span>{durationText}</span>
               </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-surface/40 p-3">
-              <span className="text-text-muted text-[11px]">Reading Duration</span>
-              <div className="mt-1 font-semibold text-text flex items-center gap-1">
-                <Clock className="h-3.5 w-3.5 text-amber-500" />
-                <span>
-                  {calculateReadingDuration(book.date_started, book.date_finished)}
-                </span>
+            <div className="rounded-xl border border-border bg-surface/40 p-3 space-y-1">
+              <span className="text-text-muted text-[11px]">Remaining</span>
+              <div className="font-semibold text-text flex items-center gap-1">
+                <TrendingUp className="h-3.5 w-3.5 text-sky-400" />
+                <span>{remainingUnits > 0 ? `${remainingUnits} ${book.unit_type || 'units'}` : 'Finished'}</span>
               </div>
             </div>
           </div>
