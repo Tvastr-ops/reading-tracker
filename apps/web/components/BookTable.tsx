@@ -12,7 +12,7 @@ import {
   RotateCcw,
   Trash2,
 } from 'lucide-react';
-import { memo } from 'react';
+import { memo, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -72,6 +72,37 @@ function BookTable({
   onQuickStatus: (b: Book) => void;
   focusedId?: string | null;
 }) {
+  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleClick = (e: React.MouseEvent, b: Book) => {
+    if (selectMode) {
+      onToggleSelect(b.id);
+      return;
+    }
+
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+    }
+
+    if (e.detail === 1) {
+      clickTimerRef.current = setTimeout(() => {
+        onEdit(b);
+      }, 200);
+    } else if (e.detail === 2 && onFullEdit) {
+      onFullEdit(b);
+    }
+  };
+
+  useEffect(() => {
+    if (focusedId) {
+      const el = document.querySelector(`[data-row-id="${focusedId}"]`);
+      if (el) {
+        el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  }, [focusedId]);
+
   if (books.length === 0) {
     let message = 'No entries match your filters.';
     if (trashMode) message = 'Nothing in the trash.';
@@ -303,18 +334,7 @@ function BookTable({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -12 }}
                     transition={{ duration: 0.2, delay, ease: [0.16, 1, 0.3, 1] }}
-                    onClick={() => {
-                      if (selectMode) {
-                        onToggleSelect(b.id);
-                      } else {
-                        onEdit(b);
-                      }
-                    }}
-                    onDoubleClick={() => {
-                      if (!selectMode && onFullEdit) {
-                        onFullEdit(b);
-                      }
-                    }}
+                    onClick={(e) => handleClick(e, b)}
                     className={`group cursor-pointer border-border/40 border-b transition-colors hover:bg-surface/50 ${idx >= 4 ? 'cv-table-row' : ''} ${
                       isSelected
                         ? 'border-l-4 border-l-accent-color bg-accent-color/10'
