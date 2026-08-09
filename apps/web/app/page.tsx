@@ -1141,11 +1141,8 @@ export default function HomePage() {
                   onClick={() => setShowFavoritesOnly((v) => !v)}
                   title={showFavoritesOnly ? 'Show All' : 'Show Favorites Only'}
                 >
-                  <Heart className={`mr-1 h-3.5 w-3.5 ${showFavoritesOnly ? 'fill-white' : ''}`} />
-                  <span>
-                    <span className="inline sm:hidden">Fav</span>
-                    <span className="hidden sm:inline">Favorites</span>
-                  </span>
+                  <Heart className={`h-3.5 w-3.5 sm:mr-1 ${showFavoritesOnly ? 'fill-white' : ''}`} />
+                  <span className="hidden sm:inline">{showFavoritesOnly ? 'Fav ✓' : 'Favorites'}</span>
                 </Button>
               )}
 
@@ -1158,11 +1155,8 @@ export default function HomePage() {
                   onClick={pickUpNext}
                   title="Random Up Next"
                 >
-                  <Sparkles className="mr-1 h-3.5 w-3.5" />
-                  <span>
-                    <span className="inline sm:hidden">Next</span>
-                    <span className="hidden sm:inline">Up Next</span>
-                  </span>
+                  <Sparkles className="h-3.5 w-3.5 sm:mr-1" />
+                  <span className="hidden sm:inline">Up Next</span>
                 </Button>
               )}
 
