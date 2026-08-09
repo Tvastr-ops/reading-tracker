@@ -157,7 +157,14 @@ export default function StatsSummary({
 
   const totalRated = rated.length || 1;
   const ratingDistribution = [5, 4, 3, 2, 1].map((star) => {
-    const count = books.filter((b) => b.rating != null && Math.round(b.rating) === star).length;
+    const count = books.filter((b) => {
+      if (b.rating == null) return false;
+      const r = Number(b.rating);
+      if (star === 5) {
+        return r === 5;
+      }
+      return r >= star && r < star + 1;
+    }).length;
     const percentage = Math.round((count / totalRated) * 100);
     return { star, count, percentage };
   });
