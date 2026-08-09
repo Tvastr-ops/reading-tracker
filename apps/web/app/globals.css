@@ -81,9 +81,9 @@
   --progress-track: #e2d7bd;
   --star-empty: #d3c6a3;
   --star-filled: #8a3b30;
-  --shadow-card: 0 4px 16px -2px rgba(40, 30, 10, 0.06);
-  --shadow-card-hover: 0 8px 24px -4px rgba(40, 30, 10, 0.12);
-  --shadow-dock: 0 12px 36px -4px rgba(30, 22, 8, 0.2);
+  --shadow-card: 0 4px 20px -2px rgba(40, 30, 10, 0.1);
+  --shadow-card-hover: 0 8px 28px -4px rgba(40, 30, 10, 0.16);
+  --shadow-dock: 0 14px 40px -4px rgba(30, 22, 8, 0.22);
   --card-glass-bg: rgba(251, 248, 241, 0.82);
   --border-glass-highlight: transparent;
   --font-serif: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, serif;
