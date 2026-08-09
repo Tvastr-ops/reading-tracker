@@ -563,6 +563,13 @@ export default function HomePage() {
         return;
       }
 
+      if ((e.key === 'e' || e.key === 'E') && !showTrash && editing === undefined) {
+        if (inspectedBook) {
+          e.preventDefault();
+          setEditing(inspectedBook);
+        }
+      }
+
       if (e.key === '/') {
         e.preventDefault();
         searchInputRef.current?.focus();
@@ -1124,6 +1131,7 @@ export default function HomePage() {
                 onToggleSelect={toggleSelect}
                 trashMode={showTrash}
                 onEdit={(b) => setInspectedBook(b)}
+                onFullEdit={(b) => setEditing(b)}
                 onDelete={deleteBook}
                 onRestore={restoreBook}
                 onPermanentDelete={permanentlyDeleteBook}
@@ -1151,6 +1159,7 @@ export default function HomePage() {
                 }}
                 focusedId={focusedIndex >= 0 ? (filtered[focusedIndex]?.id ?? null) : null}
                 onEdit={(b) => setInspectedBook(b)}
+                onFullEdit={(b) => setEditing(b)}
                 onDelete={deleteBook}
                 onRestore={restoreBook}
                 onPermanentDelete={permanentlyDeleteBook}

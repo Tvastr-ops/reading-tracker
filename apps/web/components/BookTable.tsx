@@ -46,6 +46,7 @@ function BookTable({
   onToggleSelect,
   onToggleSelectAll,
   onEdit,
+  onFullEdit,
   onDelete,
   onRestore,
   onPermanentDelete,
@@ -64,6 +65,7 @@ function BookTable({
   onToggleSelect: (id: string) => void;
   onToggleSelectAll?: () => void;
   onEdit: (b: Book) => void;
+  onFullEdit?: (b: Book) => void;
   onDelete: (b: Book) => void;
   onRestore?: (b: Book) => void;
   onPermanentDelete?: (b: Book) => void;
@@ -306,6 +308,11 @@ function BookTable({
                         onToggleSelect(b.id);
                       } else {
                         onEdit(b);
+                      }
+                    }}
+                    onDoubleClick={() => {
+                      if (!selectMode && onFullEdit) {
+                        onFullEdit(b);
                       }
                     }}
                     className={`group cursor-pointer border-border/40 border-b transition-colors hover:bg-surface/50 ${idx >= 4 ? 'cv-table-row' : ''} ${

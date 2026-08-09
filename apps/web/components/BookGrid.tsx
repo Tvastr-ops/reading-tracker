@@ -27,6 +27,7 @@ function BookGrid({
   onToggleSelect,
   trashMode = false,
   onEdit,
+  onFullEdit,
   onDelete,
   onRestore,
   onPermanentDelete,
@@ -39,6 +40,7 @@ function BookGrid({
   onToggleSelect?: (id: string) => void;
   trashMode?: boolean;
   onEdit: (b: Book) => void;
+  onFullEdit?: (b: Book) => void;
   onDelete: (b: Book) => void;
   onRestore?: (b: Book) => void;
   onPermanentDelete?: (b: Book) => void;
@@ -89,6 +91,11 @@ function BookGrid({
                     onToggleSelect(b.id);
                   } else {
                     onEdit(b);
+                  }
+                }}
+                onDoubleClick={() => {
+                  if (!selectMode && onFullEdit) {
+                    onFullEdit(b);
                   }
                 }}
               >
