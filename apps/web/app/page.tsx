@@ -334,6 +334,12 @@ export default function HomePage() {
   }
 
   async function handleSaveInspectorBook(draft: Book) {
+    const originalBook = books.find((b) => b.id === draft.id);
+    const progressChanged =
+      originalBook &&
+      draft.progress !== originalBook.progress &&
+      draft.progress != null;
+
     const patchData = {
       status: draft.status,
       rating: draft.rating,
@@ -345,6 +351,20 @@ export default function HomePage() {
 
     setBooks((prev) => prev.map((x) => (x.id === draft.id ? { ...x, ...patchData } : x)));
     setInspectedBook((prev) => (prev ? { ...prev, ...patchData } : null));
+
+    if (progressChanged && originalBook) {
+      const delta = (draft.progress ?? 0) - (originalBook.progress ?? 0);
+      const sign = delta >= 0 ? '+' : '';
+      await fetch(`/api/books/${draft.id}/log`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from_progress: originalBook.progress ?? 0,
+          to_progress: draft.progress,
+          note: `Inspector update (${sign}${delta} ${draft.unit_type || 'units'})`,
+        }),
+      });
+    }
 
     const res = await fetch(`/api/books/${draft.id}`, {
       method: 'PATCH',
