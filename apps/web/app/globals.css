@@ -81,8 +81,10 @@
   --progress-track: #e2d7bd;
   --star-empty: #d3c6a3;
   --star-filled: #8a3b30;
-  --shadow: 0 8px 28px -4px rgba(40, 30, 10, 0.14);
-  --shadow-modal: 0 16px 44px rgba(30, 22, 8, 0.24);
+  --shadow-card: 0 4px 16px -2px rgba(40, 30, 10, 0.06);
+  --shadow-card-hover: 0 8px 24px -4px rgba(40, 30, 10, 0.12);
+  --shadow-dock: 0 12px 36px -4px rgba(30, 22, 8, 0.2);
+  --border-glass-highlight: transparent;
   --font-serif: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, serif;
 
   --space-1: 4px;
@@ -133,6 +135,40 @@
   --star-filled: #d18a72;
   --shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.85);
   --shadow-modal: 0 24px 60px -10px rgba(0, 0, 0, 0.95);
+  --shadow-card: 0 6px 20px -4px rgba(0, 0, 0, 0.6);
+  --shadow-card-hover: 0 12px 32px -4px rgba(0, 0, 0, 0.85);
+  --shadow-dock: 0 16px 44px -4px rgba(0, 0, 0, 0.9);
+  --border-glass-highlight: rgba(254, 243, 199, 0.18);
+}
+
+/* Design System Surface Utilities */
+.surface-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-top-color: var(--border-glass-highlight);
+  box-shadow: var(--shadow-card);
+  transition:
+    border-color var(--duration-slow) ease,
+    box-shadow var(--duration-slow) ease;
+}
+
+.surface-card-hover {
+  transition:
+    border-color var(--duration-slow) ease,
+    box-shadow var(--duration-slow) ease;
+}
+
+.surface-card-hover:hover {
+  border-color: var(--border-soft);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.surface-dock {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-top-color: var(--border-glass-highlight);
+  box-shadow: var(--shadow-dock);
+  backdrop-filter: blur(16px);
 }
 
 * {

@@ -1081,7 +1081,7 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.96 }}
             transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-            className="fixed bottom-4 left-1/2 z-50 flex w-[calc(100%-1.25rem)] max-w-xl -translate-x-1/2 items-center justify-between gap-1.5 rounded-2xl border border-border/80 bg-card-bg/95 p-2 shadow-[0_16px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl sm:bottom-6 sm:w-auto sm:gap-2.5 sm:rounded-full sm:px-4 sm:py-2 dark:border-t-amber-100/20"
+            className="surface-dock fixed bottom-4 left-1/2 z-50 flex w-[calc(100%-1.25rem)] max-w-xl -translate-x-1/2 items-center justify-between gap-1.5 rounded-2xl p-2 sm:bottom-6 sm:w-auto sm:gap-2.5 sm:rounded-full sm:px-4 sm:py-2"
           >
             <div className="flex shrink-0 items-center gap-1.5 pl-1 text-xs">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent-color/15 font-bold font-mono text-[11px] text-accent-color">
