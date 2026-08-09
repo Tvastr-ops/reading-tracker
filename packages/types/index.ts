@@ -44,6 +44,7 @@ export interface Book {
   date_started: string | null;
   date_finished: string | null;
   notes: string | null;
+  is_favorite?: boolean | null;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;

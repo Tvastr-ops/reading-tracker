@@ -7,6 +7,7 @@ import {
   Check,
   Download,
   Filter,
+  Heart,
   LayoutGrid,
   List,
   LogOut,
@@ -67,6 +68,7 @@ export default function HomePage() {
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [ratingFilter, setRatingFilter] = useState<number | 'All' | 'Unrated'>('All');
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [search, setSearch] = useState('');
   const [ratingMode, setRatingMode] = useState<'stars' | 'decimal'>('stars');
   const [editing, setEditing] = useState<Partial<Book> | null | undefined>(undefined);
@@ -380,6 +382,26 @@ export default function HomePage() {
     }
   }
 
+  async function handleToggleFavorite(b: Book) {
+    const newVal = !b.is_favorite;
+    const patchData = { is_favorite: newVal, updated_at: new Date().toISOString() };
+    setBooks((prev) => prev.map((x) => (x.id === b.id ? { ...x, ...patchData } : x)));
+    if (inspectedBook?.id === b.id) {
+      setInspectedBook((prev) => (prev ? { ...prev, ...patchData } : null));
+    }
+    const res = await fetch(`/api/books/${b.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patchData),
+    });
+    if (!res.ok) {
+      toast.error('Failed to update favorite');
+      load(true);
+    } else {
+      toast.success(newVal ? `Added "${b.title}" to Favorites ❤️` : `Removed "${b.title}" from Favorites`);
+    }
+  }
+
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/login');
@@ -520,6 +542,10 @@ export default function HomePage() {
   const filtered = useMemo(() => {
     let list = books;
 
+    if (showFavoritesOnly) {
+      list = list.filter((b) => b.is_favorite);
+    }
+
     if (statusFilter !== 'All') {
       list = list.filter((b) => b.status === statusFilter);
     }
@@ -570,13 +596,14 @@ export default function HomePage() {
       if (va > vb) return sortDir === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [books, statusFilter, ratingFilter, deferredSearch, sortField, sortDir]);
+  }, [books, showFavoritesOnly, statusFilter, ratingFilter, deferredSearch, sortField, sortDir]);
 
-  const filtersActive = statusFilter !== 'All' || ratingFilter !== 'All' || search.trim() !== '';
+  const filtersActive = statusFilter !== 'All' || ratingFilter !== 'All' || showFavoritesOnly || search.trim() !== '';
 
   function clearFilters() {
     setStatusFilter('All');
     setRatingFilter('All');
+    setShowFavoritesOnly(false);
     setSearch('');
   }
 
@@ -1105,6 +1132,23 @@ export default function HomePage() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              {/* Favorites Filter */}
+              {!showTrash && (
+                <Button
+                  variant={showFavoritesOnly ? 'default' : 'outline'}
+                  size="sm"
+                  className={`h-7 min-w-0 flex-1 justify-center px-2 text-xs sm:flex-none sm:px-3 ${showFavoritesOnly ? 'bg-rose-500/90 text-white hover:bg-rose-600 border-rose-500' : 'text-rose-400 hover:bg-rose-500/10 hover:text-rose-500'}`}
+                  onClick={() => setShowFavoritesOnly((v) => !v)}
+                  title={showFavoritesOnly ? 'Show All' : 'Show Favorites Only'}
+                >
+                  <Heart className={`mr-1 h-3.5 w-3.5 ${showFavoritesOnly ? 'fill-white' : ''}`} />
+                  <span>
+                    <span className="inline sm:hidden">Fav</span>
+                    <span className="hidden sm:inline">Favorites</span>
+                  </span>
+                </Button>
+              )}
+
               {/* Up Next */}
               {!showTrash && (
                 <Button
@@ -1171,6 +1215,15 @@ export default function HomePage() {
                   />
                 </span>
               )}
+              {showFavoritesOnly && (
+                <span className="inline-flex items-center gap-1 rounded-md border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-rose-500">
+                  <Heart className="h-3 w-3 fill-rose-500" /> Favorites
+                  <X
+                    className="h-3 w-3 cursor-pointer text-rose-400 hover:text-rose-600"
+                    onClick={() => setShowFavoritesOnly(false)}
+                  />
+                </span>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -1207,6 +1260,7 @@ export default function HomePage() {
                 onDelete={deleteBook}
                 onRestore={restoreBook}
                 onPermanentDelete={permanentlyDeleteBook}
+                onToggleFavorite={handleToggleFavorite}
               />
             ) : (
               <BookTable
@@ -1236,6 +1290,7 @@ export default function HomePage() {
                 onRestore={restoreBook}
                 onPermanentDelete={permanentlyDeleteBook}
                 onQuickStatus={quickStatusChange}
+                onToggleFavorite={handleToggleFavorite}
               />
             )}
           </div>

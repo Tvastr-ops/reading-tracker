@@ -9,6 +9,7 @@ import {
   Clock,
   Edit3,
   ExternalLink,
+  Heart,
   RotateCcw,
   Trash2,
 } from 'lucide-react';
@@ -51,6 +52,7 @@ function BookTable({
   onRestore,
   onPermanentDelete,
   onQuickStatus,
+  onToggleFavorite,
   focusedId = null,
 }: {
   books: Book[];
@@ -70,6 +72,7 @@ function BookTable({
   onRestore?: (b: Book) => void;
   onPermanentDelete?: (b: Book) => void;
   onQuickStatus: (b: Book) => void;
+  onToggleFavorite?: (b: Book) => void;
   focusedId?: string | null;
 }) {
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -578,6 +581,18 @@ function BookTable({
                             >
                               <Edit3 className="h-4 w-4" />
                             </Button>
+                            {onToggleFavorite && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label={b.is_favorite ? `Unfavorite ${b.title}` : `Favorite ${b.title}`}
+                                className="h-8 w-8 rounded-lg text-rose-400 hover:bg-rose-500/10"
+                                onClick={() => onToggleFavorite(b)}
+                                title={b.is_favorite ? 'Unfavorite' : 'Favorite'}
+                              >
+                                <Heart className={`h-4 w-4 ${b.is_favorite ? 'fill-rose-500 text-rose-500' : ''}`} />
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="icon"

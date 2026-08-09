@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { BookOpen, Clock, Edit3, MoreVertical, RotateCcw, Trash2 } from 'lucide-react';
+import { BookOpen, Clock, Edit3, Heart, MoreVertical, RotateCcw, Trash2 } from 'lucide-react';
 import { memo, useEffect, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
@@ -31,6 +32,7 @@ function BookGrid({
   onDelete,
   onRestore,
   onPermanentDelete,
+  onToggleFavorite,
   focusedId = null,
 }: {
   books: Book[];
@@ -45,6 +47,7 @@ function BookGrid({
   onDelete: (b: Book) => void;
   onRestore?: (b: Book) => void;
   onPermanentDelete?: (b: Book) => void;
+  onToggleFavorite?: (b: Book) => void;
   focusedId?: string | null;
 }) {
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -181,6 +184,13 @@ function BookGrid({
                     </div>
                   )}
 
+                  {/* Favorite Heart Indicator */}
+                  {b.is_favorite && !selectMode && (
+                    <div className="absolute bottom-2 left-2 z-10">
+                      <Heart className="h-4 w-4 fill-rose-500 text-rose-500 drop-shadow-md" />
+                    </div>
+                  )}
+
                   {/* Dropdown Action Menu */}
                   <div className="absolute top-2 right-2 z-10" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
@@ -211,10 +221,20 @@ function BookGrid({
                           </>
                         ) : (
                           <>
-                            <DropdownMenuItem onClick={() => onEdit(b)}>
+                            <DropdownMenuItem onClick={() => (onFullEdit ? onFullEdit(b) : onEdit(b))}>
                               <Edit3 className="mr-2 h-4 w-4 text-accent-color" />
                               <span>Edit</span>
                             </DropdownMenuItem>
+
+                            {onToggleFavorite && (
+                              <DropdownMenuItem onClick={() => onToggleFavorite(b)}>
+                                <Heart className={`mr-2 h-4 w-4 ${b.is_favorite ? 'fill-rose-500 text-rose-500' : 'text-rose-400'}`} />
+                                <span>{b.is_favorite ? 'Unfavorite' : 'Favorite'}</span>
+                              </DropdownMenuItem>
+                            )}
+
+                            <DropdownMenuSeparator />
+
                             <DropdownMenuItem
                               onClick={() => onDelete(b)}
                               className="text-rose-600 focus:bg-rose-500/10 focus:text-rose-600 dark:text-rose-400"

@@ -27,6 +27,7 @@ const ALLOWED_FIELDS = [
   'date_started',
   'date_finished',
   'notes',
+  'is_favorite',
 ];
 
 // Next.js 15+ made dynamic route `params` a Promise (was a plain object in 14).

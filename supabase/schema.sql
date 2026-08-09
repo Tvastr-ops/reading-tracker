@@ -22,6 +22,7 @@ create table if not exists books (
   date_started date,
   date_finished date,
   notes text,
+  is_favorite boolean not null default false,
   deleted_at timestamptz,             -- soft delete; null = active
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
