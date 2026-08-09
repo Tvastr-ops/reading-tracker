@@ -237,7 +237,11 @@ export default function StatsSummary({
             <CardContent className="space-y-4 pt-1 pb-5">
               <div className="grid grid-cols-1 gap-4 p-1 md:grid-cols-3">
                 {/* WIDGET 1: STATUS BREAKDOWN */}
-                <div className="surface-t2 group relative flex flex-col justify-between overflow-hidden rounded-2xl p-4 transition-transform duration-200 hover:-translate-y-0.5">
+                <motion.div
+                  whileHover={{ y: -2.5 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                  className="surface-t2 group relative flex flex-col justify-between overflow-hidden rounded-2xl p-4"
+                >
                   <div className="flex items-center justify-between font-bold text-text-muted text-xs uppercase tracking-wider">
                     <span className="flex items-center gap-1.5">
                       <BookCheck className="h-3.5 w-3.5 text-accent-color" />
@@ -434,10 +438,14 @@ export default function StatsSummary({
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
 
                 {/* WIDGET 2: ANNUAL SHELF & GOALS */}
-                <div className="surface-t2 group relative flex flex-col justify-between overflow-hidden rounded-2xl p-4 transition-transform duration-200 hover:-translate-y-0.5">
+                <motion.div
+                  whileHover={{ y: -2.5 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                  className="surface-t2 group relative flex flex-col justify-between overflow-hidden rounded-2xl p-4"
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 font-bold text-text-muted text-xs uppercase tracking-wider">
                       <Trophy className="h-3.5 w-3.5 text-amber-500" />
@@ -589,15 +597,23 @@ export default function StatsSummary({
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
 
                 {/* WIDGET 3: RATING DISTRIBUTION */}
-                <div className="surface-t2 group relative flex flex-col justify-between overflow-hidden rounded-2xl p-4 transition-transform duration-200 hover:-translate-y-0.5">
+                <motion.div
+                  whileHover={{ y: -2.5 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                  className="surface-t2 group relative flex flex-col justify-between overflow-hidden rounded-2xl p-4"
+                >
                   <div className="flex items-center justify-between font-bold text-text-muted text-xs uppercase tracking-wider">
                     <span className="flex items-center gap-1.5">
-                      <div className="inline-flex cursor-pointer transition-transform duration-200 hover:scale-125 hover:rotate-12">
+                      <motion.div
+                        whileHover={{ scale: 1.3, rotate: 15 }}
+                        transition={{ type: 'spring', stiffness: 450, damping: 15 }}
+                        className="inline-flex cursor-pointer"
+                      >
                         <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 drop-shadow-xs" />
-                      </div>
+                      </motion.div>
                       Rating Breakdown
                     </span>
                   </div>
@@ -665,7 +681,7 @@ export default function StatsSummary({
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               </div>
             </CardContent>
           </motion.div>
