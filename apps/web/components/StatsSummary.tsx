@@ -223,9 +223,8 @@ export default function StatsSummary({ books }: { books: Book[] }) {
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="overflow-hidden"
           >
-            <CardContent className="space-y-4 pt-0">
-              {' '}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <CardContent className="space-y-4 pt-1 pb-5">
+              <div className="grid grid-cols-1 gap-4 p-1 md:grid-cols-3">
                 {/* WIDGET 1: STATUS BREAKDOWN */}
                 <motion.div
                   whileHover={{ y: -2.5 }}
@@ -282,7 +281,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
 
                   {/* Status Pills */}
                   <div className="mb-2 grid grid-cols-2 gap-1.5 text-xs">
-                    <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-surface/60">
+                    <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-text/5">
                       <span className="h-2 w-2 rounded-full bg-emerald-500" />
                       <span className="text-text-muted">
                         Completed: <strong className="text-text">{animatedCompletedCount}</strong>{' '}
@@ -291,7 +290,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                         </span>
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-surface/60">
+                    <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-text/5">
                       <span className="h-2 w-2 rounded-full bg-sky-500" />
                       <span className="text-text-muted">
                         Reading: <strong className="text-text">{animatedReadingCount}</strong>{' '}
@@ -300,7 +299,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                         </span>
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-surface/60">
+                    <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-text/5">
                       <span className="h-2 w-2 rounded-full bg-orange-500" />
                       <span className="text-text-muted">
                         On Hold: <strong className="text-text">{onHoldCount}</strong>{' '}
@@ -309,7 +308,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                         </span>
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-surface/60">
+                    <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-text/5">
                       <span className="h-2 w-2 rounded-full bg-amber-500" />
                       <span className="text-text-muted">
                         Plan to Read: <strong className="text-text">{planToReadCount}</strong>{' '}
@@ -318,7 +317,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                         </span>
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-surface/60">
+                    <div className="flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-text/5">
                       <span className="h-2 w-2 rounded-full bg-rose-500" />
                       <span className="text-text-muted">
                         Dropped: <strong className="text-text">{droppedCount}</strong>{' '}
@@ -425,7 +424,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                               setGoalInput(String(targetGoal));
                               setEditingGoal(true);
                             }}
-                            className="h-5 px-1 text-accent-color text-xs hover:bg-accent-color/10"
+                            className="h-6 w-6 rounded-md p-0 text-accent-color text-xs transition-transform hover:bg-accent-color/10 hover:scale-110 active:scale-95"
                           >
                             <Edit2 className="h-3 w-3" />
                           </Button>
@@ -493,7 +492,7 @@ export default function StatsSummary({ books }: { books: Book[] }) {
                     {ratingDistribution.map(({ star, count, percentage }) => (
                       <div
                         key={star}
-                        className="grid grid-cols-[24px_1fr_60px] items-center gap-2 rounded-md px-1 py-0.5 text-xs transition-colors hover:bg-surface/60"
+                        className="grid grid-cols-[24px_1fr_60px] items-center gap-2 rounded-md px-1 py-0.5 text-xs transition-colors hover:bg-text/5"
                       >
                         <span className="flex items-center gap-0.5 font-semibold text-text">
                           {star}
