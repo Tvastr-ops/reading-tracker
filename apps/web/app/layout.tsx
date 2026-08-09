@@ -110,7 +110,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-bg font-sans text-text antialiased">
         <main>{children}</main>
         <Toaster position="bottom-right" richColors closeButton />
-        <SpeedInsights />
+        <SpeedInsights debug={process.env.NODE_ENV === 'development'} />
       </body>
     </html>
   );
