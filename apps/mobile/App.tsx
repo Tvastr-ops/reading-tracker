@@ -117,7 +117,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<BookStatus | 'All'>('Reading');
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
-  const [activeNav, setActiveNav] = useState<'Library' | 'Stats' | 'Discover'>('Library');
+  const [activeNav, setActiveNav] = useState<'Library' | 'Stats'>('Library');
 
   // Modals
   const [statsVisible, setStatsVisible] = useState(false);
@@ -340,7 +340,7 @@ export default function App() {
       <SafeAreaView style={styles.container}>
         <StatusBar style="light" />
 
-        {/* M3 Header */}
+        {/* Minimalist M3 Top Header */}
         <View style={styles.header}>
           <View>
             <Text style={styles.headerTitle}>Deep Focus</Text>
@@ -385,7 +385,29 @@ export default function App() {
           />
         </View>
 
-        {/* Main Content Area */}
+        {/* Status Filter Pill Tabs */}
+        <View style={styles.tabsWrapper}>
+          <FlatList
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            data={['Reading', 'Plan to Read', 'Completed', 'On Hold', 'Dropped', 'All'] as const}
+            keyExtractor={(item) => item}
+            contentContainerStyle={styles.tabsContainer}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[styles.tabChip, activeTab === item && styles.activeTabChip]}
+                activeOpacity={0.7}
+                onPress={() => setActiveTab(item)}
+              >
+                <Text style={[styles.tabChipText, activeTab === item && styles.activeTabChipText]}>
+                  {item}
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+
+        {/* Clean Book List */}
         <FlatList
           data={filteredBooks}
           keyExtractor={(item) => item.id}
@@ -394,51 +416,6 @@ export default function App() {
           initialNumToRender={8}
           maxToRenderPerBatch={10}
           windowSize={5}
-          ListHeaderComponent={
-            <View>
-              {/* Stitch M3 Streak Banner */}
-              <View style={styles.streakBanner}>
-                <View style={styles.streakInfo}>
-                  <Text style={styles.streakTitle}>14 Day Streak!</Text>
-                  <Text style={styles.streakSubtitle}>
-                    You're on fire. Keep the focus going.
-                  </Text>
-                </View>
-                <View style={styles.fireBadge}>
-                  <Text style={styles.fireIcon}>🔥</Text>
-                </View>
-              </View>
-
-              {/* Status Filter Tabs */}
-              <View style={styles.tabsWrapper}>
-                <FlatList
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  data={
-                    ['Reading', 'Plan to Read', 'Completed', 'On Hold', 'Dropped', 'All'] as const
-                  }
-                  keyExtractor={(item) => item}
-                  contentContainerStyle={styles.tabsContainer}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={[styles.tabChip, activeTab === item && styles.activeTabChip]}
-                      activeOpacity={0.7}
-                      onPress={() => setActiveTab(item)}
-                    >
-                      <Text
-                        style={[
-                          styles.tabChipText,
-                          activeTab === item && styles.activeTabChipText,
-                        ]}
-                      >
-                        {item}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                />
-              </View>
-            </View>
-          }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyIcon}>📖</Text>
@@ -452,7 +429,7 @@ export default function App() {
           }
         />
 
-        {/* Floating Action Button (FAB) */}
+        {/* Minimalist FAB (+) */}
         <TouchableOpacity
           style={styles.fab}
           activeOpacity={0.85}
@@ -461,7 +438,7 @@ export default function App() {
           <Text style={styles.fabIcon}>+</Text>
         </TouchableOpacity>
 
-        {/* Stitch M3 Bottom Navigation Bar */}
+        {/* Minimalist Bottom Navigation Bar */}
         <View style={styles.bottomNav}>
           <TouchableOpacity
             style={styles.navItem}
@@ -659,11 +636,11 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#141317', // Stitch M3 Surface Dim
+    backgroundColor: '#1C1B1F', // Minimalist Material 3 Surface
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#141317',
+    backgroundColor: '#1C1B1F',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -681,7 +658,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   headerTitle: {
-    color: '#D0BCFF', // M3 Primary Tint
+    color: '#D0BCFF', // Minimalist M3 Primary Accent
     fontSize: 26,
     fontWeight: '800',
   },
@@ -695,7 +672,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconBtn: {
-    backgroundColor: '#201F23',
+    backgroundColor: '#2B2930',
     width: 38,
     height: 38,
     borderRadius: 19,
@@ -731,48 +708,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   searchInput: {
-    backgroundColor: '#201F23',
+    backgroundColor: '#2B2930',
     color: '#E5E1E7',
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 11,
     fontSize: 14,
-  },
-  streakBanner: {
-    backgroundColor: '#D0BCFF',
-    borderRadius: 24,
-    padding: 20,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  streakInfo: {
-    flex: 1,
-  },
-  streakTitle: {
-    color: '#210F48',
-    fontSize: 22,
-    fontWeight: '800',
-  },
-  streakSubtitle: {
-    color: '#4D3D76',
-    fontSize: 13,
-    marginTop: 4,
-    fontWeight: '500',
-  },
-  fireBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#E9DDFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 12,
-  },
-  fireIcon: {
-    fontSize: 26,
   },
   tabsWrapper: {
     marginBottom: 12,
@@ -784,7 +725,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#201F23',
+    backgroundColor: '#2B2930',
     marginRight: 8,
   },
   activeTabChip: {
@@ -796,14 +737,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   activeTabChipText: {
-    color: '#210F48',
+    color: '#381E72',
     fontWeight: '700',
   },
   listContainer: {
     paddingBottom: 120,
   },
   card: {
-    backgroundColor: '#201F23',
+    backgroundColor: '#2B2930',
     borderRadius: 20,
     padding: 16,
     marginHorizontal: 16,
@@ -869,7 +810,7 @@ const styles = StyleSheet.create({
   },
   progressBarBg: {
     height: 6,
-    backgroundColor: '#353438',
+    backgroundColor: '#4A4458',
     borderRadius: 3,
     marginTop: 6,
     overflow: 'hidden',
@@ -898,14 +839,14 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   stepperChip: {
-    backgroundColor: '#353438',
+    backgroundColor: '#4A4458',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 10,
     marginRight: 6,
   },
   stepperChipText: {
-    color: '#D0BCFF',
+    color: '#E8DEF8',
     fontSize: 12,
     fontWeight: '700',
   },
@@ -952,7 +893,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   fabIcon: {
-    color: '#210F48',
+    color: '#381E72',
     fontSize: 30,
     fontWeight: 'bold',
     marginTop: -2,
@@ -963,7 +904,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 64,
-    backgroundColor: '#201F23',
+    backgroundColor: '#2B2930',
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
@@ -973,6 +914,7 @@ const styles = StyleSheet.create({
   navItem: {
     alignItems: 'center',
     justifyContent: 'center',
+    flex: 1,
   },
   navIcon: {
     fontSize: 20,
@@ -996,7 +938,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#201F23',
+    backgroundColor: '#2B2930',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -1027,7 +969,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: '#353438',
+    backgroundColor: '#4A4458',
     marginRight: 8,
     marginBottom: 8,
   },
@@ -1040,10 +982,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   activeQuickChipText: {
-    color: '#210F48',
+    color: '#381E72',
   },
   textInput: {
-    backgroundColor: '#353438',
+    backgroundColor: '#36343B',
     color: '#E5E1E7',
     borderRadius: 14,
     paddingHorizontal: 16,
@@ -1072,7 +1014,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   saveBtnText: {
-    color: '#210F48',
+    color: '#381E72',
     fontSize: 14,
     fontWeight: '700',
   },
