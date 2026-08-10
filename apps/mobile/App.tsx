@@ -1,27 +1,31 @@
-import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  Keyboard,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
   StyleSheet,
   Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
+  TouchableOpacity,
+  TextInput,
+  Modal,
+  ActivityIndicator,
+  Image,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { BookEditModal } from './src/components/BookEditModal';
-import { StatsDashboardModal } from './src/components/StatsDashboardModal';
+import { StatusBar } from 'expo-status-bar';
 import { initDatabase } from './src/db/database';
+import { Book, BookStatus, BookFormatType } from './src/types/book';
+import {
+  formatProgressDisplay,
+  getUnitLabel,
+  getQuickChipOptions,
+} from './src/utils/formatters';
 import { syncWithSupabase } from './src/db/syncEngine';
-import type { Book, BookFormatType, BookStatus } from './src/types/book';
-import { formatProgressDisplay, getQuickChipOptions, getUnitLabel } from './src/utils/formatters';
+import { StatsDashboardModal } from './src/components/StatsDashboardModal';
+import { BookEditModal } from './src/components/BookEditModal';
 
 const INITIAL_BOOKS: Book[] = [
   {
@@ -113,6 +117,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<BookStatus | 'All'>('Reading');
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [activeNav, setActiveNav] = useState<'Library' | 'Stats' | 'Discover'>('Library');
 
   // Modals
   const [statsVisible, setStatsVisible] = useState(false);
@@ -156,35 +161,39 @@ export default function App() {
     const matchesTab = activeTab === 'All' || book.status === activeTab;
     const matchesSearch =
       book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.author?.toLowerCase().includes(searchQuery.toLowerCase());
+      (book.author && book.author.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesTab && matchesSearch;
   });
+
+  const handleQuickAddUnits = (book: Book, amount: number) => {
+    const currentProg = book.progress || 0;
+    const newProgress = book.total_units
+      ? Math.min(currentProg + amount, book.total_units)
+      : currentProg + amount;
+
+    setBooks(
+      books.map((b) =>
+        b.id === book.id
+          ? {
+              ...b,
+              progress: newProgress,
+              status:
+                b.total_units && newProgress >= b.total_units
+                  ? ('Completed' as BookStatus)
+                  : b.status,
+              updated_at: new Date().toISOString(),
+            }
+          : b
+      )
+    );
+  };
 
   const handleAddSession = () => {
     if (!selectedBook) return;
     const addedAmount = parseInt(customUnits, 10) || 0;
     if (addedAmount <= 0) return;
 
-    const currentProgress = selectedBook.progress ?? 0;
-    const newProgress = selectedBook.total_units
-      ? Math.min(currentProgress + addedAmount, selectedBook.total_units)
-      : currentProgress + addedAmount;
-
-    const updatedBooks = books.map((b) =>
-      b.id === selectedBook.id
-        ? {
-            ...b,
-            progress: newProgress,
-            status:
-              b.total_units && newProgress >= b.total_units
-                ? ('Completed' as BookStatus)
-                : b.status,
-            updated_at: new Date().toISOString(),
-          }
-        : b,
-    );
-
-    setBooks(updatedBooks);
+    handleQuickAddUnits(selectedBook, addedAmount);
     setLogModalVisible(false);
     setSelectedBook(null);
     setCustomUnits('15');
@@ -228,13 +237,13 @@ export default function App() {
 
   const renderBookItem = ({ item }: { item: Book }) => {
     const percentage = item.total_units
-      ? Math.round(((item.progress ?? 0) / item.total_units) * 100)
+      ? Math.round(((item.progress || 0) / item.total_units) * 100)
       : 0;
 
     return (
       <TouchableOpacity
         style={styles.card}
-        activeOpacity={0.7}
+        activeOpacity={0.8}
         onPress={() => {
           setEditingBook(item);
           setEditVisible(true);
@@ -259,30 +268,58 @@ export default function App() {
             </Text>
 
             <Text style={styles.progressText}>
-              {formatProgressDisplay(item)} {item.total_units ? `(${percentage}%)` : ''}
+              {formatProgressDisplay(item)}{' '}
+              {item.total_units ? `(${percentage}%)` : ''}
             </Text>
 
             {item.total_units ? (
               <View style={styles.progressBarBg}>
                 <View
-                  style={[styles.progressBarFill, { width: `${Math.min(percentage, 100)}%` }]}
+                  style={[
+                    styles.progressBarFill,
+                    { width: `${Math.min(percentage, 100)}%` },
+                  ]}
                 />
               </View>
             ) : null}
           </View>
         </View>
 
+        {/* Card Footer with One-Tap Quick Steppers */}
         <View style={styles.cardFooter}>
+          <View style={styles.cardSteppersRow}>
+            <Text style={styles.stepperLabel}>Quick:</Text>
+            <TouchableOpacity
+              style={styles.stepperChip}
+              onPress={(e) => {
+                e.stopPropagation();
+                handleQuickAddUnits(item, 1);
+              }}
+            >
+              <Text style={styles.stepperChipText}>+1</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.stepperChip}
+              onPress={(e) => {
+                e.stopPropagation();
+                handleQuickAddUnits(item, 5);
+              }}
+            >
+              <Text style={styles.stepperChipText}>+5</Text>
+            </TouchableOpacity>
+          </View>
+
           <TouchableOpacity
             style={styles.logButton}
             activeOpacity={0.8}
-            onPress={() => {
+            onPress={(e) => {
+              e.stopPropagation();
               setSelectedBook(item);
               setCustomUnits('15');
               setLogModalVisible(true);
             }}
           >
-            <Text style={styles.logButtonText}>+ Log Progress</Text>
+            <Text style={styles.logButtonText}>+ Custom Log</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -292,8 +329,8 @@ export default function App() {
   if (!dbReady) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#6750A4" />
-        <Text style={styles.loadingText}>Loading Reading Tracker DB...</Text>
+        <ActivityIndicator size="large" color="#D0BCFF" />
+        <Text style={styles.loadingText}>Loading Reading Tracker...</Text>
       </View>
     );
   }
@@ -303,10 +340,10 @@ export default function App() {
       <SafeAreaView style={styles.container}>
         <StatusBar style="light" />
 
-        {/* Header */}
+        {/* M3 Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.headerTitle}>My Library</Text>
+            <Text style={styles.headerTitle}>Deep Focus</Text>
             <Text style={styles.headerSubtitle}>Text Format Reading Tracker</Text>
           </View>
 
@@ -326,7 +363,7 @@ export default function App() {
               disabled={syncing}
             >
               {syncing ? (
-                <ActivityIndicator size="small" color="#D0BCFF" />
+                <ActivityIndicator size="small" color="#381E72" />
               ) : (
                 <>
                   <View style={styles.onlineDot} />
@@ -348,29 +385,7 @@ export default function App() {
           />
         </View>
 
-        {/* Status Filter Tabs */}
-        <View style={styles.tabsWrapper}>
-          <FlatList
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={['Reading', 'Plan to Read', 'Completed', 'On Hold', 'Dropped', 'All'] as const}
-            keyExtractor={(item) => item}
-            contentContainerStyle={styles.tabsContainer}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[styles.tabChip, activeTab === item && styles.activeTabChip]}
-                activeOpacity={0.7}
-                onPress={() => setActiveTab(item)}
-              >
-                <Text style={[styles.tabChipText, activeTab === item && styles.activeTabChipText]}>
-                  {item}
-                </Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-
-        {/* High-Performance 60fps Book List */}
+        {/* Main Content Area */}
         <FlatList
           data={filteredBooks}
           keyExtractor={(item) => item.id}
@@ -379,6 +394,51 @@ export default function App() {
           initialNumToRender={8}
           maxToRenderPerBatch={10}
           windowSize={5}
+          ListHeaderComponent={
+            <View>
+              {/* Stitch M3 Streak Banner */}
+              <View style={styles.streakBanner}>
+                <View style={styles.streakInfo}>
+                  <Text style={styles.streakTitle}>14 Day Streak!</Text>
+                  <Text style={styles.streakSubtitle}>
+                    You're on fire. Keep the focus going.
+                  </Text>
+                </View>
+                <View style={styles.fireBadge}>
+                  <Text style={styles.fireIcon}>🔥</Text>
+                </View>
+              </View>
+
+              {/* Status Filter Tabs */}
+              <View style={styles.tabsWrapper}>
+                <FlatList
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  data={
+                    ['Reading', 'Plan to Read', 'Completed', 'On Hold', 'Dropped', 'All'] as const
+                  }
+                  keyExtractor={(item) => item}
+                  contentContainerStyle={styles.tabsContainer}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={[styles.tabChip, activeTab === item && styles.activeTabChip]}
+                      activeOpacity={0.7}
+                      onPress={() => setActiveTab(item)}
+                    >
+                      <Text
+                        style={[
+                          styles.tabChipText,
+                          activeTab === item && styles.activeTabChipText,
+                        ]}
+                      >
+                        {item}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
+            </View>
+          }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyIcon}>📖</Text>
@@ -392,19 +452,52 @@ export default function App() {
           }
         />
 
-        {/* FAB - Add Book */}
+        {/* Floating Action Button (FAB) */}
         <TouchableOpacity
           style={styles.fab}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
           onPress={() => setAddModalVisible(true)}
         >
           <Text style={styles.fabIcon}>+</Text>
         </TouchableOpacity>
 
+        {/* Stitch M3 Bottom Navigation Bar */}
+        <View style={styles.bottomNav}>
+          <TouchableOpacity
+            style={styles.navItem}
+            onPress={() => setActiveNav('Library')}
+          >
+            <Text style={[styles.navIcon, activeNav === 'Library' && styles.activeNavIcon]}>
+              📚
+            </Text>
+            <Text style={[styles.navText, activeNav === 'Library' && styles.activeNavText]}>
+              Library
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.navItem}
+            onPress={() => {
+              setActiveNav('Stats');
+              setStatsVisible(true);
+            }}
+          >
+            <Text style={[styles.navIcon, activeNav === 'Stats' && styles.activeNavIcon]}>
+              📊
+            </Text>
+            <Text style={[styles.navText, activeNav === 'Stats' && styles.activeNavText]}>
+              Stats
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Modals */}
         <StatsDashboardModal
           visible={statsVisible}
-          onClose={() => setStatsVisible(false)}
+          onClose={() => {
+            setStatsVisible(false);
+            setActiveNav('Library');
+          }}
           books={books}
         />
 
@@ -457,9 +550,7 @@ export default function App() {
                     ))}
                 </View>
 
-                <Text style={styles.inputLabel}>
-                  Or type exact amount read today (e.g. 29 or 54):
-                </Text>
+                <Text style={styles.inputLabel}>Or type exact amount read today (e.g. 29 or 54):</Text>
                 <TextInput
                   style={styles.textInput}
                   placeholder="How much did you read?"
@@ -503,7 +594,7 @@ export default function App() {
                 style={styles.modalContent}
               >
                 <Text style={styles.modalTitle}>Add New Book</Text>
-
+                
                 <Text style={styles.inputLabel}>Select Format:</Text>
                 <View style={styles.quickChipRow}>
                   {(['Novel', 'Light Novel', 'Web Novel', 'Non-Fiction'] as const).map((fmt) => (
@@ -549,10 +640,7 @@ export default function App() {
                 />
 
                 <View style={styles.modalActions}>
-                  <TouchableOpacity
-                    style={styles.cancelBtn}
-                    onPress={() => setAddModalVisible(false)}
-                  >
+                  <TouchableOpacity style={styles.cancelBtn} onPress={() => setAddModalVisible(false)}>
                     <Text style={styles.cancelBtnText}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.saveBtn} onPress={handleCreateBook}>
@@ -571,16 +659,16 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1C1B1F', // Material 3 Dark Surface
+    backgroundColor: '#141317', // Stitch M3 Surface Dim
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#1C1B1F',
+    backgroundColor: '#141317',
     alignItems: 'center',
     justifyContent: 'center',
   },
   loadingText: {
-    color: '#E6E1E5',
+    color: '#E5E1E7',
     marginTop: 12,
     fontSize: 16,
   },
@@ -593,9 +681,9 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   headerTitle: {
-    color: '#E6E1E5',
-    fontSize: 24,
-    fontWeight: '700',
+    color: '#D0BCFF', // M3 Primary Tint
+    fontSize: 26,
+    fontWeight: '800',
   },
   headerSubtitle: {
     color: '#CAC4D0',
@@ -607,7 +695,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconBtn: {
-    backgroundColor: '#2B2930',
+    backgroundColor: '#201F23',
     width: 38,
     height: 38,
     borderRadius: 19,
@@ -621,37 +709,73 @@ const styles = StyleSheet.create({
   offlineChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2B2930',
-    paddingHorizontal: 12,
+    backgroundColor: '#D0BCFF',
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 18,
+    borderRadius: 20,
   },
   onlineDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#381E72',
     marginRight: 6,
   },
   offlineChipText: {
-    color: '#D0BCFF',
+    color: '#381E72',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   searchContainer: {
     paddingHorizontal: 16,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   searchInput: {
-    backgroundColor: '#2B2930',
-    color: '#E6E1E5',
-    borderRadius: 14,
+    backgroundColor: '#201F23',
+    color: '#E5E1E7',
+    borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 11,
     fontSize: 14,
   },
+  streakBanner: {
+    backgroundColor: '#D0BCFF',
+    borderRadius: 24,
+    padding: 20,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  streakInfo: {
+    flex: 1,
+  },
+  streakTitle: {
+    color: '#210F48',
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  streakSubtitle: {
+    color: '#4D3D76',
+    fontSize: 13,
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  fireBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#E9DDFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+  },
+  fireIcon: {
+    fontSize: 26,
+  },
   tabsWrapper: {
-    marginBottom: 10,
+    marginBottom: 12,
   },
   tabsContainer: {
     paddingHorizontal: 16,
@@ -660,7 +784,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#2B2930',
+    backgroundColor: '#201F23',
     marginRight: 8,
   },
   activeTabChip: {
@@ -672,17 +796,17 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   activeTabChipText: {
-    color: '#381E72',
+    color: '#210F48',
     fontWeight: '700',
   },
   listContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 88,
+    paddingBottom: 120,
   },
   card: {
-    backgroundColor: '#2B2930',
-    borderRadius: 16,
+    backgroundColor: '#201F23',
+    borderRadius: 20,
     padding: 16,
+    marginHorizontal: 16,
     marginBottom: 12,
   },
   cardHeader: {
@@ -691,13 +815,13 @@ const styles = StyleSheet.create({
   coverImage: {
     width: 60,
     height: 84,
-    borderRadius: 8,
+    borderRadius: 10,
     marginRight: 14,
   },
   coverPlaceholder: {
     width: 60,
     height: 84,
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: '#4A4458',
     alignItems: 'center',
     justifyContent: 'center',
@@ -725,9 +849,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bookTitle: {
-    color: '#E6E1E5',
+    color: '#E5E1E7',
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   bookAuthor: {
     color: '#CAC4D0',
@@ -745,7 +869,7 @@ const styles = StyleSheet.create({
   },
   progressBarBg: {
     height: 6,
-    backgroundColor: '#4A4458',
+    backgroundColor: '#353438',
     borderRadius: 3,
     marginTop: 6,
     overflow: 'hidden',
@@ -757,17 +881,43 @@ const styles = StyleSheet.create({
   },
   cardFooter: {
     marginTop: 12,
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.06)',
+    paddingTop: 10,
+  },
+  cardSteppersRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stepperLabel: {
+    color: '#CAC4D0',
+    fontSize: 11,
+    marginRight: 6,
+  },
+  stepperChip: {
+    backgroundColor: '#353438',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    marginRight: 6,
+  },
+  stepperChipText: {
+    color: '#D0BCFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
   logButton: {
     backgroundColor: '#4A4458',
     paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingVertical: 6,
     borderRadius: 12,
   },
   logButtonText: {
     color: '#E8DEF8',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
   },
   emptyContainer: {
@@ -780,7 +930,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   emptyTitle: {
-    color: '#E6E1E5',
+    color: '#E5E1E7',
     fontSize: 18,
     fontWeight: '600',
   },
@@ -791,7 +941,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 24,
+    bottom: 84,
     right: 20,
     width: 56,
     height: 56,
@@ -799,27 +949,60 @@ const styles = StyleSheet.create({
     backgroundColor: '#D0BCFF',
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
+    elevation: 6,
   },
   fabIcon: {
-    color: '#381E72',
-    fontSize: 28,
+    color: '#210F48',
+    fontSize: 30,
     fontWeight: 'bold',
     marginTop: -2,
   },
+  bottomNav: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 64,
+    backgroundColor: '#201F23',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+  },
+  navItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navIcon: {
+    fontSize: 20,
+    opacity: 0.6,
+  },
+  activeNavIcon: {
+    opacity: 1,
+  },
+  navText: {
+    color: '#CAC4D0',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  activeNavText: {
+    color: '#D0BCFF',
+    fontWeight: '700',
+  },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#2B2930',
+    backgroundColor: '#201F23',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
   },
   modalTitle: {
-    color: '#E6E1E5',
+    color: '#E5E1E7',
     fontSize: 20,
     fontWeight: '700',
   },
@@ -830,7 +1013,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   inputLabel: {
-    color: '#E6E1E5',
+    color: '#E5E1E7',
     fontSize: 13,
     marginBottom: 8,
     marginTop: 6,
@@ -844,7 +1027,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: '#4A4458',
+    backgroundColor: '#353438',
     marginRight: 8,
     marginBottom: 8,
   },
@@ -857,12 +1040,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   activeQuickChipText: {
-    color: '#381E72',
+    color: '#210F48',
   },
   textInput: {
-    backgroundColor: '#36343B',
-    color: '#E6E1E5',
-    borderRadius: 12,
+    backgroundColor: '#353438',
+    color: '#E5E1E7',
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 15,
@@ -889,7 +1072,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   saveBtnText: {
-    color: '#381E72',
+    color: '#210F48',
     fontSize: 14,
     fontWeight: '700',
   },
