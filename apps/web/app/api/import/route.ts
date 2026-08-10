@@ -110,6 +110,26 @@ export const POST = withAuth(async (req: NextRequest) => {
     );
   }
 
+  // First pass: Detect if the CSV uses a 10-point or 100-point scale
+  let maxRatingFound = 0;
+  if (colIndex.rating != null) {
+    for (let r = 1; r < rows.length; r++) {
+      const cells = rows[r];
+      const val = cells[colIndex.rating]?.trim();
+      const rating = toNullableNumber(val);
+      if (rating != null && rating > maxRatingFound) {
+        maxRatingFound = rating;
+      }
+    }
+  }
+
+  let scaleDivisor = 1;
+  if (maxRatingFound > 10) {
+    scaleDivisor = 20; // 0-100 scale -> 0-5 stars
+  } else if (maxRatingFound > 5) {
+    scaleDivisor = 2;  // 0-10 scale -> 0-5 stars
+  }
+
   const toInsert: Record<string, unknown>[] = [];
   const skipped: number[] = [];
 
@@ -124,7 +144,14 @@ export const POST = withAuth(async (req: NextRequest) => {
     }
 
     const status = get('status');
-    const rating = toNullableNumber(get('rating'));
+    const rawRating = toNullableNumber(get('rating'));
+    let rating: number | null = null;
+    if (rawRating != null && rawRating > 0) {
+      const scaled = rawRating / scaleDivisor;
+      // Round to nearest 0.5 step, clamp between 0.5 and 5.0
+      rating = Math.min(5, Math.max(0.5, Math.round(scaled * 2) / 2));
+    }
+
     const isOngoingStr = get('is_ongoing')?.toLowerCase();
     const is_ongoing = isOngoingStr === 'true' || isOngoingStr === '1';
 
@@ -145,7 +172,7 @@ export const POST = withAuth(async (req: NextRequest) => {
       is_ongoing,
       author: get('author') || null,
       status: status && VALID_STATUSES.includes(status) ? status : 'Plan to Read',
-      rating: rating != null && rating >= 0.5 && rating <= 5 ? rating : null,
+      rating,
       progress: toNullableNumber(get('progress')) ?? 0,
       total_units: toNullableNumber(get('total_units')),
       genre_tags: get('genre_tags') || null,

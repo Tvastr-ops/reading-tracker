@@ -18,13 +18,17 @@ export function RatingDisplay({
   rating: number | null;
   mode: 'stars' | 'decimal';
 }) {
-  if (rating == null) return <span className="text-text-muted/60">—</span>;
-  if (mode === 'decimal')
+  if (rating == null && mode === 'decimal') {
+    return <span className="text-text-muted/60">—</span>;
+  }
+  if (mode === 'decimal' && rating != null) {
     return <span className="font-medium text-text">{rating.toFixed(1)} / 5</span>;
+  }
 
+  const r = rating ?? 0;
   const stars = [];
   for (let i = 1; i <= 5; i++) {
-    const diff = rating - (i - 1);
+    const diff = r - (i - 1);
     if (diff >= 1) {
       stars.push(<Star key={i} className="h-4 w-4 shrink-0 fill-amber-400 text-amber-400" />);
     } else if (diff >= 0.5) {
