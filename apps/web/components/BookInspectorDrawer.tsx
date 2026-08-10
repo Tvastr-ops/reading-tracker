@@ -34,7 +34,7 @@ import {
 import { calculateProgressPercentage, formatProgressText } from '@/lib/progress';
 import { getStatusConfig } from '@/lib/status';
 import { type Book, STATUSES } from '@/lib/types';
-import { calculateReadingDuration, formatShortDate } from '@/lib/utils';
+import { calculateReadingDuration, formatShortDate, getLocalDateString } from '@/lib/utils';
 import CoverImage from './CoverImage';
 import { InteractiveStarRating } from './RatingInput';
 
@@ -76,16 +76,16 @@ export default function BookInspectorDrawer({
   const statusCfg = getStatusConfig(draft.status);
 
   // Date helper chips
-  const getTodayISO = () => new Date().toISOString().split('T')[0];
+  const getTodayISO = () => getLocalDateString();
   const getYesterdayISO = () => {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    return d.toISOString().split('T')[0];
+    return getLocalDateString(d);
   };
   const getDaysAgoISO = (days: number) => {
     const d = new Date();
     d.setDate(d.getDate() - days);
-    return d.toISOString().split('T')[0];
+    return getLocalDateString(d);
   };
 
   const handleIncrementProgress = (delta: number) => {

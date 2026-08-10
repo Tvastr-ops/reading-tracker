@@ -29,7 +29,7 @@ import BookInspectorDrawer from '@/components/BookInspectorDrawer';
 import BookTable from '@/components/BookTable';
 import CommandPalette from '@/components/CommandPalette';
 import StatsSummary from '@/components/StatsSummary';
-import { cn } from '@/lib/utils';
+import { cn, getLocalDateString } from '@/lib/utils';
 
 const BookForm = dynamic(() => import('@/components/BookForm'), { ssr: false });
 
@@ -188,7 +188,7 @@ export default function HomePage() {
   }
 
   async function saveBook(data: BookInput) {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const payload = { ...data };
     if (payload.status === 'Reading' && !payload.date_started) {
       payload.date_started = today;
@@ -247,7 +247,7 @@ export default function HomePage() {
 
   async function quickStatusChange(b: Book) {
     const next = STATUSES[(STATUSES.indexOf(b.status) + 1) % STATUSES.length];
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const patchData: Partial<Book> = { status: next };
 
     if (next === 'Reading' && !b.date_started) {
@@ -488,7 +488,10 @@ export default function HomePage() {
     }
 
     const body: Record<string, unknown> = { action, ids: Array.from(targetIds) };
-    if (action === 'status' && typeof overrideValue === 'string') body.status = overrideValue;
+    if (action === 'status' && typeof overrideValue === 'string') {
+      body.status = overrideValue;
+      body.localDate = getLocalDateString();
+    }
     if (action === 'rating' && overrideValue !== undefined) body.rating = overrideValue;
 
     const res = await fetch('/api/books/bulk', {

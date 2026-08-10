@@ -32,6 +32,7 @@ import {
 } from '@/lib/types';
 import { RatingSelect } from './RatingInput';
 import ReadingLog from './ReadingLog';
+import { getLocalDateString } from '@/lib/utils';
 
 const UNIT_OPTIONS: { label: string; value: UnitType }[] = [
   { label: 'Pages', value: 'pages' },
@@ -632,7 +633,7 @@ export default function BookForm({
                           <button
                             type="button"
                             onClick={() =>
-                              set('date_started', new Date().toISOString().split('T')[0])
+                              set('date_started', getLocalDateString())
                             }
                             className="font-medium text-[10px] text-accent-color hover:underline"
                           >
@@ -667,7 +668,7 @@ export default function BookForm({
                           <button
                             type="button"
                             onClick={() =>
-                              set('date_finished', new Date().toISOString().split('T')[0])
+                              set('date_finished', getLocalDateString())
                             }
                             className="font-medium text-[10px] text-accent-color hover:underline"
                           >
