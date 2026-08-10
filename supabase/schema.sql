@@ -34,7 +34,7 @@ create index if not exists books_deleted_idx on books (deleted_at);
 create index if not exists books_active_updated_idx on books (updated_at desc) where deleted_at is null;
 
 alter table books drop constraint if exists chk_books_rating;
-alter table books add constraint chk_books_rating check (rating is null or (rating >= 0.0 and rating <= 5.0));
+alter table books add constraint chk_books_rating check (rating is null or (rating >= 0.5 and rating <= 5.0));
 
 alter table books drop constraint if exists chk_books_progress;
 alter table books add constraint chk_books_progress check (progress is null or progress >= 0);

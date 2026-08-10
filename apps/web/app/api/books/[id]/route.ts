@@ -54,7 +54,11 @@ export const PATCH = withAuth(async (req: NextRequest, { params }: RouteContext)
     for (const key of ALLOWED_FIELDS) {
       if (key in body) {
         const val = body[key];
-        update[key] = val === '' ? null : val;
+        if (key === 'rating' && (val === 0 || val === '0' || val === '')) {
+          update[key] = null;
+        } else {
+          update[key] = val === '' ? null : val;
+        }
       }
     }
     update.updated_at = new Date().toISOString();

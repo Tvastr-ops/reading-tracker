@@ -145,7 +145,7 @@ export const POST = withAuth(async (req: NextRequest) => {
       is_ongoing,
       author: get('author') || null,
       status: status && VALID_STATUSES.includes(status) ? status : 'Plan to Read',
-      rating: rating != null && rating >= 0 && rating <= 5 ? rating : null,
+      rating: rating != null && rating >= 0.5 && rating <= 5 ? rating : null,
       progress: toNullableNumber(get('progress')) ?? 0,
       total_units: toNullableNumber(get('total_units')),
       genre_tags: get('genre_tags') || null,

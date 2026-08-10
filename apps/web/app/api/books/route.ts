@@ -58,8 +58,9 @@ function sanitize(input: Partial<BookInput>) {
   if (!title || typeof title !== 'string' || !title.trim()) {
     throw new Error('Title is required');
   }
-  if (rating != null && (rating < 0 || rating > 5)) {
-    throw new Error('Rating must be between 0 and 5');
+  const cleanRating = (rating != null && rating > 0) ? rating : null;
+  if (cleanRating != null && (cleanRating < 0.5 || cleanRating > 5)) {
+    throw new Error('Rating must be between 0.5 and 5');
   }
 
   return {
@@ -73,7 +74,7 @@ function sanitize(input: Partial<BookInput>) {
     is_ongoing: is_ongoing ?? false,
     author: author || null,
     status: status || 'Plan to Read',
-    rating: rating ?? null,
+    rating: cleanRating,
     progress: progress ?? 0,
     total_units: total_units ?? null,
     genre_tags: genre_tags || null,
