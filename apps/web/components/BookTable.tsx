@@ -217,6 +217,7 @@ function BookTable({
                       className="h-[84px] w-14 rounded-xl object-cover object-top transition-transform group-hover:scale-105"
                       fallbackClassName="flex h-[84px] w-14 flex-col items-center justify-center rounded-xl border border-border bg-surface text-text-muted text-[9px] p-1 text-center font-medium leading-tight"
                     />
+
                   </div>
 
                   {/* Main Details */}
@@ -597,7 +598,11 @@ function BookTable({
                                 title={b.is_favorite ? 'Unfavorite' : 'Favorite'}
                               >
                                 <Heart
-                                  className={`h-4 w-4 ${b.is_favorite ? 'fill-rose-500 text-rose-500' : ''}`}
+                                  className={`h-4 w-4 transition-all active:scale-90 ${
+                                    b.is_favorite
+                                      ? 'fill-rose-400/90 text-rose-400/90 drop-shadow-[0_0_4px_rgba(244,63,94,0.4)]'
+                                      : 'text-text-muted hover:text-rose-400'
+                                  }`}
                                 />
                               </Button>
                             )}

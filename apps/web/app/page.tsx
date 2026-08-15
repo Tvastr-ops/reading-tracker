@@ -1122,12 +1122,20 @@ export default function HomePage() {
                 <Button
                   variant={showFavoritesOnly ? 'default' : 'outline'}
                   size="sm"
-                  className={`h-7 min-w-0 flex-1 justify-center px-2 text-xs sm:flex-none sm:px-3 ${showFavoritesOnly ? 'bg-rose-500/90 text-white hover:bg-rose-600 border-rose-500' : 'text-rose-400 hover:bg-rose-500/10 hover:text-rose-500'}`}
+                  className={`h-7 min-w-0 flex-1 justify-center px-2 text-xs sm:flex-none sm:px-3 transition-all ${
+                    showFavoritesOnly
+                      ? 'bg-amber-500/90 text-amber-950 hover:bg-amber-400 border-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.35)] font-semibold'
+                      : 'text-amber-500 hover:bg-amber-500/10 hover:text-amber-400 border-amber-500/30'
+                  }`}
                   onClick={() => setShowFavoritesOnly((v) => !v)}
                   title={showFavoritesOnly ? 'Show All' : 'Show Favorites Only'}
                 >
                   <Heart
-                    className={`h-3.5 w-3.5 sm:mr-1 ${showFavoritesOnly ? 'fill-white' : ''}`}
+                    className={`h-3.5 w-3.5 sm:mr-1 ${
+                      showFavoritesOnly
+                        ? 'fill-amber-950 text-amber-950'
+                        : 'text-amber-500'
+                    }`}
                   />
                   <span className="hidden sm:inline">
                     {showFavoritesOnly ? 'Fav ✓' : 'Favorites'}
@@ -1199,10 +1207,10 @@ export default function HomePage() {
                 </span>
               )}
               {showFavoritesOnly && (
-                <span className="inline-flex items-center gap-1 rounded-md border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-rose-500">
-                  <Heart className="h-3 w-3 fill-rose-500" /> Favorites
+                <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 font-medium text-amber-500 dark:text-amber-400">
+                  <Heart className="h-3 w-3 fill-amber-500 text-amber-500" /> Favorites
                   <X
-                    className="h-3 w-3 cursor-pointer text-rose-400 hover:text-rose-600"
+                    className="h-3 w-3 cursor-pointer text-amber-500/70 hover:text-amber-500 dark:hover:text-amber-300"
                     onClick={() => setShowFavoritesOnly(false)}
                   />
                 </span>
