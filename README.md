@@ -23,30 +23,34 @@ export to CSV any time.
 
 ## Stack
 
-- [Next.js](https://nextjs.org/) (App Router, Node.js >= 20) — deploys free on
-  [Vercel](https://vercel.com)
-- [Supabase](https://supabase.com) Postgres — free tier, no persistent
-  disk needed since it's serverless
-- No third-party auth — a single app password gates access via a signed,
-  HttpOnly session cookie (`jose`), with proxy routing (`proxy.ts`) and route-level validation (`lib/auth.ts`)
+- **Web App**: [Next.js](https://nextjs.org/) (App Router, React 19, Tailwind CSS, TypeScript)
+- **Cross-Platform Client App**: [Flutter](https://flutter.dev/) (Dart 3, SQLite offline-first, targeting Mobile (Android/iOS), Web, Windows, and Linux)
+- **Backend & Database**: [Supabase](https://supabase.com) Postgres or Self-Hosted REST API (two-way sync)
+- **Auth**: App password gated access via signed HttpOnly session cookie (`jose`) with proxy routing and route-level validation (`lib/auth.ts`)
 
 ## Getting started
 
-See [`DEPLOYMENT_GUIDE.md`](./DEPLOYMENT_GUIDE.md) for a complete,
-beginner-friendly walkthrough (Supabase setup, GitHub, Vercel, env vars).
+See [`DEPLOYMENT_GUIDE.md`](./DEPLOYMENT_GUIDE.md) for a complete walkthrough.
 
-Quick version, if you've done this before:
+### Quick Start
 
 ```bash
-# 1. Run supabase/schema.sql in your Supabase project's SQL editor
-#    (upgrading an existing database? run supabase/migration_v2.sql and migration_v3.sql)
-# 2. Copy .env.example -> .env.local and fill in your values
-npm install
-npm run dev
+# Install dependencies
+pnpm install
 
-# Code formatting & lint checks
-npm run lint
-npm run format
+# Run web app
+pnpm run dev:web
+
+# Run cross-platform Flutter client app (Android, iOS, Web, Windows, Linux)
+pnpm run dev:client
+# (or: cd apps/client && flutter run)
+
+# Run web tests
+pnpm run test:web
+
+# Code linting & formatting checks
+pnpm run lint
+pnpm run format
 ```
 
 ## License

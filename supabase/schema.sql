@@ -61,10 +61,17 @@ alter table reading_log enable row level security;
 
 create index if not exists reading_log_book_idx on reading_log (book_id, logged_at desc);
 
--- Row Level Security: locked down entirely. The app never uses the public
--- anon key, only the service_role key from the server, which bypasses RLS.
--- This means even if your anon key leaked, nobody could read/write data.
+-- Row Level Security: enabled with single-user permissive policies for anon key client sync.
 alter table books enable row level security;
+
+drop policy if exists "Allow anon access on books" on books;
+create policy "Allow anon access on books" on books for all to anon using (true) with check (true);
+
+drop policy if exists "Allow anon access on reading_log" on reading_log;
+create policy "Allow anon access on reading_log" on reading_log for all to anon using (true) with check (true);
+
+drop policy if exists "Allow anon access on app_settings" on app_settings;
+create policy "Allow anon access on app_settings" on app_settings for all to anon using (true) with check (true);
 
 -- keep updated_at fresh automatically
 create or replace function public.set_updated_at()

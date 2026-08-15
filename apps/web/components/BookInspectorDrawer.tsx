@@ -2,26 +2,19 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  BookOpen,
-  Calendar,
   CalendarDays,
-  Check,
-  CheckCircle2,
   Clock,
   Edit3,
   ExternalLink,
-  Plus,
-  RotateCcw,
   Save,
   Sparkles,
   Star,
-  TrendingUp,
   Trash2,
+  TrendingUp,
   Undo2,
   X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -34,7 +27,7 @@ import {
 import { calculateProgressPercentage, formatProgressText } from '@/lib/progress';
 import { getStatusConfig } from '@/lib/status';
 import { type Book, STATUSES } from '@/lib/types';
-import { calculateReadingDuration, formatShortDate, getLocalDateString } from '@/lib/utils';
+import { calculateReadingDuration, getLocalDateString } from '@/lib/utils';
 import CoverImage from './CoverImage';
 import { InteractiveStarRating } from './RatingInput';
 
@@ -161,12 +154,7 @@ export default function BookInspectorDrawer({
           {/* Main Book Banner */}
           <div className="flex items-start gap-4">
             <div className="relative h-28 w-20 shrink-0 overflow-hidden rounded-xl border border-border shadow-md bg-surface">
-              <CoverImage
-                src={draft.cover_url}
-                title={draft.title}
-                fill
-                sizes="80px"
-              />
+              <CoverImage src={draft.cover_url} title={draft.title} fill sizes="80px" />
             </div>
             <div className="min-w-0 flex-1 space-y-2">
               {/* Interactive Status Selector (Draft State) */}
@@ -199,7 +187,11 @@ export default function BookInspectorDrawer({
 
               {draft.source_link && (
                 <a
-                  href={draft.source_link.startsWith('http') ? draft.source_link : `https://${draft.source_link}`}
+                  href={
+                    draft.source_link.startsWith('http')
+                      ? draft.source_link
+                      : `https://${draft.source_link}`
+                  }
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-600 dark:text-amber-400 hover:underline"
@@ -225,9 +217,7 @@ export default function BookInspectorDrawer({
             <div className="flex items-center justify-between pt-1">
               <InteractiveStarRating
                 value={draft.rating}
-                onChange={(r) =>
-                  setDraft((prev) => (prev ? { ...prev, rating: r } : null))
-                }
+                onChange={(r) => setDraft((prev) => (prev ? { ...prev, rating: r } : null))}
               />
               {draft.rating != null && (
                 <button
@@ -329,9 +319,7 @@ export default function BookInspectorDrawer({
                 <button
                   type="button"
                   onClick={() =>
-                    setDraft((prev) =>
-                      prev ? { ...prev, date_started: getYesterdayISO() } : null,
-                    )
+                    setDraft((prev) => (prev ? { ...prev, date_started: getYesterdayISO() } : null))
                   }
                   className="px-2 py-0.5 text-[10px] font-semibold rounded-md border border-border bg-card-bg text-text-muted hover:text-text"
                 >
@@ -340,9 +328,7 @@ export default function BookInspectorDrawer({
                 <button
                   type="button"
                   onClick={() =>
-                    setDraft((prev) =>
-                      prev ? { ...prev, date_started: getDaysAgoISO(7) } : null,
-                    )
+                    setDraft((prev) => (prev ? { ...prev, date_started: getDaysAgoISO(7) } : null))
                   }
                   className="px-2 py-0.5 text-[10px] font-semibold rounded-md border border-border bg-card-bg text-text-muted hover:text-text"
                 >
@@ -429,7 +415,11 @@ export default function BookInspectorDrawer({
               <span className="text-text-muted text-[11px]">Remaining</span>
               <div className="font-semibold text-text flex items-center gap-1">
                 <TrendingUp className="h-3.5 w-3.5 text-sky-400" />
-                <span>{remainingUnits > 0 ? `${remainingUnits} ${draft.unit_type || 'units'}` : 'Finished'}</span>
+                <span>
+                  {remainingUnits > 0
+                    ? `${remainingUnits} ${draft.unit_type || 'units'}`
+                    : 'Finished'}
+                </span>
               </div>
             </div>
           </div>

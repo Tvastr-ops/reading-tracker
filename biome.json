@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.7/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.8/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -13,7 +13,8 @@
       "!**/node_modules",
       "!**/public",
       "!**/tsconfig.tsbuildinfo",
-      "!**/next-env.d.ts"
+      "!**/next-env.d.ts",
+      "!**/apps/client"
     ]
   },
   "formatter": {
@@ -35,14 +36,11 @@
       "preset": "recommended",
       "nursery": {
         "useSortedClasses": {
-          "level": "info",
-          "options": {
-            "attributes": ["classList"],
-            "functions": ["clsx", "cva", "tw", "cn"]
-          }
+          "level": "off"
         }
       },
       "a11y": {
+        "noAutofocus": "off",
         "noLabelWithoutControl": "off",
         "noStaticElementInteractions": "off",
         "useKeyWithClickEvents": "off",

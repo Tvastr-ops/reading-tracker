@@ -127,7 +127,7 @@ export const POST = withAuth(async (req: NextRequest) => {
   if (maxRatingFound > 10) {
     scaleDivisor = 20; // 0-100 scale -> 0-5 stars
   } else if (maxRatingFound > 5) {
-    scaleDivisor = 2;  // 0-10 scale -> 0-5 stars
+    scaleDivisor = 2; // 0-10 scale -> 0-5 stars
   }
 
   const toInsert: Record<string, unknown>[] = [];

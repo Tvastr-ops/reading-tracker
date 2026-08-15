@@ -58,7 +58,7 @@ function sanitize(input: Partial<BookInput>) {
   if (!title || typeof title !== 'string' || !title.trim()) {
     throw new Error('Title is required');
   }
-  const cleanRating = (rating != null && rating > 0) ? rating : null;
+  const cleanRating = rating != null && rating > 0 ? rating : null;
   if (cleanRating != null && (cleanRating < 0.5 || cleanRating > 5)) {
     throw new Error('Rating must be between 0.5 and 5');
   }

@@ -30,9 +30,9 @@ import {
   STATUSES,
   type UnitType,
 } from '@/lib/types';
+import { getLocalDateString } from '@/lib/utils';
 import { RatingSelect } from './RatingInput';
 import ReadingLog from './ReadingLog';
-import { getLocalDateString } from '@/lib/utils';
 
 const UNIT_OPTIONS: { label: string; value: UnitType }[] = [
   { label: 'Pages', value: 'pages' },
@@ -632,9 +632,7 @@ export default function BookForm({
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
-                            onClick={() =>
-                              set('date_started', getLocalDateString())
-                            }
+                            onClick={() => set('date_started', getLocalDateString())}
                             className="font-medium text-[10px] text-accent-color hover:underline"
                           >
                             Today
@@ -667,9 +665,7 @@ export default function BookForm({
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
-                            onClick={() =>
-                              set('date_finished', getLocalDateString())
-                            }
+                            onClick={() => set('date_finished', getLocalDateString())}
                             className="font-medium text-[10px] text-accent-color hover:underline"
                           >
                             Today

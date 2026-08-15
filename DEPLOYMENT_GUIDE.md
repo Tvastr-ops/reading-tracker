@@ -101,7 +101,7 @@ openssl rand -base64 32
 and copy the output.
 
 Either way, save this random string somewhere temporary — you'll paste it
-into Vercel in the next step, labeled `SESSION_SECRET`. *(Note: `SESSION_SECRET` must be at least 16 characters long or the app server will throw an error at startup).*
+into Vercel in the next step, labeled `SESSION_SECRET`. *(Note: `SESSION_SECRET` must be at least 32 characters long or the app server will throw an error at startup).*
 
 Also now is a good time to **pick your app password** — the password you'll
 type to log into your reading tracker. Make it something only you know
@@ -125,7 +125,7 @@ type to log into your reading tracker. Make it something only you know
    | `SUPABASE_URL` | the Project URL you copied in Part 2 |
    | `SUPABASE_SERVICE_ROLE_KEY` | the `service_role` key you copied in Part 2 |
    | `APP_PASSWORD` | the login password you picked in Part 4 |
-   | `SESSION_SECRET` | the random string (16+ chars) you generated in Part 4 |
+   | `SESSION_SECRET` | the random string (32+ chars) you generated in Part 4 |
 
 6. Double-check there are no extra spaces before/after any pasted value.
 7. Click **Deploy**.
@@ -151,6 +151,32 @@ Bookmark your Vercel URL or install it to your home screen — that's your perma
 
 ---
 
+## Part 6: Setting up the Mobile & Desktop Client App
+
+The Flutter client app (`apps/client`) runs on **Android, iOS, Web, Windows, and Linux** and supports 3 sync modes:
+
+### Option A: Direct Supabase Cloud Sync (Serverless / No Web App Required)
+1. In your Supabase Dashboard, open **SQL Editor** → **New Query**.
+2. Copy and paste the contents of `supabase/migration_v8_rls.sql` and click **Run**.
+3. In the client app, go to **Settings (⚙️) → Remote Sync**:
+   - Set **Backend Type** to `Supabase`.
+   - Enter your **Project URL** (e.g. `https://your-project.supabase.co`).
+   - Enter your public **anon key**.
+   - Tap **Save & Reconnect** and **Sync Now**.
+
+### Option B: Unified Web App REST API Sync
+1. In the client app, go to **Settings (⚙️) → Remote Sync**:
+   - Set **Backend Type** to `Self-Hosted REST`.
+   - Enter your deployed web app URL (e.g. `https://reading-tracker-yourname.vercel.app`).
+   - Enter your **App Password** as the API key.
+   - Tap **Save & Reconnect** and **Sync Now**.
+
+### Option C: Offline-Only Mode
+- In **Settings → Preferences**, toggle **Offline-Only Mode** to `ON`.
+- The client app runs 100% locally on device SQLite storage with zero internet connection required.
+
+---
+
 ## Upgrading an Existing Deployment
 
 If you deployed an earlier version of Reading Tracker, run the migration scripts in your Supabase SQL Editor:
@@ -158,6 +184,7 @@ If you deployed an earlier version of Reading Tracker, run the migration scripts
 1. Open **Supabase Dashboard** → **SQL Editor** → **New Query**.
 2. If upgrading from **v1**: Open `supabase/migration_v2.sql`, copy all text, paste into Supabase, and click **Run**. Next, open `supabase/migration_v3.sql`, copy all text, paste into Supabase, and click **Run**.
 3. If upgrading from **v2**: Open `supabase/migration_v3.sql`, copy all text, paste into Supabase, and click **Run**.
+4. To enable direct mobile client Supabase sync: Open `supabase/migration_v8_rls.sql`, copy all text, paste into Supabase, and click **Run**.
 
 ---
 

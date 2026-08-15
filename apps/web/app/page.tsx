@@ -65,7 +65,7 @@ const _SORT_PRESETS: { label: string; field: SortField; dir: SortDir }[] = [
 export default function HomePage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [_error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [ratingFilter, setRatingFilter] = useState<number | 'All' | 'Unrated'>('All');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
@@ -284,7 +284,11 @@ export default function HomePage() {
     }
   }
 
-  async function handleUpdateDates(book: Book, date_started: string | null, date_finished: string | null) {
+  async function _handleUpdateDates(
+    book: Book,
+    date_started: string | null,
+    date_finished: string | null,
+  ) {
     const patchData = { date_started, date_finished };
     setBooks((prev) => prev.map((x) => (x.id === book.id ? { ...x, ...patchData } : x)));
     if (inspectedBook?.id === book.id) {
@@ -303,7 +307,7 @@ export default function HomePage() {
     }
   }
 
-  async function handleUpdateProgress(book: Book, progress: number) {
+  async function _handleUpdateProgress(book: Book, progress: number) {
     const patchData = { progress };
     setBooks((prev) => prev.map((x) => (x.id === book.id ? { ...x, ...patchData } : x)));
     if (inspectedBook?.id === book.id) {
@@ -320,7 +324,7 @@ export default function HomePage() {
     }
   }
 
-  async function handleUpdateRating(book: Book, rating: number | null) {
+  async function _handleUpdateRating(book: Book, rating: number | null) {
     const patchData = { rating };
     setBooks((prev) => prev.map((x) => (x.id === book.id ? { ...x, ...patchData } : x)));
     if (inspectedBook?.id === book.id) {
@@ -342,9 +346,7 @@ export default function HomePage() {
   async function handleSaveInspectorBook(draft: Book) {
     const originalBook = books.find((b) => b.id === draft.id);
     const progressChanged =
-      originalBook &&
-      draft.progress !== originalBook.progress &&
-      draft.progress != null;
+      originalBook && draft.progress !== originalBook.progress && draft.progress != null;
 
     const patchData = {
       status: draft.status,
@@ -402,7 +404,9 @@ export default function HomePage() {
       toast.error('Failed to update favorite');
       load(true);
     } else {
-      toast.success(newVal ? `Added "${b.title}" to Favorites ❤️` : `Removed "${b.title}" from Favorites`);
+      toast.success(
+        newVal ? `Added "${b.title}" to Favorites ❤️` : `Removed "${b.title}" from Favorites`,
+      );
     }
   }
 
@@ -605,7 +609,8 @@ export default function HomePage() {
     });
   }, [books, showFavoritesOnly, statusFilter, ratingFilter, deferredSearch, sortField, sortDir]);
 
-  const filtersActive = statusFilter !== 'All' || ratingFilter !== 'All' || showFavoritesOnly || search.trim() !== '';
+  const filtersActive =
+    statusFilter !== 'All' || ratingFilter !== 'All' || showFavoritesOnly || search.trim() !== '';
 
   function clearFilters() {
     setStatusFilter('All');
@@ -668,7 +673,8 @@ export default function HomePage() {
       }
 
       if ((e.key === 'e' || e.key === 'E') && !showTrash && editing === undefined) {
-        const target = currentInspected || (focusedIndex >= 0 ? currentFiltered[focusedIndex] : null);
+        const target =
+          currentInspected || (focusedIndex >= 0 ? currentFiltered[focusedIndex] : null);
         if (target) {
           e.preventDefault();
           setEditing(target);
@@ -704,7 +710,6 @@ export default function HomePage() {
         </div>
 
         <div className="flex items-center justify-between gap-2 border-border/60 border-t pt-3 sm:w-auto sm:border-0 sm:pt-0">
-
           <Button variant="outline" size="icon" onClick={toggleTheme} title="Toggle dark mode">
             {theme === 'dark' ? (
               <Sun className="h-4 w-4 text-amber-400" />
@@ -1136,8 +1141,12 @@ export default function HomePage() {
                   onClick={() => setShowFavoritesOnly((v) => !v)}
                   title={showFavoritesOnly ? 'Show All' : 'Show Favorites Only'}
                 >
-                  <Heart className={`h-3.5 w-3.5 sm:mr-1 ${showFavoritesOnly ? 'fill-white' : ''}`} />
-                  <span className="hidden sm:inline">{showFavoritesOnly ? 'Fav ✓' : 'Favorites'}</span>
+                  <Heart
+                    className={`h-3.5 w-3.5 sm:mr-1 ${showFavoritesOnly ? 'fill-white' : ''}`}
+                  />
+                  <span className="hidden sm:inline">
+                    {showFavoritesOnly ? 'Fav ✓' : 'Favorites'}
+                  </span>
                 </Button>
               )}
 

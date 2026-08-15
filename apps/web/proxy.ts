@@ -41,14 +41,16 @@ export async function proxy(req: NextRequest) {
 
   if (isPublic) return NextResponse.next();
 
+  if (pathname.startsWith('/api')) {
+    // API route handlers independently authenticate via withAuth() in lib/auth.ts
+    // which supports both session cookies and API key headers.
+    return NextResponse.next();
+  }
+
   const token = req.cookies.get('session')?.value;
   const valid = await isValidSession(token);
 
   if (!valid) {
-    if (pathname.startsWith('/api')) {
-      // Fast-path only. The route handler itself enforces this too.
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
     const loginUrl = new URL('/login', req.url);
     return NextResponse.redirect(loginUrl);
   }
