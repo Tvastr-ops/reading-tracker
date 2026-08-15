@@ -69,10 +69,25 @@ export const SESSION_MAX_AGE = SESSION_TTL_SECONDS;
 // session independently. This is that independent check.
 export async function requireAuthenticatedRequest(req: {
   cookies: { get(name: string): { value: string } | undefined };
+  headers?: { get(name: string): string | null };
 }): Promise<boolean> {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
-  if (!token) return false;
-  return verifySessionToken(token);
+  if (token && (await verifySessionToken(token))) {
+    return true;
+  }
+
+  if (req.headers) {
+    const apiKey =
+      req.headers.get('x-api-key') ||
+      req.headers.get('x-app-password') ||
+      req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+
+    if (apiKey && checkPassword(apiKey)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 // Wraps a route handler with the same auth check that used to be

@@ -1,21 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import {
-  BookOpen,
-  Calendar,
-  CheckCircle2,
-  Clock,
-  Download,
-  Filter,
-  Grid,
-  Moon,
-  Plus,
-  Search,
-  Sun,
-  Table as TableIcon,
-  X,
-} from 'lucide-react';
+import { BookOpen, Download, Grid, Moon, Plus, Search, Table as TableIcon, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { Book } from '@/lib/types';
 
@@ -27,7 +13,7 @@ interface CommandPaletteProps {
   onAddEntry: () => void;
   onToggleView: (view: 'grid' | 'table') => void;
   currentView: 'grid' | 'table';
-  onFilterStatus: (status: string | null) => void;
+  onFilterStatus?: (status: string | null) => void;
   onToggleTheme: () => void;
   onExport: () => void;
 }
@@ -40,7 +26,6 @@ export default function CommandPalette({
   onAddEntry,
   onToggleView,
   currentView,
-  onFilterStatus,
   onToggleTheme,
   onExport,
 }: CommandPaletteProps) {
@@ -62,8 +47,8 @@ export default function CommandPalette({
     return books.filter(
       (b) =>
         b.title.toLowerCase().includes(q) ||
-        (b.author && b.author.toLowerCase().includes(q)) ||
-        (b.genre_tags && b.genre_tags.toLowerCase().includes(q)),
+        b.author?.toLowerCase().includes(q) ||
+        b.genre_tags?.toLowerCase().includes(q),
     );
   }, [books, query]);
 
@@ -245,11 +230,7 @@ export default function CommandPalette({
                         {/* Cover Thumbnail */}
                         <div className="h-9 w-6 shrink-0 rounded overflow-hidden border border-border bg-surface flex items-center justify-center">
                           {b.cover_url ? (
-                            <img
-                              src={b.cover_url}
-                              alt=""
-                              className="h-full w-full object-cover"
-                            />
+                            <img src={b.cover_url} alt="" className="h-full w-full object-cover" />
                           ) : (
                             <BookOpen className="h-3.5 w-3.5 text-text-muted opacity-50" />
                           )}

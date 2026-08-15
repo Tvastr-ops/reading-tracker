@@ -589,12 +589,16 @@ function BookTable({
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                aria-label={b.is_favorite ? `Unfavorite ${b.title}` : `Favorite ${b.title}`}
+                                aria-label={
+                                  b.is_favorite ? `Unfavorite ${b.title}` : `Favorite ${b.title}`
+                                }
                                 className="h-8 w-8 rounded-lg text-rose-400 hover:bg-rose-500/10"
                                 onClick={() => onToggleFavorite(b)}
                                 title={b.is_favorite ? 'Unfavorite' : 'Favorite'}
                               >
-                                <Heart className={`h-4 w-4 ${b.is_favorite ? 'fill-rose-500 text-rose-500' : ''}`} />
+                                <Heart
+                                  className={`h-4 w-4 ${b.is_favorite ? 'fill-rose-500 text-rose-500' : ''}`}
+                                />
                               </Button>
                             )}
                             <Button

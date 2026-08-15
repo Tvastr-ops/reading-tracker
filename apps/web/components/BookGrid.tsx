@@ -236,7 +236,9 @@ function BookGrid({
 
                             {onToggleFavorite && (
                               <DropdownMenuItem onClick={() => onToggleFavorite(b)}>
-                                <Heart className={`mr-2 h-4 w-4 ${b.is_favorite ? 'fill-rose-500 text-rose-500' : 'text-rose-400'}`} />
+                                <Heart
+                                  className={`mr-2 h-4 w-4 ${b.is_favorite ? 'fill-rose-500 text-rose-500' : 'text-rose-400'}`}
+                                />
                                 <span>{b.is_favorite ? 'Unfavorite' : 'Favorite'}</span>
                               </DropdownMenuItem>
                             )}

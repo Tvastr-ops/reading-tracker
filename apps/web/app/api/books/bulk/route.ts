@@ -34,9 +34,10 @@ export const POST = withAuth(async (req: NextRequest) => {
     if (!VALID_STATUSES.includes(status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
-    const today = (typeof body?.localDate === 'string' && body.localDate)
-      ? body.localDate
-      : new Date().toISOString().split('T')[0];
+    const today =
+      typeof body?.localDate === 'string' && body.localDate
+        ? body.localDate
+        : new Date().toISOString().split('T')[0];
     const updateData: Record<string, unknown> = { status };
     if (status === 'Completed') {
       updateData.date_finished = today;
