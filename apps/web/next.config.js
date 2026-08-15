@@ -9,6 +9,14 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'covers.openlibrary.org',
       },
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+      {
+        protocol: 'http',
+        hostname: '**',
+      },
     ],
   },
 };
