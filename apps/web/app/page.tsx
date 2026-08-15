@@ -344,6 +344,7 @@ export default function HomePage() {
       status: draft.status,
       rating: draft.rating,
       progress: draft.progress,
+      parent_progress: draft.parent_progress,
       date_started: draft.date_started,
       date_finished: draft.date_finished,
       notes: draft.notes,
@@ -1132,9 +1133,7 @@ export default function HomePage() {
                 >
                   <Heart
                     className={`h-3.5 w-3.5 sm:mr-1 ${
-                      showFavoritesOnly
-                        ? 'fill-amber-950 text-amber-950'
-                        : 'text-amber-500'
+                      showFavoritesOnly ? 'fill-amber-950 text-amber-950' : 'text-amber-500'
                     }`}
                   />
                   <span className="hidden sm:inline">

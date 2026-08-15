@@ -217,7 +217,6 @@ function BookTable({
                       className="h-[84px] w-14 rounded-xl object-cover object-top transition-transform group-hover:scale-105"
                       fallbackClassName="flex h-[84px] w-14 flex-col items-center justify-center rounded-xl border border-border bg-surface text-text-muted text-[9px] p-1 text-center font-medium leading-tight"
                     />
-
                   </div>
 
                   {/* Main Details */}
