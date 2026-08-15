@@ -112,7 +112,7 @@ test('Light Novel (Volumes + Volume -> Chapter) - Active Reading State', () => {
   assert.strictEqual(calculateProgressPercentage(book), 18);
 });
 
-test('Light Novel (Chapters + Volume -> Chapter) - Multi-Tier Progress', () => {
+test('Light Novel (Chapters + Volume -> Chapter) - Multi-Tier Progress (Continuous)', () => {
   const book = createBook({
     type: 'Light Novel',
     unit_type: 'chapters',
@@ -123,8 +123,23 @@ test('Light Novel (Chapters + Volume -> Chapter) - Multi-Tier Progress', () => {
     total_units: 80,
     status: 'Reading',
   });
-  assert.strictEqual(formatProgressText(book), 'Vol. 3 / 5 • Ch. 18 / 80');
+  assert.strictEqual(formatProgressText(book), 'Vol. 3 • Ch. 18 / 80');
   assert.strictEqual(calculateProgressPercentage(book), 23);
+});
+
+test('Light Novel (Chapters + Volume -> Chapter) - Multi-Tier Progress (Per-Volume Reset)', () => {
+  const book = createBook({
+    type: 'Light Novel',
+    unit_type: 'chapters',
+    progress_structure: 'volume_chapter',
+    parent_progress: 3,
+    parent_total: 12,
+    progress: 2,
+    total_units: null,
+    status: 'Reading',
+  });
+  assert.strictEqual(formatProgressText(book), 'Vol. 3 / 12 • Ch. 2');
+  assert.strictEqual(calculateProgressPercentage(book), 25);
 });
 
 test('Web Novel (Pages + Volume -> Chapter) - Multi-Tier Progress', () => {
@@ -138,7 +153,7 @@ test('Web Novel (Pages + Volume -> Chapter) - Multi-Tier Progress', () => {
     total_units: 1200,
     status: 'Reading',
   });
-  assert.strictEqual(formatProgressText(book), 'Vol. 3 / 5 • 450 pages / 1200');
+  assert.strictEqual(formatProgressText(book), 'Vol. 3 • 450 pages / 1200');
   assert.strictEqual(calculateProgressPercentage(book), 38);
 });
 
@@ -193,7 +208,7 @@ test('Part -> Chapter with Volumes Unit Type', () => {
     total_units: 10,
     status: 'Reading',
   });
-  assert.strictEqual(formatProgressText(book), 'Part II / IV • Vol. 3 / 10');
+  assert.strictEqual(formatProgressText(book), 'Part II • Vol. 3 / 10');
   assert.strictEqual(calculateProgressPercentage(book), 30);
 });
 
