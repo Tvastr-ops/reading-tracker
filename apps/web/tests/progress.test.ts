@@ -4,7 +4,9 @@ import {
   calculateProgressPercentage,
   formatProgressText,
   getDefaultUnitType,
+  getStatusAwareProgressText,
   isCaughtUp,
+  normalizeStatusTransition,
 } from '../lib/progress';
 import type { Book } from '../lib/types';
 
@@ -193,4 +195,65 @@ test('Part -> Chapter with Volumes Unit Type', () => {
   });
   assert.strictEqual(formatProgressText(book), 'Part II / IV • Vol. 3 / 10');
   assert.strictEqual(calculateProgressPercentage(book), 30);
+});
+
+test('normalizeStatusTransition handles Reading transition with date_started', () => {
+  const book = createBook({ status: 'Plan to Read', date_started: null });
+  const patch = normalizeStatusTransition(book, 'Reading', '2026-08-15');
+  assert.strictEqual(patch.status, 'Reading');
+  assert.strictEqual(patch.date_started, '2026-08-15');
+});
+
+test('normalizeStatusTransition handles Completed transition auto-filling progress and clearing ongoing', () => {
+  const fixedBook = createBook({
+    status: 'Reading',
+    total_units: 155,
+    progress: 37,
+    is_ongoing: true,
+    progress_structure: 'volume_chapter',
+    parent_total: 18,
+    parent_progress: 5,
+  });
+  const patch = normalizeStatusTransition(fixedBook, 'Completed', '2026-08-15');
+  assert.strictEqual(patch.status, 'Completed');
+  assert.strictEqual(patch.is_ongoing, false);
+  assert.strictEqual(patch.progress, 155);
+  assert.strictEqual(patch.parent_progress, 18);
+  assert.strictEqual(patch.date_finished, '2026-08-15');
+  assert.strictEqual(patch.date_started, '2026-08-15');
+});
+
+test('normalizeStatusTransition handles Completed for ongoing work with latest_units', () => {
+  const ongoingBook = createBook({
+    status: 'Reading',
+    total_units: null,
+    latest_units: 201,
+    progress: 50,
+    is_ongoing: true,
+  });
+  const patch = normalizeStatusTransition(ongoingBook, 'Completed', '2026-08-15');
+  assert.strictEqual(patch.status, 'Completed');
+  assert.strictEqual(patch.is_ongoing, false);
+  assert.strictEqual(patch.total_units, 201);
+  assert.strictEqual(patch.progress, 201);
+});
+
+test('getStatusAwareProgressText presents clean summary for planned works', () => {
+  const plannedSingle = createBook({
+    status: 'Plan to Read',
+    progress: 0,
+    total_units: 350,
+    unit_type: 'pages',
+  });
+  assert.strictEqual(getStatusAwareProgressText(plannedSingle), '350 pages');
+
+  const plannedHierarchical = createBook({
+    status: 'Plan to Read',
+    progress: 0,
+    total_units: 155,
+    unit_type: 'chapters',
+    progress_structure: 'volume_chapter',
+    parent_total: 18,
+  });
+  assert.strictEqual(getStatusAwareProgressText(plannedHierarchical), '155 chapters • 18 vols');
 });

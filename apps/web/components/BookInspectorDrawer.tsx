@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { calculateProgressPercentage, formatProgressText } from '@/lib/progress';
+import { calculateProgressPercentage, getStatusAwareProgressText } from '@/lib/progress';
 import { getStatusConfig } from '@/lib/status';
 import { type Book, STATUSES } from '@/lib/types';
 import { calculateReadingDuration, getLocalDateString } from '@/lib/utils';
@@ -65,7 +65,7 @@ export default function BookInspectorDrawer({
     draft.date_finished !== book.date_finished;
 
   const pct = calculateProgressPercentage(draft);
-  const formattedProgress = formatProgressText(draft);
+  const formattedProgress = getStatusAwareProgressText(draft);
   const statusCfg = getStatusConfig(draft.status);
 
   // Date helper chips

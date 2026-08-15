@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { calculateProgressPercentage, formatProgressText } from '@/lib/progress';
+import { calculateProgressPercentage, getStatusAwareProgressText } from '@/lib/progress';
 import { getStatusConfig } from '@/lib/status';
 import { type Book, type SortDir, type SortField, STATUSES } from '@/lib/types';
 import { calculateReadingDuration, formatShortDate } from '@/lib/utils';
@@ -166,7 +166,7 @@ function BookTable({
         <div className="block space-y-3 sm:hidden">
           {books.map((b, idx) => {
             const pct = calculateProgressPercentage(b);
-            const formattedProgress = formatProgressText(b);
+            const formattedProgress = getStatusAwareProgressText(b);
             const statusCfg = getStatusConfig(b.status);
             const isSelected = selected.has(b.id);
 
@@ -329,7 +329,7 @@ function BookTable({
             <tbody className="divide-y divide-border/50">
               {books.map((b, idx) => {
                 const pct = calculateProgressPercentage(b);
-                const formattedProgress = formatProgressText(b);
+                const formattedProgress = getStatusAwareProgressText(b);
                 const nextStatus = STATUSES[(STATUSES.indexOf(b.status) + 1) % STATUSES.length];
                 const statusCfg = getStatusConfig(b.status);
                 const isFocused = b.id === focusedId;

@@ -12,7 +12,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
-import { calculateProgressPercentage, formatProgressText } from '@/lib/progress';
+
+import { calculateProgressPercentage, getStatusAwareProgressText } from '@/lib/progress';
 import { getStatusConfig } from '@/lib/status';
 import type { Book } from '@/lib/types';
 import { calculateReadingDuration, formatShortDate } from '@/lib/utils';
@@ -110,7 +111,7 @@ function BookGrid({
       <AnimatePresence mode="popLayout">
         {books.map((b, idx) => {
           const pct = calculateProgressPercentage(b);
-          const formattedProgress = formatProgressText(b);
+          const formattedProgress = getStatusAwareProgressText(b);
           const statusCfg = getStatusConfig(b.status);
           const isSelected = selected.has(b.id);
           const isFocused = focusedId === b.id;

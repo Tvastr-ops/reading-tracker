@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase';
+import { validateProgressionFields } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -157,17 +158,24 @@ export const POST = withAuth(async (req: NextRequest) => {
 
     const rawUnit = get('unit_type');
     const rawStruct = get('progress_structure');
+    const progress_structure =
+      rawStruct && VALID_STRUCTURES.includes(rawStruct) ? rawStruct : 'single';
 
-    const isFavStr = get('is_favorite')?.toLowerCase();
-    const is_favorite = isFavStr === 'true' || isFavStr === '1';
+    let parent_progress = toNullableNumber(get('parent_progress'));
+    let parent_total = toNullableNumber(get('parent_total'));
 
-    toInsert.push({
+    if (progress_structure === 'single') {
+      parent_progress = null;
+      parent_total = null;
+    }
+
+    const rowObj = {
       title,
       type: get('type') || 'Novel',
       unit_type: rawUnit && VALID_UNIT_TYPES.includes(rawUnit) ? rawUnit : 'pages',
-      progress_structure: rawStruct && VALID_STRUCTURES.includes(rawStruct) ? rawStruct : 'single',
-      parent_progress: toNullableNumber(get('parent_progress')),
-      parent_total: toNullableNumber(get('parent_total')),
+      progress_structure,
+      parent_progress,
+      parent_total,
       latest_units: toNullableNumber(get('latest_units')),
       is_ongoing,
       author: get('author') || null,
@@ -181,13 +189,23 @@ export const POST = withAuth(async (req: NextRequest) => {
       date_started: get('date_started') || null,
       date_finished: get('date_finished') || null,
       notes: get('notes') || null,
-      is_favorite,
-    });
+      is_favorite: Boolean(
+        get('is_favorite')?.toLowerCase() === 'true' || get('is_favorite') === '1',
+      ),
+    };
+
+    const progError = validateProgressionFields(rowObj as any);
+    if (progError) {
+      skipped.push(r + 1);
+      continue;
+    }
+
+    toInsert.push(rowObj);
   }
 
   if (toInsert.length === 0) {
     return NextResponse.json(
-      { error: 'No valid rows found (each row needs a title)' },
+      { error: 'No valid rows found (each row needs a valid title and progression)' },
       { status: 400 },
     );
   }
