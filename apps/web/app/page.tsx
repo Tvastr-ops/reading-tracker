@@ -207,6 +207,10 @@ export default function HomePage() {
     const result = await res.json();
     if (!res.ok) throw new Error(result.error || 'Save failed');
     setEditing(undefined);
+    if (result.book) {
+      setBooks((prev) => prev.map((x) => (x.id === result.book.id ? result.book : x)));
+      setInspectedBook((prev) => (prev?.id === result.book.id ? result.book : prev));
+    }
     toast.success(targetId ? `Updated "${data.title}"` : `Added "${data.title}" to library`);
     load();
   }
@@ -363,9 +367,7 @@ export default function HomePage() {
       const { book: updatedBook } = await res.json();
       if (updatedBook) {
         setBooks((prev) => prev.map((x) => (x.id === draft.id ? updatedBook : x)));
-        if (inspectedBook?.id === draft.id) {
-          setInspectedBook(updatedBook);
-        }
+        setInspectedBook((prev) => (prev?.id === draft.id ? updatedBook : prev));
       }
       toast.success(`Saved changes for "${draft.title}"`);
     }
