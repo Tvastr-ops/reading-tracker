@@ -429,12 +429,19 @@ export default function BookInspectorDrawer({
             <div className="space-y-1.5">
               <span className="text-xs font-semibold text-text-muted">Genre & Tags</span>
               <div className="flex flex-wrap gap-1.5">
-                {draft.genre_tags.split(',').map((tag) => (
+                {Array.from(
+                  new Set(
+                    draft.genre_tags
+                      .split(',')
+                      .map((tag) => tag.trim())
+                      .filter(Boolean),
+                  ),
+                ).map((tag, idx) => (
                   <span
-                    key={tag}
+                    key={`${tag}-${idx}`}
                     className="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-border bg-surface text-text-muted"
                   >
-                    {tag.trim()}
+                    {tag}
                   </span>
                 ))}
               </div>
