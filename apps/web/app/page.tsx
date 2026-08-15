@@ -329,37 +329,26 @@ export default function HomePage() {
 
   async function handleSaveInspectorBook(draft: Book) {
     const originalBook = books.find((b) => b.id === draft.id);
-    const progressChanged =
-      originalBook && draft.progress !== originalBook.progress && draft.progress != null;
-
-    // 1. If progress changed, record it authoritatively via POST /log
-    if (progressChanged && originalBook && draft.progress != null) {
+    let note: string | undefined;
+    if (originalBook && draft.progress !== originalBook.progress && draft.progress != null) {
       const delta = (draft.progress ?? 0) - (originalBook.progress ?? 0);
       const sign = delta >= 0 ? '+' : '';
-      await fetch(`/api/books/${draft.id}/log`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to_progress: draft.progress,
-          note: `Inspector update (${sign}${delta} ${draft.unit_type || 'units'})`,
-        }),
-      });
+      note = `Inspector update (${sign}${delta} ${draft.unit_type || 'units'})`;
     }
 
-    // 2. PATCH metadata (excluding progress to avoid race conditions and double-writes)
-    const patchData: Partial<Book> = {
+    const patchData: Partial<Book> & { note?: string } = {
       status: draft.status,
       rating: draft.rating,
+      progress: draft.progress,
       date_started: draft.date_started,
       date_finished: draft.date_finished,
       notes: draft.notes,
+      note,
       updated_at: new Date().toISOString(),
     };
 
-    setBooks((prev) =>
-      prev.map((x) => (x.id === draft.id ? { ...x, ...patchData, progress: draft.progress } : x)),
-    );
-    setInspectedBook((prev) => (prev ? { ...prev, ...patchData, progress: draft.progress } : null));
+    setBooks((prev) => prev.map((x) => (x.id === draft.id ? { ...x, ...patchData } : x)));
+    setInspectedBook((prev) => (prev ? { ...prev, ...patchData } : null));
 
     const res = await fetch(`/api/books/${draft.id}`, {
       method: 'PATCH',
@@ -371,6 +360,13 @@ export default function HomePage() {
       toast.error('Failed to save changes');
       load(true);
     } else {
+      const { book: updatedBook } = await res.json();
+      if (updatedBook) {
+        setBooks((prev) => prev.map((x) => (x.id === draft.id ? updatedBook : x)));
+        if (inspectedBook?.id === draft.id) {
+          setInspectedBook(updatedBook);
+        }
+      }
       toast.success(`Saved changes for "${draft.title}"`);
     }
   }
