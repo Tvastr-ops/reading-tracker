@@ -203,3 +203,71 @@ export function formatProgressText(book: Book): string {
 
   return baseText;
 }
+
+/**
+ * Pure helper to compute status-transition field updates.
+ * Guarantees consistent handling of dates, ongoing status, and progress completion across all paths.
+ */
+export function normalizeStatusTransition(
+  book: Partial<Book>,
+  nextStatus: string,
+  today: string,
+): Partial<Book> {
+  const patch: Partial<Book> = { status: nextStatus as any };
+
+  if (nextStatus === 'Reading') {
+    if (!book.date_started) {
+      patch.date_started = today;
+    }
+  } else if (nextStatus === 'Completed') {
+    if (!book.date_finished) patch.date_finished = today;
+    if (!book.date_started) patch.date_started = today;
+    patch.is_ongoing = false;
+
+    if (book.total_units != null && book.total_units > 0) {
+      patch.progress = book.total_units;
+    } else if (book.latest_units != null && book.latest_units > 0) {
+      patch.total_units = book.latest_units;
+      patch.progress = book.latest_units;
+    }
+
+    if (
+      book.progress_structure &&
+      book.progress_structure !== 'single' &&
+      book.parent_total != null
+    ) {
+      patch.parent_progress = book.parent_total;
+    }
+  }
+
+  return patch;
+}
+
+/**
+ * Returns formatted progress text tailored to the book's lifecycle status.
+ * E.g., for Plan to Read with 0 progress, displays total scope rather than "0 / total".
+ */
+export function getStatusAwareProgressText(book: Book): string {
+  const status = book.status;
+  const current = book.progress ?? 0;
+  const total = book.total_units;
+  const unit = book.unit_type || 'pages';
+
+  if (status === 'Plan to Read' && current === 0) {
+    if (total != null && total > 0) {
+      if (book.progress_structure === 'volume_chapter' && book.parent_total != null) {
+        return `${total} ${unit} • ${book.parent_total} vols`;
+      }
+      if (unit === 'words') {
+        return `${total.toLocaleString('en-US')} words`;
+      }
+      return `${total} ${unit}`;
+    }
+    if (book.is_ongoing && book.latest_units != null && book.latest_units > 0) {
+      return `${book.latest_units} ${unit} (Ongoing)`;
+    }
+    return 'Not started';
+  }
+
+  return formatProgressText(book);
+}

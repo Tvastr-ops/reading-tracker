@@ -50,6 +50,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { normalizeStatusTransition } from '@/lib/progress';
 import { type Book, type BookInput, type SortDir, type SortField, STATUSES } from '@/lib/types';
 
 const _SORT_PRESETS: { label: string; field: SortField; dir: SortDir }[] = [
@@ -248,24 +249,7 @@ export default function HomePage() {
   async function quickStatusChange(b: Book) {
     const next = STATUSES[(STATUSES.indexOf(b.status) + 1) % STATUSES.length];
     const today = getLocalDateString();
-    const patchData: Partial<Book> = { status: next };
-
-    if (next === 'Reading' && !b.date_started) {
-      patchData.date_started = today;
-    } else if (next === 'Completed') {
-      if (!b.date_finished) patchData.date_finished = today;
-      if (!b.date_started) patchData.date_started = today;
-      patchData.is_ongoing = false;
-      if (b.total_units != null) {
-        patchData.progress = b.total_units;
-      } else if (b.latest_units != null) {
-        patchData.total_units = b.latest_units;
-        patchData.progress = b.latest_units;
-      }
-      if (b.progress_structure && b.progress_structure !== 'single' && b.parent_total != null) {
-        patchData.parent_progress = b.parent_total;
-      }
-    }
+    const patchData: Partial<Book> = normalizeStatusTransition(b, next, today);
 
     setBooks((prev) => prev.map((x) => (x.id === b.id ? { ...x, ...patchData } : x)));
     const res = await fetch(`/api/books/${b.id}`, {
@@ -313,10 +297,10 @@ export default function HomePage() {
     if (inspectedBook?.id === book.id) {
       setInspectedBook((prev) => (prev ? { ...prev, ...patchData } : null));
     }
-    const res = await fetch(`/api/books/${book.id}`, {
-      method: 'PATCH',
+    const res = await fetch(`/api/books/${book.id}/log`, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(patchData),
+      body: JSON.stringify({ to_progress: progress, note: 'Quick progress update' }),
     });
     if (!res.ok) {
       toast.error('Failed to update progress');
@@ -348,31 +332,34 @@ export default function HomePage() {
     const progressChanged =
       originalBook && draft.progress !== originalBook.progress && draft.progress != null;
 
-    const patchData = {
-      status: draft.status,
-      rating: draft.rating,
-      progress: draft.progress,
-      date_started: draft.date_started,
-      date_finished: draft.date_finished,
-      updated_at: new Date().toISOString(),
-    };
-
-    setBooks((prev) => prev.map((x) => (x.id === draft.id ? { ...x, ...patchData } : x)));
-    setInspectedBook((prev) => (prev ? { ...prev, ...patchData } : null));
-
-    if (progressChanged && originalBook) {
+    // 1. If progress changed, record it authoritatively via POST /log
+    if (progressChanged && originalBook && draft.progress != null) {
       const delta = (draft.progress ?? 0) - (originalBook.progress ?? 0);
       const sign = delta >= 0 ? '+' : '';
       await fetch(`/api/books/${draft.id}/log`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          from_progress: originalBook.progress ?? 0,
           to_progress: draft.progress,
           note: `Inspector update (${sign}${delta} ${draft.unit_type || 'units'})`,
         }),
       });
     }
+
+    // 2. PATCH metadata (excluding progress to avoid race conditions and double-writes)
+    const patchData: Partial<Book> = {
+      status: draft.status,
+      rating: draft.rating,
+      date_started: draft.date_started,
+      date_finished: draft.date_finished,
+      notes: draft.notes,
+      updated_at: new Date().toISOString(),
+    };
+
+    setBooks((prev) =>
+      prev.map((x) => (x.id === draft.id ? { ...x, ...patchData, progress: draft.progress } : x)),
+    );
+    setInspectedBook((prev) => (prev ? { ...prev, ...patchData, progress: draft.progress } : null));
 
     const res = await fetch(`/api/books/${draft.id}`, {
       method: 'PATCH',

@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase';
+import { validateProgressionFields } from '@/lib/validation';
 
-// See app/api/export/route.ts for why this is required.
 export const dynamic = 'force-dynamic';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -30,7 +30,6 @@ const ALLOWED_FIELDS = [
   'is_favorite',
 ];
 
-// Next.js 15+ made dynamic route `params` a Promise (was a plain object in 14).
 type RouteContext = { params: Promise<{ id: string }> };
 
 export const PATCH = withAuth(async (req: NextRequest, { params }: RouteContext) => {
@@ -72,25 +71,44 @@ export const PATCH = withAuth(async (req: NextRequest, { params }: RouteContext)
   }
   if ('rating' in update) {
     const r = update.rating as number | null;
-    if (r != null && (r < 0 || r > 5)) {
-      return NextResponse.json({ error: 'Rating must be between 0 and 5' }, { status: 400 });
+    if (r != null && (r < 0.5 || r > 5)) {
+      return NextResponse.json({ error: 'Rating must be between 0.5 and 5' }, { status: 400 });
     }
-  }
-  if ('progress' in update && (typeof update.progress !== 'number' || update.progress < 0)) {
-    return NextResponse.json({ error: 'Progress must be a non-negative number' }, { status: 400 });
-  }
-  if (
-    'total_units' in update &&
-    update.total_units != null &&
-    (typeof update.total_units !== 'number' || update.total_units < 0)
-  ) {
-    return NextResponse.json(
-      { error: 'Total units must be a non-negative number' },
-      { status: 400 },
-    );
   }
 
   const supabase = supabaseServer();
+
+  // Validate progression invariants if any progression fields are being modified
+  const progressionKeys = [
+    'progress',
+    'total_units',
+    'parent_progress',
+    'parent_total',
+    'latest_units',
+    'is_ongoing',
+    'unit_type',
+    'progress_structure',
+  ];
+  const hasProgressionUpdates = progressionKeys.some((k) => k in update);
+
+  if (hasProgressionUpdates) {
+    const { data: existingBook, error: fetchErr } = await supabase
+      .from('books')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchErr || !existingBook) {
+      return NextResponse.json({ error: 'Book not found' }, { status: 404 });
+    }
+
+    const merged = { ...existingBook, ...update };
+    const progError = validateProgressionFields(merged);
+    if (progError) {
+      return NextResponse.json({ error: progError }, { status: 400 });
+    }
+  }
+
   const { data, error } = await supabase
     .from('books')
     .update(update)

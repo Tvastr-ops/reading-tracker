@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
+import { normalizeStatusTransition } from '@/lib/progress';
 import { supabaseServer } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -9,8 +10,7 @@ const VALID_STATUSES = ['Plan to Read', 'Reading', 'On Hold', 'Completed', 'Drop
 const MAX_IDS = 500;
 
 // A single endpoint for all bulk row-selection actions, rather than looping
-// N individual requests from the client — fewer round trips, and it's one
-// atomic-ish operation server-side instead of N separate ones.
+// N individual requests from the client.
 export const POST = withAuth(async (req: NextRequest) => {
   const body = await req.json().catch(() => null);
   const action = body?.action;
@@ -38,18 +38,29 @@ export const POST = withAuth(async (req: NextRequest) => {
       typeof body?.localDate === 'string' && body.localDate
         ? body.localDate
         : new Date().toISOString().split('T')[0];
-    const updateData: Record<string, unknown> = { status };
-    if (status === 'Completed') {
-      updateData.date_finished = today;
-      updateData.date_started = today;
-      updateData.is_ongoing = false;
-    } else if (status === 'Reading') {
-      updateData.date_started = today;
+
+    const { data: targetBooks, error: fetchErr } = await supabase
+      .from('books')
+      .select('*')
+      .in('id', cleanIds);
+
+    if (fetchErr || !targetBooks) {
+      return NextResponse.json(
+        { error: fetchErr?.message || 'Failed to fetch books' },
+        { status: 500 },
+      );
     }
 
-    const { error } = await supabase.from('books').update(updateData).in('id', cleanIds);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ updated: cleanIds.length });
+    const updates = targetBooks.map((b) => ({
+      ...b,
+      ...normalizeStatusTransition(b, status, today),
+      updated_at: new Date().toISOString(),
+    }));
+
+    const { error: upsertErr } = await supabase.from('books').upsert(updates, { onConflict: 'id' });
+
+    if (upsertErr) return NextResponse.json({ error: upsertErr.message }, { status: 500 });
+    return NextResponse.json({ updated: updates.length });
   }
 
   if (action === 'rating') {

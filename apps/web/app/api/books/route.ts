@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase';
 import type { BookInput } from '@/lib/types';
+import { validateProgressionFields } from '@/lib/validation';
 
 // See app/api/export/route.ts for why this is required.
 export const dynamic = 'force-dynamic';
@@ -13,7 +14,7 @@ export const GET = withAuth(async (req: NextRequest) => {
   let query = supabase
     .from('books')
     .select(
-      'id, title, type, unit_type, progress_structure, parent_progress, parent_total, latest_units, is_ongoing, author, status, rating, progress, total_units, genre_tags, source_link, cover_url, date_started, date_finished, notes, is_favorite, created_at, updated_at',
+      'id, title, type, unit_type, progress_structure, parent_progress, parent_total, latest_units, is_ongoing, author, status, rating, progress, total_units, genre_tags, source_link, cover_url, reading_pace, date_started, date_finished, notes, is_favorite, created_at, updated_at',
     );
   query = showTrash ? query.not('deleted_at', 'is', null) : query.is('deleted_at', null);
   const { data, error } = await query.order('updated_at', { ascending: false });
@@ -63,27 +64,39 @@ function sanitize(input: Partial<BookInput>) {
     throw new Error('Rating must be between 0.5 and 5');
   }
 
+  const cleanProg = progress != null && !Number.isNaN(Number(progress)) ? Number(progress) : 0;
+  const cleanTotal =
+    total_units != null && !Number.isNaN(Number(total_units)) ? Number(total_units) : null;
+  const cleanParentProg =
+    parent_progress != null && !Number.isNaN(Number(parent_progress))
+      ? Number(parent_progress)
+      : null;
+  const cleanParentTot =
+    parent_total != null && !Number.isNaN(Number(parent_total)) ? Number(parent_total) : null;
+  const cleanLatest =
+    latest_units != null && !Number.isNaN(Number(latest_units)) ? Number(latest_units) : null;
+
   return {
     title: title.trim(),
     type: type || 'Novel',
     unit_type: unit_type || 'pages',
     progress_structure: progress_structure || 'single',
-    parent_progress: parent_progress ?? null,
-    parent_total: parent_total ?? null,
-    latest_units: latest_units ?? null,
-    is_ongoing: is_ongoing ?? false,
+    parent_progress: cleanParentProg,
+    parent_total: cleanParentTot,
+    latest_units: cleanLatest,
+    is_ongoing: Boolean(is_ongoing),
     author: author || null,
     status: status || 'Plan to Read',
     rating: cleanRating,
-    progress: progress ?? 0,
-    total_units: total_units ?? null,
+    progress: cleanProg,
+    total_units: cleanTotal,
     genre_tags: genre_tags || null,
     source_link: source_link || null,
     cover_url: cover_url || null,
     date_started: date_started || null,
     date_finished: date_finished || null,
     notes: notes || null,
-    is_favorite: is_favorite ?? false,
+    is_favorite: Boolean(is_favorite),
   };
 }
 
@@ -96,6 +109,11 @@ export const POST = withAuth(async (req: NextRequest) => {
     clean = sanitize(body);
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 400 });
+  }
+
+  const progError = validateProgressionFields(clean as any);
+  if (progError) {
+    return NextResponse.json({ error: progError }, { status: 400 });
   }
 
   const supabase = supabaseServer();

@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
+import { recordProgressChange } from '@/lib/progressMutation';
 import { supabaseServer } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
@@ -22,9 +23,6 @@ export const GET = withAuth(async (_req: NextRequest, { params }: RouteContext) 
   return NextResponse.json({ entries: data });
 });
 
-// Adding a log entry also updates the book's own `progress` field to match
-// the latest entry, so the progress bar elsewhere in the app stays in sync
-// without the user having to update it twice.
 export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) => {
   const { id } = await params;
   if (!UUID_RE.test(id)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
@@ -37,51 +35,33 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
       { status: 400 },
     );
   }
-  const fromProgress = body?.from_progress != null ? Number(body.from_progress) : null;
   const note = typeof body?.note === 'string' ? body.note.slice(0, 500) : null;
 
-  const supabase = supabaseServer();
+  // Execute authoritative atomic domain operation
+  const result = await recordProgressChange({
+    bookId: id,
+    toProgress,
+    createLog: true,
+    note,
+  });
 
-  const { data: entry, error: insertError } = await supabase
-    .from('reading_log')
-    .insert({ book_id: id, from_progress: fromProgress, to_progress: toProgress, note })
-    .select()
-    .single();
-
-  if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
-
-  // Recompute pace from the full log history and store it on the book
-  // itself — this is what lets the main table/grid show pace without an
-  // extra fetch per row (would otherwise be an N+1 query across the list).
-  const { data: allEntries, error: historyError } = await supabase
-    .from('reading_log')
-    .select('to_progress, logged_at')
-    .eq('book_id', id)
-    .order('logged_at', { ascending: true });
-
-  let readingPace: number | null = null;
-  if (!historyError && allEntries && allEntries.length >= 2) {
-    const oldest = allEntries[0];
-    const newest = allEntries[allEntries.length - 1];
-    const deltaProgress = newest.to_progress - oldest.to_progress;
-    const deltaDays = Math.max(
-      1,
-      (new Date(newest.logged_at).getTime() - new Date(oldest.logged_at).getTime()) / 86400000,
+  if (result.error || !result.data) {
+    return NextResponse.json(
+      { error: result.error || 'Failed to record progress' },
+      { status: 500 },
     );
-    const perWeek = (deltaProgress / deltaDays) * 7;
-    if (perWeek > 0) {
-      readingPace = Math.round(perWeek * 10) / 10;
-    } else {
-      readingPace = null;
-    }
   }
 
-  const { error: updateError } = await supabase
-    .from('books')
-    .update({ progress: toProgress, reading_pace: readingPace })
-    .eq('id', id);
+  const supabase = supabaseServer();
+  let entry = null;
+  if (result.data.entryId) {
+    const { data: logEntry } = await supabase
+      .from('reading_log')
+      .select('*')
+      .eq('id', result.data.entryId)
+      .single();
+    entry = logEntry;
+  }
 
-  if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
-
-  return NextResponse.json({ entry }, { status: 201 });
+  return NextResponse.json({ entry, pace: result.data.pace }, { status: 201 });
 });
