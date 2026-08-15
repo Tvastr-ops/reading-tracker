@@ -362,6 +362,11 @@ export default function BookForm({
                       }
                       placeholder={form.is_ongoing ? 'Optional if ongoing' : 'e.g. 500'}
                     />
+                    <p className="mt-1 text-[11px] text-text-muted/80">
+                      {form.progress_structure && form.progress_structure !== 'single'
+                        ? 'Leave blank if units reset per volume/part'
+                        : 'Total units in this work'}
+                    </p>
                   </div>
 
                   {/* Inline Compact Tracking Settings Expander */}

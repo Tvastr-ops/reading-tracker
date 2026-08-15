@@ -94,12 +94,20 @@ export function formatProgressText(book: Book): string {
       }
     } else {
       let volStr = '';
-      if (parentProg != null && parentTot != null) {
-        volStr = `Vol. ${parentProg} / ${parentTot}`;
-      } else if (parentProg != null) {
-        volStr = `Vol. ${parentProg}`;
-      } else if (parentTot != null) {
-        volStr = `Vol. 0 / ${parentTot}`;
+      if (total != null && total > 0) {
+        // Continuous chapters across series: volume is milestone marker ("Vol. 1")
+        if (parentProg != null) {
+          volStr = `Vol. ${parentProg}`;
+        }
+      } else {
+        // Per-volume reset chapters: volume is main series total ("Vol. 3 / 12")
+        if (parentProg != null && parentTot != null) {
+          volStr = `Vol. ${parentProg} / ${parentTot}`;
+        } else if (parentProg != null) {
+          volStr = `Vol. ${parentProg}`;
+        } else if (parentTot != null) {
+          volStr = `Vol. 0 / ${parentTot}`;
+        }
       }
 
       let unitStr = '';
@@ -116,6 +124,10 @@ export function formatProgressText(book: Book): string {
         unitStr = `${current} pages`;
       }
 
+      if (total != null && total > 0) {
+        unitStr += ` / ${total}`;
+      }
+
       if (volStr && (current > 0 || unit === 'chapters')) {
         baseText = `${volStr} • ${unitStr}`;
       } else if (volStr) {
@@ -123,20 +135,24 @@ export function formatProgressText(book: Book): string {
       } else {
         baseText = unitStr;
       }
-
-      if (total != null && total > 0) {
-        baseText += ` / ${total}`;
-      }
     }
   } else if (structure === 'part_chapter') {
     // 2. Part -> Chapter (or Part -> Page/Word/Percent/Unit/Volume)
     let partStr = '';
-    if (parentProg != null && parentTot != null) {
-      partStr = `Part ${toRoman(parentProg)} / ${toRoman(parentTot)}`;
-    } else if (parentProg != null) {
-      partStr = `Part ${toRoman(parentProg)}`;
-    } else if (parentTot != null) {
-      partStr = `Part I / ${toRoman(parentTot)}`;
+    if (total != null && total > 0) {
+      // Continuous chapters across parts
+      if (parentProg != null) {
+        partStr = `Part ${toRoman(parentProg)}`;
+      }
+    } else {
+      // Per-part reset
+      if (parentProg != null && parentTot != null) {
+        partStr = `Part ${toRoman(parentProg)} / ${toRoman(parentTot)}`;
+      } else if (parentProg != null) {
+        partStr = `Part ${toRoman(parentProg)}`;
+      } else if (parentTot != null) {
+        partStr = `Part I / ${toRoman(parentTot)}`;
+      }
     }
 
     let unitStr = '';
@@ -154,16 +170,16 @@ export function formatProgressText(book: Book): string {
       unitStr = `${current} pages`;
     }
 
+    if (total != null && total > 0) {
+      unitStr += ` / ${total}`;
+    }
+
     if (partStr && (current > 0 || unit === 'chapters' || unit === 'volumes')) {
       baseText = `${partStr} • ${unitStr}`;
     } else if (partStr) {
       baseText = partStr;
     } else {
       baseText = unitStr;
-    }
-
-    if (total != null && total > 0) {
-      baseText += ` / ${total}`;
     }
   } else {
     // 3. Single level
