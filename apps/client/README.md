@@ -1,14 +1,14 @@
 # Paperback Reader Client (Flutter)
 
-A modern, cross-platform reading tracker client built with **Flutter & Dart 3**, targeting **Android, iOS, Web, Windows, and Linux**. Built with a **Neo-Paper Brutalist** aesthetic and full feature parity with the Reading Tracker Next.js web application.
+A modern reading tracker client built with **Flutter & Dart 3**, targeting **Android, Web, Windows, and Linux**. Built with a **Neo-Paper Brutalist** aesthetic and full feature parity with the Reading Tracker Next.js web application.
 
 ---
 
 ## Key Features
 
-- **Cross-Platform Compatibility**:
-  - **Mobile**: Android (API 21+) & iOS (iOS 12+).
-  - **Web**: Progressive Web App & modern browsers.
+- **Platform Targets**:
+  - **Mobile**: Android (API 21+).
+  - **Web**: Progressive Web App & modern browsers (with full mobile Safari/iOS PWA support).
   - **Desktop**: Windows & Linux desktop apps with native `sqflite_common_ffi` SQLite database support.
 - **Neo-Paper Brutalist Design System**:
   - Tactile paper-first aesthetic (`#FCFAED` warm cream canvas) with crisp high-contrast borders and `3.5px` solid drop shadows.

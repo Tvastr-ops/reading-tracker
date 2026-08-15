@@ -1,5 +1,5 @@
 name: reading_tracker_app
-description: "Paperback Reader cross-platform client app for Android, iOS, Web, Windows, and Linux."
+description: "Paperback Reader client app for Android, Web, Windows, and Linux."
 publish_to: "none"
 version: 1.0.0+1
 
