@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
+import { recordProgressChange } from '@/lib/progressMutation';
 import { supabaseServer } from '@/lib/supabase';
 import { validateProgressionFields } from '@/lib/validation';
 
@@ -107,17 +108,49 @@ export const PATCH = withAuth(async (req: NextRequest, { params }: RouteContext)
     if (progError) {
       return NextResponse.json({ error: progError }, { status: 400 });
     }
+
+    // If progress is changed, mutate it atomically via domain operation (which creates log and recalculates pace)
+    if ('progress' in update && typeof update.progress === 'number') {
+      const toProg = update.progress;
+      if (existingBook.progress !== toProg) {
+        const delta = toProg - (existingBook.progress ?? 0);
+        const sign = delta >= 0 ? '+' : '';
+        const customNote = typeof body.note === 'string' ? body.note : null;
+        const note =
+          customNote || `Progress update (${sign}${delta} ${existingBook.unit_type || 'units'})`;
+
+        const progResult = await recordProgressChange({
+          bookId: id,
+          toProgress: toProg,
+          createLog: true,
+          note,
+        });
+
+        if (progResult.error) {
+          return NextResponse.json({ error: progResult.error }, { status: 400 });
+        }
+      }
+      // Remove progress so subsequent update won't conflict with the RPC
+      delete update.progress;
+    }
   }
 
-  const { data, error } = await supabase
+  // Update remaining metadata if any fields remain
+  if (Object.keys(update).length > 0) {
+    const { error: updateError } = await supabase.from('books').update(update).eq('id', id);
+
+    if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
+  }
+
+  // Fetch and return the fresh book row (with updated progress and reading_pace)
+  const { data: freshBook, error: freshErr } = await supabase
     .from('books')
-    .update(update)
+    .select('*')
     .eq('id', id)
-    .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ book: data });
+  if (freshErr) return NextResponse.json({ error: freshErr.message }, { status: 500 });
+  return NextResponse.json({ book: freshBook });
 });
 
 // Soft delete by default (sets deleted_at). Pass ?permanent=1 to actually
