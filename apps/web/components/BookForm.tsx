@@ -441,12 +441,19 @@ export default function BookForm({
                                 type="number"
                                 min={0}
                                 value={form.parent_progress ?? ''}
-                                onChange={(e) =>
-                                  set(
-                                    'parent_progress',
-                                    e.target.value === '' ? null : parseFloat(e.target.value),
-                                  )
-                                }
+                                onChange={(e) => {
+                                  const newVol =
+                                    e.target.value === '' ? null : parseFloat(e.target.value);
+                                  set('parent_progress', newVol);
+                                  if (
+                                    form.progress_structure !== 'single' &&
+                                    form.total_units == null &&
+                                    newVol != null &&
+                                    (form.parent_progress == null || newVol > form.parent_progress)
+                                  ) {
+                                    set('progress', 0);
+                                  }
+                                }}
                                 placeholder="e.g. 3"
                               />
                             </div>

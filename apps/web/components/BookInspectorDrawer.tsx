@@ -61,6 +61,7 @@ export default function BookInspectorDrawer({
     draft.status !== book.status ||
     draft.rating !== book.rating ||
     draft.progress !== book.progress ||
+    draft.parent_progress !== book.parent_progress ||
     draft.date_started !== book.date_started ||
     draft.date_finished !== book.date_finished;
 
@@ -86,6 +87,20 @@ export default function BookInspectorDrawer({
     const max = draft.total_units ?? 999999;
     const nextVal = Math.min(max, Math.max(0, current + delta));
     setDraft((prev) => (prev ? { ...prev, progress: nextVal } : null));
+  };
+
+  const handleIncrementVolume = (delta: number) => {
+    const currentVol = draft.parent_progress ?? 0;
+    const maxVol = draft.parent_total ?? 9999;
+    const nextVol = Math.min(maxVol, Math.max(0, currentVol + delta));
+
+    // If chapters reset per volume (total_units is null), reset chapter progress to 0 on forward volume advancement
+    const shouldResetProgress = draft.total_units == null && delta > 0;
+    const nextProgress = shouldResetProgress ? 0 : draft.progress;
+
+    setDraft((prev) =>
+      prev ? { ...prev, parent_progress: nextVol, progress: nextProgress } : null,
+    );
   };
 
   const handleDiscard = () => {
@@ -239,6 +254,33 @@ export default function BookInspectorDrawer({
             </div>
 
             {pct != null && <Progress value={pct} className="h-2 rounded-full" />}
+
+            {/* Multi-Tier Volume / Part Quick Advance Control */}
+            {draft.progress_structure && draft.progress_structure !== 'single' && (
+              <div className="flex items-center justify-between p-2 rounded-lg bg-card-bg border border-border/60 text-xs">
+                <span className="font-semibold text-text-muted">
+                  {draft.progress_structure === 'volume_chapter' ? 'Volume' : 'Part'}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-text text-xs">
+                    {draft.parent_progress ?? 0}
+                    {draft.parent_total != null ? ` / ${draft.parent_total}` : ''}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleIncrementVolume(1)}
+                    className="px-2 py-0.5 text-[11px] font-semibold rounded-md border border-border bg-surface hover:bg-surface-hover text-accent-color transition-colors ml-2 shadow-2xs"
+                    title={
+                      draft.total_units == null
+                        ? 'Advance to next volume and reset chapter to 0'
+                        : 'Advance to next volume'
+                    }
+                  >
+                    +1 {draft.progress_structure === 'volume_chapter' ? 'Vol' : 'Part'}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* +1, +5, +10 Quick Increment Chips */}
             <div className="flex items-center justify-between gap-1.5 pt-1">

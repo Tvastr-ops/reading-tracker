@@ -185,15 +185,16 @@ function BookGrid({
                     </div>
                   )}
 
-
-
                   {/* Dropdown Action Menu & Favorite Pill */}
-                  <div 
-                    className="absolute top-2 right-2 z-10 flex items-center rounded-full border border-white/20 bg-black/40 shadow-md backdrop-blur-md transition-all hover:scale-105" 
+                  <div
+                    className="absolute top-2 right-2 z-10 flex items-center rounded-full border border-white/20 bg-black/40 shadow-md backdrop-blur-md transition-all hover:scale-105"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {b.is_favorite && (
-                      <div className="flex items-center justify-center pl-2.5 pr-0.5" title="Favorite">
+                      <div
+                        className="flex items-center justify-center pl-2.5 pr-0.5"
+                        title="Favorite"
+                      >
                         <Heart className="h-3 w-3 fill-amber-400 text-amber-400 drop-shadow-[0_0_4px_rgba(245,158,11,0.6)]" />
                       </div>
                     )}
