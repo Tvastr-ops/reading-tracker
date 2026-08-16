@@ -17,16 +17,15 @@ class BookStatus {
 class PublicationTypes {
   static const List<String> all = [
     'Novel',
-    'Light Novel',
-    'Web Novel',
     'Novella',
     'Novelette',
+    'Web Novel',
+    'Light Novel',
     'Short Story',
     'Collection',
     'Anthology',
     'Essay',
     'Fanfiction',
-    'Non-Fiction',
     'Other',
   ];
 }

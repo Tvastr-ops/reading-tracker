@@ -222,6 +222,23 @@ class _LibraryScreenState extends State<LibraryScreen> {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
+            bool showAllFormats = ['Novella', 'Novelette', 'Short Story', 'Anthology', 'Essay', 'Other'].contains(_typeFilter);
+
+            const primaryFormats = [
+              'Novel',
+              'Web Novel',
+              'Light Novel',
+              'Collection',
+              'Fanfiction',
+            ];
+            const moreFormats = [
+              'Novella',
+              'Novelette',
+              'Short Story',
+              'Anthology',
+              'Essay',
+              'Other',
+            ];
 
             return Container(
               padding: const EdgeInsets.all(20),
@@ -306,10 +323,40 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       runSpacing: 8,
                       children: [
                         _buildTypeFilterChip('All Formats', 'All', setSheetState),
-                        _buildTypeFilterChip('Web Novels', 'Web Novel', setSheetState),
-                        _buildTypeFilterChip('Light Novels', 'Light Novel', setSheetState),
-                        _buildTypeFilterChip('Novels', 'Novel', setSheetState),
-                        _buildTypeFilterChip('Manga / Comics', 'Manga', setSheetState),
+                        ...primaryFormats.map((type) => _buildTypeFilterChip(type, type, setSheetState)),
+                        if (showAllFormats)
+                          ...moreFormats.map((type) => _buildTypeFilterChip(type, type, setSheetState)),
+                        GestureDetector(
+                          onTap: () {
+                            setSheetState(() => showAllFormats = !showAllFormats);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                              border: Border.all(color: borderColor, width: 1.5),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  showAllFormats ? Icons.remove_rounded : Icons.add_rounded,
+                                  size: 13,
+                                  color: accentColor,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  showAllFormats ? 'LESS' : 'MORE',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w900,
+                                    color: accentColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -676,7 +723,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
       bool matchesType = true;
       if (_typeFilter != 'All') {
-        matchesType = b.type.toLowerCase().contains(_typeFilter.toLowerCase());
+        matchesType = b.type.toLowerCase() == _typeFilter.toLowerCase();
       }
 
       return matchesStatus && matchesSearch && matchesRating && matchesType;
