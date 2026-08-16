@@ -107,4 +107,42 @@ class GenericRestSyncProvider implements RemoteSyncProvider {
       return false;
     }
   }
+
+  @override
+  Future<int?> fetchYearlyGoal() async {
+    if (serverUrl.isEmpty) return null;
+    try {
+      final uri = Uri.parse(_cleanUrl('/api/settings'));
+      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 6));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final dynamic data = jsonDecode(res.body);
+        if (data is Map && data['yearlyGoal'] != null) {
+          return (data['yearlyGoal'] as num).toInt();
+        }
+      }
+      return null;
+    } catch (e) {
+      debugPrint('GenericRestSyncProvider fetchYearlyGoal error: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<bool> pushYearlyGoal(int goal) async {
+    if (serverUrl.isEmpty) return false;
+    try {
+      final uri = Uri.parse(_cleanUrl('/api/settings'));
+      final res = await http
+          .patch(
+            uri,
+            headers: _headers,
+            body: jsonEncode({'yearlyGoal': goal}),
+          )
+          .timeout(const Duration(seconds: 6));
+      return res.statusCode >= 200 && res.statusCode < 300;
+    } catch (e) {
+      debugPrint('GenericRestSyncProvider pushYearlyGoal error: $e');
+      return false;
+    }
+  }
 }

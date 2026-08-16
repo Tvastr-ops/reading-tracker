@@ -17,6 +17,7 @@ class SyncManager extends ChangeNotifier {
   bool _autoSync = true;
   String _connectionStatus = 'Offline';
   DateTime? _lastSyncedAt;
+  int _yearlyGoal = 25;
 
   SyncBackendType _backendType = SyncBackendType.supabase;
   String _serverUrl = '';
@@ -29,6 +30,7 @@ class SyncManager extends ChangeNotifier {
   bool get autoSync => _autoSync;
   String get connectionStatus => _connectionStatus;
   DateTime? get lastSyncedAt => _lastSyncedAt;
+  int get yearlyGoal => _yearlyGoal;
   SyncBackendType get backendType => _backendType;
   String get serverUrl => _serverUrl;
   String get apiKey => _apiKey;
@@ -40,6 +42,7 @@ class SyncManager extends ChangeNotifier {
     _autoSync = prefs.getBool('auto_sync') ?? true;
     _serverUrl = prefs.getString('server_url') ?? '';
     _apiKey = prefs.getString('api_key') ?? '';
+    _yearlyGoal = prefs.getInt('yearly_goal') ?? 25;
     final typeIdx = prefs.getInt('backend_type') ?? 0;
     _backendType = SyncBackendType.values[typeIdx.clamp(0, SyncBackendType.values.length - 1)];
 
@@ -140,6 +143,14 @@ class SyncManager extends ChangeNotifier {
         }
       }
 
+      // 3. Fetch remote yearly goal
+      final remoteGoal = await _activeProvider!.fetchYearlyGoal();
+      if (remoteGoal != null && remoteGoal != _yearlyGoal) {
+        _yearlyGoal = remoteGoal;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('yearly_goal', _yearlyGoal);
+      }
+
       _lastSyncedAt = DateTime.now();
       _connectionStatus = failedPushIds.isEmpty ? 'Connected' : 'Sync Partially Succeeded';
     } catch (_) {
@@ -150,5 +161,17 @@ class SyncManager extends ChangeNotifier {
     }
 
     return await _dbHelper.getBooks();
+  }
+
+  Future<void> updateYearlyGoal(int newGoal) async {
+    if (newGoal < 0) return;
+    _yearlyGoal = newGoal;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('yearly_goal', newGoal);
+    notifyListeners();
+
+    if (!_offlineMode && _activeProvider != null) {
+      await _activeProvider!.pushYearlyGoal(newGoal);
+    }
   }
 }

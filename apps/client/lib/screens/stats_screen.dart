@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/book.dart';
 import '../services/database_helper.dart';
+import '../services/sync/sync_manager.dart';
 import '../theme/app_theme.dart';
 import '../widgets/brutalist_widgets.dart';
 
@@ -13,13 +14,25 @@ class StatsScreen extends StatefulWidget {
 
 class _StatsScreenState extends State<StatsScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  final SyncManager _syncManager = SyncManager.instance;
   List<Book> _books = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _syncManager.addListener(_onSyncManagerUpdated);
     _loadStats();
+  }
+
+  @override
+  void dispose() {
+    _syncManager.removeListener(_onSyncManagerUpdated);
+    super.dispose();
+  }
+
+  void _onSyncManagerUpdated() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadStats() async {
@@ -31,21 +44,113 @@ class _StatsScreenState extends State<StatsScreen> {
     });
   }
 
+  void _showEditGoalDialog(int currentGoal) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final controller = TextEditingController(text: currentGoal.toString());
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        backgroundColor: isDark ? AppColors.darkSurface : AppColors.paperBg,
+        title: const Text(
+          'SET ANNUAL READING GOAL',
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Target number of books to finish this year:',
+              style: TextStyle(fontSize: 12, color: AppColors.inkMuted),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                border: Border.all(
+                  color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                  width: 1.5,
+                ),
+              ),
+              child: TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                autofocus: true,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                ),
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  border: InputBorder.none,
+                  hintText: 'e.g. 30',
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('CANCEL'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryRed,
+              foregroundColor: Colors.white,
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            ),
+            onPressed: () async {
+              final val = int.tryParse(controller.text.trim());
+              if (val != null && val >= 0) {
+                Navigator.pop(ctx);
+                await _syncManager.updateYearlyGoal(val);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Yearly goal updated to $val books!'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('SAVE GOAL'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentYear = DateTime.now().year;
 
     final completed = _books.where((b) => b.status == BookStatus.completed).length;
     final reading = _books.where((b) => b.status == BookStatus.reading).length;
     final plan = _books.where((b) => b.status == BookStatus.planToRead).length;
+
+    final completedThisYear = _books.where((b) {
+      if (b.status != BookStatus.completed) return false;
+      if (b.dateFinished != null && b.dateFinished!.isNotEmpty) {
+        final dt = DateTime.tryParse(b.dateFinished!);
+        if (dt != null) return dt.year == currentYear;
+      }
+      final dt = DateTime.tryParse(b.updatedAt);
+      return dt != null && dt.year == currentYear;
+    }).length;
 
     final ratedBooks = _books.where((b) => b.rating != null && b.rating! > 0).toList();
     final avgRating = ratedBooks.isEmpty
         ? 0.0
         : ratedBooks.map((b) => b.rating!).reduce((a, b) => a + b) / ratedBooks.length;
 
-    const yearlyGoal = 25;
-    final goalProgress = (completed / yearlyGoal).clamp(0.0, 1.0);
+    final yearlyGoal = _syncManager.yearlyGoal;
+    final goalProgress = yearlyGoal > 0 ? (completedThisYear / yearlyGoal).clamp(0.0, 1.0) : 0.0;
 
     // Group by publication type
     final typeCounts = <String, int>{};
@@ -63,7 +168,10 @@ class _StatsScreenState extends State<StatsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: _loadStats,
+              onRefresh: () async {
+                await _syncManager.syncNow();
+                await _loadStats();
+              },
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 children: [
@@ -76,9 +184,22 @@ class _StatsScreenState extends State<StatsScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              '2026 READING GOAL',
-                              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+                            Row(
+                              children: [
+                                Text(
+                                  '$currentYear READING GOAL',
+                                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+                                ),
+                                const SizedBox(width: 6),
+                                GestureDetector(
+                                  onTap: () => _showEditGoalDialog(yearlyGoal),
+                                  child: const Icon(
+                                    Icons.edit_note_rounded,
+                                    size: 18,
+                                    color: AppColors.primaryRed,
+                                  ),
+                                ),
+                              ],
                             ),
                             BrutalistBadge(
                               label: '${(goalProgress * 100).toInt()}% COMPLETED',
@@ -91,16 +212,16 @@ class _StatsScreenState extends State<StatsScreen> {
                         Row(
                           children: [
                             Text(
-                              '$completed',
+                              '$completedThisYear',
                               style: const TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.w900,
                                 color: AppColors.primaryRed,
                               ),
                             ),
-                            const Text(
-                              ' / 25 BOOKS',
-                              style: TextStyle(
+                            Text(
+                              ' / $yearlyGoal BOOKS',
+                              style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w800,
                                 color: AppColors.inkMuted,
