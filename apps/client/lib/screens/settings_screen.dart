@@ -319,7 +319,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'ABOUT PAPERBACK',
           _isAboutExpanded,
           () => setState(() => _isAboutExpanded = !_isAboutExpanded),
-          badgeLabel: 'v1.4.0b',
+          badgeLabel: 'v1.4.0c',
         ),
         const SizedBox(height: 6),
         if (_isAboutExpanded) ...[
@@ -620,7 +620,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1),
                 ),
                 child: const Text(
-                  'v1.4.0b',
+                  'v1.4.0c',
                   style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white),
                 ),
               ),
