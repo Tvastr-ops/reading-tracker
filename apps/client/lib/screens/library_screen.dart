@@ -213,47 +213,52 @@ class _LibraryScreenState extends State<LibraryScreen> {
     final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
     final sheetBg = details?.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg);
     final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    bool showAllFormats = ['Novella', 'Novelette', 'Short Story', 'Anthology', 'Essay', 'Other'].contains(_typeFilter);
+
+    const primaryFormats = [
+      'Novel',
+      'Web Novel',
+      'Light Novel',
+      'Collection',
+      'Fanfiction',
+    ];
+    const moreFormats = [
+      'Novella',
+      'Novelette',
+      'Short Story',
+      'Anthology',
+      'Essay',
+      'Other',
+    ];
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: sheetBg,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
-            bool showAllFormats = ['Novella', 'Novelette', 'Short Story', 'Anthology', 'Essay', 'Other'].contains(_typeFilter);
 
-            const primaryFormats = [
-              'Novel',
-              'Web Novel',
-              'Light Novel',
-              'Collection',
-              'Fanfiction',
-            ];
-            const moreFormats = [
-              'Novella',
-              'Novelette',
-              'Short Story',
-              'Anthology',
-              'Essay',
-              'Other',
-            ];
-
-            return Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: sheetBg,
-                border: Border.all(
-                  color: borderColor,
-                  width: AppTheme.borderHeavy,
+            return SafeArea(
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
                 ),
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: sheetBg,
+                  border: Border.all(
+                    color: borderColor,
+                    width: AppTheme.borderHeavy,
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -417,12 +422,13 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   ],
                 ),
               ),
-            );
-          },
-        );
-      },
-    );
-  }
+            ),
+          );
+        },
+      );
+    },
+  );
+}
 
   Widget _buildSortChip(String label, String value, StateSetter setSheetState) {
     final isSelected = _sortBy == value;
@@ -912,7 +918,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         // Folded state: Prominent SEARCH button pill + Sort pill + Flip direction + View Mode
         firstChild: Row(
           children: [
-            // Prominent Dynamic Search Pill
+            // Prominent Dynamic Search Pill with Scroll Roller handles
             Expanded(
               child: GestureDetector(
                 onTap: () {
@@ -920,7 +926,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   _searchFocusNode.requestFocus();
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  height: 42,
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
                     border: Border.all(color: borderColor, width: 1.5),
@@ -934,12 +940,23 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.search_rounded,
-                        size: 18,
-                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                      Container(
+                        width: 5,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: accentColor,
+                          border: Border(
+                            right: BorderSide(color: borderColor, width: 1.0),
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 8),
+                      Icon(
+                        Icons.search_rounded,
+                        size: 17,
+                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                      ),
+                      const SizedBox(width: 6),
                       Text(
                         'SEARCH',
                         style: TextStyle(
@@ -964,6 +981,17 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
                             color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 5,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: accentColor,
+                          border: Border(
+                            left: BorderSide(color: borderColor, width: 1.0),
                           ),
                         ),
                       ),
@@ -1071,7 +1099,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           ],
         ),
 
-        // Unfolded Paper Scroll State: Full width search bar with generous input & clear button
+        // Unfolded Paper Scroll State: An authentic unrolled parchment scroll between two wooden spindle rollers
         secondChild: Container(
           decoration: BoxDecoration(
             color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
@@ -1086,6 +1114,19 @@ class _LibraryScreenState extends State<LibraryScreen> {
           ),
           child: Row(
             children: [
+              // Left Scroll Spindle Roller (Ancient Dowel Spindle)
+              Container(
+                width: 8,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: accentColor,
+                  border: Border(
+                    right: BorderSide(color: borderColor, width: 1.5),
+                  ),
+                ),
+              ),
+
+              // Unrolled Parchment Canvas
               Expanded(
                 child: TextField(
                   controller: _searchController,
@@ -1108,10 +1149,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       size: 20,
                     ),
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                   ),
                 ),
               ),
+
+              // Clear & Roll Back Action (Right Scroll Spindle Roller)
               GestureDetector(
                 onTap: () {
                   _searchFocusNode.unfocus();
@@ -1122,9 +1165,16 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   });
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                  color: isDark ? Colors.white10 : AppColors.paperSurface,
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white10 : AppColors.paperSurface,
+                    border: Border(
+                      left: BorderSide(color: borderColor, width: 1.5),
+                    ),
+                  ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         Icons.close_rounded,
@@ -1133,14 +1183,27 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'CLOSE',
+                        'ROLL UP',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
                           color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
                         ),
                       ),
                     ],
+                  ),
+                ),
+              ),
+
+              // Right Scroll Spindle Roller
+              Container(
+                width: 8,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: accentColor,
+                  border: Border(
+                    left: BorderSide(color: borderColor, width: 1.5),
                   ),
                 ),
               ),
