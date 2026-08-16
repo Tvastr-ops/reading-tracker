@@ -51,7 +51,11 @@ jobs:
           cd apps/client
           flutter build apk --target-platform android-arm64 --release --android-skip-build-dependency-validation
           mkdir -p ../../release-assets
-          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk ../../release-assets/reading-tracker-arm64.apk
+          if [ -f build/app/outputs/flutter-apk/app-arm64-v8a-release.apk ]; then
+            cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk ../../release-assets/reading-tracker-arm64.apk
+          else
+            cp build/app/outputs/flutter-apk/app-release.apk ../../release-assets/reading-tracker-arm64.apk
+          fi
 
       - name: Build Universal Release APK (Optional)
         if: ${{ inputs.target_arch == 'all' }}
@@ -69,7 +73,7 @@ jobs:
           retention-days: 14
 
   build-linux:
-    name: Build Linux Desktop (x64)
+    name: Build Linux Desktop (DEB & Tarball)
     runs-on: ubuntu-latest
 
     steps:
@@ -96,14 +100,74 @@ jobs:
         run: |
           cd apps/client
           flutter build linux --release
-          mkdir -p ../../release-assets
-          tar -czf ../../release-assets/reading-tracker-linux-x64.tar.gz -C build/linux/x64/release/bundle .
 
-      - name: Upload Linux Artifact
+      - name: Package Portable Tarball & Debian (.deb)
+        run: |
+          mkdir -p release-assets
+          
+          # 1. Portable .tar.gz
+          tar -czf release-assets/reading-tracker-linux-x64.tar.gz -C apps/client/build/linux/x64/release/bundle .
+
+          # 2. Native .deb Package
+          VERSION_CLEAN="${GITHUB_REF_NAME#v}"
+          if [ -z "$VERSION_CLEAN" ] || [ "$VERSION_CLEAN" = "main" ] || [ "$VERSION_CLEAN" = "dev" ]; then
+            VERSION_CLEAN="1.1.0"
+          fi
+
+          mkdir -p deb-pkg/DEBIAN
+          mkdir -p deb-pkg/usr/lib/paperback-reader
+          mkdir -p deb-pkg/usr/bin
+          mkdir -p deb-pkg/usr/share/applications
+          mkdir -p deb-pkg/usr/share/icons/hicolor/512x512/apps
+
+          # Copy binaries and bundle assets
+          cp -r apps/client/build/linux/x64/release/bundle/* deb-pkg/usr/lib/paperback-reader/
+          chmod +x deb-pkg/usr/lib/paperback-reader/paperback_reader
+
+          # Wrapper script
+          cat << 'EOF' > deb-pkg/usr/bin/paperback-reader
+#!/bin/sh
+exec /usr/lib/paperback-reader/paperback_reader "$@"
+EOF
+          chmod 755 deb-pkg/usr/bin/paperback-reader
+
+          # Desktop entry
+          cat << 'EOF' > deb-pkg/usr/share/applications/paperback-reader.desktop
+[Desktop Entry]
+Name=Paperback Reader
+Comment=A tactile, offline-first reading ledger for novels, light novels, and web serials
+Exec=paperback-reader %u
+Icon=paperback-reader
+Terminal=false
+Type=Application
+Categories=Utility;Office;Literature;
+StartupWMClass=paperback_reader
+EOF
+          chmod 644 deb-pkg/usr/share/applications/paperback-reader.desktop
+
+          # App icon
+          cp apps/client/assets/icon.png deb-pkg/usr/share/icons/hicolor/512x512/apps/paperback-reader.png
+
+          # Debian Control metadata
+          cat << EOF > deb-pkg/DEBIAN/control
+Package: paperback-reader
+Version: $VERSION_CLEAN
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: Paperback Reader <noreply@github.com>
+Depends: libgtk-3-0, libsqlite3-0
+Description: Paperback Reader
+ A tactile, offline-first reading ledger for novels, light novels, and web serials.
+EOF
+
+          dpkg-deb --build --root-owner-group deb-pkg release-assets/reading-tracker-linux-amd64.deb
+
+      - name: Upload Linux Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: linux-release-bundle
-          path: release-assets/reading-tracker-linux-x64.tar.gz
+          name: linux-release-packages
+          path: release-assets/*
           retention-days: 14
 
   publish-release:
