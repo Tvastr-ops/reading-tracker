@@ -344,6 +344,26 @@ class DatabaseHelper {
     return result.map((json) => ReadingLogEntry.fromMap(json)).toList();
   }
 
+  Future<List<Map<String, dynamic>>> getAllReadingLogsWithBookInfo() async {
+    final db = await instance.database;
+    return await db.rawQuery('''
+      SELECT 
+        l.id as log_id,
+        l.book_id,
+        l.from_progress,
+        l.to_progress,
+        l.note,
+        l.logged_at,
+        b.title as book_title,
+        b.author as book_author,
+        b.type as book_type,
+        b.cover_url as book_cover_url
+      FROM reading_log l
+      INNER JOIN books b ON l.book_id = b.id
+      ORDER BY l.logged_at DESC
+    ''');
+  }
+
   Future<int> deleteReadingLog(String id) async {
     final db = await instance.database;
     return await db.delete('reading_log', where: 'id = ?', whereArgs: [id]);

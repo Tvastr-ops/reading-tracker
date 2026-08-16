@@ -65,5 +65,27 @@ void main() {
       expect(reconstructed.progress, book.progress);
       expect(reconstructed.totalUnits, book.totalUnits);
     });
+
+    test('ReadingLogEntry toMap and fromMap serializes accurately', () {
+      const log = ReadingLogEntry(
+        id: 'log-456',
+        bookId: 'book-123',
+        fromProgress: 10.0,
+        toProgress: 25.0,
+        note: 'Finished arc 1',
+        loggedAt: '2026-08-16T12:00:00Z',
+        syncStatus: 'pending_create',
+      );
+
+      final map = log.toMap();
+      final reconstructed = ReadingLogEntry.fromMap(map);
+
+      expect(reconstructed.id, log.id);
+      expect(reconstructed.bookId, log.bookId);
+      expect(reconstructed.fromProgress, 10.0);
+      expect(reconstructed.toProgress, 25.0);
+      expect(reconstructed.note, 'Finished arc 1');
+      expect(reconstructed.syncStatus, 'pending_create');
+    });
   });
 }

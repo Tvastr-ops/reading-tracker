@@ -285,6 +285,62 @@ class _StatsScreenState extends State<StatsScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 16),
+
+                  // Reading Velocity & Pace Insight Card
+                  BrutalistCard(
+                    margin: EdgeInsets.zero,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.speed_rounded, size: 16, color: AppColors.primaryRed),
+                                SizedBox(width: 6),
+                                Text(
+                                  'READING VELOCITY',
+                                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              completedThisYear > 0
+                                  ? '~${(completedThisYear / (DateTime.now().month)).toStringAsFixed(1)} books/month pace'
+                                  : 'Start reading to establish pace',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (completedThisYear > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.paperSurfaceHighest,
+                              border: Border.all(
+                                color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Text(
+                              '~${((completedThisYear / DateTime.now().month) * 12).round()} YEAR-END EST.',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                color: AppColors.inkBlack,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 20),
 
                   // Format Breakdown
@@ -325,7 +381,7 @@ class _StatsScreenState extends State<StatsScreen> {
                               BrutalistProgressBar(
                                 progress: pct,
                                 height: 8,
-                                fillColor: AppColors.inkBlack,
+                                fillColor: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
                               ),
                             ],
                           ),

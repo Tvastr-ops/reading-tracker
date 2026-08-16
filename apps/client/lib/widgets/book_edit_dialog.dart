@@ -180,6 +180,9 @@ class _BookEditDialogState extends State<BookEditDialog> {
               ),
               const SizedBox(height: 16),
 
+              _buildFormSectionHeader('1. BASIC INFORMATION'),
+              const SizedBox(height: 8),
+
               // Title Input
               _buildFieldLabel('TITLE *'),
               _buildTextInput(_titleController, 'e.g. Dune', isRequired: true),
@@ -222,7 +225,10 @@ class _BookEditDialogState extends State<BookEditDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 18),
+
+              _buildFormSectionHeader('2. PROGRESSION & STRUCTURE'),
+              const SizedBox(height: 8),
 
               // Multi-Tier Progress Structure
               _buildFieldLabel('PROGRESS STRUCTURE'),
@@ -307,8 +313,11 @@ class _BookEditDialogState extends State<BookEditDialog> {
                 const SizedBox(height: 6),
                 _buildFieldLabel('LATEST RELEASED CHAPTER'),
                 _buildTextInput(_latestUnitsController, 'e.g. 1450', isNumber: true),
-                const SizedBox(height: 12),
               ],
+              const SizedBox(height: 18),
+
+              _buildFormSectionHeader('3. RATING, COVER & NOTES'),
+              const SizedBox(height: 8),
 
               // Rating Slider / Selector
               _buildFieldLabel('RATING (${_rating != null ? "${_rating!.toStringAsFixed(1)} ★" : "UNRATED"})'),
@@ -371,6 +380,29 @@ class _BookEditDialogState extends State<BookEditDialog> {
               ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFormSectionHeader(String title) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh,
+        border: Border.all(
+          color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.3) : AppColors.inkBlack.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.5,
+          color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
         ),
       ),
     );
