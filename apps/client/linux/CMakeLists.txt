@@ -21,8 +21,18 @@ set(FLUTTER_PROJECT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
 # Directory where Flutter will output ephemeral build artifacts.
 set(FLUTTER_MANAGED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/flutter")
 
+# Apply standard build settings for targets and plugins
+if(NOT COMMAND apply_standard_settings)
+  function(apply_standard_settings TARGET)
+    target_compile_features(${TARGET} PUBLIC cxx_std_14)
+    target_compile_options(${TARGET} PRIVATE -Wall -Werror)
+    target_compile_options(${TARGET} PRIVATE "$<$<NOT:$<CONFIG:Debug>>:-O3>")
+    target_compile_definitions(${TARGET} PRIVATE "$<$<NOT:$<CONFIG:Debug>>:NDEBUG>")
+  endfunction()
+endif()
+
 # Configuration provided by the Flutter toolchain.
-include(${FLUTTER_MANAGED_DIR}/ephemeral/generated_config.cmake)
+include(${FLUTTER_MANAGED_DIR}/ephemeral/generated_config.cmake OPTIONAL)
 
 # Flutter-generated code, which must come before the application code.
 add_subdirectory(${FLUTTER_MANAGED_DIR} flutter)
