@@ -45,25 +45,39 @@ class _TrashScreenState extends State<TrashScreen> {
   }
 
   Future<void> _permanentDelete(Book book) async {
+    final details = Theme.of(context).extension<AppThemeDetails>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBg = details?.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg);
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final mutedInk = details?.inkMutedColor ?? (isDark ? Colors.white60 : AppColors.inkMuted);
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        title: const Text('PERMANENTLY DELETE', style: TextStyle(fontWeight: FontWeight.w900)),
-        content: Text('Are you sure you want to permanently delete "${book.title}"? This cannot be undone.'),
+        backgroundColor: dialogBg,
+        title: Text('PERMANENTLY DELETE', style: TextStyle(fontWeight: FontWeight.w900, color: inkColor)),
+        content: Text(
+          'Are you sure you want to permanently delete "${book.title}"? This cannot be undone.',
+          style: TextStyle(color: mutedInk),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('CANCEL'),
+            child: Text('CANCEL', style: TextStyle(color: inkColor, fontWeight: FontWeight.w800)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryRed,
               foregroundColor: Colors.white,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              shape: RoundedRectangleBorder(
+                side: BorderSide(color: borderColor, width: 1),
+                borderRadius: BorderRadius.zero,
+              ),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('DELETE FOREVER'),
+            child: const Text('DELETE FOREVER', style: TextStyle(fontWeight: FontWeight.w900)),
           ),
         ],
       ),

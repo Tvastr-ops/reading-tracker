@@ -136,123 +136,91 @@ class _BookEditDialogState extends State<BookEditDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final details = Theme.of(context).extension<AppThemeDetails>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final dialogBg = details?.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg);
+    final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
     final isEditing = widget.book != null;
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-      backgroundColor: isDark ? AppColors.darkSurface : AppColors.paperBg,
+      backgroundColor: dialogBg,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
+          color: dialogBg,
           border: Border.all(
-            color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+            color: borderColor,
             width: AppTheme.borderHeavy,
           ),
           boxShadow: [
             BoxShadow(
-              color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-              offset: AppTheme.shadowOffset,
+              color: borderColor,
+              offset: details?.shadowOffset ?? AppTheme.shadowOffset,
               blurRadius: 0,
             ),
           ],
         ),
         child: Form(
           key: _formKey,
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    isEditing ? 'EDIT BOOK' : 'ADD NEW BOOK',
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: -0.2),
-                  ),
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: const Icon(Icons.close_rounded, size: 20),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              _buildFormSectionHeader('1. BASIC INFORMATION'),
-              const SizedBox(height: 8),
-
-              // Title Input
-              _buildFieldLabel('TITLE *'),
-              _buildTextInput(_titleController, 'e.g. Dune', isRequired: true),
-              const SizedBox(height: 12),
-
-              // Author Input
-              _buildFieldLabel('AUTHOR'),
-              _buildTextInput(_authorController, 'e.g. Frank Herbert'),
-              const SizedBox(height: 12),
-
-              // Type & Status Row
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildFieldLabel('PUBLICATION TYPE'),
-                        _buildDropdown(
-                          value: _type,
-                          items: PublicationTypes.all,
-                          onChanged: (val) => setState(() => _type = val!),
-                        ),
-                      ],
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      isEditing ? 'EDIT BOOK' : 'ADD NEW BOOK',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                        letterSpacing: -0.2,
+                        color: inkColor,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildFieldLabel('STATUS'),
-                        _buildDropdown(
-                          value: _status,
-                          items: BookStatus.all,
-                          onChanged: (val) => setState(() => _status = val!),
-                        ),
-                      ],
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: Icon(Icons.close_rounded, size: 20, color: inkColor),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
+                  ],
+                ),
+                const SizedBox(height: 16),
 
-              _buildFormSectionHeader('2. PROGRESSION & STRUCTURE'),
-              const SizedBox(height: 8),
+                _buildFormSectionHeader('1. BASIC INFORMATION', details, inkColor, borderColor),
+                const SizedBox(height: 8),
 
-              // Multi-Tier Progress Structure
-              _buildFieldLabel('PROGRESS STRUCTURE'),
-              _buildDropdown(
-                value: _progressStructure,
-                items: const ['single', 'volume_chapter', 'part_chapter'],
-                itemLabels: const {
-                  'single': 'Single Tier (Chapters / Pages)',
-                  'volume_chapter': 'Multi-Tier (Volumes + Chapters)',
-                  'part_chapter': 'Multi-Tier (Parts + Chapters)',
-                },
-                onChanged: (val) => setState(() => _progressStructure = val!),
-              ),
-              const SizedBox(height: 12),
+                // Title Input
+                _buildFieldLabel('TITLE *', inkColor),
+                _buildTextInput(_titleController, 'e.g. Dune', isRequired: true, details: details, borderColor: borderColor, inkColor: inkColor),
+                const SizedBox(height: 12),
 
-              if (_progressStructure != 'single') ...[
+                // Author Input
+                _buildFieldLabel('AUTHOR', inkColor),
+                _buildTextInput(_authorController, 'e.g. Frank Herbert', details: details, borderColor: borderColor, inkColor: inkColor),
+                const SizedBox(height: 12),
+
+                // Type & Status Row
                 Row(
                   children: [
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildFieldLabel(_progressStructure == 'volume_chapter' ? 'CURRENT VOLUME' : 'CURRENT PART'),
-                          _buildTextInput(_parentProgressController, 'e.g. 14', isNumber: true),
+                          _buildFieldLabel('PUBLICATION TYPE', inkColor),
+                          _buildDropdown(
+                            value: _type,
+                            items: PublicationTypes.all,
+                            details: details,
+                            borderColor: borderColor,
+                            inkColor: inkColor,
+                            onChanged: (val) => setState(() => _type = val!),
+                          ),
                         ],
                       ),
                     ),
@@ -261,138 +229,194 @@ class _BookEditDialogState extends State<BookEditDialog> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildFieldLabel(_progressStructure == 'volume_chapter' ? 'TOTAL VOLUMES' : 'TOTAL PARTS'),
-                          _buildTextInput(_parentTotalController, 'e.g. 16', isNumber: true),
+                          _buildFieldLabel('STATUS', inkColor),
+                          _buildDropdown(
+                            value: _status,
+                            items: BookStatus.all,
+                            details: details,
+                            borderColor: borderColor,
+                            inkColor: inkColor,
+                            onChanged: (val) => setState(() => _status = val!),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+
+                _buildFormSectionHeader('2. PROGRESSION & STRUCTURE', details, inkColor, borderColor),
+                const SizedBox(height: 8),
+
+                // Multi-Tier Progress Structure
+                _buildFieldLabel('PROGRESS STRUCTURE', inkColor),
+                _buildDropdown(
+                  value: _progressStructure,
+                  items: const ['single', 'volume_chapter', 'part_chapter'],
+                  itemLabels: const {
+                    'single': 'Single Tier (Chapters / Pages)',
+                    'volume_chapter': 'Multi-Tier (Volumes + Chapters)',
+                    'part_chapter': 'Multi-Tier (Parts + Chapters)',
+                  },
+                  details: details,
+                  borderColor: borderColor,
+                  inkColor: inkColor,
+                  onChanged: (val) => setState(() => _progressStructure = val!),
+                ),
+                const SizedBox(height: 12),
+
+                if (_progressStructure != 'single') ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildFieldLabel(_progressStructure == 'volume_chapter' ? 'CURRENT VOLUME' : 'CURRENT PART', inkColor),
+                            _buildTextInput(_parentProgressController, 'e.g. 14', isNumber: true, details: details, borderColor: borderColor, inkColor: inkColor),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildFieldLabel(_progressStructure == 'volume_chapter' ? 'TOTAL VOLUMES' : 'TOTAL PARTS', inkColor),
+                            _buildTextInput(_parentTotalController, 'e.g. 16', isNumber: true, details: details, borderColor: borderColor, inkColor: inkColor),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                // Current & Total Progress Units
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildFieldLabel('CURRENT UNITS', inkColor),
+                          _buildTextInput(_progressController, '0', isNumber: true, details: details, borderColor: borderColor, inkColor: inkColor),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildFieldLabel('TOTAL UNITS', inkColor),
+                          _buildTextInput(_totalUnitsController, 'e.g. 388', isNumber: true, details: details, borderColor: borderColor, inkColor: inkColor),
                         ],
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-              ],
 
-              // Current & Total Progress Units
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildFieldLabel('CURRENT UNITS'),
-                        _buildTextInput(_progressController, '0', isNumber: true),
-                      ],
+                // Serialization Ongoing Toggle
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Ongoing Serialization', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: inkColor)),
+                    Switch(
+                      value: _isOngoing,
+                      activeThumbColor: Theme.of(context).colorScheme.primary,
+                      onChanged: (val) => setState(() => _isOngoing = val),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildFieldLabel('TOTAL UNITS'),
-                        _buildTextInput(_totalUnitsController, 'e.g. 388', isNumber: true),
-                      ],
+                  ],
+                ),
+                if (_isOngoing) ...[
+                  const SizedBox(height: 6),
+                  _buildFieldLabel('LATEST RELEASED CHAPTER', inkColor),
+                  _buildTextInput(_latestUnitsController, 'e.g. 1450', isNumber: true, details: details, borderColor: borderColor, inkColor: inkColor),
+                ],
+                const SizedBox(height: 18),
+
+                _buildFormSectionHeader('3. RATING, COVER & NOTES', details, inkColor, borderColor),
+                const SizedBox(height: 8),
+
+                // Rating Slider / Selector
+                _buildFieldLabel('RATING (${_rating != null ? "${_rating!.toStringAsFixed(1)} ★" : "UNRATED"})', inkColor),
+                Slider(
+                  value: _rating ?? 0.0,
+                  min: 0.0,
+                  max: 5.0,
+                  divisions: 10,
+                  activeColor: Theme.of(context).colorScheme.primary,
+                  onChanged: (val) => setState(() => _rating = val == 0 ? null : val),
+                ),
+                const SizedBox(height: 12),
+
+                // Cover URL & Search Button
+                _buildFieldLabel('COVER IMAGE URL', inkColor),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildTextInput(_coverUrlController, 'https://...', details: details, borderColor: borderColor, inkColor: inkColor),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
+                    const SizedBox(width: 8),
+                    BrutalistButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      backgroundColor: borderColor,
+                      textColor: isDark ? Colors.black : Colors.white,
+                      onPressed: _isSearchingCover ? null : _searchCover,
+                      child: _isSearchingCover
+                          ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: isDark ? Colors.black : Colors.white))
+                          : Icon(Icons.image_search_rounded, size: 18, color: isDark ? Colors.black : Colors.white),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
 
-              // Serialization Ongoing Toggle
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Ongoing Serialization', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                  Switch(
-                    value: _isOngoing,
-                    activeThumbColor: AppColors.primaryRed,
-                    onChanged: (val) => setState(() => _isOngoing = val),
-                  ),
-                ],
-              ),
-              if (_isOngoing) ...[
-                const SizedBox(height: 6),
-                _buildFieldLabel('LATEST RELEASED CHAPTER'),
-                _buildTextInput(_latestUnitsController, 'e.g. 1450', isNumber: true),
-              ],
-              const SizedBox(height: 18),
+                // Notes Input
+                _buildFieldLabel('NOTES / REVIEW', inkColor),
+                _buildTextInput(_notesController, 'Reading thoughts...', maxLines: 2, details: details, borderColor: borderColor, inkColor: inkColor),
+                const SizedBox(height: 20),
 
-              _buildFormSectionHeader('3. RATING, COVER & NOTES'),
-              const SizedBox(height: 8),
-
-              // Rating Slider / Selector
-              _buildFieldLabel('RATING (${_rating != null ? "${_rating!.toStringAsFixed(1)} ★" : "UNRATED"})'),
-              Slider(
-                value: _rating ?? 0.0,
-                min: 0.0,
-                max: 5.0,
-                divisions: 10,
-                activeColor: AppColors.primaryRed,
-                onChanged: (val) => setState(() => _rating = val == 0 ? null : val),
-              ),
-              const SizedBox(height: 12),
-
-              // Cover URL & Search Button
-              _buildFieldLabel('COVER IMAGE URL'),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextInput(_coverUrlController, 'https://...'),
-                  ),
-                  const SizedBox(width: 8),
-                  BrutalistButton(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                    backgroundColor: AppColors.inkBlack,
-                    textColor: Colors.white,
-                    onPressed: _isSearchingCover ? null : _searchCover,
-                    child: _isSearchingCover
-                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Icon(Icons.image_search_rounded, size: 18, color: Colors.white),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // Notes Input
-              _buildFieldLabel('NOTES / REVIEW'),
-              _buildTextInput(_notesController, 'Reading thoughts...', maxLines: 2),
-              const SizedBox(height: 20),
-
-              // Actions
-              BrutalistButton(
-                isFullWidth: true,
-                onPressed: _submit,
-                child: Text(isEditing ? 'SAVE CHANGES' : 'CREATE BOOK', style: const TextStyle(color: Colors.white, fontSize: 14)),
-              ),
-
-              if (isEditing && widget.onDelete != null) ...[
-                const SizedBox(height: 10),
+                // Actions
                 BrutalistButton(
                   isFullWidth: true,
-                  backgroundColor: Colors.transparent,
-                  textColor: AppColors.primaryRed,
-                  borderWidth: 1.5,
-                  onPressed: () {
-                    widget.onDelete!(widget.book!.id);
-                    Navigator.pop(context);
-                  },
-                  child: const Text('MOVE TO TRASH', style: TextStyle(color: AppColors.primaryRed, fontSize: 12)),
+                  onPressed: _submit,
+                  child: Text(isEditing ? 'SAVE CHANGES' : 'CREATE BOOK', style: const TextStyle(color: Colors.white, fontSize: 14)),
                 ),
+
+                if (isEditing && widget.onDelete != null) ...[
+                  const SizedBox(height: 10),
+                  BrutalistButton(
+                    isFullWidth: true,
+                    backgroundColor: Colors.transparent,
+                    textColor: AppColors.primaryRed,
+                    borderWidth: 1.5,
+                    onPressed: () {
+                      widget.onDelete!(widget.book!.id);
+                      Navigator.pop(context);
+                    },
+                    child: const Text('MOVE TO TRASH', style: TextStyle(color: AppColors.primaryRed, fontSize: 12)),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildFormSectionHeader(String title) {
+  Widget _buildFormSectionHeader(String title, AppThemeDetails? details, Color inkColor, Color borderColor) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh,
+        color: bg,
         border: Border.all(
-          color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.3) : AppColors.inkBlack.withValues(alpha: 0.2),
+          color: borderColor.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -402,18 +426,23 @@ class _BookEditDialogState extends State<BookEditDialog> {
           fontSize: 10,
           fontWeight: FontWeight.w900,
           letterSpacing: 0.5,
-          color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+          color: inkColor,
         ),
       ),
     );
   }
 
-  Widget _buildFieldLabel(String label) {
+  Widget _buildFieldLabel(String label, Color inkColor) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Text(
         label,
-        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+          color: inkColor,
+        ),
       ),
     );
   }
@@ -424,13 +453,16 @@ class _BookEditDialogState extends State<BookEditDialog> {
     bool isNumber = false,
     bool isRequired = false,
     int maxLines = 1,
+    required AppThemeDetails? details,
+    required Color borderColor,
+    required Color inkColor,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+    final inputBg = details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white);
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+        color: inputBg,
         border: Border.all(color: borderColor, width: 1.5),
       ),
       child: TextFormField(
@@ -441,13 +473,13 @@ class _BookEditDialogState extends State<BookEditDialog> {
         style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+          color: inkColor,
         ),
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(
             fontSize: 12,
-            color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.4),
+            color: inkColor.withValues(alpha: 0.45),
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           border: InputBorder.none,
@@ -461,29 +493,37 @@ class _BookEditDialogState extends State<BookEditDialog> {
     required List<String> items,
     Map<String, String>? itemLabels,
     required ValueChanged<String?> onChanged,
+    required AppThemeDetails? details,
+    required Color borderColor,
+    required Color inkColor,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+    final dropdownBg = details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+        color: dropdownBg,
         border: Border.all(color: borderColor, width: 1.5),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
+          dropdownColor: dropdownBg,
           isExpanded: true,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+            color: inkColor,
           ),
+          iconEnabledColor: inkColor,
           items: items.map((item) {
             return DropdownMenuItem(
               value: item,
-              child: Text(itemLabels?[item] ?? item),
+              child: Text(
+                itemLabels?[item] ?? item,
+                style: TextStyle(color: inkColor, fontWeight: FontWeight.w600),
+              ),
             );
           }).toList(),
           onChanged: onChanged,

@@ -102,9 +102,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     required String label,
     required IconData icon,
   }) {
+    final details = Theme.of(context).extension<AppThemeDetails>();
     final isSelected = _currentIndex == index;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
 
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
@@ -112,8 +114,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primaryRed
-              : (isDark ? AppColors.darkSurface : AppColors.paperBg),
+              ? accentColor
+              : (details?.canvasColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg)),
           border: isSelected
               ? Border.all(color: borderColor, width: 1.5)
               : Border.all(color: Colors.transparent, width: 1.5),
@@ -121,7 +123,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               ? [
                   BoxShadow(
                     color: borderColor,
-                    offset: AppTheme.shadowOffsetSm,
+                    offset: details?.shadowOffsetSm ?? AppTheme.shadowOffsetSm,
                     blurRadius: 0,
                   ),
                 ]

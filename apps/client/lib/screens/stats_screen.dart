@@ -44,33 +44,39 @@ class _StatsScreenState extends State<StatsScreen> {
     });
   }
 
-  void _showEditGoalDialog(int currentGoal) {
+  void _openSetGoalDialog() {
+    final details = Theme.of(context).extension<AppThemeDetails>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final controller = TextEditingController(text: currentGoal.toString());
+    final dialogBg = details?.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg);
+    final inputBg = details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white);
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final mutedInk = details?.inkMutedColor ?? (isDark ? Colors.white60 : AppColors.inkMuted);
+    final controller = TextEditingController(text: _syncManager.yearlyGoal.toString());
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        backgroundColor: isDark ? AppColors.darkSurface : AppColors.paperBg,
-        title: const Text(
+        backgroundColor: dialogBg,
+        title: Text(
           'SET ANNUAL READING GOAL',
-          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: inkColor),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Target number of books to finish this year:',
-              style: TextStyle(fontSize: 12, color: AppColors.inkMuted),
+              style: TextStyle(fontSize: 12, color: mutedInk),
             ),
             const SizedBox(height: 12),
             Container(
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                color: inputBg,
                 border: Border.all(
-                  color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                  color: borderColor,
                   width: 1.5,
                 ),
               ),
@@ -81,12 +87,13 @@ class _StatsScreenState extends State<StatsScreen> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                  color: inkColor,
                 ),
-                decoration: const InputDecoration(
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   border: InputBorder.none,
                   hintText: 'e.g. 30',
+                  hintStyle: TextStyle(color: mutedInk),
                 ),
               ),
             ),
@@ -95,11 +102,11 @@ class _StatsScreenState extends State<StatsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('CANCEL'),
+            child: Text('CANCEL', style: TextStyle(color: inkColor, fontWeight: FontWeight.w800)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryRed,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
             ),
@@ -108,6 +115,7 @@ class _StatsScreenState extends State<StatsScreen> {
               if (val != null && val >= 0) {
                 Navigator.pop(ctx);
                 await _syncManager.updateYearlyGoal(val);
+                await _loadStats();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -192,18 +200,18 @@ class _StatsScreenState extends State<StatsScreen> {
                                 ),
                                 const SizedBox(width: 6),
                                 GestureDetector(
-                                  onTap: () => _showEditGoalDialog(yearlyGoal),
-                                  child: const Icon(
+                                  onTap: _openSetGoalDialog,
+                                  child: Icon(
                                     Icons.edit_note_rounded,
                                     size: 18,
-                                    color: AppColors.primaryRed,
+                                    color: Theme.of(context).colorScheme.primary,
                                   ),
                                 ),
                               ],
                             ),
                             BrutalistBadge(
                               label: '${(goalProgress * 100).toInt()}% COMPLETED',
-                              backgroundColor: AppColors.primaryRed,
+                              backgroundColor: Theme.of(context).colorScheme.primary,
                               textColor: Colors.white,
                             ),
                           ],
@@ -213,14 +221,22 @@ class _StatsScreenState extends State<StatsScreen> {
                           children: [
                             Text(
                               '$completedThisYear',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.w900,
-                                color: AppColors.primaryRed,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            const Text(
+                              ' / ',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.inkMuted,
                               ),
                             ),
                             Text(
-                              ' / $yearlyGoal BOOKS',
+                              '$yearlyGoal BOOKS',
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w800,
@@ -233,7 +249,7 @@ class _StatsScreenState extends State<StatsScreen> {
                         BrutalistProgressBar(
                           progress: goalProgress,
                           height: 16,
-                          fillColor: AppColors.primaryRed,
+                          fillColor: Theme.of(context).colorScheme.primary,
                         ),
                       ],
                     ),
@@ -280,7 +296,7 @@ class _StatsScreenState extends State<StatsScreen> {
                           'AVG RATING',
                           avgRating > 0 ? '${avgRating.toStringAsFixed(1)} ★' : 'N/A',
                           Icons.star_rounded,
-                          AppColors.primaryRed,
+                          Theme.of(context).colorScheme.primary,
                         ),
                       ),
                     ],
@@ -296,11 +312,11 @@ class _StatsScreenState extends State<StatsScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Row(
+                            Row(
                               children: [
-                                Icon(Icons.speed_rounded, size: 16, color: AppColors.primaryRed),
-                                SizedBox(width: 6),
-                                Text(
+                                Icon(Icons.speed_rounded, size: 16, color: Theme.of(context).colorScheme.primary),
+                                const SizedBox(width: 6),
+                                const Text(
                                   'READING VELOCITY',
                                   style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
                                 ),

@@ -17,13 +17,13 @@ dependencies:
   intl: ^0.20.3
   shared_preferences: ^2.2.3
   url_launcher: ^6.3.0
-  google_fonts: ^6.2.1
+  google_fonts: ^8.2.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  flutter_launcher_icons: ^0.13.1
+  flutter_launcher_icons: ^0.14.4
 
 flutter_launcher_icons:
   android: true

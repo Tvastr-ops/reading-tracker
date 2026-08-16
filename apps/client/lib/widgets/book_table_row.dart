@@ -20,8 +20,10 @@ class BookTableRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final details = Theme.of(context).extension<AppThemeDetails>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
     final quickOptions = getQuickChipOptions(book.type);
     final quickAmt = quickOptions.isNotEmpty ? quickOptions.first : 1;
 
@@ -31,12 +33,12 @@ class BookTableRow extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurface : Colors.white,
+          color: details?.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white),
           border: Border.all(color: borderColor, width: 1.5),
           boxShadow: [
             BoxShadow(
               color: borderColor,
-              offset: const Offset(2.0, 2.0),
+              offset: details?.shadowOffsetSm ?? const Offset(2.0, 2.0),
               blurRadius: 0,
             ),
           ],
@@ -48,20 +50,20 @@ class BookTableRow extends StatelessWidget {
               width: 32,
               height: 44,
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
+                color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh,
                 border: Border.all(color: borderColor, width: 1),
               ),
               child: book.coverUrl != null && book.coverUrl!.isNotEmpty
                   ? Image.network(
                       book.coverUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.menu_book_rounded, size: 14),
+                      errorBuilder: (_, __, ___) => const Icon(Icons.auto_stories_rounded, size: 16),
                     )
-                  : const Icon(Icons.menu_book_rounded, size: 14),
+                  : const Icon(Icons.auto_stories_rounded, size: 16),
             ),
             const SizedBox(width: 10),
 
-            // Title & Author & Progress
+            // Title + Progress + Bar
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -84,7 +86,7 @@ class BookTableRow extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryRed,
+                          color: accentColor,
                           border: Border.all(color: Colors.white, width: 0.5),
                         ),
                         child: Text(
@@ -119,7 +121,7 @@ class BookTableRow extends StatelessWidget {
                   BrutalistProgressBar(
                     progress: book.completionPercentage / 100.0,
                     height: 4,
-                    fillColor: AppColors.primaryRed,
+                    fillColor: accentColor,
                   ),
                 ],
               ),

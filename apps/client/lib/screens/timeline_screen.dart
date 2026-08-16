@@ -54,8 +54,10 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final details = Theme.of(context).extension<AppThemeDetails>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       appBar: AppBar(
@@ -121,11 +123,11 @@ class _TimelineScreenState extends State<TimelineScreen> {
                             Padding(
                               padding: EdgeInsets.only(top: index == 0 ? 0 : 16, bottom: 8),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryRed,
-                                  border: Border.all(color: borderColor, width: 1.5),
-                                ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: accentColor,
+                                    border: Border.all(color: borderColor, width: 1.5),
+                                  ),
                                 child: Text(
                                   _formatDateHeader(loggedAt),
                                   style: const TextStyle(
@@ -165,14 +167,14 @@ class _TimelineScreenState extends State<TimelineScreen> {
                                         color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
                                         border: Border.all(color: borderColor, width: 1),
                                       ),
-                                      child: Text(
-                                        '+$deltaStr',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 11,
-                                          color: AppColors.primaryRed,
+                                        child: Text(
+                                          '+$deltaStr',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 11,
+                                            color: accentColor,
+                                          ),
                                         ),
-                                      ),
                                     ),
                                   ],
                                 ),

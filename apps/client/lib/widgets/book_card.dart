@@ -121,7 +121,11 @@ class BookCard extends StatelessWidget {
               ),
               Text(
                 '${book.completionPercentage.toInt()}%',
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: AppColors.primaryRed),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  color: Theme.of(context).extension<AppThemeDetails>()?.accentColor ?? Theme.of(context).colorScheme.primary,
+                ),
               ),
             ],
           ),

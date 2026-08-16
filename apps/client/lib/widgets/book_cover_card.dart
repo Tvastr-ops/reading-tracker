@@ -20,8 +20,10 @@ class BookCoverCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final details = Theme.of(context).extension<AppThemeDetails>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
     final quickOptions = getQuickChipOptions(book.type);
     final quickAmt = quickOptions.isNotEmpty ? quickOptions.first : 1;
 
@@ -29,12 +31,12 @@ class BookCoverCard extends StatelessWidget {
       onTap: onEdit,
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurface : Colors.white,
+          color: details?.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white),
           border: Border.all(color: borderColor, width: AppTheme.borderHeavy),
           boxShadow: [
             BoxShadow(
               color: borderColor,
-              offset: AppTheme.shadowOffsetSm,
+              offset: details?.shadowOffsetSm ?? AppTheme.shadowOffsetSm,
               blurRadius: 0,
             ),
           ],
@@ -64,7 +66,7 @@ class BookCoverCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryRed,
+                      color: accentColor,
                       border: Border.all(color: Colors.white, width: 1),
                     ),
                     child: Text(
@@ -87,7 +89,7 @@ class BookCoverCard extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.star_rounded, size: 11, color: AppColors.primaryRed),
+                          Icon(Icons.star_rounded, size: 11, color: accentColor),
                           const SizedBox(width: 2),
                           Text(
                             book.rating!.toStringAsFixed(1),
@@ -171,7 +173,7 @@ class BookCoverCard extends StatelessWidget {
                     BrutalistProgressBar(
                       progress: book.completionPercentage / 100.0,
                       height: 4,
-                      fillColor: AppColors.primaryRed,
+                      fillColor: accentColor,
                     ),
                   ],
                 ),
