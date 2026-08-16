@@ -19,21 +19,46 @@ class ThemeService extends ChangeNotifier {
   static const String _keyDarkVariant = 'app_theme_dark_variant';
   static const String _keyDisplayMode = 'app_display_mode';
   static const String _keyStickyStatusFilter = 'app_sticky_status_filter';
+  static const String _keyUseDynamicColor = 'app_use_dynamic_color';
 
   ThemeMode _themeMode = ThemeMode.system;
   AppThemeVariant _lightVariant = AppThemeVariant.classicPaperback;
   AppThemeVariant _darkVariant = AppThemeVariant.charcoalLedger;
   AppDisplayMode _displayMode = AppDisplayMode.edgeToEdge;
   bool _stickyStatusFilter = false;
+  bool _useDynamicColor = false;
+  ColorScheme? _lightDynamic;
+  ColorScheme? _darkDynamic;
 
   ThemeMode get themeMode => _themeMode;
   AppThemeVariant get lightVariant => _lightVariant;
   AppThemeVariant get darkVariant => _darkVariant;
   AppDisplayMode get displayMode => _displayMode;
   bool get stickyStatusFilter => _stickyStatusFilter;
+  bool get useDynamicColor => _useDynamicColor;
+  bool get isDynamicColorAvailable => _lightDynamic != null || _darkDynamic != null;
 
-  ThemeData get currentLightTheme => AppTheme.buildTheme(_lightVariant);
-  ThemeData get currentDarkTheme => AppTheme.buildTheme(_darkVariant);
+  ThemeData get currentLightTheme {
+    if (_useDynamicColor && _lightDynamic != null) {
+      return AppTheme.buildDynamicTheme(_lightDynamic!, isDark: false);
+    }
+    return AppTheme.buildTheme(_lightVariant);
+  }
+
+  ThemeData get currentDarkTheme {
+    if (_useDynamicColor && _darkDynamic != null) {
+      return AppTheme.buildDynamicTheme(_darkDynamic!, isDark: true);
+    }
+    return AppTheme.buildTheme(_darkVariant);
+  }
+
+  void updateDynamicColorSchemes(ColorScheme? light, ColorScheme? dark) {
+    if (_lightDynamic != light || _darkDynamic != dark) {
+      _lightDynamic = light;
+      _darkDynamic = dark;
+      notifyListeners();
+    }
+  }
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
@@ -73,8 +98,18 @@ class ThemeService extends ChangeNotifier {
     _applyDisplayMode();
 
     _stickyStatusFilter = prefs.getBool(_keyStickyStatusFilter) ?? false;
+    _useDynamicColor = prefs.getBool(_keyUseDynamicColor) ?? false;
 
     notifyListeners();
+  }
+
+  Future<void> setUseDynamicColor(bool val) async {
+    if (_useDynamicColor == val) return;
+    _useDynamicColor = val;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyUseDynamicColor, val);
   }
 
   void _applyDisplayMode() {

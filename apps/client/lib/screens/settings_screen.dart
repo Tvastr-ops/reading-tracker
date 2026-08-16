@@ -201,7 +201,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentLight = _themeService.lightVariant;
     final currentDark = _themeService.darkVariant;
-    final themeBadge = isDark ? currentDark.label : currentLight.label;
+    final themeBadge = _themeService.useDynamicColor
+        ? 'Material You'
+        : (isDark ? currentDark.label : currentLight.label);
     final displayBadge = _themeService.displayMode == AppDisplayMode.edgeToEdge
         ? 'Edge-to-Edge'
         : _themeService.displayMode == AppDisplayMode.classic
@@ -317,7 +319,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'ABOUT PAPERBACK',
           _isAboutExpanded,
           () => setState(() => _isAboutExpanded = !_isAboutExpanded),
-          badgeLabel: 'v1.3.0',
+          badgeLabel: 'v1.3.0a',
         ),
         const SizedBox(height: 6),
         if (_isAboutExpanded) ...[
@@ -618,7 +620,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1),
                 ),
                 child: const Text(
-                  'v1.3.0',
+                  'v1.3.0a',
                   style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white),
                 ),
               ),
@@ -943,7 +945,99 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+
+          // Option 2: Material You Dynamic Wallpaper Toggle Switch
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+              border: Border.all(
+                color: _themeService.useDynamicColor
+                    ? Theme.of(context).colorScheme.primary
+                    : (isDark ? AppColors.darkInkWhite.withValues(alpha: 0.3) : AppColors.inkBlack.withValues(alpha: 0.2)),
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.palette_outlined,
+                            size: 15,
+                            color: _themeService.useDynamicColor
+                                ? Theme.of(context).colorScheme.primary
+                                : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'MATERIAL YOU DYNAMIC COLOR',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.3,
+                              color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        _themeService.useDynamicColor
+                            ? 'Syncing canvas & accent hues with your device wallpaper.'
+                            : 'Match app colors to your Android home screen wallpaper.',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: _themeService.useDynamicColor,
+                  activeThumbColor: Theme.of(context).colorScheme.primary,
+                  onChanged: (val) {
+                    _themeService.setUseDynamicColor(val);
+                    setState(() {});
+                  },
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
+
+          if (_themeService.useDynamicColor)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                border: Border.all(color: Theme.of(context).colorScheme.primary, width: 1),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline_rounded, size: 14, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Wallpaper dynamic color is active. Disable toggle above to switch back to curated book palettes.',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
           // Light Palettes
           if (mode != ThemeMode.dark) ...[
