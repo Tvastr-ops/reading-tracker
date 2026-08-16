@@ -284,3 +284,24 @@ String formatRating(double? rating, {bool isDecimalMode = false}) {
   }
   return '${rating.toStringAsFixed(1)} ★';
 }
+
+/// Generates a RFC-4122 compliant UUID v4.
+String generateUuidV4() {
+  final rnd = DateTime.now().microsecondsSinceEpoch;
+  final rnd2 = (DateTime.now().millisecondsSinceEpoch * 13) ^ 0x5DEECE66D;
+  final r3 = (rnd ^ rnd2).abs();
+  final hex = r3.toRadixString(16).padLeft(16, '0') + (rnd2.abs() ^ 0xA5A5A5A5).toRadixString(16).padLeft(16, '0');
+  final cleanHex = hex.padRight(32, '0').substring(0, 32);
+  final p1 = cleanHex.substring(0, 8);
+  final p2 = cleanHex.substring(8, 12);
+  final p3 = '4${cleanHex.substring(13, 16)}';
+  final p4 = 'a${cleanHex.substring(17, 20)}';
+  final p5 = cleanHex.substring(20, 32);
+  return '$p1-$p2-$p3-$p4-$p5';
+}
+
+bool isValidUuid(String? str) {
+  if (str == null) return false;
+  final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+  return uuidRegex.hasMatch(str);
+}

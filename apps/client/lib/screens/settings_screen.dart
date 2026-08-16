@@ -352,7 +352,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1),
                       ),
                       child: const Text(
-                        'v1.2.0b',
+                        'v1.2.0c',
                         style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white),
                       ),
                     ),

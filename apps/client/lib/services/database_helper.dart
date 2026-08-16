@@ -258,7 +258,40 @@ class DatabaseHelper {
 
   Future<int> insertReadingLog(ReadingLogEntry entry) async {
     final db = await instance.database;
-    return await db.insert('reading_log', entry.toMap());
+    return await db.insert(
+      'reading_log',
+      entry.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<ReadingLogEntry>> getPendingSyncReadingLogs() async {
+    final db = await instance.database;
+    final result = await db.query(
+      'reading_log',
+      where: 'sync_status = ? OR sync_status = ?',
+      whereArgs: ['pending_create', 'pending_update'],
+    );
+    return result.map((json) => ReadingLogEntry.fromMap(json)).toList();
+  }
+
+  Future<int> markReadingLogSynced(String id) async {
+    final db = await instance.database;
+    return await db.update(
+      'reading_log',
+      {'sync_status': 'synced'},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<int> upsertRemoteReadingLog(ReadingLogEntry entry) async {
+    final db = await instance.database;
+    return await db.insert(
+      'reading_log',
+      entry.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   Future<List<ReadingLogEntry>> getReadingLogs(String bookId) async {
@@ -272,7 +305,7 @@ class DatabaseHelper {
     return result.map((json) => ReadingLogEntry.fromMap(json)).toList();
   }
 
-  Future<List<Map<String, dynamic>>> getAllReadingLogsWithBookInfo() async {
+  Future<List<Map<String, dynamic>>> getAllReadingLogsWithBookInfo({int limit = 30, int offset = 0}) async {
     final db = await instance.database;
     return await db.rawQuery('''
       SELECT 
@@ -289,7 +322,17 @@ class DatabaseHelper {
       FROM reading_log l
       INNER JOIN books b ON l.book_id = b.id
       ORDER BY l.logged_at DESC
-    ''');
+      LIMIT ? OFFSET ?
+    ''', [limit, offset]);
+  }
+
+  Future<int> getReadingLogsCount() async {
+    final db = await instance.database;
+    final res = await db.rawQuery('SELECT COUNT(*) as count FROM reading_log l INNER JOIN books b ON l.book_id = b.id');
+    if (res.isNotEmpty && res.first['count'] != null) {
+      return (res.first['count'] as num).toInt();
+    }
+    return 0;
   }
 
   Future<int> deleteReadingLog(String id) async {

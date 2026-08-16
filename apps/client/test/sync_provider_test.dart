@@ -32,16 +32,16 @@ void main() {
       expect(SyncBackendType.offlineOnly.index, 2);
     });
 
-    test('SupabaseSyncProvider returns null when url is empty', () async {
+    test('SupabaseSyncProvider returns empty logs when url is empty', () async {
       final provider = SupabaseSyncProvider(supabaseUrl: '', anonKey: '');
-      final goal = await provider.fetchYearlyGoal();
-      expect(goal, isNull);
+      final logs = await provider.fetchRemoteReadingLogs();
+      expect(logs, isEmpty);
     });
 
-    test('GenericRestSyncProvider returns null when url is empty', () async {
+    test('GenericRestSyncProvider returns empty logs when url is empty', () async {
       final provider = GenericRestSyncProvider(serverUrl: '');
-      final goal = await provider.fetchYearlyGoal();
-      expect(goal, isNull);
+      final logs = await provider.fetchRemoteReadingLogs();
+      expect(logs, isEmpty);
     });
   });
 }

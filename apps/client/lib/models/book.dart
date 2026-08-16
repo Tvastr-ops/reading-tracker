@@ -276,6 +276,17 @@ class ReadingLogEntry {
     };
   }
 
+  Map<String, dynamic> toSupabaseJson() {
+    return {
+      'id': id,
+      'book_id': bookId,
+      'from_progress': fromProgress,
+      'to_progress': toProgress,
+      'note': note,
+      'logged_at': loggedAt,
+    };
+  }
+
   factory ReadingLogEntry.fromMap(Map<String, dynamic> map) {
     return ReadingLogEntry(
       id: map['id']?.toString() ?? '',

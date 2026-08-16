@@ -15,21 +15,63 @@ class TimelineScreen extends StatefulWidget {
 class _TimelineScreenState extends State<TimelineScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
   final SyncManager _syncManager = SyncManager.instance;
+  final ScrollController _scrollController = ScrollController();
+
+  static const int _pageSize = 30;
   List<Map<String, dynamic>> _logs = [];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
 
   @override
   void initState() {
     super.initState();
-    _loadLogs();
+    _loadInitialLogs();
+    _scrollController.addListener(_onScroll);
   }
 
-  Future<void> _loadLogs() async {
-    setState(() => _isLoading = true);
-    final logs = await _dbHelper.getAllReadingLogsWithBookInfo();
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
+        !_isLoading &&
+        !_isLoadingMore &&
+        _hasMore) {
+      _loadMoreLogs();
+    }
+  }
+
+  Future<void> _loadInitialLogs() async {
+    setState(() {
+      _isLoading = true;
+      _hasMore = true;
+    });
+    final logs = await _dbHelper.getAllReadingLogsWithBookInfo(limit: _pageSize, offset: 0);
     setState(() {
       _logs = logs;
       _isLoading = false;
+      _hasMore = logs.length >= _pageSize;
+    });
+  }
+
+  Future<void> _loadMoreLogs() async {
+    if (_isLoadingMore || !_hasMore) return;
+    setState(() => _isLoadingMore = true);
+
+    final nextLogs = await _dbHelper.getAllReadingLogsWithBookInfo(
+      limit: _pageSize,
+      offset: _logs.length,
+    );
+
+    setState(() {
+      _logs.addAll(nextLogs);
+      _isLoadingMore = false;
+      _hasMore = nextLogs.length >= _pageSize;
     });
   }
 
@@ -58,6 +100,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
     final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
+    final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final mutedInk = details?.inkMutedColor ?? (isDark ? Colors.white60 : AppColors.inkMuted);
+    final surfaceHigh = details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface);
 
     return Scaffold(
       appBar: AppBar(
@@ -84,7 +129,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 13,
-                          color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.6) : AppColors.inkMuted,
+                          color: mutedInk,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -94,12 +139,29 @@ class _TimelineScreenState extends State<TimelineScreen> {
               : RefreshIndicator(
                   onRefresh: () async {
                     await _syncManager.syncNow();
-                    await _loadLogs();
+                    await _loadInitialLogs();
                   },
                   child: ListView.builder(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    itemCount: _logs.length,
+                    itemCount: _logs.length + (_hasMore ? 1 : 0),
                     itemBuilder: (context, index) {
+                      if (index == _logs.length) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          child: Center(
+                            child: _isLoadingMore
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                        );
+                      }
+
                       final item = _logs[index];
                       final fromProg = (item['from_progress'] as num?)?.toDouble() ?? 0.0;
                       final toProg = (item['to_progress'] as num?)?.toDouble() ?? 0.0;
@@ -123,11 +185,11 @@ class _TimelineScreenState extends State<TimelineScreen> {
                             Padding(
                               padding: EdgeInsets.only(top: index == 0 ? 0 : 16, bottom: 8),
                               child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: accentColor,
-                                    border: Border.all(color: borderColor, width: 1.5),
-                                  ),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: accentColor,
+                                  border: Border.all(color: borderColor, width: 1.5),
+                                ),
                                 child: Text(
                                   _formatDateHeader(loggedAt),
                                   style: const TextStyle(
@@ -151,10 +213,11 @@ class _TimelineScreenState extends State<TimelineScreen> {
                                     Expanded(
                                       child: Text(
                                         bookTitle.toUpperCase(),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.w900,
                                           fontSize: 14,
                                           letterSpacing: -0.2,
+                                          color: inkColor,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -164,17 +227,17 @@ class _TimelineScreenState extends State<TimelineScreen> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
+                                        color: surfaceHigh,
                                         border: Border.all(color: borderColor, width: 1),
                                       ),
-                                        child: Text(
-                                          '+$deltaStr',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w900,
-                                            fontSize: 11,
-                                            color: accentColor,
-                                          ),
+                                      child: Text(
+                                        '+$deltaStr',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 11,
+                                          color: accentColor,
                                         ),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -186,9 +249,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
-                                        color: isDark
-                                            ? AppColors.darkInkWhite.withValues(alpha: 0.7)
-                                            : AppColors.inkMuted,
+                                        color: mutedInk,
                                       ),
                                     ),
                                   ],
@@ -199,11 +260,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
                                     width: double.infinity,
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: isDark
-                                          ? AppColors.darkSurfaceHigh.withValues(alpha: 0.5)
-                                          : AppColors.paperSurface,
+                                      color: surfaceHigh,
                                       border: Border.all(
-                                        color: isDark ? Colors.white24 : AppColors.inkBlack.withValues(alpha: 0.2),
+                                        color: borderColor.withValues(alpha: 0.3),
                                         width: 1,
                                       ),
                                     ),
@@ -213,7 +272,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                                         fontSize: 12,
                                         fontStyle: FontStyle.italic,
                                         fontWeight: FontWeight.w500,
-                                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                        color: inkColor,
                                       ),
                                     ),
                                   ),

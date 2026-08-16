@@ -127,5 +127,15 @@ void main() {
       expect(formatRating(4.8), '4.8 ★');
       expect(formatRating(4.8, isDecimalMode: true), '4.8 / 5.0');
     });
+
+    test('generateUuidV4 generates valid RFC4122 compliant UUIDs', () {
+      final uuid1 = generateUuidV4();
+      final uuid2 = generateUuidV4();
+      expect(uuid1, isNotEmpty);
+      expect(uuid2, isNotEmpty);
+      expect(isValidUuid(uuid1), isTrue);
+      expect(isValidUuid(uuid2), isTrue);
+      expect(uuid1, isNot(equals(uuid2)));
+    });
   });
 }
