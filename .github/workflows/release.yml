@@ -51,27 +51,32 @@ jobs:
           cd apps/client
           VERSION_NAME="${GITHUB_REF_NAME#v}"
           if [ -z "$VERSION_NAME" ] || [ "$VERSION_NAME" = "main" ] || [ "$VERSION_NAME" = "dev" ]; then
-            VERSION_NAME="1.1.0"
+            VERSION_NAME="1.3.0"
           fi
-          flutter build apk --target-platform android-arm64 --release --build-name="$VERSION_NAME" --android-skip-build-dependency-validation
+          BUILD_NUMBER=$(git rev-list --count HEAD)
+          flutter build apk --target-platform android-arm64 --release --build-name="$VERSION_NAME" --build-number="$BUILD_NUMBER" --android-skip-build-dependency-validation
           mkdir -p ../../release-assets
           if [ -f build/app/outputs/flutter-apk/app-arm64-v8a-release.apk ]; then
-            cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk ../../release-assets/reading-tracker-arm64.apk
+            cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "../../release-assets/paperback-v${VERSION_NAME}-arm64.apk"
           else
-            cp build/app/outputs/flutter-apk/app-release.apk ../../release-assets/reading-tracker-arm64.apk
+            cp build/app/outputs/flutter-apk/app-release.apk "../../release-assets/paperback-v${VERSION_NAME}-arm64.apk"
           fi
 
-      - name: Build Universal Release APK (Optional)
+      - name: Build Universal & Split Release APKs (Optional)
         if: ${{ inputs.target_arch == 'all' }}
         run: |
           cd apps/client
           VERSION_NAME="${GITHUB_REF_NAME#v}"
           if [ -z "$VERSION_NAME" ] || [ "$VERSION_NAME" = "main" ] || [ "$VERSION_NAME" = "dev" ]; then
-            VERSION_NAME="1.1.0"
+            VERSION_NAME="1.3.0"
           fi
-          flutter build apk --split-per-abi --release --build-name="$VERSION_NAME" --android-skip-build-dependency-validation
+          BUILD_NUMBER=$(git rev-list --count HEAD)
+          flutter build apk --split-per-abi --release --build-name="$VERSION_NAME" --build-number="$BUILD_NUMBER" --android-skip-build-dependency-validation
           mkdir -p ../../release-assets
-          cp build/app/outputs/flutter-apk/*.apk ../../release-assets/ 2>/dev/null || true
+          [ -f build/app/outputs/flutter-apk/app-arm64-v8a-release.apk ] && cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "../../release-assets/paperback-v${VERSION_NAME}-arm64.apk" || true
+          [ -f build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk ] && cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk "../../release-assets/paperback-v${VERSION_NAME}-armv7.apk" || true
+          [ -f build/app/outputs/flutter-apk/app-x86_64-release.apk ] && cp build/app/outputs/flutter-apk/app-x86_64-release.apk "../../release-assets/paperback-v${VERSION_NAME}-x86_64.apk" || true
+          [ -f build/app/outputs/flutter-apk/app-release.apk ] && cp build/app/outputs/flutter-apk/app-release.apk "../../release-assets/paperback-v${VERSION_NAME}-universal.apk" || true
 
       - name: Upload Android Artifacts
         uses: actions/upload-artifact@v4

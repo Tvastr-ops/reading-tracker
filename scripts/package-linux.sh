@@ -9,15 +9,16 @@ DEB_DIR="deb-pkg"
 mkdir -p "$RELEASE_ASSETS_DIR"
 
 # 1. Package Portable .tar.gz
+VERSION_CLEAN="${GITHUB_REF_NAME#v}"
+if [ -z "$VERSION_CLEAN" ] || [ "$VERSION_CLEAN" = "main" ] || [ "$VERSION_CLEAN" = "dev" ]; then
+  VERSION_CLEAN="1.3.0"
+fi
+
 echo "Packaging portable Linux tarball..."
-tar -czf "$RELEASE_ASSETS_DIR/reading-tracker-linux-x64.tar.gz" -C "$BUNDLE_DIR" .
+tar -czf "$RELEASE_ASSETS_DIR/paperback-v${VERSION_CLEAN}-linux-x64.tar.gz" -C "$BUNDLE_DIR" .
 
 # 2. Package Native .deb Package
 echo "Packaging native Debian (.deb) package..."
-VERSION_CLEAN="${GITHUB_REF_NAME#v}"
-if [ -z "$VERSION_CLEAN" ] || [ "$VERSION_CLEAN" = "main" ] || [ "$VERSION_CLEAN" = "dev" ]; then
-  VERSION_CLEAN="1.1.0"
-fi
 
 rm -rf "$DEB_DIR"
 mkdir -p "$DEB_DIR/DEBIAN"
@@ -67,6 +68,6 @@ Description: Paperback Reader
  A tactile, offline-first reading ledger for novels, light novels, and web serials.
 EOF
 
-dpkg-deb --build --root-owner-group "$DEB_DIR" "$RELEASE_ASSETS_DIR/reading-tracker-linux-amd64.deb"
+dpkg-deb --build --root-owner-group "$DEB_DIR" "$RELEASE_ASSETS_DIR/paperback-v${VERSION_CLEAN}-linux-amd64.deb"
 echo "Linux packages created successfully in $RELEASE_ASSETS_DIR:"
 ls -lh "$RELEASE_ASSETS_DIR"
