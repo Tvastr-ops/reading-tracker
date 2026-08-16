@@ -906,107 +906,136 @@ class _LibraryScreenState extends State<LibraryScreen> {
     required Color accentColor,
     required bool isCustomFilterActive,
   }) {
-    final isExpanded = _isSearchExpanded || _searchQuery.isNotEmpty;
+    final hasText = _searchQuery.isNotEmpty;
+    final isFocusOrText = _isSearchExpanded || hasText;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: AnimatedCrossFade(
-        duration: const Duration(milliseconds: 260),
-        firstCurve: Curves.easeOutCubic,
-        secondCurve: Curves.easeInCubic,
-        crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-        // Folded state: Prominent SEARCH button pill + Sort pill + Flip direction + View Mode
-        firstChild: Row(
-          children: [
-            // Prominent Dynamic Search Pill with Scroll Roller handles
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  setState(() => _isSearchExpanded = true);
-                  _searchFocusNode.requestFocus();
-                },
-                child: Container(
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
-                    border: Border.all(color: borderColor, width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: borderColor,
-                        offset: AppTheme.shadowOffsetSm,
-                        blurRadius: 0,
-                      ),
-                    ],
+      child: Row(
+        children: [
+          // 1. Dynamic Unfolding Chinese Paper Scroll Search Bar
+          Expanded(
+            flex: isFocusOrText ? 10 : 4,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+              height: 42,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                border: Border.all(
+                  color: isFocusOrText ? accentColor : borderColor,
+                  width: isFocusOrText ? 2.0 : 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: borderColor,
+                    offset: AppTheme.shadowOffsetSm,
+                    blurRadius: 0,
                   ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 5,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: accentColor,
-                          border: Border(
-                            right: BorderSide(color: borderColor, width: 1.0),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        Icons.search_rounded,
-                        size: 17,
+                ],
+              ),
+              child: Row(
+                children: [
+                  // Left Scroll Spindle Roller
+                  Container(
+                    width: 4,
+                    height: 42,
+                    color: accentColor,
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.search_rounded,
+                    size: 18,
+                    color: isFocusOrText ? accentColor : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      focusNode: _searchFocusNode,
+                      onTap: () {
+                        if (!_isSearchExpanded) {
+                          setState(() => _isSearchExpanded = true);
+                        }
+                      },
+                      onChanged: (val) {
+                        setState(() {
+                          _searchQuery = val.trim();
+                          if (val.isNotEmpty) _isSearchExpanded = true;
+                        });
+                      },
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
                         color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'SEARCH',
-                        style: TextStyle(
+                      decoration: InputDecoration(
+                        hintText: isFocusOrText ? 'Search title, author...' : 'SEARCH',
+                        hintStyle: TextStyle(
                           fontSize: 11,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w800,
                           letterSpacing: 0.5,
-                          color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.7),
+                          color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.5),
                         ),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
                       ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: (isDark ? Colors.white24 : AppColors.inkBlack.withValues(alpha: 0.2)),
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          '/',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.5),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        width: 5,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: accentColor,
-                          border: Border(
-                            left: BorderSide(color: borderColor, width: 1.0),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                  if (hasText) ...[
+                    GestureDetector(
+                      onTap: () {
+                        _searchController.clear();
+                        setState(() {
+                          _searchQuery = '';
+                          _isSearchExpanded = false;
+                        });
+                        _searchFocusNode.unfocus();
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Icon(
+                          Icons.close_rounded,
+                          size: 16,
+                          color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                        ),
+                      ),
+                    ),
+                  ] else if (!isFocusOrText) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Text(
+                        '/',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.4),
+                        ),
+                      ),
+                    ),
+                  ],
+                  // Right Scroll Spindle Roller
+                  Container(
+                    width: 4,
+                    height: 42,
+                    color: accentColor,
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 8),
+          ),
+          const SizedBox(width: 8),
 
-            // Sort & Filter Pill Button with Dynamic Label
-            GestureDetector(
+          // 2. Sort & Filter Pill (Animated smoothly)
+          AnimatedSize(
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOutCubic,
+            child: GestureDetector(
               onTap: _openSortFilterSheet,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+                height: 42,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
                   color: isCustomFilterActive
                       ? accentColor
@@ -1021,6 +1050,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   ],
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.tune_rounded,
@@ -1029,53 +1059,33 @@ class _LibraryScreenState extends State<LibraryScreen> {
                           ? Colors.white
                           : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _getSortShortLabel(),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w900,
-                        color: isCustomFilterActive
-                            ? Colors.white
-                            : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                    if (!isFocusOrText) ...[
+                      const SizedBox(width: 4),
+                      Text(
+                        _getSortShortLabel(),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          color: isCustomFilterActive
+                              ? Colors.white
+                              : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
             ),
-            const SizedBox(width: 6),
+          ),
+          const SizedBox(width: 6),
 
-            // 1-Tap Direction Flip Button (▲ / ▼)
-            Tooltip(
-              message: _sortAscending ? 'Ascending (Tap to invert)' : 'Descending (Tap to invert)',
-              child: GestureDetector(
-                onTap: () => setState(() => _sortAscending = !_sortAscending),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 11),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
-                    border: Border.all(color: borderColor, width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: borderColor,
-                        offset: AppTheme.shadowOffsetSm,
-                        blurRadius: 0,
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    _sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-                    size: 16,
-                    color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-
-            // View Mode Switcher
-            Container(
+          // 3. Direction Flip Button (▲ / ▼)
+          GestureDetector(
+            onTap: () => setState(() => _sortAscending = !_sortAscending),
+            child: Container(
+              height: 42,
+              width: 36,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
                 border: Border.all(color: borderColor, width: 1.5),
@@ -1087,129 +1097,39 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   ),
                 ],
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildViewModeIcon(Icons.view_agenda_rounded, LibraryViewMode.cards, 'Cards'),
-                  _buildViewModeIcon(Icons.grid_view_rounded, LibraryViewMode.covers, 'Covers'),
-                  _buildViewModeIcon(Icons.table_rows_rounded, LibraryViewMode.table, 'Table'),
-                ],
+              child: Icon(
+                _sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                size: 16,
+                color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
               ),
             ),
-          ],
-        ),
-
-        // Unfolded Paper Scroll State: An authentic unrolled parchment scroll between two wooden spindle rollers
-        secondChild: Container(
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
-            border: Border.all(color: accentColor, width: 2.0),
-            boxShadow: [
-              BoxShadow(
-                color: borderColor,
-                offset: AppTheme.shadowOffsetSm,
-                blurRadius: 0,
-              ),
-            ],
           ),
-          child: Row(
-            children: [
-              // Left Scroll Spindle Roller (Ancient Dowel Spindle)
-              Container(
-                width: 8,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: accentColor,
-                  border: Border(
-                    right: BorderSide(color: borderColor, width: 1.5),
-                  ),
-                ),
-              ),
+          const SizedBox(width: 6),
 
-              // Unrolled Parchment Canvas
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  focusNode: _searchFocusNode,
-                  onChanged: (val) => setState(() => _searchQuery = val.trim()),
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Search title, author, or series...',
-                    hintStyle: TextStyle(
-                      fontSize: 12.5,
-                      color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.45),
-                    ),
-                    prefixIcon: Icon(
-                      Icons.search_rounded,
-                      color: accentColor,
-                      size: 20,
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                  ),
+          // 4. View Mode Switcher
+          Container(
+            height: 42,
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+              border: Border.all(color: borderColor, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: borderColor,
+                  offset: AppTheme.shadowOffsetSm,
+                  blurRadius: 0,
                 ),
-              ),
-
-              // Clear & Roll Back Action (Right Scroll Spindle Roller)
-              GestureDetector(
-                onTap: () {
-                  _searchFocusNode.unfocus();
-                  _searchController.clear();
-                  setState(() {
-                    _searchQuery = '';
-                    _isSearchExpanded = false;
-                  });
-                },
-                child: Container(
-                  height: 44,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.white10 : AppColors.paperSurface,
-                    border: Border(
-                      left: BorderSide(color: borderColor, width: 1.5),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.close_rounded,
-                        size: 16,
-                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'ROLL UP',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
-                          color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Right Scroll Spindle Roller
-              Container(
-                width: 8,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: accentColor,
-                  border: Border(
-                    left: BorderSide(color: borderColor, width: 1.5),
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildViewModeIcon(Icons.view_agenda_rounded, LibraryViewMode.cards, 'Cards'),
+                _buildViewModeIcon(Icons.grid_view_rounded, LibraryViewMode.covers, 'Covers'),
+                _buildViewModeIcon(Icons.table_rows_rounded, LibraryViewMode.table, 'Table'),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
