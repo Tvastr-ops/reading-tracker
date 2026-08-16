@@ -37,8 +37,8 @@ include(${FLUTTER_MANAGED_DIR}/ephemeral/generated_config.cmake OPTIONAL)
 # Flutter-generated code, which must come before the application code.
 add_subdirectory(${FLUTTER_MANAGED_DIR} flutter)
 
-# The plugin-generated code.
-include(${FLUTTER_MANAGED_DIR}/generated_plugins.cmake)
-
 # The application code.
 add_subdirectory(runner)
+
+# The plugin-generated code.
+include(${FLUTTER_MANAGED_DIR}/generated_plugins.cmake)
