@@ -22,6 +22,12 @@ set(FLUTTER_PROJECT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
 # Directory where Flutter will output ephemeral build artifacts.
 set(FLUTTER_MANAGED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/flutter")
 
+# System-level dependencies.
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
+pkg_check_modules(GLIB REQUIRED IMPORTED_TARGET glib-2.0)
+pkg_check_modules(GIO REQUIRED IMPORTED_TARGET gio-2.0)
+
 # Apply standard build settings for targets and plugins
 if(NOT COMMAND apply_standard_settings)
   function(apply_standard_settings TARGET)
