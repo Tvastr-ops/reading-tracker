@@ -1,4 +1,4 @@
-package com.readingtracker.reading_tracker_app
+package com.readingtracker.mobile
 
 import io.flutter.embedding.android.FlutterActivity
 
