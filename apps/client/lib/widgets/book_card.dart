@@ -10,6 +10,7 @@ class BookCard extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final Function(double) onQuickIncrement;
+  final bool isSelected;
 
   const BookCard({
     super.key,
@@ -18,15 +19,21 @@ class BookCard extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onQuickIncrement,
+    this.isSelected = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final details = Theme.of(context).extension<AppThemeDetails>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
     final progressFraction = (book.completionPercentage / 100).clamp(0.0, 1.0);
 
     return BrutalistCard(
       onTap: onEdit,
+      borderColor: isSelected ? accentColor : null,
+      borderWidth: isSelected ? 2.5 : AppTheme.borderLight,
+      shadowOffset: isSelected ? const Offset(4.0, 4.0) : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

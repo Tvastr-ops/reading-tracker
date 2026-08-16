@@ -8,6 +8,7 @@ import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/book_card.dart';
 import '../widgets/book_cover_card.dart';
+import '../widgets/book_detail_panel.dart';
 import '../widgets/book_edit_dialog.dart';
 import '../widgets/book_table_row.dart';
 import '../widgets/brutalist_widgets.dart';
@@ -22,16 +23,19 @@ class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key, required this.onNavigateToSync});
 
   @override
-  State<LibraryScreen> createState() => _LibraryScreenState();
+  State<LibraryScreen> createState() => LibraryScreenState();
 }
 
-class _LibraryScreenState extends State<LibraryScreen> {
+class LibraryScreenState extends State<LibraryScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
   final SyncManager _syncManager = SyncManager.instance;
   final FocusNode _searchFocusNode = FocusNode();
   final TextEditingController _searchController = TextEditingController();
 
+  void openAddBookDialog() => _openEditDialog();
+
   List<Book> _books = [];
+  Book? _selectedBookForDetail;
   bool _isLoading = true;
   String _selectedStatus = 'All';
   String _searchQuery = '';
@@ -128,6 +132,83 @@ class _LibraryScreenState extends State<LibraryScreen> {
     await _dbHelper.insertReadingLog(logEntry);
 
     await _loadBooks();
+  }
+
+  void _onBookClick(Book book, bool isWideScreen) {
+    if (isWideScreen) {
+      setState(() {
+        if (_selectedBookForDetail?.id == book.id) {
+          _selectedBookForDetail = null; // Toggle closed
+        } else {
+          _selectedBookForDetail = book;
+        }
+      });
+    } else {
+      _openEditDialog(book);
+    }
+  }
+
+  Future<void> _quickIncrementBoth(Book book, int chaptersDelta, int volumesDelta) async {
+    double newProgress = book.progress + chaptersDelta;
+    if (book.totalUnits != null && newProgress > book.totalUnits!) {
+      newProgress = book.totalUnits!;
+    }
+    num? newParentProgress = book.parentProgress;
+    if (volumesDelta > 0) {
+      newParentProgress = (newParentProgress ?? 0) + volumesDelta;
+      if (book.parentTotal != null && newParentProgress > book.parentTotal!) {
+        newParentProgress = book.parentTotal!;
+      }
+    }
+
+    String newStatus = book.status;
+    if (newProgress > 0 && book.status == BookStatus.planToRead) {
+      newStatus = BookStatus.reading;
+    }
+    if (book.totalUnits != null && newProgress >= book.totalUnits!) {
+      newStatus = BookStatus.completed;
+    }
+
+    final updated = book.copyWith(
+      progress: newProgress,
+      parentProgress: newParentProgress,
+      status: newStatus,
+      updatedAt: DateTime.now().toIso8601String(),
+      syncStatus: 'pending_update',
+    );
+
+    await _dbHelper.updateBook(updated);
+
+    final logEntry = ReadingLogEntry(
+      id: generateUuidV4(),
+      bookId: book.id,
+      fromProgress: book.progress,
+      toProgress: newProgress,
+      loggedAt: DateTime.now().toIso8601String(),
+      syncStatus: 'pending_create',
+    );
+    await _dbHelper.insertReadingLog(logEntry);
+
+    setState(() {
+      _selectedBookForDetail = updated;
+    });
+    await _loadBooks();
+  }
+
+  Future<void> _deleteBook(Book book) async {
+    await _dbHelper.deleteBook(book.id);
+    setState(() {
+      _selectedBookForDetail = null;
+    });
+    await _loadBooks();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Moved "${book.title}" to trash'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   void _openQuickLog(Book book) {
@@ -616,8 +697,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
               return BookCoverCard(
                 key: ValueKey(book.id),
                 book: book,
+                isSelected: _selectedBookForDetail?.id == book.id,
                 onLogProgress: () => _openQuickLog(book),
-                onEdit: () => _openEditDialog(book),
+                onEdit: () => _onBookClick(book, isWideScreen),
                 onQuickIncrement: (amt) => _quickIncrement(book, amt),
               );
             },
@@ -637,8 +719,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
               return BookTableRow(
                 key: ValueKey(book.id),
                 book: book,
+                isSelected: _selectedBookForDetail?.id == book.id,
                 onLogProgress: () => _openQuickLog(book),
-                onEdit: () => _openEditDialog(book),
+                onEdit: () => _onBookClick(book, isWideScreen),
                 onQuickIncrement: (amt) => _quickIncrement(book, amt),
               );
             },
@@ -665,8 +748,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
               return BookCard(
                 key: ValueKey(book.id),
                 book: book,
+                isSelected: _selectedBookForDetail?.id == book.id,
                 onLogProgress: () => _openQuickLog(book),
-                onEdit: () => _openEditDialog(book),
+                onEdit: () => _onBookClick(book, isWideScreen),
                 onDelete: () async {
                   await _dbHelper.deleteBook(book.id);
                   await _loadBooks();
@@ -689,8 +773,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
             return BookCard(
               key: ValueKey(book.id),
               book: book,
+              isSelected: _selectedBookForDetail?.id == book.id,
               onLogProgress: () => _openQuickLog(book),
-              onEdit: () => _openEditDialog(book),
+              onEdit: () => _onBookClick(book, isWideScreen),
               onDelete: () async {
                 await _dbHelper.deleteBook(book.id);
                 await _loadBooks();
@@ -767,14 +852,29 @@ class _LibraryScreenState extends State<LibraryScreen> {
           setState(() => _isSearchExpanded = true);
           _searchFocusNode.requestFocus();
         },
+        const SingleActivator(LogicalKeyboardKey.keyF, control: true): () {
+          setState(() => _isSearchExpanded = true);
+          _searchFocusNode.requestFocus();
+        },
         const SingleActivator(LogicalKeyboardKey.keyN, control: true): () => _openEditDialog(),
+        const SingleActivator(LogicalKeyboardKey.keyS, control: true): () async {
+          await _syncManager.syncNow();
+          await _loadBooks();
+        },
+        const SingleActivator(LogicalKeyboardKey.digit1, control: true): () => setState(() => _viewMode = LibraryViewMode.cards),
+        const SingleActivator(LogicalKeyboardKey.digit2, control: true): () => setState(() => _viewMode = LibraryViewMode.covers),
+        const SingleActivator(LogicalKeyboardKey.digit3, control: true): () => setState(() => _viewMode = LibraryViewMode.table),
         const SingleActivator(LogicalKeyboardKey.escape): () {
-          _searchFocusNode.unfocus();
-          _searchController.clear();
-          setState(() {
-            _searchQuery = '';
-            _isSearchExpanded = false;
-          });
+          if (_selectedBookForDetail != null) {
+            setState(() => _selectedBookForDetail = null);
+          } else {
+            _searchFocusNode.unfocus();
+            _searchController.clear();
+            setState(() {
+              _searchQuery = '';
+              _isSearchExpanded = false;
+            });
+          }
         },
       },
       child: Focus(
@@ -827,8 +927,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
               builder: (context, constraints) {
                 final isWideScreen = constraints.maxWidth >= 720;
                 final isExtraWide = constraints.maxWidth >= 1150;
+                final isMasterDetailScreen = constraints.maxWidth >= 840;
 
-                return CustomScrollView(
+                final masterScrollView = CustomScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   slivers: [
                     // Sliver 1: Animated Paper Scroll Search & Filter Toolbar
@@ -847,7 +948,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                         child: ReadingCarousel(
                           readingBooks: activeReadingBooks,
                           onLogProgress: _openQuickLog,
-                          onEdit: _openEditDialog,
+                          onEdit: (b) => _onBookClick(b, isWideScreen),
                           onQuickIncrement: _quickIncrement,
                         ),
                       ),
@@ -878,6 +979,28 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     ),
                   ],
                 );
+
+                if (isMasterDetailScreen && _selectedBookForDetail != null) {
+                  return Row(
+                    children: [
+                      Expanded(child: masterScrollView),
+                      BookDetailPanel(
+                        book: _selectedBookForDetail!,
+                        onClose: () => setState(() => _selectedBookForDetail = null),
+                        onUpdateBook: (b) async {
+                          await _loadBooks();
+                          setState(() => _selectedBookForDetail = b);
+                        },
+                        onOpenFullEdit: () => _openEditDialog(_selectedBookForDetail),
+                        onOpenQuickLog: () => _openQuickLog(_selectedBookForDetail!),
+                        onDelete: () => _deleteBook(_selectedBookForDetail!),
+                        onQuickIncrement: (c, v) => _quickIncrementBoth(_selectedBookForDetail!, c, v),
+                      ),
+                    ],
+                  );
+                }
+
+                return masterScrollView;
               },
             ),
           ),
@@ -934,21 +1057,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   ),
                 ],
               ),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Row(
                 children: [
-                  // Left Scroll Spindle Roller
-                  Container(
-                    width: 4,
-                    height: 42,
-                    color: accentColor,
-                  ),
-                  const SizedBox(width: 8),
                   Icon(
                     Icons.search_rounded,
                     size: 18,
                     color: isFocusOrText ? accentColor : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
                       controller: _searchController,
@@ -994,7 +1111,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                         _searchFocusNode.unfocus();
                       },
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: Icon(
                           Icons.close_rounded,
                           size: 16,
@@ -1004,7 +1121,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     ),
                   ] else if (!isFocusOrText) ...[
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Text(
                         '/',
                         style: TextStyle(
@@ -1015,12 +1132,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       ),
                     ),
                   ],
-                  // Right Scroll Spindle Roller
-                  Container(
-                    width: 4,
-                    height: 42,
-                    color: accentColor,
-                  ),
                 ],
               ),
             ),

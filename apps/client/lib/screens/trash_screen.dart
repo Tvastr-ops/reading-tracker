@@ -120,79 +120,168 @@ class _TrashScreenState extends State<TrashScreen> {
                     ],
                   ),
                 )
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: _trashBooks.length,
-                  itemBuilder: (context, index) {
-                    final book = _trashBooks[index];
-                    return BrutalistCard(
-                      key: ValueKey(book.id),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              : LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth >= 840;
+
+                  if (isWide) {
+                    return GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 2.4,
+                        crossAxisSpacing: 14,
+                        mainAxisSpacing: 14,
+                      ),
+                      itemCount: _trashBooks.length,
+                      itemBuilder: (context, index) {
+                        final book = _trashBooks[index];
+                        return BrutalistCard(
+                          key: ValueKey(book.id),
+                          margin: EdgeInsets.zero,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  book.title.toUpperCase(),
-                                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      book.title.toUpperCase(),
+                                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const BrutalistBadge(
+                                    label: 'DELETED',
+                                    backgroundColor: AppColors.primaryRed,
+                                    textColor: Colors.white,
+                                  ),
+                                ],
                               ),
-                              const BrutalistBadge(
-                                label: 'DELETED',
-                                backgroundColor: AppColors.primaryRed,
-                                textColor: Colors.white,
+                              if (book.author != null) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  book.author!,
+                                  style: const TextStyle(fontSize: 12, color: AppColors.inkMuted),
+                                ),
+                              ],
+                              const Spacer(),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  BrutalistButton(
+                                    backgroundColor: Colors.white,
+                                    textColor: AppColors.inkBlack,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    onPressed: () => _restoreBook(book),
+                                    child: const Row(
+                                      children: [
+                                        Icon(Icons.restore_rounded, size: 16, color: AppColors.inkBlack),
+                                        SizedBox(width: 4),
+                                        Text('RESTORE'),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  BrutalistButton(
+                                    backgroundColor: AppColors.primaryRed,
+                                    textColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    onPressed: () => _permanentDelete(book),
+                                    child: const Row(
+                                      children: [
+                                        Icon(Icons.delete_forever_rounded, size: 16, color: Colors.white),
+                                        SizedBox(width: 4),
+                                        Text('PURGE'),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                          if (book.author != null) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              book.author!,
-                              style: const TextStyle(fontSize: 12, color: AppColors.inkMuted),
+                        );
+                      },
+                    );
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: _trashBooks.length,
+                    itemBuilder: (context, index) {
+                      final book = _trashBooks[index];
+                      return BrutalistCard(
+                        key: ValueKey(book.id),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    book.title.toUpperCase(),
+                                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const BrutalistBadge(
+                                  label: 'DELETED',
+                                  backgroundColor: AppColors.primaryRed,
+                                  textColor: Colors.white,
+                                ),
+                              ],
+                            ),
+                            if (book.author != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                book.author!,
+                                style: const TextStyle(fontSize: 12, color: AppColors.inkMuted),
+                              ),
+                            ],
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                BrutalistButton(
+                                  backgroundColor: Colors.white,
+                                  textColor: AppColors.inkBlack,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  onPressed: () => _restoreBook(book),
+                                  child: const Row(
+                                    children: [
+                                      Icon(Icons.restore_rounded, size: 16, color: AppColors.inkBlack),
+                                      SizedBox(width: 4),
+                                      Text('RESTORE'),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                BrutalistButton(
+                                  backgroundColor: AppColors.primaryRed,
+                                  textColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  onPressed: () => _permanentDelete(book),
+                                  child: const Row(
+                                    children: [
+                                      Icon(Icons.delete_forever_rounded, size: 16, color: Colors.white),
+                                      SizedBox(width: 4),
+                                      Text('PURGE'),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              BrutalistButton(
-                                backgroundColor: Colors.white,
-                                textColor: AppColors.inkBlack,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                onPressed: () => _restoreBook(book),
-                                child: const Row(
-                                  children: [
-                                    Icon(Icons.restore_rounded, size: 16, color: AppColors.inkBlack),
-                                    SizedBox(width: 4),
-                                    Text('RESTORE'),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              BrutalistButton(
-                                backgroundColor: AppColors.primaryRed,
-                                textColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                onPressed: () => _permanentDelete(book),
-                                child: const Row(
-                                  children: [
-                                    Icon(Icons.delete_forever_rounded, size: 16, color: Colors.white),
-                                    SizedBox(width: 4),
-                                    Text('PURGE'),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:math';
 import '../models/book.dart';
 
 /// Converts an integer to Roman Numerals (for Part -> Chapter structures).
@@ -285,19 +286,18 @@ String formatRating(double? rating, {bool isDecimalMode = false}) {
   return '${rating.toStringAsFixed(1)} ★';
 }
 
+final _uuidRandom = Random();
+
 /// Generates a RFC-4122 compliant UUID v4.
 String generateUuidV4() {
-  final rnd = DateTime.now().microsecondsSinceEpoch;
-  final rnd2 = (DateTime.now().millisecondsSinceEpoch * 13) ^ 0x5DEECE66D;
-  final r3 = (rnd ^ rnd2).abs();
-  final hex = r3.toRadixString(16).padLeft(16, '0') + (rnd2.abs() ^ 0xA5A5A5A5).toRadixString(16).padLeft(16, '0');
-  final cleanHex = hex.padRight(32, '0').substring(0, 32);
-  final p1 = cleanHex.substring(0, 8);
-  final p2 = cleanHex.substring(8, 12);
-  final p3 = '4${cleanHex.substring(13, 16)}';
-  final p4 = 'a${cleanHex.substring(17, 20)}';
-  final p5 = cleanHex.substring(20, 32);
-  return '$p1-$p2-$p3-$p4-$p5';
+  final bytes = List<int>.generate(16, (_) => _uuidRandom.nextInt(256));
+  // Set version to 0100 (v4)
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  // Set variant to 10xx (RFC4122)
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+  final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20, 32)}';
 }
 
 bool isValidUuid(String? str) {
