@@ -30,6 +30,8 @@ android {
                 storePassword = "paperback123"
                 keyAlias = "paperback"
                 keyPassword = "paperback123"
+                enableV1Signing = true
+                enableV2Signing = true
             } else {
                 storeFile = signingConfigs.getByName("debug").storeFile
                 storePassword = signingConfigs.getByName("debug").storePassword
