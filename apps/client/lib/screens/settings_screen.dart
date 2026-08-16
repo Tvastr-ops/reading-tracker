@@ -4,6 +4,7 @@ import '../services/sync/sync_manager.dart';
 import '../services/sync/sync_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/brutalist_widgets.dart';
+import 'trash_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   final VoidCallback onThemeToggle;
@@ -314,6 +315,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onPressed: widget.onThemeToggle,
                     ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                const Divider(height: 1),
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (ctx) => TrashScreen(onDataChanged: () {}),
+                      ),
+                    );
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Trash & Archive', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                          SizedBox(height: 2),
+                          Text('Restore or permanently purge soft-deleted books', style: TextStyle(fontSize: 11, color: AppColors.inkMuted)),
+                        ],
+                      ),
+                      Icon(Icons.arrow_forward_ios_rounded, size: 14, color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                    ],
+                  ),
                 ),
               ],
             ),

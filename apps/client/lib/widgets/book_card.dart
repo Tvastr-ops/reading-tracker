@@ -138,20 +138,32 @@ class BookCard extends StatelessWidget {
                 children: getQuickChipOptions(book.type).take(3).map((amt) {
                   return Padding(
                     padding: const EdgeInsets.only(right: 6),
-                    child: GestureDetector(
-                      onTap: () => onQuickIncrement(amt.toDouble()),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
-                          border: Border.all(
-                            color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                            width: 1.5,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => onQuickIncrement(amt.toDouble()),
+                        child: Container(
+                          constraints: const BoxConstraints(minWidth: 38, minHeight: 32),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                            border: Border.all(
+                              color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                offset: const Offset(1.5, 1.5),
+                                blurRadius: 0,
+                              ),
+                            ],
                           ),
-                        ),
-                        child: Text(
-                          '+$amt',
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '+$amt',
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+                          ),
                         ),
                       ),
                     ),
@@ -159,37 +171,24 @@ class BookCard extends StatelessWidget {
                 }).toList(),
               ),
 
-              // Action Buttons
-              Row(
-                children: [
-                  BrutalistButton(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    backgroundColor: Colors.white,
-                    textColor: AppColors.inkBlack,
-                    onPressed: onLogProgress,
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.edit_note_rounded, size: 16, color: AppColors.inkBlack),
-                        SizedBox(width: 4),
-                        Text('LOG'),
-                      ],
+              // Action Button (Log Progress)
+              BrutalistButton(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                backgroundColor: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                textColor: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                onPressed: onLogProgress,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.edit_note_rounded,
+                      size: 17,
+                      color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  BrutalistButton(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    backgroundColor: AppColors.primaryRed,
-                    textColor: Colors.white,
-                    onPressed: onEdit,
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.more_horiz_rounded, size: 16, color: Colors.white),
-                      ],
-                    ),
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                    const Text('LOG', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
+                  ],
+                ),
               ),
             ],
           ),

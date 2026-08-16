@@ -1,0 +1,170 @@
+import 'package:flutter/material.dart';
+import '../models/book.dart';
+import '../theme/app_theme.dart';
+import '../utils/formatters.dart';
+import 'brutalist_widgets.dart';
+
+class BookTableRow extends StatelessWidget {
+  final Book book;
+  final VoidCallback onLogProgress;
+  final VoidCallback onEdit;
+  final Function(double) onQuickIncrement;
+
+  const BookTableRow({
+    super.key,
+    required this.book,
+    required this.onLogProgress,
+    required this.onEdit,
+    required this.onQuickIncrement,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+    final quickOptions = getQuickChipOptions(book.type);
+    final quickAmt = quickOptions.isNotEmpty ? quickOptions.first : 1;
+
+    return GestureDetector(
+      onTap: onEdit,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : Colors.white,
+          border: Border.all(color: borderColor, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: borderColor,
+              offset: const Offset(2.0, 2.0),
+              blurRadius: 0,
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Thumbnail
+            Container(
+              width: 32,
+              height: 44,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
+                border: Border.all(color: borderColor, width: 1),
+              ),
+              child: book.coverUrl != null && book.coverUrl!.isNotEmpty
+                  ? Image.network(
+                      book.coverUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.menu_book_rounded, size: 14),
+                    )
+                  : const Icon(Icons.menu_book_rounded, size: 14),
+            ),
+            const SizedBox(width: 10),
+
+            // Title & Author & Progress
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          book.title.toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.2,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryRed,
+                          border: Border.all(color: Colors.white, width: 0.5),
+                        ),
+                        child: Text(
+                          book.type.toUpperCase(),
+                          style: const TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          formatProgressDisplay(book),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(
+                        '${book.completionPercentage.toInt()}%',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  BrutalistProgressBar(
+                    progress: book.completionPercentage / 100.0,
+                    height: 4,
+                    fillColor: AppColors.primaryRed,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+
+            // Quick Stepper Chip
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => onQuickIncrement(quickAmt.toDouble()),
+                child: Container(
+                  constraints: const BoxConstraints(minWidth: 36, minHeight: 32),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                    border: Border.all(color: borderColor, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: borderColor,
+                        offset: const Offset(1.5, 1.5),
+                        blurRadius: 0,
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '+$quickAmt',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+
+            // Log Button
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              icon: Icon(Icons.edit_note_rounded, size: 20, color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+              onPressed: onLogProgress,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

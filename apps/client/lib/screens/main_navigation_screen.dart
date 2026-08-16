@@ -3,7 +3,7 @@ import '../theme/app_theme.dart';
 import 'library_screen.dart';
 import 'settings_screen.dart';
 import 'stats_screen.dart';
-import 'trash_screen.dart';
+import 'timeline_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   final VoidCallback onThemeToggle;
@@ -24,7 +24,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final GlobalKey _libraryKey = GlobalKey();
   late Widget _libraryScreen;
   late Widget _statsScreen;
-  late Widget _trashScreen;
+  late Widget _timelineScreen;
 
   @override
   void initState() {
@@ -34,11 +34,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       onNavigateToSync: () => setState(() => _currentIndex = 3),
     );
     _statsScreen = const StatsScreen();
-    _trashScreen = TrashScreen(onDataChanged: _onDataChanged);
-  }
-
-  void _onDataChanged() {
-    setState(() {});
+    _timelineScreen = const TimelineScreen();
   }
 
   @override
@@ -49,7 +45,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final pages = [
       _libraryScreen,
       _statsScreen,
-      _trashScreen,
+      _timelineScreen,
       SettingsScreen(
         onThemeToggle: widget.onThemeToggle,
         isDarkMode: widget.isDarkMode,
@@ -87,8 +83,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             ),
             _buildNavItem(
               index: 2,
-              label: 'TRASH',
-              icon: Icons.delete_outline_rounded,
+              label: 'JOURNEY',
+              icon: Icons.auto_stories_rounded,
             ),
             _buildNavItem(
               index: 3,
