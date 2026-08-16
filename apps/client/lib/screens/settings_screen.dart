@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/sync/sync_manager.dart';
 import '../services/sync/sync_provider.dart';
+import '../services/theme_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/brutalist_widgets.dart';
 import 'trash_screen.dart';
@@ -22,6 +23,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final SyncManager _syncManager = SyncManager.instance;
+  final ThemeService _themeService = ThemeService.instance;
 
   late TextEditingController _urlController;
   late TextEditingController _apiKeyController;
@@ -61,6 +63,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       offlineMode: _offlineMode,
       autoSync: _autoSync,
     );
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -115,6 +118,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
+          // Section 0: Appearance & Neo-Paper Themes
+          _buildSectionHeader('APPEARANCE & NEO-PAPER THEMES'),
+          const SizedBox(height: 8),
+          _buildThemeSelector(isDark),
+          const SizedBox(height: 24),
+
           // Section 1: Network Preferences
           _buildSectionHeader('NETWORK PREFERENCES'),
           const SizedBox(height: 8),
@@ -219,7 +228,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: _buildBackendChoice(
-                        'Self-Hosted REST',
+                        'Generic REST',
                         SyncBackendType.selfHostedRest,
                       ),
                     ),
@@ -227,65 +236,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                const Text(
-                  'SERVER URL',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                Text(
+                  _selectedType == SyncBackendType.supabase ? 'SUPABASE PROJECT URL' : 'SERVER ENDPOINT URL',
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5),
                 ),
                 const SizedBox(height: 6),
                 _buildBrutalistInput(
                   controller: _urlController,
                   hint: _selectedType == SyncBackendType.supabase
-                      ? 'https://your-project.supabase.co'
-                      : 'https://api.yourdomain.com',
+                      ? 'https://xyzcompany.supabase.co'
+                      : 'https://api.yourdomain.com/v1',
                   icon: Icons.link_rounded,
                 ),
                 const SizedBox(height: 14),
 
                 Text(
-                  _selectedType == SyncBackendType.supabase ? 'SUPABASE ANON KEY' : 'API KEY / TOKEN (OPTIONAL)',
+                  _selectedType == SyncBackendType.supabase ? 'ANON PUBLIC KEY' : 'AUTHORIZATION TOKEN',
                   style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5),
                 ),
                 const SizedBox(height: 6),
                 _buildBrutalistInput(
                   controller: _apiKeyController,
-                  hint: 'eyJhbGciOiJIUzI1NiIsIn...',
+                  hint: _selectedType == SyncBackendType.supabase
+                      ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+                      : 'Bearer secret_token_here',
                   icon: Icons.key_rounded,
                   isObscure: true,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
 
-                // Status Indicator
                 Row(
                   children: [
                     Container(
                       width: 10,
                       height: 10,
                       decoration: BoxDecoration(
-                        color: isConnected ? AppColors.successGreen : AppColors.primaryRed,
+                        color: isConnected ? AppColors.successGreen : Colors.red,
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                          width: 1.5,
-                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'STATUS: ${_syncManager.connectionStatus.toUpperCase()}',
+                      'Status: ${_syncManager.connectionStatus}',
                       style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                        color: isConnected ? AppColors.successGreen : AppColors.primaryRed,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: isConnected
+                            ? AppColors.successGreen
+                            : (isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted),
                       ),
                     ),
                     const Spacer(),
                     if (_syncManager.lastSyncedAt != null)
                       Text(
-                        'Last Sync: ${_syncManager.lastSyncedAt!.hour}:${_syncManager.lastSyncedAt!.minute.toString().padLeft(2, '0')}',
+                        'Last sync: ${_syncManager.lastSyncedAt!.hour.toString().padLeft(2, '0')}:${_syncManager.lastSyncedAt!.minute.toString().padLeft(2, '0')}',
                         style: TextStyle(
                           fontSize: 11,
-                          color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.6) : AppColors.inkMuted,
+                          color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.5) : AppColors.inkMuted,
                         ),
                       ),
                   ],
@@ -295,67 +302,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 24),
 
-          // Section 3: Appearance & UI Preferences
-          _buildSectionHeader('APPEARANCE & PREFERENCES'),
+          // Section 3: Data Management
+          _buildSectionHeader('DATA MANAGEMENT'),
           const SizedBox(height: 8),
 
           BrutalistCard(
             margin: EdgeInsets.zero,
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: InkWell(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => TrashScreen(onDataChanged: () {})),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
                   children: [
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Theme Mode', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                        SizedBox(height: 2),
-                        Text('Switch between Paper Light and Brutalist Dark', style: TextStyle(fontSize: 11, color: AppColors.inkMuted)),
-                      ],
-                    ),
-                    IconButton(
-                      icon: Icon(widget.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded),
-                      onPressed: widget.onThemeToggle,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Divider(height: 1),
-                const SizedBox(height: 12),
-                InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (ctx) => TrashScreen(onDataChanged: () {}),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
+                        border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1.5),
                       ),
-                    );
-                  },
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Column(
+                      child: Icon(Icons.delete_outline_rounded, size: 20, color: isDark ? Colors.white : AppColors.inkBlack),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Trash & Archive', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                          SizedBox(height: 2),
-                          Text('Restore or permanently purge soft-deleted books', style: TextStyle(fontSize: 11, color: AppColors.inkMuted)),
+                          const Text(
+                            'Trash & Recovery',
+                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'View deleted books, restore them to your library, or permanently remove them.',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
+                            ),
+                          ),
                         ],
                       ),
-                      Icon(Icons.arrow_forward_ios_rounded, size: 14, color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-                    ],
-                  ),
+                    ),
+                    Icon(Icons.chevron_right_rounded, color: isDark ? Colors.white : AppColors.inkBlack),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
           const SizedBox(height: 24),
 
-          // Section 4: 1-Click Sync Now Action Button
+          // Section 4: Manual Sync Trigger
+          _buildSectionHeader('CLOUD SYNCHRONIZATION'),
+          const SizedBox(height: 8),
+
           BrutalistButton(
-            isFullWidth: true,
-            padding: const EdgeInsets.symmetric(vertical: 16),
             backgroundColor: AppColors.primaryRed,
             onPressed: _syncManager.isSyncing
                 ? null
@@ -417,7 +420,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1),
                       ),
                       child: const Text(
-                        'v1.1.0',
+                        'v1.2.0',
                         style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white),
                       ),
                     ),
@@ -475,6 +478,226 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 40),
         ],
+      ),
+    );
+  }
+
+  Widget _buildThemeSelector(bool isDark) {
+    final mode = _themeService.themeMode;
+    final lightVariants = AppThemeVariant.values.where((v) => !v.isDark).toList();
+    final darkVariants = AppThemeVariant.values.where((v) => v.isDark).toList();
+
+    return BrutalistCard(
+      margin: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'THEME MODE',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+          ),
+          const SizedBox(height: 8),
+
+          // Segmented buttons: System / Light / Dark
+          Row(
+            children: [
+              Expanded(
+                child: _buildModeButton('System', ThemeMode.system, mode == ThemeMode.system),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _buildModeButton('Light', ThemeMode.light, mode == ThemeMode.light),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _buildModeButton('Dark', ThemeMode.dark, mode == ThemeMode.dark),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Light Palettes
+          if (mode != ThemeMode.dark) ...[
+            Row(
+              children: [
+                const Icon(Icons.wb_sunny_outlined, size: 14),
+                const SizedBox(width: 6),
+                Text(
+                  'LIGHT PALETTES (5)',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                    color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ...lightVariants.map((v) => _buildPaletteCard(v, _themeService.lightVariant == v, isDark)),
+            const SizedBox(height: 12),
+          ],
+
+          // Dark Palettes
+          if (mode != ThemeMode.light) ...[
+            Row(
+              children: [
+                const Icon(Icons.nightlight_round_outlined, size: 14),
+                const SizedBox(width: 6),
+                Text(
+                  'DARK PALETTES (5)',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                    color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ...darkVariants.map((v) => _buildPaletteCard(v, _themeService.darkVariant == v, isDark)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModeButton(String label, ThemeMode targetMode, bool isSelected) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+
+    return GestureDetector(
+      onTap: () {
+        _themeService.setThemeMode(targetMode);
+        setState(() {});
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primaryRed
+              : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+          border: Border.all(color: borderColor, width: 1.5),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            color: isSelected ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+            fontWeight: FontWeight.w800,
+            fontSize: 11,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaletteCard(AppThemeVariant variant, bool isSelected, bool isDark) {
+    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: () {
+          if (variant.isDark) {
+            _themeService.setDarkVariant(variant);
+          } else {
+            _themeService.setLightVariant(variant);
+          }
+          setState(() {});
+        },
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (isDark ? AppColors.darkSurfaceHigh : Colors.white)
+                : (isDark ? AppColors.darkSurface : AppColors.paperSurface),
+            border: Border.all(
+              color: isSelected ? AppColors.primaryRed : borderColor.withValues(alpha: 0.5),
+              width: isSelected ? 2.5 : 1.5,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: borderColor,
+                      offset: AppTheme.shadowOffsetSm,
+                      blurRadius: 0,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            children: [
+              // Swatch Visual preview (Canvas + Card + Accent Dot)
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: variant.previewCanvas,
+                  border: Border.all(color: Colors.black54, width: 1.5),
+                ),
+                padding: const EdgeInsets.all(4),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: variant.previewCard,
+                    border: Border.all(color: Colors.black26, width: 1),
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: variant.previewAccent,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.black54, width: 1),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Title and description
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      variant.label,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      variant.description,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.65),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Selection checkmark
+              if (isSelected) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: AppColors.primaryRed,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check, size: 14, color: Colors.white),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

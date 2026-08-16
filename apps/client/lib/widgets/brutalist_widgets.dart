@@ -8,7 +8,7 @@ class BrutalistCard extends StatelessWidget {
   final EdgeInsetsGeometry margin;
   final VoidCallback? onTap;
   final double borderWidth;
-  final Offset shadowOffset;
+  final Offset? shadowOffset;
 
   const BrutalistCard({
     super.key,
@@ -18,14 +18,16 @@ class BrutalistCard extends StatelessWidget {
     this.margin = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     this.onTap,
     this.borderWidth = AppTheme.borderLight,
-    this.shadowOffset = AppTheme.shadowOffset,
+    this.shadowOffset,
   });
 
   @override
   Widget build(BuildContext context) {
+    final details = Theme.of(context).extension<AppThemeDetails>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = backgroundColor ?? (isDark ? AppColors.darkSurface : Colors.white);
-    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+    final bg = backgroundColor ?? details?.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white);
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final offset = shadowOffset ?? details?.shadowOffset ?? AppTheme.shadowOffset;
 
     Widget content = Container(
       margin: margin,
@@ -35,7 +37,7 @@ class BrutalistCard extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: borderColor,
-            offset: shadowOffset,
+            offset: offset,
             blurRadius: 0,
           ),
         ],
@@ -85,9 +87,11 @@ class _BrutalistButtonState extends State<BrutalistButton> {
 
   @override
   Widget build(BuildContext context) {
+    final details = Theme.of(context).extension<AppThemeDetails>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = widget.backgroundColor ?? AppColors.primaryRed;
-    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+    final bg = widget.backgroundColor ?? details?.accentColor ?? AppColors.primaryRed;
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final offset = details?.shadowOffsetSm ?? AppTheme.shadowOffsetSm;
 
     Widget btn = GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
@@ -107,7 +111,7 @@ class _BrutalistButtonState extends State<BrutalistButton> {
                 : [
                     BoxShadow(
                       color: borderColor,
-                      offset: AppTheme.shadowOffsetSm,
+                      offset: offset,
                       blurRadius: 0,
                     ),
                   ],
@@ -146,10 +150,11 @@ class BrutalistBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final details = Theme.of(context).extension<AppThemeDetails>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = backgroundColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white);
-    final border = borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
-    final text = textColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final bg = backgroundColor ?? details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white);
+    final border = borderColor ?? details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final text = textColor ?? details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
@@ -184,16 +189,17 @@ class BrutalistProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final details = Theme.of(context).extension<AppThemeDetails>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
-    final fill = fillColor ?? AppColors.primaryRed;
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final fill = fillColor ?? details?.accentColor ?? AppColors.primaryRed;
     final clamped = progress.clamp(0.0, 1.0);
 
     return Container(
       height: height,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+        color: details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white),
         border: Border.all(color: borderColor, width: 1.5),
       ),
       child: FractionallySizedBox(
