@@ -13,6 +13,11 @@ set(APPLICATION_ID "com.readingtracker.app")
 cmake_policy(SET CMP0063 NEW)
 cmake_policy(SET CMP0079 NEW)
 
+# Default to installing to the bundle/ directory in the build output.
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/bundle" CACHE PATH "..." FORCE)
+endif()
+
 # Load bundled libraries from the lib/ directory relative to the binary.
 set(CMAKE_INSTALL_RPATH "$ORIGIN/lib")
 
