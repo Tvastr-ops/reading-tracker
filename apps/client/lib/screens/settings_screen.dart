@@ -30,6 +30,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late SyncBackendType _selectedType;
   late bool _offlineMode;
   late bool _autoSync;
+  bool _isConfigExpanded = false;
+  bool _showApiKey = false;
+  bool _isTestingConnection = false;
 
   @override
   void initState() {
@@ -55,7 +58,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _saveConfig() async {
+  Future<void> _saveConfig({bool collapseAfter = false}) async {
     await _syncManager.updateConfig(
       type: _selectedType,
       url: _urlController.text,
@@ -64,11 +67,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
       autoSync: _autoSync,
     );
 
+    if (collapseAfter) {
+      setState(() => _isConfigExpanded = false);
+    }
+
+    if (mounted) {
+      final isConnected = _syncManager.connectionStatus == 'Connected';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isConnected
+              ? 'Settings saved & connection verified!'
+              : 'Settings saved (Status: ${_syncManager.connectionStatus})'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<void> _testConnection() async {
+    setState(() => _isTestingConnection = true);
+    final ok = await _syncManager.checkConnection();
+    setState(() => _isTestingConnection = false);
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Settings saved & connection verified'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(ok
+              ? 'Connection successful!'
+              : 'Connection test failed. Check URL & API Key.'),
+          duration: const Duration(seconds: 2),
         ),
       );
     }
@@ -99,7 +126,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isConnected = _syncManager.connectionStatus == 'Connected';
 
     return Scaffold(
       appBar: AppBar(
@@ -111,7 +137,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           IconButton(
             icon: const Icon(Icons.check_rounded),
             tooltip: 'Save Settings',
-            onPressed: _saveConfig,
+            onPressed: () => _saveConfig(),
           ),
         ],
       ),
@@ -154,7 +180,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 Switch(
                   value: _offlineMode,
-                  activeThumbColor: AppColors.primaryRed,
+                  activeThumbColor: Theme.of(context).colorScheme.primary,
                   onChanged: (val) {
                     setState(() => _offlineMode = val);
                     _saveConfig();
@@ -191,7 +217,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 Switch(
                   value: _autoSync,
-                  activeThumbColor: AppColors.primaryRed,
+                  activeThumbColor: Theme.of(context).colorScheme.primary,
                   onChanged: (val) {
                     setState(() => _autoSync = val);
                     _saveConfig();
@@ -202,104 +228,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 24),
 
-          // Section 2: Connection Details
-          _buildSectionHeader('REMOTE BACKEND CONFIGURATION'),
+          // Section 2: Remote Backend Configuration (Smart Collapsible / Protected)
+          _buildSectionHeader('REMOTE BACKEND & API'),
           const SizedBox(height: 8),
-
-          BrutalistCard(
-            margin: EdgeInsets.zero,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'BACKEND TYPE',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5),
-                ),
-                const SizedBox(height: 8),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildBackendChoice(
-                        'Supabase',
-                        SyncBackendType.supabase,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildBackendChoice(
-                        'Generic REST',
-                        SyncBackendType.selfHostedRest,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                Text(
-                  _selectedType == SyncBackendType.supabase ? 'SUPABASE PROJECT URL' : 'SERVER ENDPOINT URL',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5),
-                ),
-                const SizedBox(height: 6),
-                _buildBrutalistInput(
-                  controller: _urlController,
-                  hint: _selectedType == SyncBackendType.supabase
-                      ? 'https://xyzcompany.supabase.co'
-                      : 'https://api.yourdomain.com/v1',
-                  icon: Icons.link_rounded,
-                ),
-                const SizedBox(height: 14),
-
-                Text(
-                  _selectedType == SyncBackendType.supabase ? 'ANON PUBLIC KEY' : 'AUTHORIZATION TOKEN',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5),
-                ),
-                const SizedBox(height: 6),
-                _buildBrutalistInput(
-                  controller: _apiKeyController,
-                  hint: _selectedType == SyncBackendType.supabase
-                      ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
-                      : 'Bearer secret_token_here',
-                  icon: Icons.key_rounded,
-                  isObscure: true,
-                ),
-                const SizedBox(height: 14),
-
-                Row(
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: isConnected ? AppColors.successGreen : Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Status: ${_syncManager.connectionStatus}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: isConnected
-                            ? AppColors.successGreen
-                            : (isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted),
-                      ),
-                    ),
-                    const Spacer(),
-                    if (_syncManager.lastSyncedAt != null)
-                      Text(
-                        'Last sync: ${_syncManager.lastSyncedAt!.hour.toString().padLeft(2, '0')}:${_syncManager.lastSyncedAt!.minute.toString().padLeft(2, '0')}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.5) : AppColors.inkMuted,
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          _buildBackendConfigCard(isDark),
           const SizedBox(height: 24),
 
           // Section 3: Data Management
@@ -359,7 +291,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 8),
 
           BrutalistButton(
-            backgroundColor: AppColors.primaryRed,
+            backgroundColor: Theme.of(context).colorScheme.primary,
             onPressed: _syncManager.isSyncing
                 ? null
                 : () async {
@@ -416,11 +348,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: AppColors.primaryRed,
+                        color: Theme.of(context).colorScheme.primary,
                         border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1),
                       ),
                       child: const Text(
-                        'v1.2.0',
+                        'v1.2.0b',
                         style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white),
                       ),
                     ),
@@ -477,6 +409,298 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBackendConfigCard(bool isDark) {
+    final isConnected = _syncManager.connectionStatus == 'Connected';
+    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+    final hasConfiguredEndpoint = _urlController.text.trim().isNotEmpty;
+
+    String displayEndpoint = 'Not Configured';
+    if (hasConfiguredEndpoint) {
+      try {
+        final uri = Uri.parse(_urlController.text.trim());
+        displayEndpoint = uri.host.isNotEmpty ? uri.host : _urlController.text.trim();
+      } catch (_) {
+        displayEndpoint = _urlController.text.trim();
+      }
+    }
+
+    return BrutalistCard(
+      margin: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Row: Status + Safe Summary + Lock/Expand Toggle Button
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: isConnected ? AppColors.successGreen : Colors.redAccent,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          _selectedType == SyncBackendType.supabase ? 'SUPABASE' : 'GENERIC REST',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: isConnected ? AppColors.successGreen.withValues(alpha: 0.15) : Colors.red.withValues(alpha: 0.15),
+                            border: Border.all(
+                              color: isConnected ? AppColors.successGreen : Colors.red,
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            _syncManager.connectionStatus.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              color: isConnected ? AppColors.successGreen : Colors.red,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      displayEndpoint,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.6),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Expand / Collapse Lock Button
+              InkWell(
+                onTap: () => setState(() => _isConfigExpanded = !_isConfigExpanded),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _isConfigExpanded
+                        ? Theme.of(context).colorScheme.primary
+                        : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                    border: Border.all(color: borderColor, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: borderColor,
+                        offset: AppTheme.shadowOffsetSm,
+                        blurRadius: 0,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _isConfigExpanded ? Icons.lock_open_rounded : Icons.lock_outline_rounded,
+                        size: 13,
+                        color: _isConfigExpanded ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _isConfigExpanded ? 'LOCK' : 'EDIT',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                          color: _isConfigExpanded ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // Collapsed Quick Action (Test Connection)
+          if (!_isConfigExpanded) ...[
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: _isTestingConnection ? null : _testConnection,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
+                        border: Border.all(color: borderColor.withValues(alpha: 0.6), width: 1.5),
+                      ),
+                      alignment: Alignment.center,
+                      child: _isTestingConnection
+                          ? const SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.network_check_rounded, size: 14, color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'TEST CONNECTION',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.4,
+                                    color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+
+          // Expanded Drawer with Inputs and Protection
+          if (_isConfigExpanded) ...[
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 14),
+
+            const Text(
+              'SELECT BACKEND TYPE',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+            ),
+            const SizedBox(height: 8),
+
+            Row(
+              children: [
+                Expanded(
+                  child: _buildBackendChoice(
+                    'Supabase',
+                    SyncBackendType.supabase,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildBackendChoice(
+                    'Generic REST',
+                    SyncBackendType.selfHostedRest,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            Text(
+              _selectedType == SyncBackendType.supabase ? 'SUPABASE PROJECT URL' : 'SERVER ENDPOINT URL',
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+            ),
+            const SizedBox(height: 6),
+            _buildBrutalistInput(
+              controller: _urlController,
+              hint: _selectedType == SyncBackendType.supabase
+                  ? 'https://xyzcompany.supabase.co'
+                  : 'https://api.yourdomain.com/v1',
+              icon: Icons.link_rounded,
+            ),
+            const SizedBox(height: 14),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _selectedType == SyncBackendType.supabase ? 'ANON PUBLIC KEY (JWT)' : 'AUTHORIZATION TOKEN',
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                ),
+                InkWell(
+                  onTap: () => setState(() => _showApiKey = !_showApiKey),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _showApiKey ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        size: 13,
+                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _showApiKey ? 'HIDE' : 'SHOW',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            _buildBrutalistInput(
+              controller: _apiKeyController,
+              hint: _selectedType == SyncBackendType.supabase
+                  ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+                  : 'Bearer secret_token_here',
+              icon: Icons.key_rounded,
+              isObscure: !_showApiKey,
+            ),
+            const SizedBox(height: 16),
+
+            // Save and Lock Action Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: BrutalistButton(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    onPressed: () => _saveConfig(collapseAfter: true),
+                    child: const Text('SAVE & LOCK', style: TextStyle(color: Colors.white, fontSize: 12)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: InkWell(
+                    onTap: _testConnection,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                        border: Border.all(color: borderColor, width: 1.5),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text(
+                        'TEST',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -576,7 +800,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primaryRed
+              ? Theme.of(context).colorScheme.primary
               : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
           border: Border.all(color: borderColor, width: 1.5),
         ),
@@ -614,7 +838,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ? (isDark ? AppColors.darkSurfaceHigh : Colors.white)
                 : (isDark ? AppColors.darkSurface : AppColors.paperSurface),
             border: Border.all(
-              color: isSelected ? AppColors.primaryRed : borderColor.withValues(alpha: 0.5),
+              color: isSelected ? variant.previewAccent : borderColor.withValues(alpha: 0.5),
               width: isSelected ? 2.5 : 1.5,
             ),
             boxShadow: isSelected
@@ -629,7 +853,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           child: Row(
             children: [
-              // Swatch Visual preview (Canvas + Card + Accent Dot)
               Container(
                 width: 44,
                 height: 44,
@@ -658,7 +881,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(width: 12),
 
-              // Title and description
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -683,13 +905,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
 
-              // Selection checkmark
               if (isSelected) ...[
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: AppColors.primaryRed,
+                  decoration: BoxDecoration(
+                    color: variant.previewAccent,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.check, size: 14, color: Colors.white),
@@ -723,7 +944,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primaryRed
+              ? Theme.of(context).colorScheme.primary
               : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
           border: Border.all(
             color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,

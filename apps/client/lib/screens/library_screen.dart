@@ -36,6 +36,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   String _sortBy = 'updated_at'; // 'updated_at', 'title', 'progress', 'rating'
   bool _sortAscending = false;
   String _ratingFilter = 'All'; // 'All', '5', '4', 'unrated'
+  String _typeFilter = 'All'; // 'All', 'Web Novel', 'Light Novel', 'Novel', etc.
   LibraryViewMode _viewMode = LibraryViewMode.cards;
 
   final List<String> _statusFilters = [
@@ -164,112 +165,182 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
+  String _getSortShortLabel() {
+    switch (_sortBy) {
+      case 'title':
+        return 'A-Z';
+      case 'progress':
+        return 'PROGRESS';
+      case 'rating':
+        return 'RATING';
+      case 'updated_at':
+      default:
+        return 'RECENT';
+    }
+  }
+
   void _openSortFilterSheet() {
+    final details = Theme.of(context).extension<AppThemeDetails>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final sheetBg = details?.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg);
+    final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: isDark ? AppColors.darkSurface : AppColors.paperBg,
+      backgroundColor: sheetBg,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
+            final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
+
             return Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
+                color: sheetBg,
                 border: Border.all(
-                  color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                  color: borderColor,
                   width: AppTheme.borderHeavy,
                 ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'SORT & FILTER',
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
-                      ),
-                      IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: const Icon(Icons.close_rounded, size: 20),
-                        onPressed: () => Navigator.pop(ctx),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Sort Option Chips
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('SORT BY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
-                      GestureDetector(
-                        onTap: () {
-                          setSheetState(() => _sortAscending = !_sortAscending);
-                          setState(() => _sortAscending = !_sortAscending);
-                        },
-                        child: Row(
-                          children: [
-                            Icon(
-                              _sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-                              size: 14,
-                              color: AppColors.primaryRed,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _sortAscending ? 'ASCENDING' : 'DESCENDING',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.primaryRed,
-                              ),
-                            ),
-                          ],
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'SORT & FILTER',
+                          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: inkColor),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _buildSortChip('Last Updated', 'updated_at', setSheetState),
-                      _buildSortChip('Title (A-Z)', 'title', setSheetState),
-                      _buildSortChip('Progress (%)', 'progress', setSheetState),
-                      _buildSortChip('Rating (High)', 'rating', setSheetState),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
+                        IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: Icon(Icons.close_rounded, size: 20, color: inkColor),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
 
-                  // Rating Filters
-                  const Text('RATING FILTER', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _buildRatingFilterChip('All', 'All', setSheetState),
-                      _buildRatingFilterChip('5 ★ Only', '5', setSheetState),
-                      _buildRatingFilterChip('4 ★ & Above', '4', setSheetState),
-                      _buildRatingFilterChip('Unrated', 'unrated', setSheetState),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
+                    // Sort Option Chips
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('SORT BY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5, color: inkColor)),
+                        GestureDetector(
+                          onTap: () {
+                            setSheetState(() => _sortAscending = !_sortAscending);
+                            setState(() => _sortAscending = !_sortAscending);
+                          },
+                          child: Row(
+                            children: [
+                              Icon(
+                                _sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                                size: 14,
+                                color: accentColor,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _sortAscending ? 'ASCENDING' : 'DESCENDING',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  color: accentColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _buildSortChip('Last Updated', 'updated_at', setSheetState),
+                        _buildSortChip('Title (A-Z)', 'title', setSheetState),
+                        _buildSortChip('Progress (%)', 'progress', setSheetState),
+                        _buildSortChip('Rating (High)', 'rating', setSheetState),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
 
-                  BrutalistButton(
-                    isFullWidth: true,
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      setState(() {});
-                    },
-                    child: const Text('APPLY FILTERS', style: TextStyle(color: Colors.white, fontSize: 13)),
-                  ),
-                ],
+                    // Format / Type Filters
+                    Text('FORMAT / TYPE FILTER', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5, color: inkColor)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _buildTypeFilterChip('All Formats', 'All', setSheetState),
+                        _buildTypeFilterChip('Web Novels', 'Web Novel', setSheetState),
+                        _buildTypeFilterChip('Light Novels', 'Light Novel', setSheetState),
+                        _buildTypeFilterChip('Novels', 'Novel', setSheetState),
+                        _buildTypeFilterChip('Manga / Comics', 'Manga', setSheetState),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Rating Filters
+                    Text('RATING FILTER', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5, color: inkColor)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _buildRatingFilterChip('All', 'All', setSheetState),
+                        _buildRatingFilterChip('5 ★ Only', '5', setSheetState),
+                        _buildRatingFilterChip('4 ★ & Above', '4', setSheetState),
+                        _buildRatingFilterChip('Unrated', 'unrated', setSheetState),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: BrutalistButton(
+                            backgroundColor: details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                            textColor: inkColor,
+                            onPressed: () {
+                              setSheetState(() {
+                                _sortBy = 'updated_at';
+                                _sortAscending = false;
+                                _ratingFilter = 'All';
+                                _typeFilter = 'All';
+                              });
+                              setState(() {
+                                _sortBy = 'updated_at';
+                                _sortAscending = false;
+                                _ratingFilter = 'All';
+                                _typeFilter = 'All';
+                              });
+                            },
+                            child: const Text('RESET', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900)),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 2,
+                          child: BrutalistButton(
+                            backgroundColor: accentColor,
+                            textColor: Colors.white,
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              setState(() {});
+                            },
+                            child: const Text('APPLY FILTERS', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -281,6 +352,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
   Widget _buildSortChip(String label, String value, StateSetter setSheetState) {
     final isSelected = _sortBy == value;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final details = Theme.of(context).extension<AppThemeDetails>();
+    final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final inactiveBg = details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white);
+
     return GestureDetector(
       onTap: () {
         setSheetState(() => _sortBy = value);
@@ -289,15 +366,47 @@ class _LibraryScreenState extends State<LibraryScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryRed : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
-          border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1.5),
+          color: isSelected ? accentColor : inactiveBg,
+          border: Border.all(color: borderColor, width: 1.5),
         ),
         child: Text(
           label.toUpperCase(),
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w800,
-            color: isSelected ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+            color: isSelected ? Colors.white : inkColor,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeFilterChip(String label, String value, StateSetter setSheetState) {
+    final isSelected = _typeFilter == value;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final details = Theme.of(context).extension<AppThemeDetails>();
+    final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final inactiveBg = details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white);
+
+    return GestureDetector(
+      onTap: () {
+        setSheetState(() => _typeFilter = value);
+        setState(() => _typeFilter = value);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? accentColor : inactiveBg,
+          border: Border.all(color: borderColor, width: 1.5),
+        ),
+        child: Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            color: isSelected ? Colors.white : inkColor,
           ),
         ),
       ),
@@ -307,6 +416,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
   Widget _buildRatingFilterChip(String label, String value, StateSetter setSheetState) {
     final isSelected = _ratingFilter == value;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final details = Theme.of(context).extension<AppThemeDetails>();
+    final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final inactiveBg = details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white);
+
     return GestureDetector(
       onTap: () {
         setSheetState(() => _ratingFilter = value);
@@ -315,15 +430,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryRed : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
-          border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1.5),
+          color: isSelected ? accentColor : inactiveBg,
+          border: Border.all(color: borderColor, width: 1.5),
         ),
         child: Text(
           label.toUpperCase(),
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w800,
-            color: isSelected ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+            color: isSelected ? Colors.white : inkColor,
           ),
         ),
       ),
@@ -331,6 +446,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Widget _buildViewModeIcon(IconData icon, LibraryViewMode mode, String tooltip) {
+    final details = Theme.of(context).extension<AppThemeDetails>();
+    final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
     final isSelected = _viewMode == mode;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -341,7 +458,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           color: isSelected
-              ? AppColors.primaryRed
+              ? accentColor
               : Colors.transparent,
           child: Icon(
             icon,
@@ -355,10 +472,163 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
+  Widget _buildBookContentSliver({
+    required List<Book> filtered,
+    required bool isWideScreen,
+    required bool isExtraWide,
+    required AppThemeDetails? details,
+  }) {
+    if (_isLoading) {
+      return const SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (filtered.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const BrutalistBadge(label: 'NO BOOKS FOUND'),
+              const SizedBox(height: 12),
+              Text(
+                _searchQuery.isNotEmpty ? 'Try a different search term' : 'Tap + to add your first book',
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.inkMuted),
+              ),
+              if (_selectedStatus != 'All' || _ratingFilter != 'All' || _typeFilter != 'All' || _searchQuery.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {
+                      _selectedStatus = 'All';
+                      _ratingFilter = 'All';
+                      _typeFilter = 'All';
+                      _searchQuery = '';
+                    });
+                  },
+                  child: const Text('CLEAR ALL FILTERS', style: TextStyle(fontWeight: FontWeight.w900)),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_viewMode == LibraryViewMode.covers) {
+      return SliverPadding(
+        padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 80),
+        sliver: SliverGrid(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: isExtraWide ? 5 : (isWideScreen ? 3 : 2),
+            childAspectRatio: 0.65,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+          ),
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              final book = filtered[index];
+              return BookCoverCard(
+                key: ValueKey(book.id),
+                book: book,
+                onLogProgress: () => _openQuickLog(book),
+                onEdit: () => _openEditDialog(book),
+                onQuickIncrement: (amt) => _quickIncrement(book, amt),
+              );
+            },
+            childCount: filtered.length,
+          ),
+        ),
+      );
+    }
+
+    if (_viewMode == LibraryViewMode.table) {
+      return SliverPadding(
+        padding: const EdgeInsets.only(bottom: 80, top: 4),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              final book = filtered[index];
+              return BookTableRow(
+                key: ValueKey(book.id),
+                book: book,
+                onLogProgress: () => _openQuickLog(book),
+                onEdit: () => _openEditDialog(book),
+                onQuickIncrement: (amt) => _quickIncrement(book, amt),
+              );
+            },
+            childCount: filtered.length,
+          ),
+        ),
+      );
+    }
+
+    // Default Cards View
+    if (isWideScreen) {
+      return SliverPadding(
+        padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 80),
+        sliver: SliverGrid(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: isExtraWide ? 3 : 2,
+            childAspectRatio: isExtraWide ? 1.85 : 1.75,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              final book = filtered[index];
+              return BookCard(
+                key: ValueKey(book.id),
+                book: book,
+                onLogProgress: () => _openQuickLog(book),
+                onEdit: () => _openEditDialog(book),
+                onDelete: () async {
+                  await _dbHelper.deleteBook(book.id);
+                  await _loadBooks();
+                },
+                onQuickIncrement: (amt) => _quickIncrement(book, amt),
+              );
+            },
+            childCount: filtered.length,
+          ),
+        ),
+      );
+    }
+
+    return SliverPadding(
+      padding: const EdgeInsets.only(bottom: 80, top: 4),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final book = filtered[index];
+            return BookCard(
+              key: ValueKey(book.id),
+              book: book,
+              onLogProgress: () => _openQuickLog(book),
+              onEdit: () => _openEditDialog(book),
+              onDelete: () async {
+                await _dbHelper.deleteBook(book.id);
+                await _loadBooks();
+              },
+              onQuickIncrement: (amt) => _quickIncrement(book, amt),
+            );
+          },
+          childCount: filtered.length,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final details = Theme.of(context).extension<AppThemeDetails>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
 
     // Filter books
     var filtered = _books.where((b) {
@@ -376,7 +646,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
         matchesRating = b.rating == null || b.rating == 0;
       }
 
-      return matchesStatus && matchesSearch && matchesRating;
+      bool matchesType = true;
+      if (_typeFilter != 'All') {
+        matchesType = b.type.toLowerCase().contains(_typeFilter.toLowerCase());
+      }
+
+      return matchesStatus && matchesSearch && matchesRating && matchesType;
     }).toList();
 
     // Sort books
@@ -400,6 +675,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
     if (_sortAscending) {
       filtered = filtered.reversed.toList();
     }
+
+    final isCustomFilterActive = _sortBy != 'updated_at' || _ratingFilter != 'All' || _typeFilter != 'All' || _sortAscending;
+    final activeReadingBooks = _books.where((b) => b.status == BookStatus.reading).toList();
+    final showCarousel = _searchQuery.isEmpty && (_selectedStatus == 'All' || _selectedStatus == BookStatus.reading) && activeReadingBooks.isNotEmpty;
 
     return CallbackShortcuts(
       bindings: {
@@ -454,328 +733,243 @@ class _LibraryScreenState extends State<LibraryScreen> {
               ),
             ],
           ),
-          body: Column(
-            children: [
-              // Search & Filter Row
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
-                          border: Border.all(color: borderColor, width: 1.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: borderColor,
-                              offset: AppTheme.shadowOffsetSm,
-                              blurRadius: 0,
-                            ),
-                          ],
-                        ),
-                        child: TextField(
-                          controller: _searchController,
-                          focusNode: _searchFocusNode,
-                          onChanged: (val) => setState(() => _searchQuery = val.trim()),
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Search books or authors... (Press /)',
-                            hintStyle: TextStyle(
-                              fontSize: 12,
-                              color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.4),
-                            ),
-                            prefixIcon: Icon(Icons.search_rounded, color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-                            suffixIcon: _searchQuery.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear_rounded, size: 18),
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      setState(() => _searchQuery = '');
-                                    },
-                                  )
-                                : null,
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
+          body: RefreshIndicator(
+            onRefresh: () async {
+              await _syncManager.syncNow();
+              await _loadBooks();
+            },
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isWideScreen = constraints.maxWidth >= 720;
+                final isExtraWide = constraints.maxWidth >= 1150;
 
-                    // Sort & Filter Button
-                    GestureDetector(
-                      onTap: _openSortFilterSheet,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
-                        decoration: BoxDecoration(
-                          color: (_sortBy != 'updated_at' || _ratingFilter != 'All')
-                              ? AppColors.primaryRed
-                              : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
-                          border: Border.all(color: borderColor, width: 1.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: borderColor,
-                              offset: AppTheme.shadowOffsetSm,
-                              blurRadius: 0,
-                            ),
-                          ],
-                        ),
+                return CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    // Sliver 1: Search & Filter Toolbar
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.tune_rounded,
-                              size: 18,
-                              color: (_sortBy != 'updated_at' || _ratingFilter != 'All')
-                                  ? Colors.white
-                                  : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                            // Search Bar
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                                  border: Border.all(color: borderColor, width: 1.5),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: borderColor,
+                                      offset: AppTheme.shadowOffsetSm,
+                                      blurRadius: 0,
+                                    ),
+                                  ],
+                                ),
+                                child: TextField(
+                                  controller: _searchController,
+                                  focusNode: _searchFocusNode,
+                                  onChanged: (val) => setState(() => _searchQuery = val.trim()),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'Search books or authors... (Press /)',
+                                    hintStyle: TextStyle(
+                                      fontSize: 12,
+                                      color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.4),
+                                    ),
+                                    prefixIcon: Icon(Icons.search_rounded, color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                                    suffixIcon: _searchQuery.isNotEmpty
+                                        ? IconButton(
+                                            icon: const Icon(Icons.clear_rounded, size: 18),
+                                            onPressed: () {
+                                              _searchController.clear();
+                                              setState(() => _searchQuery = '');
+                                            },
+                                          )
+                                        : null,
+                                    border: InputBorder.none,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                  ),
+                                ),
+                              ),
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'SORT',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w900,
-                                color: (_sortBy != 'updated_at' || _ratingFilter != 'All')
-                                    ? Colors.white
-                                    : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                            const SizedBox(width: 8),
+
+                            // Sort & Filter Pill Button with Dynamic Label
+                            GestureDetector(
+                              onTap: _openSortFilterSheet,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+                                decoration: BoxDecoration(
+                                  color: isCustomFilterActive
+                                      ? accentColor
+                                      : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                                  border: Border.all(color: borderColor, width: 1.5),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: borderColor,
+                                      offset: AppTheme.shadowOffsetSm,
+                                      blurRadius: 0,
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.tune_rounded,
+                                      size: 16,
+                                      color: isCustomFilterActive
+                                          ? Colors.white
+                                          : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _getSortShortLabel(),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w900,
+                                        color: isCustomFilterActive
+                                            ? Colors.white
+                                            : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+
+                            // 1-Tap Direction Flip Button (▲ / ▼)
+                            Tooltip(
+                              message: _sortAscending ? 'Ascending (Tap to invert)' : 'Descending (Tap to invert)',
+                              child: GestureDetector(
+                                onTap: () => setState(() => _sortAscending = !_sortAscending),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 11),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                                    border: Border.all(color: borderColor, width: 1.5),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: borderColor,
+                                        offset: AppTheme.shadowOffsetSm,
+                                        blurRadius: 0,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Icon(
+                                    _sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                                    size: 16,
+                                    color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+
+                            // View Mode Switcher
+                            Container(
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                                border: Border.all(color: borderColor, width: 1.5),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: borderColor,
+                                    offset: AppTheme.shadowOffsetSm,
+                                    blurRadius: 0,
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _buildViewModeIcon(Icons.view_agenda_rounded, LibraryViewMode.cards, 'Cards'),
+                                  _buildViewModeIcon(Icons.grid_view_rounded, LibraryViewMode.covers, 'Covers'),
+                                  _buildViewModeIcon(Icons.table_rows_rounded, LibraryViewMode.table, 'Table'),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
 
-                    // View Mode Switcher
-                    Container(
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
-                        border: Border.all(color: borderColor, width: 1.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: borderColor,
-                            offset: AppTheme.shadowOffsetSm,
-                            blurRadius: 0,
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildViewModeIcon(Icons.view_agenda_rounded, LibraryViewMode.cards, 'Cards'),
-                          _buildViewModeIcon(Icons.grid_view_rounded, LibraryViewMode.covers, 'Covers'),
-                          _buildViewModeIcon(Icons.table_rows_rounded, LibraryViewMode.table, 'Table'),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Currently Reading Carousel (Active Reads)
-              if (_searchQuery.isEmpty && (_selectedStatus == 'All' || _selectedStatus == BookStatus.reading)) ...[
-                () {
-                  final activeBooks = _books.where((b) => b.status == BookStatus.reading).toList();
-                  if (activeBooks.isNotEmpty) {
-                    return ReadingCarousel(
-                      readingBooks: activeBooks,
-                      onLogProgress: _openQuickLog,
-                      onEdit: _openEditDialog,
-                      onQuickIncrement: _quickIncrement,
-                    );
-                  }
-                  return const SizedBox.shrink();
-                }(),
-              ],
-
-              // Status Filter Tabs
-              SizedBox(
-                height: 38,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: _statusFilters.length,
-                  itemBuilder: (context, idx) {
-                    final status = _statusFilters[idx];
-                    final isSelected = _selectedStatus == status;
-
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: GestureDetector(
-                        onTap: () => setState(() => _selectedStatus = status),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppColors.primaryRed
-                                : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
-                            border: Border.all(
-                              color: borderColor,
-                              width: 1.5,
-                            ),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            status.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: isSelected
-                                  ? Colors.white
-                                  : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-                            ),
-                          ),
+                    // Sliver 2: Currently Reading Carousel (Smoothly scrolls away with page!)
+                    if (showCarousel)
+                      SliverToBoxAdapter(
+                        child: ReadingCarousel(
+                          readingBooks: activeReadingBooks,
+                          onLogProgress: _openQuickLog,
+                          onEdit: _openEditDialog,
+                          onQuickIncrement: _quickIncrement,
                         ),
                       ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 8),
 
-              // Book List / Adaptive Grid / Table
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : filtered.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const BrutalistBadge(label: 'NO BOOKS FOUND'),
-                                const SizedBox(height: 12),
-                                Text(
-                                  _searchQuery.isNotEmpty ? 'Try a different search term' : 'Tap + to add your first book',
-                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.inkMuted),
-                                ),
-                                if (_selectedStatus != 'All' || _ratingFilter != 'All' || _searchQuery.isNotEmpty) ...[
-                                  const SizedBox(height: 12),
-                                  TextButton(
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      setState(() {
-                                        _selectedStatus = 'All';
-                                        _ratingFilter = 'All';
-                                        _searchQuery = '';
-                                      });
-                                    },
-                                    child: const Text('CLEAR ALL FILTERS', style: TextStyle(fontWeight: FontWeight.w900)),
+                    // Sliver 3: Status Filter Horizontal Tabs
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: 38,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: _statusFilters.length,
+                          itemBuilder: (context, idx) {
+                            final status = _statusFilters[idx];
+                            final isSelected = _selectedStatus == status;
+
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: GestureDetector(
+                                onTap: () => setState(() => _selectedStatus = status),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? accentColor
+                                        : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                                    border: Border.all(
+                                      color: borderColor,
+                                      width: 1.5,
+                                    ),
                                   ),
-                                ],
-                              ],
-                            ),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: () async {
-                              await _syncManager.syncNow();
-                              await _loadBooks();
-                            },
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                final isWideScreen = constraints.maxWidth >= 720;
-                                final isExtraWide = constraints.maxWidth >= 1150;
-
-                                // 1. COVER GRID / BOOKSHELF VIEW
-                                if (_viewMode == LibraryViewMode.covers) {
-                                  return GridView.builder(
-                                    padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 80),
-                                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: isExtraWide ? 5 : (isWideScreen ? 3 : 2),
-                                      childAspectRatio: 0.65,
-                                      crossAxisSpacing: 10,
-                                      mainAxisSpacing: 10,
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    status.toUpperCase(),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
                                     ),
-                                    itemCount: filtered.length,
-                                    itemBuilder: (context, index) {
-                                      final book = filtered[index];
-                                      return BookCoverCard(
-                                        key: ValueKey(book.id),
-                                        book: book,
-                                        onLogProgress: () => _openQuickLog(book),
-                                        onEdit: () => _openEditDialog(book),
-                                        onQuickIncrement: (amt) => _quickIncrement(book, amt),
-                                      );
-                                    },
-                                  );
-                                }
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 10)),
 
-                                // 2. COMPACT TABLE VIEW
-                                if (_viewMode == LibraryViewMode.table) {
-                                  return ListView.builder(
-                                    padding: const EdgeInsets.only(bottom: 80, top: 4),
-                                    itemCount: filtered.length,
-                                    itemBuilder: (context, index) {
-                                      final book = filtered[index];
-                                      return BookTableRow(
-                                        key: ValueKey(book.id),
-                                        book: book,
-                                        onLogProgress: () => _openQuickLog(book),
-                                        onEdit: () => _openEditDialog(book),
-                                        onQuickIncrement: (amt) => _quickIncrement(book, amt),
-                                      );
-                                    },
-                                  );
-                                }
-
-                                // 3. STANDARD CARDS VIEW (Default)
-                                if (isWideScreen) {
-                                  return GridView.builder(
-                                    padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 80),
-                                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: isExtraWide ? 3 : 2,
-                                      childAspectRatio: isExtraWide ? 1.85 : 1.75,
-                                      crossAxisSpacing: 12,
-                                      mainAxisSpacing: 12,
-                                    ),
-                                    itemCount: filtered.length,
-                                    itemBuilder: (context, index) {
-                                      final book = filtered[index];
-                                      return BookCard(
-                                        key: ValueKey(book.id),
-                                        book: book,
-                                        onLogProgress: () => _openQuickLog(book),
-                                        onEdit: () => _openEditDialog(book),
-                                        onDelete: () async {
-                                          await _dbHelper.deleteBook(book.id);
-                                          await _loadBooks();
-                                        },
-                                        onQuickIncrement: (amt) => _quickIncrement(book, amt),
-                                      );
-                                    },
-                                  );
-                                }
-
-                                return ListView.builder(
-                                  padding: const EdgeInsets.only(bottom: 80, top: 4),
-                                  itemCount: filtered.length,
-                                  itemBuilder: (context, index) {
-                                    final book = filtered[index];
-                                    return BookCard(
-                                      key: ValueKey(book.id),
-                                      book: book,
-                                      onLogProgress: () => _openQuickLog(book),
-                                      onEdit: () => _openEditDialog(book),
-                                      onDelete: () async {
-                                        await _dbHelper.deleteBook(book.id);
-                                        await _loadBooks();
-                                      },
-                                      onQuickIncrement: (amt) => _quickIncrement(book, amt),
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                          ),
-              ),
-            ],
+                    // Sliver 4: Unified Book Content Grid/List/Table
+                    _buildBookContentSliver(
+                      filtered: filtered,
+                      isWideScreen: isWideScreen,
+                      isExtraWide: isExtraWide,
+                      details: details,
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
           floatingActionButton: FloatingActionButton(
-            backgroundColor: AppColors.primaryRed,
+            backgroundColor: accentColor,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               side: BorderSide(
