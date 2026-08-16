@@ -397,8 +397,31 @@ class AppTheme {
 
   static ThemeData buildTheme(AppThemeVariant variant) {
     final d = getDetails(variant);
-    final isDark = variant.isDark;
+    return _buildThemeFromDetails(d, variant.isDark);
+  }
 
+  static ThemeData buildDynamicTheme(ColorScheme dynamicScheme, {required bool isDark}) {
+    final d = AppThemeDetails(
+      canvasColor: isDark
+          ? (dynamicScheme.surfaceContainerLowest)
+          : (dynamicScheme.surface),
+      cardColor: isDark
+          ? (dynamicScheme.surfaceContainerLow)
+          : (dynamicScheme.surfaceContainerLowest),
+      cardHighColor: isDark
+          ? (dynamicScheme.surfaceContainerHigh)
+          : (dynamicScheme.surfaceContainerHighest),
+      inkColor: isDark ? dynamicScheme.onSurface : AppColors.inkBlack,
+      inkMutedColor: isDark ? dynamicScheme.onSurfaceVariant : AppColors.inkMuted,
+      accentColor: dynamicScheme.primary,
+      secondaryAccent: dynamicScheme.secondary,
+      borderColor: isDark ? dynamicScheme.outline : AppColors.inkBlack,
+    );
+
+    return _buildThemeFromDetails(d, isDark);
+  }
+
+  static ThemeData _buildThemeFromDetails(AppThemeDetails d, bool isDark) {
     final baseTextTheme = isDark
         ? ThemeData.dark().textTheme
         : ThemeData.light().textTheme;

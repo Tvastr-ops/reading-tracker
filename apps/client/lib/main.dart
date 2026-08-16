@@ -1,3 +1,4 @@
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'screens/main_navigation_screen.dart';
 import 'services/sync/sync_manager.dart';
@@ -15,23 +16,29 @@ class ReadingTrackerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: ThemeService.instance,
-      builder: (context, _) {
-        final themeService = ThemeService.instance;
-        return MaterialApp(
-          title: 'Paperback Reader',
-          debugShowCheckedModeBanner: false,
-          theme: themeService.currentLightTheme,
-          darkTheme: themeService.currentDarkTheme,
-          themeMode: themeService.themeMode,
-          home: MainNavigationScreen(
-            onThemeToggle: () {
-              final isDark = themeService.themeMode == ThemeMode.dark;
-              themeService.setThemeMode(isDark ? ThemeMode.light : ThemeMode.dark);
-            },
-            isDarkMode: themeService.themeMode == ThemeMode.dark,
-          ),
+    return DynamicColorBuilder(
+      builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+        ThemeService.instance.updateDynamicColorSchemes(lightDynamic, darkDynamic);
+
+        return ListenableBuilder(
+          listenable: ThemeService.instance,
+          builder: (context, _) {
+            final themeService = ThemeService.instance;
+            return MaterialApp(
+              title: 'Paperback Reader',
+              debugShowCheckedModeBanner: false,
+              theme: themeService.currentLightTheme,
+              darkTheme: themeService.currentDarkTheme,
+              themeMode: themeService.themeMode,
+              home: MainNavigationScreen(
+                onThemeToggle: () {
+                  final isDark = themeService.themeMode == ThemeMode.dark;
+                  themeService.setThemeMode(isDark ? ThemeMode.light : ThemeMode.dark);
+                },
+                isDarkMode: themeService.themeMode == ThemeMode.dark,
+              ),
+            );
+          },
         );
       },
     );
