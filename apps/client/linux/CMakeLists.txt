@@ -1,24 +1,34 @@
 cmake_minimum_required(VERSION 3.10)
 project(runner LANGUAGES CXX)
 
+# Set the application target name. To change its name, change BINARY_NAME in the
+# top-level CMakeLists.txt, not the value in runner/CMakeLists.txt, or `flutter run`
+# will no longer work.
 set(BINARY_NAME "paperback_reader")
+# Set the application ID.
+set(APPLICATION_ID "com.readingtracker.app")
 
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type" FORCE)
-endif()
+# Explicitly opt in to modern CMake behaviors to avoid warnings with recent
+# versions of CMake.
+cmake_policy(SET CMP0063 NEW)
 
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# Load bundled libraries from the lib/ directory relative to the binary.
+set(CMAKE_INSTALL_RPATH "$ORIGIN/lib")
 
-include(flutter/generated_plugins.cmake)
+# Root directory of the Flutter project.
+set(FLUTTER_PROJECT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
 
-add_definitions("-DAPPLICATION_ID=\"com.readingtracker.app\"")
+# Directory where Flutter will output ephemeral build artifacts.
+set(FLUTTER_MANAGED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/flutter")
 
-add_executable(${BINARY_NAME}
-  "main.cc"
-  "my_application.cc"
-)
+# Configuration provided by the Flutter toolchain.
+include(${FLUTTER_MANAGED_DIR}/ephemeral/generated_config.cmake)
 
-apply_standard_settings(${BINARY_NAME})
+# Flutter-generated code, which must come before the application code.
+add_subdirectory(${FLUTTER_MANAGED_DIR} flutter)
 
-target_link_libraries(${BINARY_NAME} PRIVATE flutter gtk)
+# The plugin-generated code.
+include(${FLUTTER_MANAGED_DIR}/generated_plugins.cmake)
+
+# The application code.
+add_subdirectory(runner)
