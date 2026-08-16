@@ -174,18 +174,26 @@ class _LibraryScreenState extends State<LibraryScreen> {
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              color: AppColors.primaryRed,
-              child: const Text(
-                'FLUTTER',
-                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.white),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
+                border: Border.all(color: isDark ? Colors.white24 : AppColors.inkBlack, width: 1),
+              ),
+              child: Text(
+                'LEDGER',
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
+                  color: isDark ? Colors.white70 : AppColors.inkBlack,
+                ),
               ),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.sync_rounded),
-            tooltip: 'Sync Settings',
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
             onPressed: widget.onNavigateToSync,
           ),
         ],
