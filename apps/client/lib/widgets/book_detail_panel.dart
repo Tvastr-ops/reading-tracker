@@ -1,0 +1,561 @@
+import 'package:flutter/material.dart';
+import '../models/book.dart';
+import '../services/database_helper.dart';
+import '../theme/app_theme.dart';
+import '../utils/formatters.dart';
+import 'brutalist_widgets.dart';
+
+class BookDetailPanel extends StatefulWidget {
+  final Book book;
+  final VoidCallback onClose;
+  final ValueChanged<Book> onUpdateBook;
+  final VoidCallback onOpenFullEdit;
+  final VoidCallback onOpenQuickLog;
+  final VoidCallback onDelete;
+  final Future<void> Function(int chaptersDelta, int volumesDelta)? onQuickIncrement;
+
+  const BookDetailPanel({
+    super.key,
+    required this.book,
+    required this.onClose,
+    required this.onUpdateBook,
+    required this.onOpenFullEdit,
+    required this.onOpenQuickLog,
+    required this.onDelete,
+    this.onQuickIncrement,
+  });
+
+  @override
+  State<BookDetailPanel> createState() => _BookDetailPanelState();
+}
+
+class _BookDetailPanelState extends State<BookDetailPanel> {
+  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  List<ReadingLogEntry> _logs = [];
+  bool _isLoadingLogs = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLogs();
+  }
+
+  @override
+  void didUpdateWidget(covariant BookDetailPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.book.id != widget.book.id) {
+      _loadLogs();
+    }
+  }
+
+  Future<void> _loadLogs() async {
+    setState(() => _isLoadingLogs = true);
+    final logs = await _dbHelper.getReadingLogs(widget.book.id);
+    if (mounted) {
+      setState(() {
+        _logs = logs;
+        _isLoadingLogs = false;
+      });
+    }
+  }
+
+  Future<void> _changeStatus(String newStatus) async {
+    final updated = widget.book.copyWith(
+      status: newStatus,
+      updatedAt: DateTime.now().toIso8601String(),
+    );
+    await _dbHelper.updateBook(updated);
+    widget.onUpdateBook(updated);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final details = Theme.of(context).extension<AppThemeDetails>();
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
+    final surfaceColor = details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white);
+    final b = widget.book;
+
+    final progressDisplay = formatProgressDisplay(b);
+    final progressFraction = (b.completionPercentage / 100).clamp(0.0, 1.0);
+
+    return Container(
+      width: 380,
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        border: Border(
+          left: BorderSide(
+            color: borderColor,
+            width: AppTheme.borderHeavy,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: borderColor.withValues(alpha: 0.15),
+            offset: const Offset(-4, 0),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Header Bar with Close Button
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+              border: Border(
+                bottom: BorderSide(
+                  color: borderColor,
+                  width: AppTheme.borderLight,
+                ),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.auto_stories_rounded,
+                      size: 18,
+                      color: accentColor,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'BOOK INSPECTOR',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.8,
+                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                      ),
+                    ),
+                  ],
+                ),
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: widget.onClose,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: borderColor, width: 1.5),
+                        color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                      ),
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Scrollable Content
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                // Top Meta Card: Cover, Title, Author, Type, Rating
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Cover Thumbnail
+                    Container(
+                      width: 72,
+                      height: 104,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+                        border: Border.all(color: borderColor, width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: borderColor,
+                            offset: AppTheme.shadowOffsetSm,
+                            blurRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: b.coverUrl != null && b.coverUrl!.isNotEmpty
+                          ? Image.network(
+                              b.coverUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => _buildCoverFallback(b, accentColor),
+                            )
+                          : _buildCoverFallback(b, accentColor),
+                    ),
+                    const SizedBox(width: 14),
+
+                    // Title, Author, Type, Rating
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            b.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                              height: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            b.author != null && b.author!.isNotEmpty ? b.author! : 'Unknown Author',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.65),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Badges Row
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: [
+                              BrutalistBadge(
+                                label: b.type.toUpperCase(),
+                                backgroundColor: isDark ? Colors.white10 : AppColors.paperSurfaceHighest,
+                                textColor: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                              ),
+                              if (b.rating != null && b.rating! > 0)
+                                BrutalistBadge(
+                                  label: '${formatNum(b.rating!)} ★',
+                                  backgroundColor: AppColors.amberWarning,
+                                  textColor: Colors.white,
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Status Selector Pill Row
+                _buildSectionLabel('STATUS', isDark),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    BookStatus.reading,
+                    BookStatus.planToRead,
+                    BookStatus.completed,
+                    BookStatus.onHold,
+                    BookStatus.dropped,
+                  ].map((st) {
+                    final isCur = b.status == st;
+                    return MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () => _changeStatus(st),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: isCur ? accentColor : (isDark ? AppColors.darkSurface : AppColors.paperSurface),
+                            border: Border.all(
+                              color: borderColor,
+                              width: isCur ? 2.0 : 1.0,
+                            ),
+                          ),
+                          child: Text(
+                            st.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              color: isCur ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16),
+
+                // Reading Progress Box
+                _buildSectionLabel('PROGRESS', isDark),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+                    border: Border.all(color: borderColor, width: 1.5),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              progressDisplay,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${b.completionPercentage.toInt()}%',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              color: accentColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // Progress Bar
+                      ClipRRect(
+                        borderRadius: BorderRadius.zero,
+                        child: Container(
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white12 : Colors.black12,
+                            border: Border.all(color: borderColor, width: 1),
+                          ),
+                          child: FractionallySizedBox(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: progressFraction,
+                            child: Container(color: accentColor),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Quick Increment Buttons
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          _buildIncrementButton('+1 Ch', () => widget.onQuickIncrement?.call(1, 0), accentColor, borderColor, isDark),
+                          _buildIncrementButton('+5 Ch', () => widget.onQuickIncrement?.call(5, 0), accentColor, borderColor, isDark),
+                          if (b.progressStructure == 'volume_chapter' || b.parentProgress != null)
+                            _buildIncrementButton('+1 Vol', () => widget.onQuickIncrement?.call(0, 1), accentColor, borderColor, isDark),
+                          _buildActionButton('LOG PROGRESS', Icons.edit_calendar_rounded, widget.onOpenQuickLog, accentColor, borderColor, isDark),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Personal Notes & Synopsis
+                if (b.notes != null && b.notes!.isNotEmpty) ...[
+                  _buildSectionLabel('NOTES & THOUGHTS', isDark),
+                  const SizedBox(height: 6),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+                      border: Border.all(color: borderColor, width: 1.5),
+                    ),
+                    child: Text(
+                      b.notes!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.4,
+                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Reading Session Logs
+                _buildSectionLabel('RECENT LOGS', isDark),
+                const SizedBox(height: 6),
+                if (_isLoadingLogs)
+                  const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator()))
+                else if (_logs.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+                      border: Border.all(color: borderColor, width: 1.0),
+                    ),
+                    child: Text(
+                      'No session logs recorded yet.',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.5),
+                      ),
+                    ),
+                  )
+                else
+                  Column(
+                    children: _logs.take(5).map((log) {
+                      final dt = DateTime.tryParse(log.loggedAt);
+                      final dateStr = dt != null ? '${dt.month}/${dt.day}/${dt.year}' : log.loggedAt;
+                      final delta = (log.toProgress - (log.fromProgress ?? 0)).abs();
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+                          border: Border.all(color: borderColor, width: 1.0),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '+${formatNum(delta)} ${getUnitLabel(b.type, b.unitType)} (to ${formatNum(log.toProgress)})',
+                                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800),
+                                ),
+                                if (log.note != null && log.note!.isNotEmpty)
+                                  Text(
+                                    log.note!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.6),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            Text(
+                              dateStr,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                const SizedBox(height: 20),
+
+                // Bottom Action Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: widget.onOpenFullEdit,
+                        icon: const Icon(Icons.edit_note_rounded, size: 16),
+                        label: const Text('EDIT BOOK', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: widget.onDelete,
+                      icon: const Icon(Icons.delete_outline_rounded, color: AppColors.primaryRed, size: 20),
+                      tooltip: 'Move to Trash',
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCoverFallback(Book b, Color accentColor) {
+    return Center(
+      child: Icon(
+        Icons.auto_stories_rounded,
+        size: 28,
+        color: accentColor.withValues(alpha: 0.8),
+      ),
+    );
+  }
+
+  Widget _buildSectionLabel(String label, bool isDark) {
+    return Text(
+      label,
+      style: TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 0.8,
+        color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.6),
+      ),
+    );
+  }
+
+  Widget _buildIncrementButton(String label, VoidCallback? onTap, Color accentColor, Color borderColor, bool isDark) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+            border: Border.all(color: borderColor, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: borderColor,
+                offset: const Offset(1.5, 1.5),
+                blurRadius: 0,
+              ),
+            ],
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton(String label, IconData icon, VoidCallback onTap, Color accentColor, Color borderColor, bool isDark) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: accentColor,
+            border: Border.all(color: borderColor, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: borderColor,
+                offset: const Offset(1.5, 1.5),
+                blurRadius: 0,
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 13, color: Colors.white),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900, color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

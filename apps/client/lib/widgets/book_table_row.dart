@@ -9,6 +9,7 @@ class BookTableRow extends StatelessWidget {
   final VoidCallback onLogProgress;
   final VoidCallback onEdit;
   final Function(double) onQuickIncrement;
+  final bool isSelected;
 
   const BookTableRow({
     super.key,
@@ -16,33 +17,40 @@ class BookTableRow extends StatelessWidget {
     required this.onLogProgress,
     required this.onEdit,
     required this.onQuickIncrement,
+    this.isSelected = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final details = Theme.of(context).extension<AppThemeDetails>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final borderColor = isSelected
+        ? (details?.accentColor ?? Theme.of(context).colorScheme.primary)
+        : (details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack));
     final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
     final quickOptions = getQuickChipOptions(book.type);
     final quickAmt = quickOptions.isNotEmpty ? quickOptions.first : 1;
 
-    return GestureDetector(
-      onTap: onEdit,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: details?.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white),
-          border: Border.all(color: borderColor, width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: borderColor,
-              offset: details?.shadowOffsetSm ?? const Offset(2.0, 2.0),
-              blurRadius: 0,
-            ),
-          ],
-        ),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onEdit,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (isDark ? accentColor.withValues(alpha: 0.15) : accentColor.withValues(alpha: 0.08))
+                : (details?.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white)),
+            border: Border.all(color: borderColor, width: isSelected ? 2.0 : 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: borderColor,
+                offset: isSelected ? const Offset(3.0, 3.0) : (details?.shadowOffsetSm ?? const Offset(2.0, 2.0)),
+                blurRadius: 0,
+              ),
+            ],
+          ),
         child: Row(
           children: [
             // Thumbnail
@@ -167,6 +175,7 @@ class BookTableRow extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 }

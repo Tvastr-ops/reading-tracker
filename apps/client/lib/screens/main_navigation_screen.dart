@@ -21,7 +21,7 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
-  final GlobalKey _libraryKey = GlobalKey();
+  final GlobalKey<LibraryScreenState> _libraryKey = GlobalKey<LibraryScreenState>();
   late Widget _libraryScreen;
   late Widget _statsScreen;
   late Widget _timelineScreen;
@@ -40,7 +40,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+    final details = Theme.of(context).extension<AppThemeDetails>();
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
+    final canvasBg = details?.canvasColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg);
 
     final pages = [
       _libraryScreen,
@@ -52,70 +55,318 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
     ];
 
-    return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: pages,
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurface : AppColors.paperBg,
-          border: Border(
-            top: BorderSide(
-              color: borderColor,
-              width: AppTheme.borderHeavy,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktopOrTablet = constraints.maxWidth >= 800;
+
+        if (isDesktopOrTablet) {
+          // Desktop / Widescreen Layout: Left Navigation Rail + Expanded Page Stack
+          return Scaffold(
+            body: Row(
+              children: [
+                // Left Neo-Brutalist Navigation Rail
+                Container(
+                  width: 210,
+                  decoration: BoxDecoration(
+                    color: canvasBg,
+                    border: Border(
+                      right: BorderSide(
+                        color: borderColor,
+                        width: AppTheme.borderHeavy,
+                      ),
+                    ),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Sidebar Brand Header
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: accentColor,
+                                border: Border.all(color: borderColor, width: 1.5),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: borderColor,
+                                    offset: AppTheme.shadowOffsetSm,
+                                    blurRadius: 0,
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.menu_book_rounded,
+                                size: 18,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'PAPERBACK',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                    color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                  ),
+                                ),
+                                Text(
+                                  'READER LEDGER',
+                                  style: TextStyle(
+                                    fontSize: 8.5,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1.0,
+                                    color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.5),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Navigation Items List
+                      _buildRailNavItem(
+                        index: 0,
+                        label: 'LIBRARY',
+                        icon: Icons.grid_view_rounded,
+                        isDark: isDark,
+                        borderColor: borderColor,
+                        accentColor: accentColor,
+                        canvasBg: canvasBg,
+                      ),
+                      const SizedBox(height: 8),
+                      _buildRailNavItem(
+                        index: 1,
+                        label: 'ANALYTICS',
+                        icon: Icons.bar_chart_rounded,
+                        isDark: isDark,
+                        borderColor: borderColor,
+                        accentColor: accentColor,
+                        canvasBg: canvasBg,
+                      ),
+                      const SizedBox(height: 8),
+                      _buildRailNavItem(
+                        index: 2,
+                        label: 'JOURNEY',
+                        icon: Icons.auto_stories_rounded,
+                        isDark: isDark,
+                        borderColor: borderColor,
+                        accentColor: accentColor,
+                        canvasBg: canvasBg,
+                      ),
+                      const SizedBox(height: 8),
+                      _buildRailNavItem(
+                        index: 3,
+                        label: 'SETTINGS',
+                        icon: Icons.tune_rounded,
+                        isDark: isDark,
+                        borderColor: borderColor,
+                        accentColor: accentColor,
+                        canvasBg: canvasBg,
+                      ),
+
+                      const Spacer(),
+
+                      // Quick Add Book Button at Sidebar Bottom
+                      GestureDetector(
+                        onTap: () {
+                          // Navigate to library if not already there
+                          if (_currentIndex != 0) {
+                            setState(() => _currentIndex = 0);
+                          }
+                          _libraryKey.currentState?.openAddBookDialog();
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 11),
+                          decoration: BoxDecoration(
+                            color: accentColor,
+                            border: Border.all(color: borderColor, width: 1.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: borderColor,
+                                offset: AppTheme.shadowOffsetSm,
+                                blurRadius: 0,
+                              ),
+                            ],
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_rounded, size: 18, color: Colors.white),
+                              SizedBox(width: 6),
+                              Text(
+                                'ADD BOOK',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Main Content View
+                Expanded(
+                  child: IndexedStack(
+                    index: _currentIndex,
+                    children: pages,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Mobile Layout (< 800px): Bottom Navigation Bar
+        return Scaffold(
+          body: IndexedStack(
+            index: _currentIndex,
+            children: pages,
+          ),
+          bottomNavigationBar: Container(
+            decoration: BoxDecoration(
+              color: canvasBg,
+              border: Border(
+                top: BorderSide(
+                  color: borderColor,
+                  width: AppTheme.borderHeavy,
+                ),
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildBottomNavItem(
+                  index: 0,
+                  label: 'LIBRARY',
+                  icon: Icons.grid_view_rounded,
+                  isDark: isDark,
+                  borderColor: borderColor,
+                  accentColor: accentColor,
+                  canvasBg: canvasBg,
+                ),
+                _buildBottomNavItem(
+                  index: 1,
+                  label: 'STATS',
+                  icon: Icons.bar_chart_rounded,
+                  isDark: isDark,
+                  borderColor: borderColor,
+                  accentColor: accentColor,
+                  canvasBg: canvasBg,
+                ),
+                _buildBottomNavItem(
+                  index: 2,
+                  label: 'JOURNEY',
+                  icon: Icons.auto_stories_rounded,
+                  isDark: isDark,
+                  borderColor: borderColor,
+                  accentColor: accentColor,
+                  canvasBg: canvasBg,
+                ),
+                _buildBottomNavItem(
+                  index: 3,
+                  label: 'SETTINGS',
+                  icon: Icons.tune_rounded,
+                  isDark: isDark,
+                  borderColor: borderColor,
+                  accentColor: accentColor,
+                  canvasBg: canvasBg,
+                ),
+              ],
             ),
           ),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavItem(
-              index: 0,
-              label: 'LIBRARY',
-              icon: Icons.grid_view_rounded,
-            ),
-            _buildNavItem(
-              index: 1,
-              label: 'STATS',
-              icon: Icons.bar_chart_rounded,
-            ),
-            _buildNavItem(
-              index: 2,
-              label: 'JOURNEY',
-              icon: Icons.auto_stories_rounded,
-            ),
-            _buildNavItem(
-              index: 3,
-              label: 'SETTINGS',
-              icon: Icons.tune_rounded,
-            ),
-          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildRailNavItem({
+    required int index,
+    required String label,
+    required IconData icon,
+    required bool isDark,
+    required Color borderColor,
+    required Color accentColor,
+    required Color canvasBg,
+  }) {
+    final isSelected = _currentIndex == index;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => setState(() => _currentIndex = index),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          decoration: BoxDecoration(
+            color: isSelected ? accentColor : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+            border: Border.all(color: borderColor, width: isSelected ? 2.0 : 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: borderColor,
+                offset: isSelected ? AppTheme.shadowOffsetSm : const Offset(1.5, 1.5),
+                blurRadius: 0,
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 19,
+                color: isSelected ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
+                  color: isSelected ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildNavItem({
+  Widget _buildBottomNavItem({
     required int index,
     required String label,
     required IconData icon,
+    required bool isDark,
+    required Color borderColor,
+    required Color accentColor,
+    required Color canvasBg,
   }) {
-    final details = Theme.of(context).extension<AppThemeDetails>();
     final isSelected = _currentIndex == index;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
-    final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
 
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected
-              ? accentColor
-              : (details?.canvasColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg)),
+          color: isSelected ? accentColor : canvasBg,
           border: isSelected
               ? Border.all(color: borderColor, width: 1.5)
               : Border.all(color: Colors.transparent, width: 1.5),
@@ -123,7 +374,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               ? [
                   BoxShadow(
                     color: borderColor,
-                    offset: details?.shadowOffsetSm ?? AppTheme.shadowOffsetSm,
+                    offset: AppTheme.shadowOffsetSm,
                     blurRadius: 0,
                   ),
                 ]
@@ -135,9 +386,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             Icon(
               icon,
               size: 20,
-              color: isSelected
-                  ? Colors.white
-                  : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+              color: isSelected ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
             ),
             const SizedBox(height: 2),
             Text(
@@ -146,9 +395,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 fontSize: 9,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0.5,
-                color: isSelected
-                  ? Colors.white
-                  : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                color: isSelected ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
               ),
             ),
           ],

@@ -9,6 +9,7 @@ class BookCoverCard extends StatelessWidget {
   final VoidCallback onLogProgress;
   final VoidCallback onEdit;
   final Function(double) onQuickIncrement;
+  final bool isSelected;
 
   const BookCoverCard({
     super.key,
@@ -16,31 +17,36 @@ class BookCoverCard extends StatelessWidget {
     required this.onLogProgress,
     required this.onEdit,
     required this.onQuickIncrement,
+    this.isSelected = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final details = Theme.of(context).extension<AppThemeDetails>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final borderColor = isSelected
+        ? (details?.accentColor ?? Theme.of(context).colorScheme.primary)
+        : (details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack));
     final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
     final quickOptions = getQuickChipOptions(book.type);
     final quickAmt = quickOptions.isNotEmpty ? quickOptions.first : 1;
 
-    return GestureDetector(
-      onTap: onEdit,
-      child: Container(
-        decoration: BoxDecoration(
-          color: details?.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white),
-          border: Border.all(color: borderColor, width: AppTheme.borderHeavy),
-          boxShadow: [
-            BoxShadow(
-              color: borderColor,
-              offset: details?.shadowOffsetSm ?? AppTheme.shadowOffsetSm,
-              blurRadius: 0,
-            ),
-          ],
-        ),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onEdit,
+        child: Container(
+          decoration: BoxDecoration(
+            color: details?.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white),
+            border: Border.all(color: borderColor, width: isSelected ? 3.0 : AppTheme.borderHeavy),
+            boxShadow: [
+              BoxShadow(
+                color: borderColor,
+                offset: isSelected ? const Offset(3.5, 3.5) : (details?.shadowOffsetSm ?? AppTheme.shadowOffsetSm),
+                blurRadius: 0,
+              ),
+            ],
+          ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
           fit: StackFit.expand,
@@ -182,7 +188,8 @@ class BookCoverCard extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildFallbackPattern(bool isDark) {

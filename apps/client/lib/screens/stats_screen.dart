@@ -180,11 +180,11 @@ class _StatsScreenState extends State<StatsScreen> {
                 await _syncManager.syncNow();
                 await _loadStats();
               },
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                children: [
-                  // Yearly Reading Goal Card
-                  BrutalistCard(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth >= 840;
+
+                  final yearlyGoalCard = BrutalistCard(
                     margin: EdgeInsets.zero,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,58 +253,57 @@ class _StatsScreenState extends State<StatsScreen> {
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 16),
+                  );
 
-                  // 2x2 Metric Grid
-                  Row(
+                  final metricsGrid = Column(
                     children: [
-                      Expanded(
-                        child: _buildMetricTile(
-                          'IN PROGRESS',
-                          '$reading',
-                          Icons.auto_stories_rounded,
-                          AppColors.skyBlue,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildMetricTile(
+                              'IN PROGRESS',
+                              '$reading',
+                              Icons.auto_stories_rounded,
+                              AppColors.skyBlue,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildMetricTile(
+                              'COMPLETED',
+                              '$completed',
+                              Icons.done_all_rounded,
+                              AppColors.successGreen,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildMetricTile(
-                          'COMPLETED',
-                          '$completed',
-                          Icons.done_all_rounded,
-                          AppColors.successGreen,
-                        ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildMetricTile(
+                              'PLAN TO READ',
+                              '$plan',
+                              Icons.bookmark_border_rounded,
+                              AppColors.amberWarning,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildMetricTile(
+                              'AVG RATING',
+                              avgRating > 0 ? '${avgRating.toStringAsFixed(1)} ★' : 'N/A',
+                              Icons.star_rounded,
+                              Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 12),
+                  );
 
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildMetricTile(
-                          'PLAN TO READ',
-                          '$plan',
-                          Icons.bookmark_border_rounded,
-                          AppColors.amberWarning,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildMetricTile(
-                          'AVG RATING',
-                          avgRating > 0 ? '${avgRating.toStringAsFixed(1)} ★' : 'N/A',
-                          Icons.star_rounded,
-                          Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Reading Velocity & Pace Insight Card
-                  BrutalistCard(
+                  final velocityCard = BrutalistCard(
                     margin: EdgeInsets.zero,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -356,57 +355,107 @@ class _StatsScreenState extends State<StatsScreen> {
                           ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 20),
+                  );
 
-                  // Format Breakdown
-                  const Text(
-                    'FORMAT DISTRIBUTION',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
-                  ),
-                  const SizedBox(height: 8),
-
-                  BrutalistCard(
-                    margin: EdgeInsets.zero,
-                    child: Column(
-                      children: typeCounts.entries.map((entry) {
-                        final pct = _books.isEmpty ? 0.0 : entry.value / _books.length;
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  final formatDistributionCard = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'FORMAT DISTRIBUTION',
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                      ),
+                      const SizedBox(height: 8),
+                      BrutalistCard(
+                        margin: EdgeInsets.zero,
+                        child: Column(
+                          children: typeCounts.entries.map((entry) {
+                            final pct = _books.isEmpty ? 0.0 : entry.value / _books.length;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    entry.key.toUpperCase(),
-                                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        entry.key.toUpperCase(),
+                                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                                      ),
+                                      Text(
+                                        '${entry.value} (${(pct * 100).toInt()}%)',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 12,
+                                          color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  Text(
-                                    '${entry.value} (${(pct * 100).toInt()}%)',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12,
-                                      color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
-                                    ),
+                                  const SizedBox(height: 4),
+                                  BrutalistProgressBar(
+                                    progress: pct,
+                                    height: 8,
+                                    fillColor: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 4),
-                              BrutalistProgressBar(
-                                progress: pct,
-                                height: 8,
-                                fillColor: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
+                  );
+
+                  if (isWide) {
+                    return ListView(
+                      padding: const EdgeInsets.all(20),
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Left Column: Goal, Velocity & Metrics
+                            Expanded(
+                              flex: 5,
+                              child: Column(
+                                children: [
+                                  yearlyGoalCard,
+                                  const SizedBox(height: 16),
+                                  metricsGrid,
+                                  const SizedBox(height: 16),
+                                  velocityCard,
+                                ],
                               ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                ],
+                            ),
+                            const SizedBox(width: 20),
+
+                            // Right Column: Format Distribution
+                            Expanded(
+                              flex: 4,
+                              child: formatDistributionCard,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 40),
+                      ],
+                    );
+                  }
+
+                  // Mobile Single-Column Layout
+                  return ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    children: [
+                      yearlyGoalCard,
+                      const SizedBox(height: 16),
+                      metricsGrid,
+                      const SizedBox(height: 16),
+                      velocityCard,
+                      const SizedBox(height: 20),
+                      formatDistributionCard,
+                      const SizedBox(height: 40),
+                    ],
+                  );
+                },
               ),
             ),
     );

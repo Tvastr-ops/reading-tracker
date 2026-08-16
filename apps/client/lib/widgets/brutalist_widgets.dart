@@ -4,6 +4,7 @@ import '../theme/app_theme.dart';
 class BrutalistCard extends StatelessWidget {
   final Widget child;
   final Color? backgroundColor;
+  final Color? borderColor;
   final EdgeInsetsGeometry padding;
   final EdgeInsetsGeometry margin;
   final VoidCallback? onTap;
@@ -14,6 +15,7 @@ class BrutalistCard extends StatelessWidget {
     super.key,
     required this.child,
     this.backgroundColor,
+    this.borderColor,
     this.padding = const EdgeInsets.all(16),
     this.margin = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     this.onTap,
@@ -26,17 +28,17 @@ class BrutalistCard extends StatelessWidget {
     final details = Theme.of(context).extension<AppThemeDetails>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = backgroundColor ?? details?.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white);
-    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final border = borderColor ?? details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
     final offset = shadowOffset ?? details?.shadowOffset ?? AppTheme.shadowOffset;
 
     Widget content = Container(
       margin: margin,
       decoration: BoxDecoration(
         color: bg,
-        border: Border.all(color: borderColor, width: borderWidth),
+        border: Border.all(color: border, width: borderWidth),
         boxShadow: [
           BoxShadow(
-            color: borderColor,
+            color: border,
             offset: offset,
             blurRadius: 0,
           ),

@@ -12,3 +12,5 @@ build/
 .idea/
 *.iml
 .metadata
+windows/flutter/ephemeral/
+linux/flutter/ephemeral/
