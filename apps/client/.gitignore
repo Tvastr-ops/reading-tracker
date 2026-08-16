@@ -9,3 +9,6 @@ build/
 *.lock
 .env.local
 .DS_Store
+.idea/
+*.iml
+.metadata
