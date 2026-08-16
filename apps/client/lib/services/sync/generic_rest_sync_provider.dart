@@ -99,12 +99,34 @@ class GenericRestSyncProvider implements RemoteSyncProvider {
     try {
       final uri = Uri.parse(_cleanUrl('/api/books/${entry.bookId}/log'));
       final res = await http
-          .post(uri, headers: _headers, body: jsonEncode(entry.toMap()))
+          .post(uri, headers: _headers, body: jsonEncode(entry.toSupabaseJson()))
           .timeout(const Duration(seconds: 6));
       return res.statusCode >= 200 && res.statusCode < 300;
     } catch (e) {
       debugPrint('GenericRestSyncProvider pushReadingLog error: $e');
       return false;
+    }
+  }
+
+  @override
+  Future<List<ReadingLogEntry>> fetchRemoteReadingLogs({DateTime? since}) async {
+    if (serverUrl.isEmpty) return [];
+    try {
+      var path = '/api/logs';
+      if (since != null) {
+        path += '?since=${Uri.encodeComponent(since.toIso8601String())}';
+      }
+      final uri = Uri.parse(_cleanUrl(path));
+      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 8));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final dynamic data = jsonDecode(res.body);
+        final List<dynamic> list = data is Map && data['entries'] != null ? data['entries'] : (data is List ? data : []);
+        return list.map((item) => ReadingLogEntry.fromMap(item as Map<String, dynamic>)).toList();
+      }
+      return [];
+    } catch (e) {
+      debugPrint('GenericRestSyncProvider fetchRemoteReadingLogs error: $e');
+      return [];
     }
   }
 

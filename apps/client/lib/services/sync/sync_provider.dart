@@ -15,6 +15,7 @@ abstract class RemoteSyncProvider {
   Future<bool> pushBook(Book book);
   Future<bool> deleteBook(String id);
   Future<bool> pushReadingLog(ReadingLogEntry entry);
+  Future<List<ReadingLogEntry>> fetchRemoteReadingLogs({DateTime? since});
   Future<int?> fetchYearlyGoal();
   Future<bool> pushYearlyGoal(int goal);
 }

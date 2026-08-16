@@ -82,11 +82,30 @@ export default function BookInspectorDrawer({
     return getLocalDateString(d);
   };
 
+  const isCompletedWithTotal =
+    draft?.status === 'Completed' &&
+    draft.total_units != null &&
+    (draft.progress ?? 0) >= draft.total_units;
+
   const handleIncrementProgress = (delta: number) => {
+    if (!draft) return;
+    if (delta > 0 && isCompletedWithTotal) return;
+
     const current = draft.progress ?? 0;
     const max = draft.total_units ?? 999999;
     const nextVal = Math.min(max, Math.max(0, current + delta));
-    setDraft((prev) => (prev ? { ...prev, progress: nextVal } : null));
+
+    let nextStatus = draft.status;
+    if (nextVal > 0 && draft.status === 'Plan to Read') {
+      nextStatus = 'Reading';
+    } else if (draft.status === 'Completed' && nextVal > current) {
+      nextStatus = 'Reading';
+    }
+    if (draft.total_units != null && nextVal >= draft.total_units) {
+      nextStatus = 'Completed';
+    }
+
+    setDraft((prev) => (prev ? { ...prev, progress: nextVal, status: nextStatus } : null));
   };
 
   const handleIncrementVolume = (delta: number) => {
@@ -287,22 +306,31 @@ export default function BookInspectorDrawer({
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
+                  disabled={isCompletedWithTotal}
                   onClick={() => handleIncrementProgress(1)}
-                  className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-border bg-card-bg hover:bg-surface text-text transition-colors shadow-2xs"
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg border border-border bg-card-bg text-text transition-colors shadow-2xs ${
+                    isCompletedWithTotal ? 'opacity-40 cursor-not-allowed' : 'hover:bg-surface'
+                  }`}
                 >
                   +1
                 </button>
                 <button
                   type="button"
+                  disabled={isCompletedWithTotal}
                   onClick={() => handleIncrementProgress(5)}
-                  className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-border bg-card-bg hover:bg-surface text-text transition-colors shadow-2xs"
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg border border-border bg-card-bg text-text transition-colors shadow-2xs ${
+                    isCompletedWithTotal ? 'opacity-40 cursor-not-allowed' : 'hover:bg-surface'
+                  }`}
                 >
                   +5
                 </button>
                 <button
                   type="button"
+                  disabled={isCompletedWithTotal}
                   onClick={() => handleIncrementProgress(10)}
-                  className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-border bg-card-bg hover:bg-surface text-text transition-colors shadow-2xs"
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg border border-border bg-card-bg text-text transition-colors shadow-2xs ${
+                    isCompletedWithTotal ? 'opacity-40 cursor-not-allowed' : 'hover:bg-surface'
+                  }`}
                 >
                   +10
                 </button>

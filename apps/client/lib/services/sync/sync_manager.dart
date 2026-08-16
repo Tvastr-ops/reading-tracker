@@ -111,7 +111,7 @@ class SyncManager extends ChangeNotifier {
         return await _dbHelper.getBooks();
       }
 
-      // 1. Push pending local mutations
+      // 1. Push pending local book mutations
       final pending = await _dbHelper.getPendingSyncBooks();
       final failedPushIds = <String>{};
 
@@ -133,6 +133,15 @@ class SyncManager extends ChangeNotifier {
         }
       }
 
+      // 1b. Push pending local reading logs
+      final pendingLogs = await _dbHelper.getPendingSyncReadingLogs();
+      for (final log in pendingLogs) {
+        final ok = await _activeProvider!.pushReadingLog(log);
+        if (ok) {
+          await _dbHelper.markReadingLogSynced(log.id);
+        }
+      }
+
       // 2. Fetch remote updates (only upsert if local copy has no unpushed local changes)
       final remote = await _activeProvider!.fetchRemoteBooks();
       if (remote.isNotEmpty) {
@@ -140,6 +149,14 @@ class SyncManager extends ChangeNotifier {
           if (!failedPushIds.contains(b.id)) {
             await _dbHelper.upsertRemoteBook(b);
           }
+        }
+      }
+
+      // 2b. Fetch remote reading logs (incremental based on _lastSyncedAt)
+      final remoteLogs = await _activeProvider!.fetchRemoteReadingLogs(since: _lastSyncedAt);
+      if (remoteLogs.isNotEmpty) {
+        for (final log in remoteLogs) {
+          await _dbHelper.upsertRemoteReadingLog(log);
         }
       }
 

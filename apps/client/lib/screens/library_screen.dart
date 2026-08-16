@@ -4,6 +4,7 @@ import '../models/book.dart';
 import '../services/database_helper.dart';
 import '../services/sync/sync_manager.dart';
 import '../theme/app_theme.dart';
+import '../utils/formatters.dart';
 import '../widgets/book_card.dart';
 import '../widgets/book_cover_card.dart';
 import '../widgets/book_edit_dialog.dart';
@@ -71,14 +72,28 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Future<void> _quickIncrement(Book book, double amount) async {
-    final newProgress = book.progress + amount;
     final total = book.totalUnits;
+    if (book.status == BookStatus.completed && total != null && book.progress >= total) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('"${book.title}" is already completed!'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final newProgress = book.progress + amount;
     final clampedProgress = total != null && newProgress > total ? total : newProgress;
 
     String newStatus = book.status;
     if (clampedProgress > 0 && book.status == BookStatus.planToRead) {
       newStatus = BookStatus.reading;
+    } else if (book.status == BookStatus.completed && clampedProgress > book.progress) {
+      // Reopening ongoing book with new chapters
+      newStatus = BookStatus.reading;
     }
+
     if (total != null && clampedProgress >= total) {
       newStatus = BookStatus.completed;
     }
@@ -93,7 +108,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     await _dbHelper.updateBook(updated);
 
     final logEntry = ReadingLogEntry(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: generateUuidV4(),
       bookId: book.id,
       fromProgress: book.progress,
       toProgress: clampedProgress,
@@ -114,7 +129,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
           String newStatus = book.status;
           if (newProgress > 0 && book.status == BookStatus.planToRead) {
             newStatus = BookStatus.reading;
+          } else if (book.status == BookStatus.completed && newProgress > book.progress) {
+            newStatus = BookStatus.reading;
           }
+
           if (book.totalUnits != null && newProgress >= book.totalUnits!) {
             newStatus = BookStatus.completed;
           }
@@ -128,7 +146,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           await _dbHelper.updateBook(updated);
 
           final logEntry = ReadingLogEntry(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            id: generateUuidV4(),
             bookId: book.id,
             fromProgress: book.progress,
             toProgress: newProgress,
