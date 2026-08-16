@@ -35,9 +35,6 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.2.16
         version: 1.2.16(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@reading-tracker/types':
-        specifier: workspace:*
-        version: link:../../packages/types
       '@supabase/supabase-js':
         specifier: ^2.112.3
         version: 2.112.3
@@ -96,8 +93,6 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
-
-  packages/types: {}
 
 packages:
 
