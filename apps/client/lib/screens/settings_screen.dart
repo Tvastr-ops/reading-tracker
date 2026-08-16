@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../services/sync/generic_rest_sync_provider.dart';
+import '../services/sync/supabase_sync_provider.dart';
 import '../services/sync/sync_manager.dart';
 import '../services/sync/sync_provider.dart';
 import '../services/theme_service.dart';
@@ -8,13 +10,13 @@ import '../widgets/brutalist_widgets.dart';
 import 'trash_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
-  final VoidCallback onThemeToggle;
-  final bool isDarkMode;
+  final VoidCallback? onThemeToggle;
+  final bool? isDarkMode;
 
   const SettingsScreen({
     super.key,
-    required this.onThemeToggle,
-    required this.isDarkMode,
+    this.onThemeToggle,
+    this.isDarkMode,
   });
 
   @override
@@ -33,6 +35,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isConfigExpanded = false;
   bool _showApiKey = false;
   bool _isTestingConnection = false;
+
+  // Collapsible section state for mobile screen real estate
+  bool _isAppearanceExpanded = false;
+  bool _isDisplayExpanded = false;
+  bool _isLibraryNavExpanded = true;
+  bool _isNetworkExpanded = true;
+  bool _isDataExpanded = false;
+  bool _isAboutExpanded = false;
 
   @override
   void initState() {
@@ -70,69 +80,137 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (collapseAfter) {
       setState(() => _isConfigExpanded = false);
     }
-
-    if (mounted) {
-      final isConnected = _syncManager.connectionStatus == 'Connected';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(isConnected
-              ? 'Settings saved & connection verified!'
-              : 'Settings saved (Status: ${_syncManager.connectionStatus})'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
   }
 
   Future<void> _testConnection() async {
     setState(() => _isTestingConnection = true);
-    final ok = await _syncManager.checkConnection();
+    final RemoteSyncProvider provider = _selectedType == SyncBackendType.supabase
+        ? SupabaseSyncProvider(
+            supabaseUrl: _urlController.text.trim(),
+            anonKey: _apiKeyController.text.trim(),
+          )
+        : GenericRestSyncProvider(
+            serverUrl: _urlController.text.trim(),
+            apiKey: _apiKeyController.text.trim(),
+          );
+
+    final ok = await provider.testConnection();
     setState(() => _isTestingConnection = false);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(ok
-              ? 'Connection successful!'
-              : 'Connection test failed. Check URL & API Key.'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(ok ? 'Connection successful!' : 'Failed to connect to backend'),
+        backgroundColor: ok ? AppColors.successGreen : Colors.red,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> _openGitHub() async {
     final uri = Uri.parse('https://github.com/Tvastr-ops/reading-tracker');
-    try {
-      final launched = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
-      if (!launched) {
-        await launchUrl(uri, mode: LaunchMode.platformDefault);
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('GitHub: https://github.com/Tvastr-ops/reading-tracker'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+
+  Widget _buildCollapsibleSectionHeader(
+    String title,
+    bool isExpanded,
+    VoidCallback onToggle, {
+    String? badgeLabel,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final details = Theme.of(context).extension<AppThemeDetails>();
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final cardHigh = details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface);
+    final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
+
+    return InkWell(
+      onTap: onToggle,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.8,
+                    color: inkColor,
+                  ),
+                ),
+                if (badgeLabel != null && !isExpanded) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.15),
+                      border: Border.all(color: accentColor, width: 1),
+                    ),
+                    child: Text(
+                      badgeLabel.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        color: accentColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                border: Border.all(color: borderColor, width: 1),
+                color: cardHigh,
+              ),
+              child: Icon(
+                isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                size: 16,
+                color: inkColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 0.8,
+        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentLight = _themeService.lightVariant;
+    final currentDark = _themeService.darkVariant;
+    final themeBadge = isDark ? currentDark.label : currentLight.label;
+    final displayBadge = _themeService.displayMode == AppDisplayMode.edgeToEdge
+        ? 'Edge-to-Edge'
+        : _themeService.displayMode == AppDisplayMode.classic
+            ? 'Classic'
+            : 'Fullscreen';
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'SETTINGS',
-          style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.5, fontSize: 18),
-        ),
+        title: const Text('SETTINGS'),
         actions: [
           IconButton(
             icon: const Icon(Icons.check_rounded),
@@ -141,274 +219,458 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        children: [
-          // Section 0: Appearance & Neo-Paper Themes
-          _buildSectionHeader('APPEARANCE & NEO-PAPER THEMES'),
-          const SizedBox(height: 8),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWideScreen = constraints.maxWidth >= 840;
+
+          if (isWideScreen) {
+            return _buildWideLayout(isDark, themeBadge, displayBadge);
+          }
+
+          return _buildMobileLayout(isDark, themeBadge, displayBadge);
+        },
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(bool isDark, String themeBadge, String displayBadge) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      children: [
+        // Section 0: Appearance & Neo-Paper Themes
+        _buildCollapsibleSectionHeader(
+          'APPEARANCE & THEMES',
+          _isAppearanceExpanded,
+          () => setState(() => _isAppearanceExpanded = !_isAppearanceExpanded),
+          badgeLabel: themeBadge,
+        ),
+        const SizedBox(height: 6),
+        if (_isAppearanceExpanded) ...[
           _buildThemeSelector(isDark),
-          const SizedBox(height: 24),
+          const SizedBox(height: 14),
+        ],
+        const SizedBox(height: 8),
 
-          // Section 1: Network Preferences
-          _buildSectionHeader('NETWORK PREFERENCES'),
-          const SizedBox(height: 8),
+        // Section 1: Display & Status Bar Layout
+        _buildCollapsibleSectionHeader(
+          'DISPLAY & STATUS BAR',
+          _isDisplayExpanded,
+          () => setState(() => _isDisplayExpanded = !_isDisplayExpanded),
+          badgeLabel: displayBadge,
+        ),
+        const SizedBox(height: 6),
+        if (_isDisplayExpanded) ...[
+          _buildDisplayModeSelector(isDark),
+          const SizedBox(height: 14),
+        ],
+        const SizedBox(height: 8),
 
-          BrutalistCard(
-            margin: EdgeInsets.zero,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Offline Mode',
-                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        'Pause remote syncing. App operates exclusively from local SQLite database.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Switch(
-                  value: _offlineMode,
-                  activeThumbColor: Theme.of(context).colorScheme.primary,
-                  onChanged: (val) {
-                    setState(() => _offlineMode = val);
-                    _saveConfig();
-                  },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
+        // Section 2: Library & Navigation Preferences
+        _buildCollapsibleSectionHeader(
+          'LIBRARY PREFERENCES',
+          _isLibraryNavExpanded,
+          () => setState(() => _isLibraryNavExpanded = !_isLibraryNavExpanded),
+          badgeLabel: _themeService.stickyStatusFilter ? 'Pinned Tabs' : 'Scroll Tabs',
+        ),
+        const SizedBox(height: 6),
+        if (_isLibraryNavExpanded) ...[
+          _buildLibraryNavPreferences(isDark),
+          const SizedBox(height: 14),
+        ],
+        const SizedBox(height: 8),
 
-          BrutalistCard(
-            margin: EdgeInsets.zero,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Auto-Sync on Launch',
-                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        'Automatically push local changes and pull remote updates in the background.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Switch(
-                  value: _autoSync,
-                  activeThumbColor: Theme.of(context).colorScheme.primary,
-                  onChanged: (val) {
-                    setState(() => _autoSync = val);
-                    _saveConfig();
-                  },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Section 2: Remote Backend Configuration (Smart Collapsible / Protected)
-          _buildSectionHeader('REMOTE BACKEND & API'),
-          const SizedBox(height: 8),
+        // Section 3: Network Preferences
+        _buildCollapsibleSectionHeader(
+          'NETWORK & SYNC PREFERENCES',
+          _isNetworkExpanded,
+          () => setState(() => _isNetworkExpanded = !_isNetworkExpanded),
+          badgeLabel: _offlineMode ? 'Offline' : 'Online',
+        ),
+        const SizedBox(height: 6),
+        if (_isNetworkExpanded) ...[
+          _buildNetworkPreferences(isDark),
+          const SizedBox(height: 10),
           _buildBackendConfigCard(isDark),
-          const SizedBox(height: 24),
+          const SizedBox(height: 14),
+        ],
+        const SizedBox(height: 8),
 
-          // Section 3: Data Management
-          _buildSectionHeader('DATA MANAGEMENT'),
-          const SizedBox(height: 8),
+        // Section 4: Data Management
+        _buildCollapsibleSectionHeader(
+          'DATA MANAGEMENT',
+          _isDataExpanded,
+          () => setState(() => _isDataExpanded = !_isDataExpanded),
+        ),
+        const SizedBox(height: 6),
+        if (_isDataExpanded) ...[
+          _buildDataManagementCard(isDark),
+          const SizedBox(height: 14),
+        ],
+        const SizedBox(height: 8),
 
-          BrutalistCard(
-            margin: EdgeInsets.zero,
-            child: InkWell(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => TrashScreen(onDataChanged: () {})),
-                );
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
-                        border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1.5),
-                      ),
-                      child: Icon(Icons.delete_outline_rounded, size: 20, color: isDark ? Colors.white : AppColors.inkBlack),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Trash & Recovery',
-                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'View deleted books, restore them to your library, or permanently remove them.',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(Icons.chevron_right_rounded, color: isDark ? Colors.white : AppColors.inkBlack),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
+        // Section 5: Manual Sync Button
+        _buildManualSyncButton(),
+        const SizedBox(height: 20),
 
-          // Section 4: Manual Sync Trigger
-          _buildSectionHeader('CLOUD SYNCHRONIZATION'),
-          const SizedBox(height: 8),
+        // Section 6: About & GitHub
+        _buildCollapsibleSectionHeader(
+          'ABOUT PAPERBACK',
+          _isAboutExpanded,
+          () => setState(() => _isAboutExpanded = !_isAboutExpanded),
+          badgeLabel: 'v1.3.0',
+        ),
+        const SizedBox(height: 6),
+        if (_isAboutExpanded) ...[
+          _buildAboutCard(isDark),
+          const SizedBox(height: 14),
+        ],
+        const SizedBox(height: 40),
+      ],
+    );
+  }
 
-          BrutalistButton(
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            onPressed: _syncManager.isSyncing
-                ? null
-                : () async {
-                    await _saveConfig();
-                    final books = await _syncManager.syncNow();
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Sync completed! ${books.length} books in local database.'),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
-            child: _syncManager.isSyncing
-                ? const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      ),
-                      SizedBox(width: 10),
-                      Text('SYNCING WITH REMOTE...', style: TextStyle(color: Colors.white)),
-                    ],
-                  )
-                : const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.cloud_sync_rounded, color: Colors.white, size: 20),
-                      SizedBox(width: 8),
-                      Text('SYNC NOW', style: TextStyle(color: Colors.white, fontSize: 15)),
-                    ],
-                  ),
-          ),
-          const SizedBox(height: 28),
-
-          // Section 5: About & GitHub Open Source
-          _buildSectionHeader('ABOUT & OPEN SOURCE'),
-          const SizedBox(height: 8),
-
-          BrutalistCard(
-            margin: EdgeInsets.zero,
+  Widget _buildWideLayout(bool isDark, String themeBadge, String displayBadge) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Column 1: Appearance & UI Preferences
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'PAPERBACK READER',
-                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, letterSpacing: -0.2),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1),
-                      ),
-                      child: const Text(
-                        'v1.2.0c',
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white),
-                      ),
-                    ),
-                  ],
+                _buildSectionHeader('APPEARANCE & THEMES'),
+                const SizedBox(height: 8),
+                _buildThemeSelector(isDark),
+                const SizedBox(height: 20),
+
+                _buildSectionHeader('DISPLAY & STATUS BAR'),
+                const SizedBox(height: 8),
+                _buildDisplayModeSelector(isDark),
+                const SizedBox(height: 20),
+
+                _buildSectionHeader('LIBRARY PREFERENCES'),
+                const SizedBox(height: 8),
+                _buildLibraryNavPreferences(isDark),
+              ],
+            ),
+          ),
+          const SizedBox(width: 20),
+
+          // Column 2: Backend, Sync & Data
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionHeader('NETWORK & BACKEND PREFERENCES'),
+                const SizedBox(height: 8),
+                _buildNetworkPreferences(isDark),
+                const SizedBox(height: 12),
+                _buildBackendConfigCard(isDark),
+                const SizedBox(height: 20),
+
+                _buildSectionHeader('DATA MANAGEMENT'),
+                const SizedBox(height: 8),
+                _buildDataManagementCard(isDark),
+                const SizedBox(height: 20),
+
+                _buildManualSyncButton(),
+                const SizedBox(height: 20),
+
+                _buildSectionHeader('ABOUT PAPERBACK'),
+                const SizedBox(height: 8),
+                _buildAboutCard(isDark),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLibraryNavPreferences(bool isDark) {
+    final sticky = _themeService.stickyStatusFilter;
+
+    return BrutalistCard(
+      margin: EdgeInsets.zero,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Sticky Shelf / Status Tabs',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 3),
                 Text(
-                  'A tactile, offline-first reading ledger engineered for serialized web novels, light novels, and physical literature.',
+                  sticky
+                      ? 'Status filter tabs stay pinned at the top when scrolling through books.'
+                      : 'Status filter tabs scroll away with the search bar to maximize screen real estate.',
                   style: TextStyle(
                     fontSize: 12,
-                    height: 1.4,
-                    color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.75) : AppColors.inkMuted,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                const Divider(height: 1),
-                const SizedBox(height: 12),
-                InkWell(
-                  onTap: _openGitHub,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
-                      border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                          offset: AppTheme.shadowOffsetSm,
-                          blurRadius: 0,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.code_rounded, size: 18, color: isDark ? Colors.white : AppColors.inkBlack),
-                        const SizedBox(width: 8),
-                        Text(
-                          'GITHUB REPOSITORY',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 12,
-                            letterSpacing: 0.5,
-                            color: isDark ? Colors.white : AppColors.inkBlack,
-                          ),
-                        ),
-                        const Spacer(),
-                        Icon(Icons.open_in_new_rounded, size: 16, color: isDark ? Colors.white70 : AppColors.inkMuted),
-                      ],
-                    ),
+                    color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 40),
+          Switch(
+            value: sticky,
+            activeThumbColor: Theme.of(context).colorScheme.primary,
+            onChanged: (val) {
+              _themeService.setStickyStatusFilter(val);
+              setState(() {});
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNetworkPreferences(bool isDark) {
+    return Column(
+      children: [
+        BrutalistCard(
+          margin: EdgeInsets.zero,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Offline Mode',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Pause remote syncing. App operates exclusively from local SQLite database.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _offlineMode,
+                activeThumbColor: Theme.of(context).colorScheme.primary,
+                onChanged: (val) {
+                  setState(() => _offlineMode = val);
+                  _saveConfig();
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        BrutalistCard(
+          margin: EdgeInsets.zero,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Auto-Sync on Launch',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Automatically push local changes and pull remote updates in the background.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _autoSync,
+                activeThumbColor: Theme.of(context).colorScheme.primary,
+                onChanged: (val) {
+                  setState(() => _autoSync = val);
+                  _saveConfig();
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDataManagementCard(bool isDark) {
+    return BrutalistCard(
+      margin: EdgeInsets.zero,
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => TrashScreen(onDataChanged: () {})),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
+                  border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1.5),
+                ),
+                child: Icon(Icons.delete_outline_rounded, size: 20, color: isDark ? Colors.white : AppColors.inkBlack),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Trash & Recovery',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'View deleted books, restore them to your library, or permanently remove them.',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: isDark ? Colors.white : AppColors.inkBlack),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildManualSyncButton() {
+    return BrutalistButton(
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      onPressed: _syncManager.isSyncing
+          ? null
+          : () async {
+              await _saveConfig();
+              final books = await _syncManager.syncNow();
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Sync completed! ${books.length} books in local database.'),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+      child: _syncManager.isSyncing
+          ? const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                ),
+                SizedBox(width: 10),
+                Text('SYNCING WITH REMOTE...', style: TextStyle(color: Colors.white)),
+              ],
+            )
+          : const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.cloud_sync_rounded, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text('SYNC NOW', style: TextStyle(color: Colors.white, fontSize: 15)),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildAboutCard(bool isDark) {
+    return BrutalistCard(
+      margin: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'PAPERBACK READER',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, letterSpacing: -0.2),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1),
+                ),
+                child: const Text(
+                  'v1.3.0',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'A tactile, offline-first reading ledger engineered for serialized web novels, light novels, and physical literature.',
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.4,
+              color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.75) : AppColors.inkMuted,
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+          InkWell(
+            onTap: _openGitHub,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
+                border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                    offset: AppTheme.shadowOffsetSm,
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.code_rounded, size: 18, color: isDark ? Colors.white : AppColors.inkBlack),
+                  const SizedBox(width: 8),
+                  Text(
+                    'GITHUB REPOSITORY',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                      letterSpacing: 0.5,
+                      color: isDark ? Colors.white : AppColors.inkBlack,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(Icons.open_in_new_rounded, size: 16, color: isDark ? Colors.white70 : AppColors.inkMuted),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -518,8 +780,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     children: [
                       Icon(
                         _isConfigExpanded ? Icons.lock_open_rounded : Icons.lock_outline_rounded,
-                        size: 13,
-                        color: _isConfigExpanded ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                        size: 14,
+                        color: _isConfigExpanded ? Colors.white : (isDark ? Colors.white : AppColors.inkBlack),
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -527,8 +789,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
-                          color: _isConfigExpanded ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                          color: _isConfigExpanded ? Colors.white : (isDark ? Colors.white : AppColors.inkBlack),
                         ),
                       ),
                     ],
@@ -538,164 +799,108 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
 
-          // Collapsed Quick Action (Test Connection)
-          if (!_isConfigExpanded) ...[
-            const SizedBox(height: 12),
-            const Divider(height: 1),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: InkWell(
-                    onTap: _isTestingConnection ? null : _testConnection,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
-                        border: Border.all(color: borderColor.withValues(alpha: 0.6), width: 1.5),
-                      ),
-                      alignment: Alignment.center,
-                      child: _isTestingConnection
-                          ? const SizedBox(
-                              width: 12,
-                              height: 12,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.network_check_rounded, size: 14, color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'TEST CONNECTION',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.4,
-                                    color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                                  ),
-                                ),
-                              ],
-                            ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-
-          // Expanded Drawer with Inputs and Protection
+          // Collapsible Form
           if (_isConfigExpanded) ...[
             const SizedBox(height: 16),
             const Divider(height: 1),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
 
+            // Provider Type Selector
             const Text(
-              'SELECT BACKEND TYPE',
+              'BACKEND PROVIDER',
               style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5),
             ),
             const SizedBox(height: 8),
-
             Row(
               children: [
                 Expanded(
-                  child: _buildBackendChoice(
-                    'Supabase',
+                  child: _buildProviderButton(
+                    'SUPABASE',
                     SyncBackendType.supabase,
+                    _selectedType == SyncBackendType.supabase,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: _buildBackendChoice(
-                    'Generic REST',
+                  child: _buildProviderButton(
+                    'SELF-HOSTED REST',
                     SyncBackendType.selfHostedRest,
+                    _selectedType == SyncBackendType.selfHostedRest,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
 
+            // Endpoint URL Input
             Text(
-              _selectedType == SyncBackendType.supabase ? 'SUPABASE PROJECT URL' : 'SERVER ENDPOINT URL',
+              _selectedType == SyncBackendType.supabase ? 'SUPABASE PROJECT URL' : 'SERVER BASE URL',
               style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5),
             ),
             const SizedBox(height: 6),
-            _buildBrutalistInput(
+            _buildBrutalistTextField(
               controller: _urlController,
               hint: _selectedType == SyncBackendType.supabase
                   ? 'https://xyzcompany.supabase.co'
-                  : 'https://api.yourdomain.com/v1',
+                  : 'https://api.yourdomain.com',
               icon: Icons.link_rounded,
             ),
             const SizedBox(height: 14),
 
+            // API Key / Token Input
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  _selectedType == SyncBackendType.supabase ? 'ANON PUBLIC KEY (JWT)' : 'AUTHORIZATION TOKEN',
+                  _selectedType == SyncBackendType.supabase ? 'ANON PUBLIC KEY' : 'API ACCESS TOKEN',
                   style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5),
                 ),
-                InkWell(
+                GestureDetector(
                   onTap: () => setState(() => _showApiKey = !_showApiKey),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _showApiKey ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                        size: 13,
-                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _showApiKey ? 'HIDE' : 'SHOW',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    _showApiKey ? 'HIDE' : 'REVEAL',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 6),
-            _buildBrutalistInput(
+            _buildBrutalistTextField(
               controller: _apiKeyController,
-              hint: _selectedType == SyncBackendType.supabase
-                  ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
-                  : 'Bearer secret_token_here',
-              icon: Icons.key_rounded,
+              hint: _selectedType == SyncBackendType.supabase ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' : 'Your Secret Token',
+              icon: Icons.vpn_key_rounded,
               isObscure: !_showApiKey,
             ),
             const SizedBox(height: 16),
 
-            // Save and Lock Action Buttons
+            // Test Connection & Save Action Row
             Row(
               children: [
                 Expanded(
                   child: BrutalistButton(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    onPressed: () => _saveConfig(collapseAfter: true),
-                    child: const Text('SAVE & LOCK', style: TextStyle(color: Colors.white, fontSize: 12)),
+                    backgroundColor: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                    textColor: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                    onPressed: _isTestingConnection ? null : _testConnection,
+                    child: _isTestingConnection
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('TEST LINK', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900)),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: InkWell(
-                    onTap: _testConnection,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
-                        border: Border.all(color: borderColor, width: 1.5),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Text(
-                        'TEST',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
-                      ),
-                    ),
+                  child: BrutalistButton(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    textColor: Colors.white,
+                    onPressed: () => _saveConfig(collapseAfter: true),
+                    child: const Text('SAVE & LOCK', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900)),
                   ),
                 ),
               ],
@@ -787,6 +992,137 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildDisplayModeSelector(bool isDark) {
+    final currentMode = _themeService.displayMode;
+    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+
+    return BrutalistCard(
+      margin: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'STATUS BAR & DISPLAY LAYOUT',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildDisplayModeOption(
+                  'EDGE-TO-EDGE',
+                  'New',
+                  AppDisplayMode.edgeToEdge,
+                  currentMode == AppDisplayMode.edgeToEdge,
+                  Icons.phone_android_rounded,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _buildDisplayModeOption(
+                  'CLASSIC',
+                  'Old',
+                  AppDisplayMode.classic,
+                  currentMode == AppDisplayMode.classic,
+                  Icons.dock_rounded,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _buildDisplayModeOption(
+                  'FULLSCREEN',
+                  'Max',
+                  AppDisplayMode.immersive,
+                  currentMode == AppDisplayMode.immersive,
+                  Icons.fullscreen_rounded,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
+              border: Border.all(color: borderColor.withValues(alpha: 0.3), width: 1),
+            ),
+            child: Text(
+              currentMode == AppDisplayMode.edgeToEdge
+                  ? 'Edge-to-Edge: Status bar is transparent and seamlessly overlays the canvas palette.'
+                  : currentMode == AppDisplayMode.classic
+                      ? 'Classic: Standard solid status bar anchored at the top.'
+                      : 'Fullscreen: Hides the status bar for uninterrupted, full-screen reading real estate.',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.8) : AppColors.inkMuted,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDisplayModeOption(
+    String title,
+    String badge,
+    AppDisplayMode targetMode,
+    bool isSelected,
+    IconData icon,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+
+    return GestureDetector(
+      onTap: () {
+        _themeService.setDisplayMode(targetMode);
+        setState(() {});
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary
+              : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+          border: Border.all(color: borderColor, width: isSelected ? 2.0 : 1.5),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: borderColor,
+                    offset: AppTheme.shadowOffsetSm,
+                    blurRadius: 0,
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: TextStyle(
+                color: isSelected ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                fontWeight: FontWeight.w900,
+                fontSize: 9.5,
+                letterSpacing: 0.2,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildModeButton(String label, ThemeMode targetMode, bool isSelected) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
@@ -858,64 +1194,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 height: 44,
                 decoration: BoxDecoration(
                   color: variant.previewCanvas,
-                  border: Border.all(color: Colors.black54, width: 1.5),
+                  border: Border.all(color: borderColor, width: 1.5),
                 ),
-                padding: const EdgeInsets.all(4),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: variant.previewCard,
-                    border: Border.all(color: Colors.black26, width: 1),
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: variant.previewAccent,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.black54, width: 1),
-                      ),
+                child: Center(
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: variant.previewAccent,
+                      border: Border.all(color: borderColor, width: 1),
                     ),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      variant.label,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 13,
-                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          variant.label.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                          ),
+                        ),
+                        if (isSelected) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            color: variant.previewAccent,
+                            child: const Text(
+                              'ACTIVE',
+                              style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
                       variant.description,
                       style: TextStyle(
                         fontSize: 11,
-                        color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.65),
+                        color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.7),
                       ),
                     ),
                   ],
                 ),
               ),
-
-              if (isSelected) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: variant.previewAccent,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.check, size: 14, color: Colors.white),
-                ),
-              ],
             ],
           ),
         ),
@@ -923,42 +1253,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w900,
-        letterSpacing: 0.5,
-      ),
-    );
-  }
-
-  Widget _buildBackendChoice(String title, SyncBackendType type) {
-    final isSelected = _selectedType == type;
+  Widget _buildProviderButton(String label, SyncBackendType type, bool isSelected) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
 
     return GestureDetector(
       onTap: () => setState(() => _selectedType = type),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
               ? Theme.of(context).colorScheme.primary
               : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
-          border: Border.all(
-            color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-            width: 1.5,
-          ),
+          border: Border.all(color: borderColor, width: 1.5),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: borderColor,
+                    offset: AppTheme.shadowOffsetSm,
+                    blurRadius: 0,
+                  ),
+                ]
+              : null,
         ),
         alignment: Alignment.center,
         child: Text(
-          title.toUpperCase(),
+          label,
           style: TextStyle(
-            color: isSelected
-                ? Colors.white
-                : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-            fontWeight: FontWeight.w800,
+            color: isSelected ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+            fontWeight: FontWeight.w900,
             fontSize: 11,
           ),
         ),
@@ -966,7 +1289,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildBrutalistInput({
+  Widget _buildBrutalistTextField({
     required TextEditingController controller,
     required String hint,
     required IconData icon,

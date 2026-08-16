@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../models/book.dart';
 import '../services/database_helper.dart';
 import '../services/sync/sync_manager.dart';
+import '../services/theme_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/book_card.dart';
@@ -927,52 +928,22 @@ class _LibraryScreenState extends State<LibraryScreen> {
                         ),
                       ),
 
-                    // Sliver 3: Status Filter Horizontal Tabs
-                    SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: 38,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: _statusFilters.length,
-                          itemBuilder: (context, idx) {
-                            final status = _statusFilters[idx];
-                            final isSelected = _selectedStatus == status;
-
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: GestureDetector(
-                                onTap: () => setState(() => _selectedStatus = status),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? accentColor
-                                        : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
-                                    border: Border.all(
-                                      color: borderColor,
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    status.toUpperCase(),
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w800,
-                                      color: isSelected
-                                          ? Colors.white
-                                          : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 10)),
+                    // Sliver 3: Status Filter Horizontal Tabs (Fluid or Sticky Pinned based on Setting)
+                    ThemeService.instance.stickyStatusFilter
+                        ? SliverPersistentHeader(
+                            pinned: true,
+                            delegate: _StickyStatusFilterDelegate(
+                              backgroundColor: details?.canvasColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg),
+                              child: _buildStatusFilterTabs(accentColor, borderColor, isDark),
+                            ),
+                          )
+                        : SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 6),
+                              child: _buildStatusFilterTabs(accentColor, borderColor, isDark),
+                            ),
+                          ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 6)),
 
                     // Sliver 4: Unified Book Content Grid/List/Table
                     _buildBookContentSliver(
@@ -1003,5 +974,80 @@ class _LibraryScreenState extends State<LibraryScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildStatusFilterTabs(Color accentColor, Color borderColor, bool isDark) {
+    return SizedBox(
+      height: 38,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: _statusFilters.length,
+        itemBuilder: (context, idx) {
+          final status = _statusFilters[idx];
+          final isSelected = _selectedStatus == status;
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedStatus = status),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? accentColor
+                      : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                  border: Border.all(
+                    color: borderColor,
+                    width: 1.5,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  status.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _StickyStatusFilterDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final Color backgroundColor;
+
+  _StickyStatusFilterDelegate({
+    required this.child,
+    required this.backgroundColor,
+  });
+
+  @override
+  double get minExtent => 46.0;
+  @override
+  double get maxExtent => 46.0;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: backgroundColor,
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _StickyStatusFilterDelegate oldDelegate) {
+    return oldDelegate.child != child || oldDelegate.backgroundColor != backgroundColor;
   }
 }
