@@ -791,6 +791,11 @@ textarea:focus-visible {
     animation-duration: 0.001ms;
     transition-duration: 0.001ms;
   }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
 }
 
 @media (max-width: 720px) {
