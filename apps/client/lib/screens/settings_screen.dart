@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/sync/sync_manager.dart';
 import '../services/sync/sync_provider.dart';
 import '../theme/app_theme.dart';
@@ -69,6 +70,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _openGitHub() async {
+    final uri = Uri.parse('https://github.com/Tvastr-ops/reading-tracker');
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('GitHub: https://github.com/Tvastr-ops/reading-tracker'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -77,7 +96,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'SYNC & SETTINGS',
+          'SETTINGS',
           style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.5, fontSize: 18),
         ),
         actions: [
@@ -340,6 +359,87 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Text('SYNC NOW', style: TextStyle(color: Colors.white, fontSize: 15)),
                     ],
                   ),
+          ),
+          const SizedBox(height: 28),
+
+          // Section 5: About & GitHub Open Source
+          _buildSectionHeader('ABOUT & OPEN SOURCE'),
+          const SizedBox(height: 8),
+
+          BrutalistCard(
+            margin: EdgeInsets.zero,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'PAPERBACK READER',
+                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, letterSpacing: -0.2),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryRed,
+                        border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1),
+                      ),
+                      child: const Text(
+                        'v1.0.0',
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'A tactile, offline-first reading ledger engineered for serialized web novels, light novels, and physical literature.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.4,
+                    color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.75) : AppColors.inkMuted,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Divider(height: 1),
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: _openGitHub,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
+                      border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                          offset: AppTheme.shadowOffsetSm,
+                          blurRadius: 0,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.code_rounded, size: 18, color: isDark ? Colors.white : AppColors.inkBlack),
+                        const SizedBox(width: 8),
+                        Text(
+                          'GITHUB REPOSITORY',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12,
+                            letterSpacing: 0.5,
+                            color: isDark ? Colors.white : AppColors.inkBlack,
+                          ),
+                        ),
+                        const Spacer(),
+                        Icon(Icons.open_in_new_rounded, size: 16, color: isDark ? Colors.white70 : AppColors.inkMuted),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 40),
         ],

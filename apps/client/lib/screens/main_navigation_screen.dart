@@ -92,8 +92,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             ),
             _buildNavItem(
               index: 3,
-              label: 'SYNC',
-              icon: Icons.cloud_sync_rounded,
+              label: 'SETTINGS',
+              icon: Icons.tune_rounded,
             ),
           ],
         ),
