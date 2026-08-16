@@ -74,8 +74,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _openGitHub() async {
     final uri = Uri.parse('https://github.com/Tvastr-ops/reading-tracker');
     try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
       }
     } catch (_) {
       if (mounted) {
