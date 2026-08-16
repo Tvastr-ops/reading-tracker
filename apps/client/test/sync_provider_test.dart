@@ -31,5 +31,17 @@ void main() {
       expect(SyncBackendType.selfHostedRest.index, 1);
       expect(SyncBackendType.offlineOnly.index, 2);
     });
+
+    test('SupabaseSyncProvider returns null when url is empty', () async {
+      final provider = SupabaseSyncProvider(supabaseUrl: '', anonKey: '');
+      final goal = await provider.fetchYearlyGoal();
+      expect(goal, isNull);
+    });
+
+    test('GenericRestSyncProvider returns null when url is empty', () async {
+      final provider = GenericRestSyncProvider(serverUrl: '');
+      final goal = await provider.fetchYearlyGoal();
+      expect(goal, isNull);
+    });
   });
 }

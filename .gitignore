@@ -29,6 +29,7 @@ Thumbs.db
 .venv/
 *.pyc
 
-# Local reports
+# Local reports & roadmap
 AUDIT_REPORT.md
 doc/local-reports/
+doc/roadmap/

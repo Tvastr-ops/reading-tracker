@@ -109,4 +109,52 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
       return false;
     }
   }
+
+  @override
+  Future<int?> fetchYearlyGoal() async {
+    if (supabaseUrl.isEmpty || anonKey.isEmpty) return null;
+    try {
+      final uri = Uri.parse('$supabaseUrl/rest/v1/app_settings?key=eq.yearly_goal&select=value');
+      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 6));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final dynamic data = jsonDecode(res.body);
+        if (data is List && data.isNotEmpty) {
+          final val = data.first['value'];
+          if (val is Map && val['count'] != null) {
+            return (val['count'] as num).toInt();
+          }
+        }
+      }
+      return null;
+    } catch (e) {
+      debugPrint('SupabaseSyncProvider fetchYearlyGoal error: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<bool> pushYearlyGoal(int goal) async {
+    if (supabaseUrl.isEmpty || anonKey.isEmpty) return false;
+    try {
+      final uri = Uri.parse('$supabaseUrl/rest/v1/app_settings');
+      final now = DateTime.now().toIso8601String();
+      final res = await http
+          .post(
+            uri,
+            headers: _headers,
+            body: jsonEncode([
+              {
+                'key': 'yearly_goal',
+                'value': {'count': goal},
+                'updated_at': now,
+              }
+            ]),
+          )
+          .timeout(const Duration(seconds: 6));
+      return res.statusCode >= 200 && res.statusCode < 300;
+    } catch (e) {
+      debugPrint('SupabaseSyncProvider pushYearlyGoal error: $e');
+      return false;
+    }
+  }
 }
