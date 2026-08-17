@@ -102,6 +102,20 @@ class BookTableRow extends StatelessWidget {
                           style: const TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.white),
                         ),
                       ),
+                      if (book.rating != null && book.rating! > 0) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFB800),
+                            border: Border.all(color: AppColors.inkBlack, width: 0.5),
+                          ),
+                          child: Text(
+                            '${book.rating!.toStringAsFixed(1)} ★',
+                            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: AppColors.inkBlack),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 3),

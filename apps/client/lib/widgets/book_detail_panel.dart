@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/book.dart';
 import '../services/database_helper.dart';
 import '../theme/app_theme.dart';
@@ -76,9 +77,6 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
     final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
     final surfaceColor = details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white);
     final b = widget.book;
-
-    final progressDisplay = formatProgressDisplay(b);
-    final progressFraction = (b.completionPercentage / 100).clamp(0.0, 1.0);
 
     return Container(
       width: 380,
@@ -231,8 +229,8 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                               if (b.rating != null && b.rating! > 0)
                                 BrutalistBadge(
                                   label: '${formatNum(b.rating!)} ★',
-                                  backgroundColor: AppColors.amberWarning,
-                                  textColor: Colors.white,
+                                  backgroundColor: const Color(0xFFFFB800),
+                                  textColor: AppColors.inkBlack,
                                 ),
                             ],
                           ),
@@ -264,17 +262,14 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            color: isCur ? accentColor : (isDark ? AppColors.darkSurface : AppColors.paperSurface),
-                            border: Border.all(
-                              color: borderColor,
-                              width: isCur ? 2.0 : 1.0,
-                            ),
+                            color: isCur ? accentColor : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                            border: Border.all(color: isCur ? accentColor : borderColor, width: 1.5),
                           ),
                           child: Text(
                             st.toUpperCase(),
                             style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
                               color: isCur ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
                             ),
                           ),
@@ -286,8 +281,6 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                 const SizedBox(height: 16),
 
                 // Reading Progress Box
-                _buildSectionLabel('PROGRESS', isDark),
-                const SizedBox(height: 6),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -300,22 +293,13 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Expanded(
-                            child: Text(
-                              progressDisplay,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
+                          Text(
+                            formatProgressDisplay(b).toUpperCase(),
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
                           ),
                           Text(
                             '${b.completionPercentage.toInt()}%',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w900,
-                              color: accentColor,
-                            ),
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: accentColor),
                           ),
                         ],
                       ),
@@ -323,17 +307,11 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                       // Progress Bar
                       ClipRRect(
                         borderRadius: BorderRadius.zero,
-                        child: Container(
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.white12 : Colors.black12,
-                            border: Border.all(color: borderColor, width: 1),
-                          ),
-                          child: FractionallySizedBox(
-                            alignment: Alignment.centerLeft,
-                            widthFactor: progressFraction,
-                            child: Container(color: accentColor),
-                          ),
+                        child: LinearProgressIndicator(
+                          value: (b.completionPercentage / 100).clamp(0.0, 1.0),
+                          minHeight: 8,
+                          backgroundColor: isDark ? Colors.white10 : AppColors.paperSurfaceHighest,
+                          valueColor: AlwaysStoppedAnimation<Color>(accentColor),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -354,6 +332,44 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                   ),
                 ),
                 const SizedBox(height: 16),
+
+                // Reading Dates
+                if (b.dateStarted != null || b.dateFinished != null) ...[
+                  _buildSectionLabel('READING DATES', isDark),
+                  const SizedBox(height: 6),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+                      border: Border.all(color: borderColor, width: 1.5),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.date_range_rounded, size: 16, color: Color(0xFFFFB800)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (b.dateStarted != null)
+                                Text(
+                                  'Started: ${DateFormat('MMM d, yyyy').format(DateTime.tryParse(b.dateStarted!) ?? DateTime.now())}',
+                                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
+                                ),
+                              if (b.dateFinished != null)
+                                Text(
+                                  'Finished: ${DateFormat('MMM d, yyyy').format(DateTime.tryParse(b.dateFinished!) ?? DateTime.now())}',
+                                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
                 // Personal Notes & Synopsis
                 if (b.notes != null && b.notes!.isNotEmpty) ...[
