@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/book.dart';
 import '../services/open_library_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/formatters.dart';
 import 'brutalist_widgets.dart';
 
 class BookEditDialog extends StatefulWidget {
@@ -39,6 +41,8 @@ class _BookEditDialogState extends State<BookEditDialog> {
   late String _progressStructure;
   late bool _isOngoing;
   double? _rating;
+  String? _dateStarted;
+  String? _dateFinished;
   bool _isSearchingCover = false;
 
   @override
@@ -61,6 +65,8 @@ class _BookEditDialogState extends State<BookEditDialog> {
     _progressStructure = b?.progressStructure ?? 'single';
     _isOngoing = b?.isOngoing ?? false;
     _rating = b?.rating;
+    _dateStarted = b?.dateStarted;
+    _dateFinished = b?.dateFinished;
   }
 
   @override
@@ -98,6 +104,33 @@ class _BookEditDialogState extends State<BookEditDialog> {
     }
   }
 
+  Future<void> _pickDate({required bool isStarted}) async {
+    final initialStr = isStarted ? _dateStarted : _dateFinished;
+    DateTime initial = DateTime.now();
+    if (initialStr != null) {
+      final parsed = DateTime.tryParse(initialStr);
+      if (parsed != null) initial = parsed;
+    }
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(1970),
+      lastDate: DateTime(2100),
+    );
+
+    if (picked != null) {
+      final formatted = DateFormat('yyyy-MM-dd').format(picked);
+      setState(() {
+        if (isStarted) {
+          _dateStarted = formatted;
+        } else {
+          _dateFinished = formatted;
+        }
+      });
+    }
+  }
+
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
@@ -109,7 +142,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
     final latestVal = num.tryParse(_latestUnitsController.text);
 
     final updatedBook = Book(
-      id: widget.book?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      id: widget.book?.id ?? generateUuidV4(),
       title: _titleController.text.trim(),
       author: _authorController.text.trim().isEmpty ? null : _authorController.text.trim(),
       type: _type,
@@ -122,12 +155,14 @@ class _BookEditDialogState extends State<BookEditDialog> {
       progress: progressVal,
       totalUnits: totalUnitsVal,
       rating: _rating,
+      dateStarted: _dateStarted,
+      dateFinished: _dateFinished,
       coverUrl: _coverUrlController.text.trim().isEmpty ? null : _coverUrlController.text.trim(),
       genreTags: _genreTagsController.text.trim().isEmpty ? null : _genreTagsController.text.trim(),
       notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
       createdAt: widget.book?.createdAt ?? now,
       updatedAt: now,
-      syncStatus: 'pending_update',
+      syncStatus: widget.book == null ? 'pending_create' : 'pending_update',
     );
 
     widget.onSave(updatedBook);
@@ -337,18 +372,74 @@ class _BookEditDialogState extends State<BookEditDialog> {
                 ],
                 const SizedBox(height: 18),
 
-                _buildFormSectionHeader('3. RATING, COVER & NOTES', details, inkColor, borderColor),
+                _buildFormSectionHeader('3. RATING & COVER', details, inkColor, borderColor),
                 const SizedBox(height: 8),
 
-                // Rating Slider / Selector
+                // Rating Interactive Star Selector & Slider
                 _buildFieldLabel('RATING (${_rating != null ? "${_rating!.toStringAsFixed(1)} ★" : "UNRATED"})', inkColor),
-                Slider(
-                  value: _rating ?? 0.0,
-                  min: 0.0,
-                  max: 5.0,
-                  divisions: 10,
-                  activeColor: Theme.of(context).colorScheme.primary,
-                  onChanged: (val) => setState(() => _rating = val == 0 ? null : val),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                    border: Border.all(color: borderColor.withValues(alpha: 0.4), width: 1.5),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: List.generate(5, (index) {
+                              final starVal = (index + 1).toDouble();
+                              final isFilled = _rating != null && _rating! >= starVal;
+                              final isHalf = _rating != null && _rating! >= starVal - 0.5 && _rating! < starVal;
+
+                              return GestureDetector(
+                                onTap: () => setState(() => _rating = starVal),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 6),
+                                  child: Icon(
+                                    isFilled
+                                        ? Icons.star_rounded
+                                        : (isHalf ? Icons.star_half_rounded : Icons.star_outline_rounded),
+                                    color: const Color(0xFFFFB800),
+                                    size: 26,
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                          if (_rating != null)
+                            GestureDetector(
+                              onTap: () => setState(() => _rating = null),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: borderColor, width: 1),
+                                ),
+                                child: Text(
+                                  'CLEAR',
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w900,
+                                    color: inkColor,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      Slider(
+                        value: _rating ?? 0.0,
+                        min: 0.0,
+                        max: 5.0,
+                        divisions: 10,
+                        activeColor: const Color(0xFFFFB800),
+                        inactiveColor: isDark ? Colors.white24 : AppColors.inkMuted.withValues(alpha: 0.3),
+                        onChanged: (val) => setState(() => _rating = val == 0 ? null : val),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 12),
 
@@ -371,9 +462,60 @@ class _BookEditDialogState extends State<BookEditDialog> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 18),
 
-                // Notes Input
+                // Section 4: Reading Dates
+                _buildFormSectionHeader('4. READING DATES', details, inkColor, borderColor),
+                const SizedBox(height: 8),
+
+                Row(
+                  children: [
+                    // Started Date Tile
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildFieldLabel('STARTED DATE', inkColor),
+                          _buildDateTile(
+                            dateStr: _dateStarted,
+                            isDark: isDark,
+                            borderColor: borderColor,
+                            inkColor: inkColor,
+                            details: details,
+                            onPick: () => _pickDate(isStarted: true),
+                            onToday: () => setState(() => _dateStarted = DateFormat('yyyy-MM-dd').format(DateTime.now())),
+                            onClear: () => setState(() => _dateStarted = null),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Finished Date Tile
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildFieldLabel('FINISHED DATE', inkColor),
+                          _buildDateTile(
+                            dateStr: _dateFinished,
+                            isDark: isDark,
+                            borderColor: borderColor,
+                            inkColor: inkColor,
+                            details: details,
+                            onPick: () => _pickDate(isStarted: false),
+                            onToday: () => setState(() => _dateFinished = DateFormat('yyyy-MM-dd').format(DateTime.now())),
+                            onClear: () => setState(() => _dateFinished = null),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+
+                // Section 5: Notes & Review
+                _buildFormSectionHeader('5. NOTES & THOUGHTS', details, inkColor, borderColor),
+                const SizedBox(height: 8),
                 _buildFieldLabel('NOTES / REVIEW', inkColor),
                 _buildTextInput(_notesController, 'Reading thoughts...', maxLines: 2, details: details, borderColor: borderColor, inkColor: inkColor),
                 const SizedBox(height: 20),
@@ -528,6 +670,92 @@ class _BookEditDialogState extends State<BookEditDialog> {
           }).toList(),
           onChanged: onChanged,
         ),
+      ),
+    );
+  }
+
+  Widget _buildDateTile({
+    required String? dateStr,
+    required bool isDark,
+    required Color borderColor,
+    required Color inkColor,
+    required AppThemeDetails? details,
+    required VoidCallback onPick,
+    required VoidCallback onToday,
+    required VoidCallback onClear,
+  }) {
+    final tileBg = details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white);
+    String displayDate = 'NOT SET';
+    if (dateStr != null) {
+      final parsed = DateTime.tryParse(dateStr);
+      if (parsed != null) {
+        displayDate = DateFormat('MMM d, yyyy').format(parsed);
+      }
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: tileBg,
+        border: Border.all(color: borderColor, width: 1.5),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            onTap: onPick,
+            child: Row(
+              children: [
+                Icon(Icons.calendar_today_rounded, size: 14, color: inkColor),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    displayDate,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w800,
+                      color: dateStr != null ? inkColor : inkColor.withValues(alpha: 0.4),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              GestureDetector(
+                onTap: onToday,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    border: Border.all(color: borderColor, width: 1),
+                  ),
+                  child: const Text(
+                    'TODAY',
+                    style: TextStyle(
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              if (dateStr != null)
+                GestureDetector(
+                  onTap: onClear,
+                  child: Padding(
+                    padding: const EdgeInsets.all(2),
+                    child: Icon(Icons.close_rounded, size: 14, color: inkColor),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }

@@ -261,14 +261,34 @@ class LibraryScreenState extends State<LibraryScreen> {
         onSave: (savedBook) async {
           if (book == null) {
             await _dbHelper.insertBook(savedBook);
+            // Ensure the newly added book is visible even if user was filtered to a specific status
+            if (_selectedStatus != 'All' && _selectedStatus != savedBook.status) {
+              setState(() {
+                _selectedStatus = 'All';
+                _ratingFilter = 'All';
+                _typeFilter = 'All';
+              });
+            }
           } else {
             await _dbHelper.updateBook(savedBook);
+            if (_selectedBookForDetail?.id == savedBook.id) {
+              setState(() {
+                _selectedBookForDetail = savedBook;
+              });
+            }
           }
           await _loadBooks();
+          _syncManager.syncNow();
         },
         onDelete: (id) async {
           await _dbHelper.deleteBook(id);
+          if (_selectedBookForDetail?.id == id) {
+            setState(() {
+              _selectedBookForDetail = null;
+            });
+          }
           await _loadBooks();
+          _syncManager.syncNow();
         },
       ),
     );

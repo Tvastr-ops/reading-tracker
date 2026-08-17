@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/sync/generic_rest_sync_provider.dart';
 import '../services/sync/supabase_sync_provider.dart';
@@ -36,12 +37,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _showApiKey = false;
   bool _isTestingConnection = false;
 
-  // Collapsible section state for mobile screen real estate
-  bool _isAppearanceExpanded = false;
-  bool _isDisplayExpanded = false;
+  // Persisted Collapsible section states
+  static const String _keyPrefAppearance = 'settings_expanded_appearance';
+  static const String _keyPrefDisplay = 'settings_expanded_display';
+  static const String _keyPrefLibraryNav = 'settings_expanded_library_nav';
+  static const String _keyPrefNetwork = 'settings_expanded_network';
+  static const String _keyPrefData = 'settings_expanded_data';
+  static const String _keyPrefAbout = 'settings_expanded_about';
+
+  bool _isAppearanceExpanded = true;
+  bool _isDisplayExpanded = true;
   bool _isLibraryNavExpanded = true;
   bool _isNetworkExpanded = true;
-  bool _isDataExpanded = false;
+  bool _isDataExpanded = true;
   bool _isAboutExpanded = false;
 
   @override
@@ -54,6 +62,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _autoSync = _syncManager.autoSync;
 
     _syncManager.addListener(_onSyncUpdate);
+    _loadSectionPreferences();
+  }
+
+  Future<void> _loadSectionPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _isAppearanceExpanded = prefs.getBool(_keyPrefAppearance) ?? true;
+      _isDisplayExpanded = prefs.getBool(_keyPrefDisplay) ?? true;
+      _isLibraryNavExpanded = prefs.getBool(_keyPrefLibraryNav) ?? true;
+      _isNetworkExpanded = prefs.getBool(_keyPrefNetwork) ?? true;
+      _isDataExpanded = prefs.getBool(_keyPrefData) ?? true;
+      _isAboutExpanded = prefs.getBool(_keyPrefAbout) ?? false;
+    });
+  }
+
+  Future<void> _toggleSection(String key, bool currentVal, ValueChanged<bool> updater) async {
+    final nextVal = !currentVal;
+    setState(() {
+      updater(nextVal);
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, nextVal);
+  }
+
+  Future<void> _setAllSections(bool expand) async {
+    setState(() {
+      _isAppearanceExpanded = expand;
+      _isDisplayExpanded = expand;
+      _isLibraryNavExpanded = expand;
+      _isNetworkExpanded = expand;
+      _isDataExpanded = expand;
+      _isAboutExpanded = expand;
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyPrefAppearance, expand);
+    await prefs.setBool(_keyPrefDisplay, expand);
+    await prefs.setBool(_keyPrefLibraryNav, expand);
+    await prefs.setBool(_keyPrefNetwork, expand);
+    await prefs.setBool(_keyPrefData, expand);
+    await prefs.setBool(_keyPrefAbout, expand);
   }
 
   @override
@@ -183,19 +232,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w900,
-        letterSpacing: 0.8,
-        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -210,10 +246,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ? 'Classic'
             : 'Fullscreen';
 
+    final isAllExpanded = _isAppearanceExpanded &&
+        _isDisplayExpanded &&
+        _isLibraryNavExpanded &&
+        _isNetworkExpanded &&
+        _isDataExpanded &&
+        _isAboutExpanded;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('SETTINGS'),
         actions: [
+          IconButton(
+            icon: Icon(isAllExpanded ? Icons.unfold_less_rounded : Icons.unfold_more_rounded),
+            tooltip: isAllExpanded ? 'Collapse All' : 'Expand All',
+            onPressed: () => _setAllSections(!isAllExpanded),
+          ),
           IconButton(
             icon: const Icon(Icons.check_rounded),
             tooltip: 'Save Settings',
@@ -243,7 +291,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _buildCollapsibleSectionHeader(
           'APPEARANCE & THEMES',
           _isAppearanceExpanded,
-          () => setState(() => _isAppearanceExpanded = !_isAppearanceExpanded),
+          () => _toggleSection(_keyPrefAppearance, _isAppearanceExpanded, (v) => _isAppearanceExpanded = v),
           badgeLabel: themeBadge,
         ),
         const SizedBox(height: 6),
@@ -257,7 +305,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _buildCollapsibleSectionHeader(
           'DISPLAY & STATUS BAR',
           _isDisplayExpanded,
-          () => setState(() => _isDisplayExpanded = !_isDisplayExpanded),
+          () => _toggleSection(_keyPrefDisplay, _isDisplayExpanded, (v) => _isDisplayExpanded = v),
           badgeLabel: displayBadge,
         ),
         const SizedBox(height: 6),
@@ -271,7 +319,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _buildCollapsibleSectionHeader(
           'LIBRARY PREFERENCES',
           _isLibraryNavExpanded,
-          () => setState(() => _isLibraryNavExpanded = !_isLibraryNavExpanded),
+          () => _toggleSection(_keyPrefLibraryNav, _isLibraryNavExpanded, (v) => _isLibraryNavExpanded = v),
           badgeLabel: _themeService.stickyStatusFilter ? 'Pinned Tabs' : 'Scroll Tabs',
         ),
         const SizedBox(height: 6),
@@ -285,7 +333,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _buildCollapsibleSectionHeader(
           'NETWORK & SYNC PREFERENCES',
           _isNetworkExpanded,
-          () => setState(() => _isNetworkExpanded = !_isNetworkExpanded),
+          () => _toggleSection(_keyPrefNetwork, _isNetworkExpanded, (v) => _isNetworkExpanded = v),
           badgeLabel: _offlineMode ? 'Offline' : 'Online',
         ),
         const SizedBox(height: 6),
@@ -301,7 +349,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _buildCollapsibleSectionHeader(
           'DATA MANAGEMENT',
           _isDataExpanded,
-          () => setState(() => _isDataExpanded = !_isDataExpanded),
+          () => _toggleSection(_keyPrefData, _isDataExpanded, (v) => _isDataExpanded = v),
         ),
         const SizedBox(height: 6),
         if (_isDataExpanded) ...[
@@ -318,8 +366,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _buildCollapsibleSectionHeader(
           'ABOUT PAPERBACK',
           _isAboutExpanded,
-          () => setState(() => _isAboutExpanded = !_isAboutExpanded),
-          badgeLabel: 'v1.4.0c',
+          () => _toggleSection(_keyPrefAbout, _isAboutExpanded, (v) => _isAboutExpanded = v),
+          badgeLabel: 'v1.4.0d',
         ),
         const SizedBox(height: 6),
         if (_isAboutExpanded) ...[
@@ -342,19 +390,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSectionHeader('APPEARANCE & THEMES'),
-                const SizedBox(height: 8),
-                _buildThemeSelector(isDark),
-                const SizedBox(height: 20),
+                _buildCollapsibleSectionHeader(
+                  'APPEARANCE & THEMES',
+                  _isAppearanceExpanded,
+                  () => _toggleSection(_keyPrefAppearance, _isAppearanceExpanded, (v) => _isAppearanceExpanded = v),
+                  badgeLabel: themeBadge,
+                ),
+                const SizedBox(height: 6),
+                if (_isAppearanceExpanded) ...[
+                  _buildThemeSelector(isDark),
+                  const SizedBox(height: 16),
+                ],
+                const SizedBox(height: 12),
 
-                _buildSectionHeader('DISPLAY & STATUS BAR'),
-                const SizedBox(height: 8),
-                _buildDisplayModeSelector(isDark),
-                const SizedBox(height: 20),
+                _buildCollapsibleSectionHeader(
+                  'DISPLAY & STATUS BAR',
+                  _isDisplayExpanded,
+                  () => _toggleSection(_keyPrefDisplay, _isDisplayExpanded, (v) => _isDisplayExpanded = v),
+                  badgeLabel: displayBadge,
+                ),
+                const SizedBox(height: 6),
+                if (_isDisplayExpanded) ...[
+                  _buildDisplayModeSelector(isDark),
+                  const SizedBox(height: 16),
+                ],
+                const SizedBox(height: 12),
 
-                _buildSectionHeader('LIBRARY PREFERENCES'),
-                const SizedBox(height: 8),
-                _buildLibraryNavPreferences(isDark),
+                _buildCollapsibleSectionHeader(
+                  'LIBRARY PREFERENCES',
+                  _isLibraryNavExpanded,
+                  () => _toggleSection(_keyPrefLibraryNav, _isLibraryNavExpanded, (v) => _isLibraryNavExpanded = v),
+                  badgeLabel: _themeService.stickyStatusFilter ? 'Pinned Tabs' : 'Scroll Tabs',
+                ),
+                const SizedBox(height: 6),
+                if (_isLibraryNavExpanded) ...[
+                  _buildLibraryNavPreferences(isDark),
+                  const SizedBox(height: 16),
+                ],
               ],
             ),
           ),
@@ -365,24 +437,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSectionHeader('NETWORK & BACKEND PREFERENCES'),
-                const SizedBox(height: 8),
-                _buildNetworkPreferences(isDark),
+                _buildCollapsibleSectionHeader(
+                  'NETWORK & BACKEND PREFERENCES',
+                  _isNetworkExpanded,
+                  () => _toggleSection(_keyPrefNetwork, _isNetworkExpanded, (v) => _isNetworkExpanded = v),
+                  badgeLabel: _offlineMode ? 'Offline' : 'Online',
+                ),
+                const SizedBox(height: 6),
+                if (_isNetworkExpanded) ...[
+                  _buildNetworkPreferences(isDark),
+                  const SizedBox(height: 10),
+                  _buildBackendConfigCard(isDark),
+                  const SizedBox(height: 16),
+                ],
                 const SizedBox(height: 12),
-                _buildBackendConfigCard(isDark),
-                const SizedBox(height: 20),
 
-                _buildSectionHeader('DATA MANAGEMENT'),
-                const SizedBox(height: 8),
-                _buildDataManagementCard(isDark),
-                const SizedBox(height: 20),
+                _buildCollapsibleSectionHeader(
+                  'DATA MANAGEMENT',
+                  _isDataExpanded,
+                  () => _toggleSection(_keyPrefData, _isDataExpanded, (v) => _isDataExpanded = v),
+                ),
+                const SizedBox(height: 6),
+                if (_isDataExpanded) ...[
+                  _buildDataManagementCard(isDark),
+                  const SizedBox(height: 16),
+                ],
+                const SizedBox(height: 12),
 
                 _buildManualSyncButton(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                _buildSectionHeader('ABOUT PAPERBACK'),
-                const SizedBox(height: 8),
-                _buildAboutCard(isDark),
+                _buildCollapsibleSectionHeader(
+                  'ABOUT PAPERBACK',
+                  _isAboutExpanded,
+                  () => _toggleSection(_keyPrefAbout, _isAboutExpanded, (v) => _isAboutExpanded = v),
+                  badgeLabel: 'v1.4.0d',
+                ),
+                const SizedBox(height: 6),
+                if (_isAboutExpanded) ...[
+                  _buildAboutCard(isDark),
+                  const SizedBox(height: 16),
+                ],
               ],
             ),
           ),
@@ -620,7 +715,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1),
                 ),
                 child: const Text(
-                  'v1.4.0c',
+                  'v1.4.0d',
                   style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white),
                 ),
               ),

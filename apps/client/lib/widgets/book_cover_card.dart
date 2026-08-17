@@ -89,13 +89,13 @@ class BookCoverCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                        color: const Color(0xFFFFB800),
                         border: Border.all(color: AppColors.inkBlack, width: 1),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.star_rounded, size: 11, color: accentColor),
+                          const Icon(Icons.star_rounded, size: 11, color: AppColors.inkBlack),
                           const SizedBox(width: 2),
                           Text(
                             book.rating!.toStringAsFixed(1),

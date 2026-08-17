@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/book.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
@@ -107,8 +108,18 @@ class BookCard extends StatelessWidget {
                         if (book.rating != null && book.rating! > 0)
                           BrutalistBadge(
                             label: '${book.rating!.toStringAsFixed(1)} ★',
-                            backgroundColor: AppColors.paperSurfaceHighest,
+                            backgroundColor: const Color(0xFFFFB800),
+                            textColor: AppColors.inkBlack,
                           ),
+                        if (book.dateStarted != null || book.dateFinished != null) ...[
+                          BrutalistBadge(
+                            label: book.dateFinished != null
+                                ? 'FIN: ${DateFormat('MMM d').format(DateTime.tryParse(book.dateFinished!) ?? DateTime.now())}'
+                                : 'STR: ${DateFormat('MMM d').format(DateTime.tryParse(book.dateStarted!) ?? DateTime.now())}',
+                            backgroundColor: isDark ? Colors.white10 : AppColors.paperSurfaceHighest,
+                            textColor: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                          ),
+                        ],
                       ],
                     ),
                   ],
