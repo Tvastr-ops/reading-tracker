@@ -23,18 +23,26 @@ class ReadingCarousel extends StatefulWidget {
 }
 
 class _ReadingCarouselState extends State<ReadingCarousel> {
-  late PageController _pageController;
+  PageController? _pageController;
+  double _lastFraction = 0.90;
   int _currentPage = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(viewportFraction: 0.90);
+  PageController _getOrCreateController(double fraction) {
+    if (_pageController == null || (_lastFraction - fraction).abs() > 0.01) {
+      _pageController?.dispose();
+      _lastFraction = fraction;
+      final maxIdx = widget.readingBooks.isNotEmpty ? widget.readingBooks.length - 1 : 0;
+      _pageController = PageController(
+        viewportFraction: fraction,
+        initialPage: _currentPage.clamp(0, maxIdx),
+      );
+    }
+    return _pageController!;
   }
 
   @override
   void dispose() {
-    _pageController.dispose();
+    _pageController?.dispose();
     super.dispose();
   }
 
@@ -48,93 +56,108 @@ class _ReadingCarouselState extends State<ReadingCarousel> {
     final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
     final total = widget.readingBooks.length;
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 6, bottom: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Row with Title and Dynamic Snapping Index Badge
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 750;
+        final viewportFraction = isWide
+            ? (total >= 3 ? 0.38 : (total == 2 ? 0.48 : 0.90))
+            : 0.90;
+
+        return Padding(
+          padding: const EdgeInsets.only(top: 6, bottom: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header Row with Title and Dynamic Snapping Index Badge
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(Icons.auto_stories_rounded, size: 16, color: accentColor),
-                    const SizedBox(width: 6),
-                    const Text(
-                      'CURRENTLY READING',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 11,
-                        letterSpacing: 0.5,
+                    Row(
+                      children: [
+                        Icon(Icons.auto_stories_rounded, size: 16, color: accentColor),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'CURRENTLY READING',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 11,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: accentColor,
+                        border: Border.all(color: borderColor, width: 1),
+                      ),
+                      child: Text(
+                        total > 1 ? '${_currentPage + 1} / $total' : '$total ACTIVE',
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: accentColor,
-                    border: Border.all(color: borderColor, width: 1),
-                  ),
-                  child: Text(
-                    total > 1 ? '${_currentPage + 1} / $total' : '$total ACTIVE',
-                    style: const TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
+              ),
+              const SizedBox(height: 6),
+
+              // Adaptive Carousel: Hero Layout for 1 book, Snap PageView for 2+ books
+              if (total == 1)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: isWide ? 560 : double.infinity),
+                      child: _buildBookCard(
+                        widget.readingBooks.first,
+                        isDark: isDark,
+                        borderColor: borderColor,
+                        accentColor: accentColor,
+                        details: details,
+                        isHero: true,
+                      ),
                     ),
+                  ),
+                )
+              else
+                SizedBox(
+                  height: 156,
+                  child: PageView.builder(
+                    controller: _getOrCreateController(viewportFraction),
+                    itemCount: total,
+                    onPageChanged: (idx) => setState(() => _currentPage = idx),
+                    padEnds: false,
+                    itemBuilder: (context, index) {
+                      final book = widget.readingBooks[index];
+                      return Padding(
+                        padding: EdgeInsets.only(
+                          left: index == 0 ? 16 : 6,
+                          right: index == total - 1 ? 16 : 6,
+                        ),
+                        child: _buildBookCard(
+                          book,
+                          isDark: isDark,
+                          borderColor: borderColor,
+                          accentColor: accentColor,
+                          details: details,
+                          isHero: false,
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
-          const SizedBox(height: 6),
-
-          // Adaptive Carousel: Hero Layout for 1 book, Snap PageView for 2+ books
-          if (total == 1)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildBookCard(
-                widget.readingBooks.first,
-                isDark: isDark,
-                borderColor: borderColor,
-                accentColor: accentColor,
-                details: details,
-                isHero: true,
-              ),
-            )
-          else
-            SizedBox(
-              height: 156,
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: total,
-                onPageChanged: (idx) => setState(() => _currentPage = idx),
-                padEnds: false,
-                itemBuilder: (context, index) {
-                  final book = widget.readingBooks[index];
-                  return Padding(
-                    padding: EdgeInsets.only(
-                      left: index == 0 ? 16 : 6,
-                      right: index == total - 1 ? 16 : 6,
-                    ),
-                    child: _buildBookCard(
-                      book,
-                      isDark: isDark,
-                      borderColor: borderColor,
-                      accentColor: accentColor,
-                      details: details,
-                      isHero: false,
-                    ),
-                  );
-                },
-              ),
-            ),
-        ],
-      ),
+        );
+      },
     );
   }
 

@@ -27,17 +27,18 @@ class UpdateService {
 
   static const String repoOwner = 'Tvastr-ops';
   static const String repoName = 'reading-tracker';
+  static const String currentReleaseVersion = 'v1.7.0c';
 
   String? _cachedAppVersion;
 
-  /// Returns the current app version formatted with 'v' prefix (e.g. 'v1.7.0').
-  /// Reads directly from pubspec.yaml via PackageInfo at runtime.
+  /// Returns the current app version formatted with 'v' prefix (e.g. 'v1.7.0c').
+  /// Reads dynamically from PackageInfo, but falls back gracefully if Windows/Linux returns generic '1.0.0'.
   Future<String> getCurrentAppVersion() async {
     if (_cachedAppVersion != null) return _cachedAppVersion!;
     try {
       final info = await PackageInfo.fromPlatform();
       final version = info.version.trim();
-      if (version.isNotEmpty) {
+      if (version.isNotEmpty && version != '1.0.0' && version != '0.0.0') {
         _cachedAppVersion = version.startsWith('v') || version.startsWith('V')
             ? version
             : 'v$version';
@@ -46,7 +47,8 @@ class UpdateService {
     } catch (e) {
       debugPrint('Error getting package info: $e');
     }
-    return 'v1.7.0';
+    _cachedAppVersion = currentReleaseVersion;
+    return _cachedAppVersion!;
   }
 
   /// Compares two base-10 letter suffix versions (e.g., v1.6.0b vs v1.6.0c).

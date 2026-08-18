@@ -69,7 +69,12 @@ class LibraryScreenState extends State<LibraryScreen> {
       _viewMode = LibraryViewMode.cards;
     }
     _searchFocusNode.addListener(_onSearchFocusChanged);
+    ThemeService.instance.addListener(_onThemeSettingsChanged);
     _loadBooks();
+  }
+
+  void _onThemeSettingsChanged() {
+    if (mounted) setState(() {});
   }
 
   void _onSearchFocusChanged() {
@@ -80,6 +85,7 @@ class LibraryScreenState extends State<LibraryScreen> {
 
   @override
   void dispose() {
+    ThemeService.instance.removeListener(_onThemeSettingsChanged);
     _searchFocusNode.removeListener(_onSearchFocusChanged);
     _searchFocusNode.dispose();
     _searchController.dispose();
@@ -750,13 +756,14 @@ class LibraryScreenState extends State<LibraryScreen> {
     }
 
     final isCompact = ThemeService.instance.compactMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (_viewMode == LibraryViewMode.covers) {
       return SliverPadding(
         padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 80),
         sliver: SliverGrid(
           gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: isCompact ? 160 : 200,
+            maxCrossAxisExtent: isCompact ? 120 : 180,
             childAspectRatio: 0.65,
             crossAxisSpacing: isCompact ? 8 : 10,
             mainAxisSpacing: isCompact ? 8 : 10,
@@ -782,26 +789,106 @@ class LibraryScreenState extends State<LibraryScreen> {
     }
 
     if (_viewMode == LibraryViewMode.table) {
-      return SliverPadding(
-        padding: const EdgeInsets.only(bottom: 80, top: 4),
-        sliver: SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              final book = filtered[index];
-              return BookTableRow(
-                key: ValueKey(book.id),
-                book: book,
-                isSelected: _selectedBookForDetail?.id == book.id,
-                onLogProgress: () => _openQuickLog(book),
-                onEdit: () => _onBookClick(book, isWideScreen),
-                onQuickIncrement: (amt) => _quickIncrement(book, amt),
-                onToggleFavorite: () => _toggleFavorite(book),
-                onContextMenu: (d) => _showBookContextMenu(context, d, book, isWideScreen),
-              );
-            },
-            childCount: filtered.length,
+      return SliverMainAxisGroup(
+        slivers: [
+          if (isWideScreen)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 4),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 44),
+                    Expanded(
+                      flex: 4,
+                      child: Text(
+                        'TITLE & AUTHOR',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                          color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      width: 140,
+                      child: Text(
+                        'FORMAT / STATUS',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                          color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      width: 60,
+                      child: Text(
+                        'RATING',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                          color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    SizedBox(
+                      width: 170,
+                      child: Text(
+                        'PROGRESS',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                          color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      width: 130,
+                      child: Text(
+                        'ACTIONS',
+                        textAlign: TextAlign.end,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                          color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          SliverPadding(
+            padding: const EdgeInsets.only(bottom: 80, top: 4),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final book = filtered[index];
+                  return BookTableRow(
+                    key: ValueKey(book.id),
+                    book: book,
+                    isSelected: _selectedBookForDetail?.id == book.id,
+                    onLogProgress: () => _openQuickLog(book),
+                    onEdit: () => _onBookClick(book, isWideScreen),
+                    onQuickIncrement: (amt) => _quickIncrement(book, amt),
+                    onToggleFavorite: () => _toggleFavorite(book),
+                    onContextMenu: (d) => _showBookContextMenu(context, d, book, isWideScreen),
+                  );
+                },
+                childCount: filtered.length,
+              ),
+            ),
           ),
-        ),
+        ],
       );
     }
 
@@ -812,7 +899,7 @@ class LibraryScreenState extends State<LibraryScreen> {
         sliver: SliverGrid(
           gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
             maxCrossAxisExtent: isCompact ? 380 : 440,
-            mainAxisExtent: isCompact ? 200 : 225,
+            mainAxisExtent: isCompact ? 228 : 265,
             crossAxisSpacing: isCompact ? 8 : 12,
             mainAxisSpacing: isCompact ? 8 : 12,
           ),
@@ -846,19 +933,22 @@ class LibraryScreenState extends State<LibraryScreen> {
         delegate: SliverChildBuilderDelegate(
           (context, index) {
             final book = filtered[index];
-            return BookCard(
-              key: ValueKey(book.id),
-              book: book,
-              isSelected: _selectedBookForDetail?.id == book.id,
-              onLogProgress: () => _openQuickLog(book),
-              onEdit: () => _onBookClick(book, isWideScreen),
-              onDelete: () async {
-                await _dbHelper.deleteBook(book.id);
-                await _loadBooks();
-              },
-              onQuickIncrement: (amt) => _quickIncrement(book, amt),
-              onToggleFavorite: () => _toggleFavorite(book),
-              onContextMenu: (d) => _showBookContextMenu(context, d, book, isWideScreen),
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: isCompact ? 4 : 8),
+              child: BookCard(
+                key: ValueKey(book.id),
+                book: book,
+                isSelected: _selectedBookForDetail?.id == book.id,
+                onLogProgress: () => _openQuickLog(book),
+                onEdit: () => _onBookClick(book, isWideScreen),
+                onDelete: () async {
+                  await _dbHelper.deleteBook(book.id);
+                  await _loadBooks();
+                },
+                onQuickIncrement: (amt) => _quickIncrement(book, amt),
+                onToggleFavorite: () => _toggleFavorite(book),
+                onContextMenu: (d) => _showBookContextMenu(context, d, book, isWideScreen),
+              ),
             );
           },
           childCount: filtered.length,
@@ -1029,7 +1119,7 @@ class LibraryScreenState extends State<LibraryScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              '${_books.length} VOLUMES TOTAL • $activeReadingCount IN PROGRESS',
+                              '${_books.length} BOOKS TOTAL • $activeReadingCount IN PROGRESS',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,

@@ -30,5 +30,10 @@ void main() {
       expect(UpdateService.isNewerVersion('v1.7.0', 'v1.7.0'), isFalse);
       expect(UpdateService.isNewerVersion('v1.6.0c', 'v1.7.0'), isFalse);
     });
+
+    test('getCurrentAppVersion returns currentReleaseVersion when package info is unconfigured', () async {
+      final version = await UpdateService.instance.getCurrentAppVersion();
+      expect(version, equals('v1.7.0c'));
+    });
   });
 }
