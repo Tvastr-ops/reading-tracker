@@ -20,6 +20,7 @@ dependencies:
   google_fonts: ^8.2.1
   dynamic_color: ^1.7.0
   flutter_displaymode: ^0.6.0
+  window_manager: ^0.5.2
 
 dev_dependencies:
   flutter_test:

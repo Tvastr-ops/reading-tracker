@@ -178,13 +178,17 @@ class _BookEditDialogState extends State<BookEditDialog> {
     final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
     final isEditing = widget.book != null;
 
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       backgroundColor: dialogBg,
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 580),
-        padding: const EdgeInsets.all(20),
+        constraints: BoxConstraints(
+          maxWidth: 580,
+          maxHeight: screenHeight * 0.88,
+        ),
         decoration: BoxDecoration(
           color: dialogBg,
           border: Border.all(
@@ -201,12 +205,22 @@ class _BookEditDialogState extends State<BookEditDialog> {
         ),
         child: Form(
           key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 1. Fixed Header (Prevents scrollbar overlapping the close button)
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 16, 16, 14),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: borderColor.withValues(alpha: 0.25),
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
@@ -226,10 +240,17 @@ class _BookEditDialogState extends State<BookEditDialog> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+              ),
 
-                _buildFormSectionHeader('1. BASIC INFORMATION', details, inkColor, borderColor),
-                const SizedBox(height: 8),
+              // 2. Scrollable Form Content
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildFormSectionHeader('1. BASIC INFORMATION', details, inkColor, borderColor),
+                      const SizedBox(height: 8),
 
                 // Title Input
                 _buildFieldLabel('TITLE *', inkColor),
@@ -521,29 +542,58 @@ class _BookEditDialogState extends State<BookEditDialog> {
                 _buildTextInput(_notesController, 'Reading thoughts...', maxLines: 2, details: details, borderColor: borderColor, inkColor: inkColor),
                 const SizedBox(height: 20),
 
-                // Actions
-                BrutalistButton(
-                  isFullWidth: true,
-                  onPressed: _submit,
-                  child: Text(isEditing ? 'SAVE CHANGES' : 'CREATE BOOK', style: const TextStyle(color: Colors.white, fontSize: 14)),
-                ),
-
-                if (isEditing && widget.onDelete != null) ...[
-                  const SizedBox(height: 10),
-                  BrutalistButton(
-                    isFullWidth: true,
-                    backgroundColor: Colors.transparent,
-                    textColor: AppColors.primaryRed,
-                    borderWidth: 1.5,
-                    onPressed: () {
-                      widget.onDelete!(widget.book!.id);
-                      Navigator.pop(context);
-                    },
-                    child: const Text('MOVE TO TRASH', style: TextStyle(color: AppColors.primaryRed, fontSize: 12)),
+                    ],
                   ),
-                ],
-              ],
-            ),
+                ),
+              ),
+
+              // 3. Fixed Footer Actions (Always visible & pinned)
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                decoration: BoxDecoration(
+                  color: details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface),
+                  border: Border(
+                    top: BorderSide(
+                      color: borderColor.withValues(alpha: 0.25),
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    if (isEditing && widget.onDelete != null) ...[
+                      BrutalistButton(
+                        backgroundColor: Colors.transparent,
+                        textColor: AppColors.primaryRed,
+                        borderWidth: 1.5,
+                        onPressed: () {
+                          widget.onDelete!(widget.book!.id);
+                          Navigator.pop(context);
+                        },
+                        child: const Text('TRASH', style: TextStyle(color: AppColors.primaryRed, fontSize: 12)),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    const Spacer(),
+                    BrutalistButton(
+                      backgroundColor: Colors.transparent,
+                      textColor: inkColor,
+                      borderWidth: 1.5,
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('CANCEL', style: TextStyle(fontSize: 12)),
+                    ),
+                    const SizedBox(width: 8),
+                    BrutalistButton(
+                      onPressed: _submit,
+                      child: Text(
+                        isEditing ? 'SAVE CHANGES' : 'CREATE BOOK',
+                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
