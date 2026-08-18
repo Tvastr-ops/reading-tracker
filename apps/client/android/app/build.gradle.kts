@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -25,9 +28,9 @@ android {
     signingConfigs {
         create("release") {
             val keyPropsFile = rootProject.file("key.properties")
-            val keyProps = java.util.Properties()
+            val keyProps = Properties()
             if (keyPropsFile.exists()) {
-                keyProps.load(java.io.FileInputStream(keyPropsFile))
+                keyProps.load(FileInputStream(keyPropsFile))
             }
             val customStorePath = System.getenv("KEYSTORE_PATH") ?: keyProps.getProperty("storeFile")
             val targetStoreFile = if (customStorePath != null) file(customStorePath) else file("release.keystore")

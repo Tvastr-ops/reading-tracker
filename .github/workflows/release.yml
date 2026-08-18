@@ -149,9 +149,47 @@ jobs:
           path: release-assets/*
           retention-days: 14
 
+  build-windows:
+    name: Build Windows x64 Bundle
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Flutter Dependencies
+        run: |
+          cd apps/client
+          flutter pub get
+
+      - name: Build Windows Release
+        shell: pwsh
+        run: |
+          cd apps/client
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          if (-not $version -or $version -eq "main" -or $version -eq "dev") { $version = "1.5.0" }
+          flutter build windows --release --build-name="$version"
+          New-Item -ItemType Directory -Force -Path "../../release-assets"
+          Compress-Archive -Path "build/windows/x64/runner/Release/*" -DestinationPath "../../release-assets/paperback-v$version-windows-x64.zip" -Force
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release-zip
+          path: release-assets/*.zip
+          retention-days: 14
+
   publish-release:
     name: Publish Unified GitHub Release
-    needs: [build-android, build-linux]
+    needs: [build-android, build-linux, build-windows]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
