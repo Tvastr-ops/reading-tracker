@@ -189,39 +189,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.8,
-                    color: inkColor,
-                  ),
-                ),
-                if (badgeLabel != null && !isExpanded) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: accentColor.withValues(alpha: 0.15),
-                      border: Border.all(color: accentColor, width: 1),
-                    ),
+            Expanded(
+              child: Row(
+                children: [
+                  Flexible(
                     child: Text(
-                      badgeLabel.toUpperCase(),
+                      title,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 9,
+                        fontSize: 11,
                         fontWeight: FontWeight.w900,
-                        color: accentColor,
+                        letterSpacing: 0.8,
+                        color: inkColor,
                       ),
                     ),
                   ),
+                  if (badgeLabel != null && !isExpanded) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: accentColor.withValues(alpha: 0.15),
+                        border: Border.all(color: accentColor, width: 1),
+                      ),
+                      child: Text(
+                        badgeLabel.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w900,
+                          color: accentColor,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
+            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
@@ -248,7 +253,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final themeBadge = _themeService.useDynamicColor
         ? 'Material You'
         : (isDark ? currentDark.label : currentLight.label);
-    final layoutBadge = '${_themeService.defaultViewMode.toUpperCase()} • ${_themeService.compactMode ? "Compact" : "Comfortable"}';
+    final layoutBadge = _themeService.compactMode
+        ? '${_themeService.defaultViewMode.toUpperCase()} • COMPACT'
+        : _themeService.defaultViewMode.toUpperCase();
 
     final isAllExpanded = _isAppearanceExpanded &&
         _isDisplayExpanded &&
@@ -265,11 +272,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icon(isAllExpanded ? Icons.unfold_less_rounded : Icons.unfold_more_rounded),
             tooltip: isAllExpanded ? 'Collapse All' : 'Expand All',
             onPressed: () => _setAllSections(!isAllExpanded),
-          ),
-          IconButton(
-            icon: const Icon(Icons.check_rounded),
-            tooltip: 'Save Settings',
-            onPressed: () => _saveConfig(),
           ),
         ],
       ),
@@ -307,7 +309,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         // Section 1: Display & Layout Preferences
         _buildCollapsibleSectionHeader(
-          'DISPLAY & LAYOUT PREFERENCES',
+          'DISPLAY & LAYOUT',
           _isDisplayExpanded,
           () => _toggleSection(_keyPrefDisplay, _isDisplayExpanded, (v) => _isDisplayExpanded = v),
           badgeLabel: layoutBadge,
@@ -335,7 +337,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         // Section 3: Network Preferences
         _buildCollapsibleSectionHeader(
-          'NETWORK & SYNC PREFERENCES',
+          'NETWORK & SYNC',
           _isNetworkExpanded,
           () => _toggleSection(_keyPrefNetwork, _isNetworkExpanded, (v) => _isNetworkExpanded = v),
           badgeLabel: _offlineMode ? 'Offline' : 'Online',
@@ -408,7 +410,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 12),
 
                 _buildCollapsibleSectionHeader(
-                  'DISPLAY & LAYOUT PREFERENCES',
+                  'DISPLAY & LAYOUT',
                   _isDisplayExpanded,
                   () => _toggleSection(_keyPrefDisplay, _isDisplayExpanded, (v) => _isDisplayExpanded = v),
                   badgeLabel: layoutBadge,
@@ -443,7 +445,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildCollapsibleSectionHeader(
-                  'NETWORK & BACKEND PREFERENCES',
+                  'NETWORK & SYNC',
                   _isNetworkExpanded,
                   () => _toggleSection(_keyPrefNetwork, _isNetworkExpanded, (v) => _isNetworkExpanded = v),
                   badgeLabel: _offlineMode ? 'Offline' : 'Online',
