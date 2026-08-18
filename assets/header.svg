@@ -45,10 +45,10 @@
 
   <!-- Content Group -->
   <g transform="translate(130, 0)">
-    <!-- Dynamic Badge -->
+    <!-- Evergreen Badge -->
     <g transform="translate(0, 36)">
-      <rect x="0" y="0" width="230" height="22" class="badge-bg" />
-      <text x="115" y="15" text-anchor="middle" class="badge-text">v1.7.0 • TACTILE READING LOG</text>
+      <rect x="0" y="0" width="224" height="22" class="badge-bg" />
+      <text x="112" y="15" text-anchor="middle" class="badge-text">OPEN-SOURCE • PRIVACY-FIRST</text>
     </g>
 
     <!-- Animated Monospace Title with Blinking Cursor -->

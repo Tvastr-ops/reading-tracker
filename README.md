@@ -5,7 +5,7 @@
 <br/>
 <br/>
 
-[![Release](https://img.shields.io/badge/Release-v1.7.0-10B981?style=for-the-badge&logo=github)](https://github.com/Tvastr-ops/reading-tracker/releases/tag/v1.7.0)
+[![GitHub Release](https://img.shields.io/github/v/release/Tvastr-ops/reading-tracker?style=for-the-badge&color=10B981&logo=github)](https://github.com/Tvastr-ops/reading-tracker/releases)
 [![Next.js 16](https://img.shields.io/badge/Next.js_16-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![Flutter 3](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev/)
 [![Supabase](https://img.shields.io/badge/Supabase_Postgres-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
