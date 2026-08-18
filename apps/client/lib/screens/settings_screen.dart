@@ -1410,6 +1410,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final showCarousel = _themeService.showReadingCarousel;
     final highRefreshRate = _themeService.highRefreshRate;
     final isFullscreen = _themeService.isFullscreen;
+    final enableTexture = _themeService.enablePaperTexture;
     final isMobile = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 
     return BrutalistCard(
@@ -1629,6 +1630,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     value: isFullscreen,
                     activeThumbColor: Theme.of(context).colorScheme.primary,
                     onChanged: (val) => _themeService.toggleFullscreen(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // 6. Tactile Paper & Canvas Textures Toggle
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+              border: Border.all(color: borderColor, width: 1.5),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'TACTILE PAPER & CANVAS TEXTURES',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Show subtle stationery grain, washi fibers, and notebook grids',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.65),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: Switch(
+                    value: enableTexture,
+                    activeThumbColor: Theme.of(context).colorScheme.primary,
+                    onChanged: (val) => _themeService.setEnablePaperTexture(val),
                   ),
                 ),
               ],

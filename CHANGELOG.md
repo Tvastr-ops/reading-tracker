@@ -7,6 +7,14 @@ and this project adheres to the [Project Release Versioning Specification](.gemi
 
 ---
 
+## [1.7.0b] - 2026-08-18
+
+### Added
+- **Tactile Paper Texture & Stationery Canvas Engine**: Hardware-accelerated procedural patterns (architectural dot-grid, Japanese washi fibers, book paper grain, manuscript grid, and halftone speckles) across all 16 theme variants.
+- **Paper Texture Setting**: Toggle switch in Display & Layout preferences to enable or disable tactile canvas textures.
+
+---
+
 ## [1.7.0a] - 2026-08-18
 
 ### Changed

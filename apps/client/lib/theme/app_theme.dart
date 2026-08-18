@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../widgets/paper_texture_canvas.dart';
 
 class AppColors {
   // Neo-Brutalist Paper Light Palette
@@ -150,6 +151,33 @@ extension AppThemeVariantMeta on AppThemeVariant {
       case AppThemeVariant.cyanotypeBlueprint:
       case AppThemeVariant.charredPapyrus:
         return true;
+    }
+  }
+
+  PaperPatternType get defaultPattern {
+    switch (this) {
+      case AppThemeVariant.classicPaperback:
+      case AppThemeVariant.mangaInkpaper:
+      case AppThemeVariant.mangaNoir:
+      case AppThemeVariant.nordicGlacier:
+      case AppThemeVariant.nordicNight:
+      case AppThemeVariant.darkAcademia:
+        return PaperPatternType.paperGrain;
+      case AppThemeVariant.matchaWashi:
+      case AppThemeVariant.midnightMatcha:
+      case AppThemeVariant.charredPapyrus:
+        return PaperPatternType.washiFibers;
+      case AppThemeVariant.draftingVellum:
+      case AppThemeVariant.cyanotypeBlueprint:
+        return PaperPatternType.dotGrid;
+      case AppThemeVariant.sakuraManuscript:
+      case AppThemeVariant.midnightSakura:
+        return PaperPatternType.manuscriptGrid;
+      case AppThemeVariant.crumpledKraft:
+      case AppThemeVariant.charcoalLedger:
+        return PaperPatternType.ledgerLines;
+      case AppThemeVariant.retroPulpComic:
+        return PaperPatternType.halftoneDots;
     }
   }
 
