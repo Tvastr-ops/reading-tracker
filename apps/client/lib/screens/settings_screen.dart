@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -62,7 +64,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _autoSync = _syncManager.autoSync;
 
     _syncManager.addListener(_onSyncUpdate);
+    _themeService.addListener(_onThemeUpdate);
     _loadSectionPreferences();
+  }
+
+  @override
+  void dispose() {
+    _syncManager.removeListener(_onSyncUpdate);
+    _themeService.removeListener(_onThemeUpdate);
+    _urlController.dispose();
+    _apiKeyController.dispose();
+    super.dispose();
+  }
+
+  void _onThemeUpdate() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadSectionPreferences() async {
@@ -103,14 +119,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setBool(_keyPrefNetwork, expand);
     await prefs.setBool(_keyPrefData, expand);
     await prefs.setBool(_keyPrefAbout, expand);
-  }
-
-  @override
-  void dispose() {
-    _syncManager.removeListener(_onSyncUpdate);
-    _urlController.dispose();
-    _apiKeyController.dispose();
-    super.dispose();
   }
 
   void _onSyncUpdate() {
@@ -240,11 +248,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final themeBadge = _themeService.useDynamicColor
         ? 'Material You'
         : (isDark ? currentDark.label : currentLight.label);
-    final displayBadge = _themeService.displayMode == AppDisplayMode.edgeToEdge
-        ? 'Edge-to-Edge'
-        : _themeService.displayMode == AppDisplayMode.classic
-            ? 'Classic'
-            : 'Fullscreen';
+    final layoutBadge = '${_themeService.defaultViewMode.toUpperCase()} • ${_themeService.compactMode ? "Compact" : "Comfortable"}';
 
     final isAllExpanded = _isAppearanceExpanded &&
         _isDisplayExpanded &&
@@ -274,16 +278,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           final isWideScreen = constraints.maxWidth >= 840;
 
           if (isWideScreen) {
-            return _buildWideLayout(isDark, themeBadge, displayBadge);
+            return _buildWideLayout(isDark, themeBadge, layoutBadge);
           }
 
-          return _buildMobileLayout(isDark, themeBadge, displayBadge);
+          return _buildMobileLayout(isDark, themeBadge, layoutBadge);
         },
       ),
     );
   }
 
-  Widget _buildMobileLayout(bool isDark, String themeBadge, String displayBadge) {
+  Widget _buildMobileLayout(bool isDark, String themeBadge, String layoutBadge) {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       children: [
@@ -301,16 +305,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
         const SizedBox(height: 8),
 
-        // Section 1: Display & Status Bar Layout
+        // Section 1: Display & Layout Preferences
         _buildCollapsibleSectionHeader(
-          'DISPLAY & STATUS BAR',
+          'DISPLAY & LAYOUT PREFERENCES',
           _isDisplayExpanded,
           () => _toggleSection(_keyPrefDisplay, _isDisplayExpanded, (v) => _isDisplayExpanded = v),
-          badgeLabel: displayBadge,
+          badgeLabel: layoutBadge,
         ),
         const SizedBox(height: 6),
         if (_isDisplayExpanded) ...[
-          _buildDisplayModeSelector(isDark),
+          _buildDisplayAndLayoutPreferences(isDark),
           const SizedBox(height: 14),
         ],
         const SizedBox(height: 8),
@@ -379,7 +383,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildWideLayout(bool isDark, String themeBadge, String displayBadge) {
+  Widget _buildWideLayout(bool isDark, String themeBadge, String layoutBadge) {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
@@ -404,14 +408,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 12),
 
                 _buildCollapsibleSectionHeader(
-                  'DISPLAY & STATUS BAR',
+                  'DISPLAY & LAYOUT PREFERENCES',
                   _isDisplayExpanded,
                   () => _toggleSection(_keyPrefDisplay, _isDisplayExpanded, (v) => _isDisplayExpanded = v),
-                  badgeLabel: displayBadge,
+                  badgeLabel: layoutBadge,
                 ),
                 const SizedBox(height: 6),
                 if (_isDisplayExpanded) ...[
-                  _buildDisplayModeSelector(isDark),
+                  _buildDisplayAndLayoutPreferences(isDark),
                   const SizedBox(height: 16),
                 ],
                 const SizedBox(height: 12),
@@ -431,6 +435,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(width: 20),
+
 
           // Column 2: Backend, Sync & Data
           Expanded(
@@ -1181,132 +1186,291 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildDisplayModeSelector(bool isDark) {
-    final currentMode = _themeService.displayMode;
+  Widget _buildDisplayAndLayoutPreferences(bool isDark) {
     final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+    final defaultMode = _themeService.defaultViewMode;
+    final isCompact = _themeService.compactMode;
+    final showCarousel = _themeService.showReadingCarousel;
+    final highRefreshRate = _themeService.highRefreshRate;
+    final isFullscreen = _themeService.isFullscreen;
+    final isMobile = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 
     return BrutalistCard(
       margin: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 1. Default Library View Mode
           const Text(
-            'STATUS BAR & DISPLAY LAYOUT',
+            'DEFAULT LIBRARY VIEW',
             style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5),
           ),
           const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
-                child: _buildDisplayModeOption(
-                  'EDGE-TO-EDGE',
-                  'New',
-                  AppDisplayMode.edgeToEdge,
-                  currentMode == AppDisplayMode.edgeToEdge,
-                  Icons.phone_android_rounded,
+                child: _buildLayoutOption(
+                  'CARDS',
+                  Icons.grid_view_rounded,
+                  defaultMode == 'cards',
+                  () => _themeService.setDefaultViewMode('cards'),
+                  isDark,
+                  borderColor,
                 ),
               ),
               const SizedBox(width: 6),
               Expanded(
-                child: _buildDisplayModeOption(
-                  'CLASSIC',
-                  'Old',
-                  AppDisplayMode.classic,
-                  currentMode == AppDisplayMode.classic,
-                  Icons.dock_rounded,
+                child: _buildLayoutOption(
+                  'COVERS',
+                  Icons.auto_stories_rounded,
+                  defaultMode == 'covers',
+                  () => _themeService.setDefaultViewMode('covers'),
+                  isDark,
+                  borderColor,
                 ),
               ),
               const SizedBox(width: 6),
               Expanded(
-                child: _buildDisplayModeOption(
-                  'FULLSCREEN',
-                  'Max',
-                  AppDisplayMode.immersive,
-                  currentMode == AppDisplayMode.immersive,
-                  Icons.fullscreen_rounded,
+                child: _buildLayoutOption(
+                  'TABLE',
+                  Icons.view_headline_rounded,
+                  defaultMode == 'table',
+                  () => _themeService.setDefaultViewMode('table'),
+                  isDark,
+                  borderColor,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
+
+          // 2. Card Display Density
+          const Text(
+            'CARD DENSITY',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildLayoutOption(
+                  'COMFORTABLE',
+                  Icons.aspect_ratio_rounded,
+                  !isCompact,
+                  () => _themeService.setCompactMode(false),
+                  isDark,
+                  borderColor,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _buildLayoutOption(
+                  'COMPACT',
+                  Icons.density_medium_rounded,
+                  isCompact,
+                  () => _themeService.setCompactMode(true),
+                  isDark,
+                  borderColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // 3. Carousel Toggle
           Container(
-            width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
-              border: Border.all(color: borderColor.withValues(alpha: 0.3), width: 1),
+              color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+              border: Border.all(color: borderColor, width: 1.5),
             ),
-            child: Text(
-              currentMode == AppDisplayMode.edgeToEdge
-                  ? 'Edge-to-Edge: Status bar is transparent and seamlessly overlays the canvas palette.'
-                  : currentMode == AppDisplayMode.classic
-                      ? 'Classic: Standard solid status bar anchored at the top.'
-                      : 'Fullscreen: Hides the status bar for uninterrupted, full-screen reading real estate.',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.8) : AppColors.inkMuted,
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'CURRENTLY READING CAROUSEL',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Show hero carousel banner at top of library',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.65),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: Switch(
+                    value: showCarousel,
+                    activeThumbColor: Theme.of(context).colorScheme.primary,
+                    onChanged: (val) => _themeService.setShowReadingCarousel(val),
+                  ),
+                ),
+              ],
             ),
           ),
+          const SizedBox(height: 10),
+
+          // 4. Android High Refresh Rate Mode (Only on Mobile/Android)
+          if (isMobile) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                border: Border.all(color: borderColor, width: 1.5),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'HIGH REFRESH RATE (120Hz)',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Unlocks 90Hz/120Hz smooth animations on supported screens',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.65),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: Switch(
+                      value: highRefreshRate,
+                      activeThumbColor: Theme.of(context).colorScheme.primary,
+                      onChanged: (val) => _themeService.setHighRefreshRate(val),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+
+          // 5. Desktop Fullscreen Mode Toggle
+          if (!isMobile) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                border: Border.all(color: borderColor, width: 1.5),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'DISTRACTION-FREE FULLSCREEN (F11)',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Toggle borderless fullscreen mode (Shortcut: F11)',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.65),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: Switch(
+                      value: isFullscreen,
+                      activeThumbColor: Theme.of(context).colorScheme.primary,
+                      onChanged: (val) => _themeService.toggleFullscreen(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildDisplayModeOption(
+  Widget _buildLayoutOption(
     String title,
-    String badge,
-    AppDisplayMode targetMode,
-    bool isSelected,
     IconData icon,
+    bool isSelected,
+    VoidCallback onTap,
+    bool isDark,
+    Color borderColor,
   ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
-
-    return GestureDetector(
-      onTap: () {
-        _themeService.setDisplayMode(targetMode);
-        setState(() {});
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).colorScheme.primary
-              : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
-          border: Border.all(color: borderColor, width: isSelected ? 2.0 : 1.5),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: borderColor,
-                    offset: AppTheme.shadowOffsetSm,
-                    blurRadius: 0,
-                  ),
-                ]
-              : null,
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: isSelected ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: TextStyle(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+            border: Border.all(color: borderColor, width: isSelected ? 2.0 : 1.5),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: borderColor,
+                      offset: AppTheme.shadowOffsetSm,
+                      blurRadius: 0,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                size: 16,
                 color: isSelected ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-                fontWeight: FontWeight.w900,
-                fontSize: 9.5,
-                letterSpacing: 0.2,
               ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 10,
+                  letterSpacing: 0.3,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1316,26 +1480,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
 
-    return GestureDetector(
-      onTap: () {
-        _themeService.setThemeMode(targetMode);
-        setState(() {});
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).colorScheme.primary
-              : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
-          border: Border.all(color: borderColor, width: 1.5),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label.toUpperCase(),
-          style: TextStyle(
-            color: isSelected ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-            fontWeight: FontWeight.w800,
-            fontSize: 11,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: InkWell(
+        onTap: () {
+          _themeService.setThemeMode(targetMode);
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+            border: Border.all(color: borderColor, width: 1.5),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              color: isSelected ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+              fontWeight: FontWeight.w800,
+              fontSize: 11,
+            ),
           ),
         ),
       ),
@@ -1347,95 +1513,88 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
-        onTap: () {
-          if (variant.isDark) {
-            _themeService.setDarkVariant(variant);
-          } else {
-            _themeService.setLightVariant(variant);
-          }
-          setState(() {});
-        },
-        child: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? (isDark ? AppColors.darkSurfaceHigh : Colors.white)
-                : (isDark ? AppColors.darkSurface : AppColors.paperSurface),
-            border: Border.all(
-              color: isSelected ? variant.previewAccent : borderColor.withValues(alpha: 0.5),
-              width: isSelected ? 2.5 : 1.5,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: InkWell(
+          onTap: () {
+            if (variant.isDark) {
+              _themeService.setDarkVariant(variant);
+            } else {
+              _themeService.setLightVariant(variant);
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? (isDark ? AppColors.darkSurfaceHigh : Colors.white)
+                  : (isDark ? AppColors.darkSurface : AppColors.paperSurface),
+              border: Border.all(
+                color: isSelected ? variant.previewAccent : borderColor.withValues(alpha: 0.5),
+                width: isSelected ? 2.5 : 1.5,
+              ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: borderColor,
+                        offset: AppTheme.shadowOffsetSm,
+                        blurRadius: 0,
+                      ),
+                    ]
+                  : null,
             ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: borderColor,
-                      offset: AppTheme.shadowOffsetSm,
-                      blurRadius: 0,
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: variant.previewCanvas,
-                  border: Border.all(color: borderColor, width: 1.5),
-                ),
-                child: Center(
-                  child: Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: variant.previewCanvas,
+                    border: Border.all(color: borderColor, width: 1.5),
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 20,
+                      height: 20,
                       color: variant.previewAccent,
-                      border: Border.all(color: borderColor, width: 1),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          variant.label.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w900,
-                            color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                          ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        variant.label.toUpperCase(),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12.5,
+                          color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
                         ),
-                        if (isSelected) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                            color: variant.previewAccent,
-                            child: const Text(
-                              'ACTIVE',
-                              style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.white),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      variant.description,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.7),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 2),
+                      Text(
+                        variant.description,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.65),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                if (isSelected)
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: variant.previewAccent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.check_rounded, size: 14, color: Colors.white),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

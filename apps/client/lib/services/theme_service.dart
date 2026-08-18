@@ -1,13 +1,10 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
-
-enum AppDisplayMode {
-  edgeToEdge, // New (Seamless transparent status bar)
-  classic, // Old (Standard status bar)
-  immersive, // Fullscreen (Hidden status bar)
-}
 
 class ThemeService extends ChangeNotifier {
   static final ThemeService instance = ThemeService._init();
@@ -17,26 +14,39 @@ class ThemeService extends ChangeNotifier {
   static const String _keyThemeMode = 'app_theme_mode';
   static const String _keyLightVariant = 'app_theme_light_variant';
   static const String _keyDarkVariant = 'app_theme_dark_variant';
-  static const String _keyDisplayMode = 'app_display_mode';
   static const String _keyStickyStatusFilter = 'app_sticky_status_filter';
   static const String _keyUseDynamicColor = 'app_use_dynamic_color';
+  static const String _keyDefaultViewMode = 'app_default_view_mode';
+  static const String _keyShowReadingCarousel = 'app_show_reading_carousel';
+  static const String _keyCompactMode = 'app_compact_mode';
+  static const String _keyHighRefreshRate = 'app_high_refresh_rate';
 
   ThemeMode _themeMode = ThemeMode.system;
   AppThemeVariant _lightVariant = AppThemeVariant.classicPaperback;
   AppThemeVariant _darkVariant = AppThemeVariant.charcoalLedger;
-  AppDisplayMode _displayMode = AppDisplayMode.edgeToEdge;
   bool _stickyStatusFilter = false;
   bool _useDynamicColor = false;
+  String _defaultViewMode = 'cards'; // 'cards', 'covers', 'table'
+  bool _showReadingCarousel = true;
+  bool _compactMode = false;
+  bool _highRefreshRate = true;
+  bool _isFullscreen = false;
+
   ColorScheme? _lightDynamic;
   ColorScheme? _darkDynamic;
 
   ThemeMode get themeMode => _themeMode;
   AppThemeVariant get lightVariant => _lightVariant;
   AppThemeVariant get darkVariant => _darkVariant;
-  AppDisplayMode get displayMode => _displayMode;
   bool get stickyStatusFilter => _stickyStatusFilter;
   bool get useDynamicColor => _useDynamicColor;
   bool get isDynamicColorAvailable => _lightDynamic != null || _darkDynamic != null;
+
+  String get defaultViewMode => _defaultViewMode;
+  bool get showReadingCarousel => _showReadingCarousel;
+  bool get compactMode => _compactMode;
+  bool get highRefreshRate => _highRefreshRate;
+  bool get isFullscreen => _isFullscreen;
 
   ThemeData get currentLightTheme {
     if (_useDynamicColor && _lightDynamic != null) {
@@ -88,19 +98,91 @@ class ThemeService extends ChangeNotifier {
       );
     }
 
-    final savedDisplay = prefs.getString(_keyDisplayMode);
-    if (savedDisplay != null) {
-      _displayMode = AppDisplayMode.values.firstWhere(
-        (v) => v.name == savedDisplay,
-        orElse: () => AppDisplayMode.edgeToEdge,
-      );
-    }
-    _applyDisplayMode();
-
     _stickyStatusFilter = prefs.getBool(_keyStickyStatusFilter) ?? false;
     _useDynamicColor = prefs.getBool(_keyUseDynamicColor) ?? false;
+    _defaultViewMode = prefs.getString(_keyDefaultViewMode) ?? 'cards';
+    _showReadingCarousel = prefs.getBool(_keyShowReadingCarousel) ?? true;
+    _compactMode = prefs.getBool(_keyCompactMode) ?? false;
+    _highRefreshRate = prefs.getBool(_keyHighRefreshRate) ?? true;
+
+    // Apply native edge-to-edge transparent system UI
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
+
+    // Apply high refresh rate on Android if enabled
+    if (_highRefreshRate) {
+      await _applyHighRefreshRate();
+    }
 
     notifyListeners();
+  }
+
+  Future<void> _applyHighRefreshRate() async {
+    if (!kIsWeb && Platform.isAndroid) {
+      try {
+        await FlutterDisplayMode.setHighRefreshRate();
+      } catch (_) {
+        // Ignored on unsupported devices/emulators
+      }
+    }
+  }
+
+  Future<void> setHighRefreshRate(bool val) async {
+    if (_highRefreshRate == val) return;
+    _highRefreshRate = val;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyHighRefreshRate, val);
+
+    if (val) {
+      await _applyHighRefreshRate();
+    } else if (!kIsWeb && Platform.isAndroid) {
+      try {
+        await FlutterDisplayMode.setLowRefreshRate();
+      } catch (_) {}
+    }
+  }
+
+  Future<void> setDefaultViewMode(String mode) async {
+    if (_defaultViewMode == mode) return;
+    _defaultViewMode = mode;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyDefaultViewMode, mode);
+  }
+
+  Future<void> setShowReadingCarousel(bool val) async {
+    if (_showReadingCarousel == val) return;
+    _showReadingCarousel = val;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyShowReadingCarousel, val);
+  }
+
+  Future<void> setCompactMode(bool val) async {
+    if (_compactMode == val) return;
+    _compactMode = val;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyCompactMode, val);
+  }
+
+  Future<void> toggleFullscreen() async {
+    _isFullscreen = !_isFullscreen;
+    notifyListeners();
+
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      if (_isFullscreen) {
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      } else {
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      }
+    }
   }
 
   Future<void> setUseDynamicColor(bool val) async {
@@ -112,23 +194,6 @@ class ThemeService extends ChangeNotifier {
     await prefs.setBool(_keyUseDynamicColor, val);
   }
 
-  void _applyDisplayMode() {
-    switch (_displayMode) {
-      case AppDisplayMode.edgeToEdge:
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-        break;
-      case AppDisplayMode.classic:
-        SystemChrome.setEnabledSystemUIMode(
-          SystemUiMode.manual,
-          overlays: const [SystemUiOverlay.top, SystemUiOverlay.bottom],
-        );
-        break;
-      case AppDisplayMode.immersive:
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-        break;
-    }
-  }
-
   Future<void> setStickyStatusFilter(bool val) async {
     if (_stickyStatusFilter == val) return;
     _stickyStatusFilter = val;
@@ -136,16 +201,6 @@ class ThemeService extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyStickyStatusFilter, val);
-  }
-
-  Future<void> setDisplayMode(AppDisplayMode mode) async {
-    if (_displayMode == mode) return;
-    _displayMode = mode;
-    _applyDisplayMode();
-    notifyListeners();
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyDisplayMode, mode.name);
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
@@ -180,3 +235,4 @@ class ThemeService extends ChangeNotifier {
     await prefs.setString(_keyDarkVariant, variant.name);
   }
 }
+

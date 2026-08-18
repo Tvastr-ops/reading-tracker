@@ -10,6 +10,7 @@ class BookTableRow extends StatelessWidget {
   final VoidCallback onEdit;
   final Function(double) onQuickIncrement;
   final VoidCallback? onToggleFavorite;
+  final void Function(TapDownDetails details)? onContextMenu;
   final bool isSelected;
 
   const BookTableRow({
@@ -19,6 +20,7 @@ class BookTableRow extends StatelessWidget {
     required this.onEdit,
     required this.onQuickIncrement,
     this.onToggleFavorite,
+    this.onContextMenu,
     this.isSelected = false,
   });
 
@@ -36,7 +38,9 @@ class BookTableRow extends StatelessWidget {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onEdit,
+        onSecondaryTapDown: onContextMenu != null ? (d) => onContextMenu!(d) : null,
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
