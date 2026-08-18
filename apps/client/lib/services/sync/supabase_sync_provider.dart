@@ -86,7 +86,7 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
         return res.statusCode >= 200 && res.statusCode < 300;
       }
 
-      final now = DateTime.now().toIso8601String();
+      final now = DateTime.now().toUtc().toIso8601String();
       final res = await http
           .patch(
             uri,
@@ -179,7 +179,7 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
     if (supabaseUrl.isEmpty || anonKey.isEmpty) return false;
     try {
       final uri = Uri.parse('$supabaseUrl/rest/v1/app_settings?on_conflict=key');
-      final now = DateTime.now().toIso8601String();
+      final now = DateTime.now().toUtc().toIso8601String();
       final res = await http
           .post(
             uri,

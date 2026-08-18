@@ -165,7 +165,7 @@ class DatabaseHelper {
 
   Future<int> deleteBook(String id) async {
     final db = await instance.database;
-    final now = DateTime.now().toIso8601String();
+    final now = DateTime.now().toUtc().toIso8601String();
     return await db.update(
       'books',
       {
@@ -272,7 +272,7 @@ class DatabaseHelper {
 
   Future<int> restoreBook(String id) async {
     final db = await instance.database;
-    final now = DateTime.now().toIso8601String();
+    final now = DateTime.now().toUtc().toIso8601String();
     return await db.update(
       'books',
       {
@@ -294,7 +294,7 @@ class DatabaseHelper {
         'record_id': id,
         'action': 'delete_permanent',
         'payload': '{}',
-        'created_at': DateTime.now().toIso8601String(),
+        'created_at': DateTime.now().toUtc().toIso8601String(),
       }, conflictAlgorithm: ConflictAlgorithm.replace);
       await txn.delete('reading_log', where: 'book_id = ?', whereArgs: [id]);
       return await txn.delete('books', where: 'id = ?', whereArgs: [id]);

@@ -8,6 +8,7 @@ import '../services/sync/supabase_sync_provider.dart';
 import '../services/sync/sync_manager.dart';
 import '../services/sync/sync_provider.dart';
 import '../services/theme_service.dart';
+import '../services/update_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/brutalist_widgets.dart';
 import 'trash_screen.dart';
@@ -29,6 +30,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final SyncManager _syncManager = SyncManager.instance;
   final ThemeService _themeService = ThemeService.instance;
+  final UpdateService _updateService = UpdateService.instance;
 
   late TextEditingController _urlController;
   late TextEditingController _apiKeyController;
@@ -38,6 +40,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isConfigExpanded = false;
   bool _showApiKey = false;
   bool _isTestingConnection = false;
+
+  UpdateInfo? _updateInfo;
+  bool _isCheckingUpdate = false;
+  String? _updateError;
 
   // Persisted Collapsible section states
   static const String _keyPrefAppearance = 'settings_expanded_appearance';
@@ -373,7 +379,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'ABOUT PAPERBACK',
           _isAboutExpanded,
           () => _toggleSection(_keyPrefAbout, _isAboutExpanded, (v) => _isAboutExpanded = v),
-          badgeLabel: 'v1.6.0b',
+          badgeLabel: 'v1.6.0c',
         ),
         const SizedBox(height: 6),
         if (_isAboutExpanded) ...[
@@ -478,7 +484,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   'ABOUT PAPERBACK',
                   _isAboutExpanded,
                   () => _toggleSection(_keyPrefAbout, _isAboutExpanded, (v) => _isAboutExpanded = v),
-                  badgeLabel: 'v1.6.0b',
+                  badgeLabel: 'v1.6.0c',
                 ),
                 const SizedBox(height: 6),
                 if (_isAboutExpanded) ...[
@@ -722,7 +728,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1),
                 ),
                 child: const Text(
-                  'v1.6.0b',
+                  'v1.6.0c',
                   style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white),
                 ),
               ),
@@ -775,7 +781,209 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 10),
+          _buildUpdateCheckerWidget(isDark),
         ],
+      ),
+    );
+  }
+
+  Future<void> _checkForUpdates() async {
+    if (_isCheckingUpdate) return;
+    setState(() {
+      _isCheckingUpdate = true;
+      _updateError = null;
+    });
+
+    final info = await _updateService.checkForUpdates();
+    if (!mounted) return;
+
+    setState(() {
+      _isCheckingUpdate = false;
+      if (info != null) {
+        _updateInfo = info;
+      } else {
+        _updateError = 'Could not reach update server';
+      }
+    });
+  }
+
+  Widget _buildUpdateCheckerWidget(bool isDark) {
+    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+    final accentColor = Theme.of(context).extension<AppThemeDetails>()?.accentColor ?? Theme.of(context).colorScheme.primary;
+
+    if (_isCheckingUpdate) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
+          border: Border.all(color: borderColor, width: 1.5),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: accentColor,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'CHECKING GITHUB FOR UPDATES...',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+                color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_updateInfo != null) {
+      if (_updateInfo!.hasUpdate) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFB800),
+            border: Border.all(color: AppColors.inkBlack, width: 2),
+            boxShadow: const [
+              BoxShadow(color: AppColors.inkBlack, offset: Offset(2.5, 2.5), blurRadius: 0),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.rocket_launch_rounded, size: 16, color: AppColors.inkBlack),
+                  const SizedBox(width: 6),
+                  Text(
+                    'UPDATE AVAILABLE: ${_updateInfo!.latestVersion.toUpperCase()}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                      letterSpacing: 0.5,
+                      color: AppColors.inkBlack,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'A new release is ready on GitHub. Tap below to download the latest installer or APK.',
+                style: TextStyle(fontSize: 11, color: AppColors.inkBlack, height: 1.3),
+              ),
+              const SizedBox(height: 10),
+              InkWell(
+                onTap: () async {
+                  final uri = Uri.parse(_updateInfo!.releaseUrl);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.inkBlack,
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'GET LATEST RELEASE ➔',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 11,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      } else {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
+            border: Border.all(color: borderColor, width: 1.5),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.check_circle_outline_rounded, size: 16, color: Colors.green),
+              const SizedBox(width: 8),
+              Text(
+                'YOU ARE ON THE LATEST VERSION (${_updateInfo!.currentVersion})',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
+                  color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+
+    return InkWell(
+      onTap: _checkForUpdates,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
+          border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+              offset: AppTheme.shadowOffsetSm,
+              blurRadius: 0,
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.system_update_alt_rounded, size: 18, color: isDark ? Colors.white : AppColors.inkBlack),
+            const SizedBox(width: 8),
+            Text(
+              'CHECK FOR UPDATES',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 12,
+                letterSpacing: 0.5,
+                color: isDark ? Colors.white : AppColors.inkBlack,
+              ),
+            ),
+            if (_updateError != null) ...[
+              const Spacer(),
+              Text(
+                '⚠️ RETRY',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
