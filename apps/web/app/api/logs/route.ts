@@ -9,10 +9,7 @@ export const GET = withAuth(async (req: NextRequest) => {
   const bookId = req.nextUrl.searchParams.get('book_id');
 
   const supabase = supabaseServer();
-  let query = supabase
-    .from('reading_log')
-    .select('*')
-    .order('logged_at', { ascending: false });
+  let query = supabase.from('reading_log').select('*').order('logged_at', { ascending: false });
 
   if (since) {
     query = query.gt('logged_at', since);
