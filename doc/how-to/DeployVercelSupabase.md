@@ -1,87 +1,95 @@
-# How-To: Deploy to Vercel & Supabase
+# Deploy to Vercel & Supabase
 
-This guide provides a comprehensive, step-by-step walkthrough for deploying the Paperback Web Application to **Vercel** and connecting it to a free **Supabase PostgreSQL** cloud database.
-
----
-
-## 📋 Prerequisites
-* A [GitHub](https://github.com/) account.
-* A free [Supabase](https://supabase.com/) account.
-* A free [Vercel](https://vercel.com/) account.
+Step-by-step guide to deploying the Paperback web application on Vercel and provisioning a Supabase PostgreSQL database.
 
 ---
 
-## 🗄️ Part 1: Set Up Supabase Database
+## Prerequisites
 
-1. Log in to [Supabase](https://app.supabase.com/) and click **New Project**.
-2. Give your project a name (e.g. `reading-tracker`) and choose a database region close to you.
-3. Once the project is created, navigate to **SQL Editor** in the left sidebar (`</>`).
-4. Click **New Query**.
-5. Copy the entire contents of [`supabase/schema.sql`](../../supabase/schema.sql) and paste it into the editor.
-6. Click **Run** (Ctrl/Cmd+Enter). You should see *"Success. No rows returned."*
-7. Navigate to **Project Settings (⚙️) ➔ API**:
-   - Copy your **Project URL** (e.g. `https://abcdefgh.supabase.co`).
-   - Copy your **`service_role` secret key** (revealed under Project API keys).
-   - Copy your **`anon` public key** (used for direct mobile sync).
+* [GitHub](https://github.com/) account
+* [Supabase](https://supabase.com/) account
+* [Vercel](https://vercel.com/) account
 
 ---
 
-## 🌐 Part 2: Deploy to Vercel
+## Part 1: Provision Supabase Database
 
-1. Log in to [Vercel](https://vercel.com/) and click **Add New ➔ Project**.
-2. Select your imported or forked `reading-tracker` GitHub repository.
-3. In the **Configure Project** screen:
-   - **Root Directory**: Click edit and select `apps/web`.
-   - **Framework Preset**: `Next.js` (automatically detected).
-4. Expand **Environment Variables** and add the following 4 keys:
+1. In the [Supabase Dashboard](https://app.supabase.com/), click **New Project**.
+2. Select a name (e.g. `reading-tracker`), generate a database password, and select your preferred region.
+3. Once provisioned, open **SQL Editor** (`</>`) in the left navigation.
+4. Click **New Query**, paste the entire contents of [`supabase/schema.sql`](../../supabase/schema.sql), and click **Run**.
 
-| Key | Example Value | Description |
+> [!NOTE]
+> You should see *"Success. No rows returned."* That means your database tables and triggers are created.
+
+5. Navigate to **Project Settings -> API**:
+   * Copy the **Project URL** (`https://<project-ref>.supabase.co`).
+   * Copy the **`service_role` secret key** (under Project API keys — click **Reveal**).
+   * Copy the **`anon` public key** (if using direct client-to-cloud sync).
+
+> [!WARNING]
+> Keep your `service_role` key private. Never share it or commit it to public repositories.
+
+---
+
+## Part 2: Deploy to Vercel
+
+1. In the [Vercel Dashboard](https://vercel.com/), click **Add New -> Project**.
+2. Import your `reading-tracker` repository.
+3. Configure the build settings:
+   * **Root Directory**: Click Edit and select `apps/web`.
+   * **Framework Preset**: `Next.js` (automatically detected).
+4. Add the following environment variables:
+
+| Variable | Description | Example |
 | :--- | :--- | :--- |
-| `APP_PASSWORD` | `YourSecretPassword123!` | Password required to log into the web app |
-| `SESSION_SECRET` | *(Random 32-char string)* | Key used to sign JWT session cookies (`openssl rand -base64 32`) |
-| `SUPABASE_URL` | `https://abcdefgh.supabase.co` | Your Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | `sb_secret_...` | Your Supabase service role secret key |
+| `APP_PASSWORD` | Access password for web login | `YourSecretPassword123!` |
+| `SESSION_SECRET` | Secret key for JWT signing | `openssl rand -base64 32` |
+| `SUPABASE_URL` | Supabase project endpoint | `https://<ref>.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role secret | `sb_secret_...` |
 
-5. Click **Deploy**. Vercel will build your web application in ~1 minute and provide your live URL (e.g. `https://reading-tracker-yourname.vercel.app`).
-
----
-
-## 📱 Part 3: Connect the Mobile Companion App
-
-The Flutter client app (`apps/client`) runs on Android, Windows, and Linux, supporting 3 sync modes:
-
-### Option A: Direct Supabase Cloud Sync (Serverless)
-1. In your Supabase Dashboard, open **SQL Editor ➔ New Query**.
-2. Paste the contents of [`supabase/migration_v08_rls.sql`](../../supabase/migration_v08_rls.sql) and click **Run**.
-3. In the Flutter client app, go to **Settings (⚙️) ➔ Remote Sync**:
-   - Set **Backend Type** to `Supabase`.
-   - Enter your **Project URL** and public **`anon` key**.
-   - Tap **Save & Reconnect** and **Sync Now**.
-
-### Option B: Unified Web App REST API Sync
-1. In the Flutter client app, go to **Settings (⚙️) ➔ Remote Sync**:
-   - Set **Backend Type** to `Self-Hosted REST`.
-   - Enter your deployed Vercel URL (e.g. `https://reading-tracker-yourname.vercel.app`).
-   - Enter your `APP_PASSWORD` as the API key.
-   - Tap **Save & Reconnect** and **Sync Now**.
+5. Click **Deploy**. Vercel will build the Next.js bundle and provide your production URL.
 
 ---
 
-## 🛠️ Upgrading an Existing Deployment
+## Part 3: Connect the Client Companion App
 
-When updating to new versions, execute migration scripts in your Supabase SQL Editor in chronological order:
-1. Open **Supabase Dashboard ➔ SQL Editor ➔ New Query**.
-2. Run any unapplied scripts from the `supabase/` folder:
-   - [`migration_v08_rls.sql`](../../supabase/migration_v08_rls.sql) — Direct mobile sync.
-   - [`migration_v09_progress_rpc.sql`](../../supabase/migration_v09_progress_rpc.sql) — Atomic progress logging RPC.
-   - [`migration_v10_progression_checks.sql`](../../supabase/migration_v10_progression_checks.sql) — Metric constraints.
-   - [`migration_v11_smart_updated_at.sql`](../../supabase/migration_v11_smart_updated_at.sql) — Shelf order preservation.
+The Flutter client (`apps/client`) runs on Android, Windows, and Linux, supporting two remote synchronization modes:
+
+### Option A: Direct Supabase Sync (Serverless)
+1. In the Supabase SQL Editor, run [`supabase/migration_v08_rls.sql`](../../supabase/migration_v08_rls.sql) to enable Row Level Security.
+2. In the Flutter client, navigate to **Settings -> Remote Sync**:
+   * **Backend**: `Supabase`
+   * **URL**: Your Supabase Project URL
+   * **Key**: Your public `anon` key
+   * Click **Save & Reconnect** -> **Sync Now**.
+
+### Option B: Web Server REST API Sync
+1. In the Flutter client, navigate to **Settings -> Remote Sync**:
+   * **Backend**: `Self-Hosted REST`
+   * **URL**: Your Vercel deployment URL (`https://<app-name>.vercel.app`)
+   * **API Key**: Your `APP_PASSWORD`
+   * Click **Save & Reconnect** -> **Sync Now**.
 
 ---
 
-## ❓ Troubleshooting
+## Database Migrations
 
-* **"Deploy failed" on Vercel**: Check your Vercel deployment logs. Usually caused by a typo in `SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` environment variables.
-* **"Incorrect password" on Login**: Verify `APP_PASSWORD` has no trailing whitespace in Vercel settings, then redeploy.
-* **App loads but adding a book fails**: Confirm `schema.sql` was executed in Supabase SQL editor and the `books` table exists.
-* **Supabase says "Project paused"**: Free Supabase projects pause after 7 days of inactivity. Click **Restore Project** in the Supabase dashboard (takes ~1 minute with 0 data loss).
+When updating existing deployments, apply versioned SQL scripts in chronological order via the Supabase SQL Editor:
+* [`migration_v08_rls.sql`](../../supabase/migration_v08_rls.sql) — Direct mobile sync RLS.
+* [`migration_v09_progress_rpc.sql`](../../supabase/migration_v09_progress_rpc.sql) — Atomic progress logging RPC.
+* [`migration_v10_progression_checks.sql`](../../supabase/migration_v10_progression_checks.sql) — Metric constraints.
+* [`migration_v11_smart_updated_at.sql`](../../supabase/migration_v11_smart_updated_at.sql) — Shelf order preservation on favorite toggles.
+
+---
+
+## Troubleshooting
+
+> [!TIP]
+> **Build Failure on Vercel**: Verify that root directory is set to `apps/web` and that all four environment variables are defined.
+
+> [!TIP]
+> **Authentication Errors**: Ensure `APP_PASSWORD` in Vercel settings contains no leading or trailing whitespace. Environment variable changes require a project redeployment to take effect.
+
+> [!TIP]
+> **Paused Project**: Inactive free-tier Supabase projects pause after 7 days of inactivity. Click **Restore Project** in the Supabase Dashboard to resume with zero data loss.

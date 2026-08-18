@@ -2,6 +2,9 @@
   "name": "reading-tracker",
   "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
     "dev:web": "pnpm --filter web dev",
     "dev:client": "cd apps/client && flutter run",

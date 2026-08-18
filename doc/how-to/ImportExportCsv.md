@@ -1,46 +1,45 @@
-# How-To: Backup, Restore & Migrate via CSV
+# Library Backup & CSV Migration
 
-This guide explains how to export your entire reading collection to standard CSV for offline backups, and how to bulk import data from external spreadsheets or existing reading logs.
-
----
-
-## 📤 Exporting Your Library
-
-### Via Web Dashboard
-1. Open the web app at your deployment URL or `http://localhost:3000`.
-2. Click the **Export** button in the top navigation bar (or navigate directly to `/api/export`).
-3. Your browser will download a timestamped CSV file (e.g. `reading-tracker-export-2026-08-18.csv`).
-
-### Security & Sanitization
-* All exported text fields are automatically sanitized to prevent **CSV Formula Injection** (`=`, `+`, `-`, `@` triggers are escaped with prepended single quotes).
+Procedures for exporting library data to CSV for backups and importing external reading records.
 
 ---
 
-## 📥 Importing Data from CSV
+## Exporting Library Data
 
-### Supported CSV Format
-Your CSV file should include standard header names. The importer is flexible and recognizes multiple variations of column names:
+### Web Interface
+1. In the web dashboard navigation, click **Export** (or fetch `/api/export`).
+2. The browser downloads a timestamped CSV file: `reading-tracker-export-<DATE>.csv`.
 
-| Standard Column | Supported Aliases | Type | Example |
+> [!NOTE]
+> **CSV Formula Injection Defense**: All exported string fields are automatically sanitized. Leading characters matching `=`, `+`, `-`, or `@` are escaped with prepended single quotes so opening exports in Excel or Google Sheets cannot execute external formulas.
+
+---
+
+## Importing CSV Records
+
+### Column Schema & Aliases
+
+The importer recognizes standard column names and common third-party spreadsheet headers:
+
+| Field | Recognized Headers | Type | Example |
 | :--- | :--- | :--- | :--- |
 | `title` | `Title`, `Name`, `Book Title` | String (Required) | *The King in Yellow* |
 | `author` | `Author`, `Writer` | String | *Robert W. Chambers* |
-| `status` | `Status`, `Reading Status` | Enum | `Reading`, `Completed`, `Plan to Read`, `On Hold`, `Dropped` |
-| `progress` | `Progress`, `Current Unit`, `Current Page` | Integer | `30` |
-| `total_units` | `Total Units`, `Total Pages`, `Total Chapters` | Integer | `203` |
-| `unit_type` | `Unit Type`, `Unit` | String | `pages`, `chapters`, `volumes`, `words` |
-| `rating` | `Rating`, `Score` | Number | `4.5` (0.5 to 5.0) |
-| `genre_tags` | `Tags`, `Genres`, `Genre` | String (Comma-separated) | `Horror, Classic, Supernatural` |
+| `status` | `Status`, `Reading Status` | Enum | `Reading`, `Completed`, `Plan to Read` |
+| `progress` | `Progress`, `Current Unit`, `Current Page` | Numeric | `30` |
+| `total_units` | `Total Units`, `Total Pages`, `Total Chapters` | Numeric | `203` |
+| `unit_type` | `Unit Type`, `Unit` | String | `pages`, `chapters`, `volumes` |
+| `rating` | `Rating`, `Score` | Numeric | `4.5` (0.5 – 5.0) |
+| `genre_tags` | `Tags`, `Genres`, `Genre` | String (Comma-separated) | `Horror, Classic` |
 | `is_favorite` | `Favorite`, `Fav` | Boolean | `true`, `false`, `1`, `0` |
-| `date_started` | `Date Started`, `Start Date` | ISO Date | `2026-08-01` |
-| `date_finished` | `Date Finished`, `Finish Date` | ISO Date | `2026-08-18` |
+| `date_started` | `Date Started`, `Start Date` | ISO 8601 Date | `2026-08-01` |
+| `date_finished` | `Date Finished`, `Finish Date` | ISO 8601 Date | `2026-08-18` |
 
 ---
 
-### Executing Bulk Import
+## Execution
 
-1. Click the **Import** button in the top navigation bar.
+1. In the web navigation bar, click **Import**.
 2. Select your `.csv` file.
-3. Review the preview dialog showing total valid entries detected.
-4. Click **Confirm Import**.
-5. The importer performs batch upsert operations against the database and reports success counts.
+3. Review the parsed record preview.
+4. Click **Confirm Import** to perform the batch upsert against the database.
