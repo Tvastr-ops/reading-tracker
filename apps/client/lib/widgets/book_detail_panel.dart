@@ -16,6 +16,7 @@ class BookDetailPanel extends StatefulWidget {
   final VoidCallback onDelete;
   final VoidCallback? onToggleFavorite;
   final Future<void> Function(int chaptersDelta, int volumesDelta)? onQuickIncrement;
+  final ValueChanged<String>? onTagClick;
 
   const BookDetailPanel({
     super.key,
@@ -27,6 +28,7 @@ class BookDetailPanel extends StatefulWidget {
     required this.onDelete,
     this.onToggleFavorite,
     this.onQuickIncrement,
+    this.onTagClick,
   });
 
   @override
@@ -232,6 +234,32 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                                   backgroundColor: const Color(0xFFFFB800),
                                   textColor: AppColors.inkBlack,
                                 ),
+                              if (b.genreTags != null && b.genreTags!.trim().isNotEmpty)
+                                ...b.genreTags!
+                                    .split(',')
+                                    .map((t) => t.trim())
+                                    .where((t) => t.isNotEmpty)
+                                    .map(
+                                      (tag) => MouseRegion(
+                                        cursor: widget.onTagClick != null
+                                            ? SystemMouseCursors.click
+                                            : SystemMouseCursors.basic,
+                                        child: GestureDetector(
+                                          onTap: widget.onTagClick != null
+                                              ? () => widget.onTagClick!(tag)
+                                              : null,
+                                          child: BrutalistBadge(
+                                            label: '#$tag',
+                                            backgroundColor: isDark
+                                                ? const Color(0xFF2A2A2A)
+                                                : const Color(0xFFE5E2D0),
+                                            textColor: isDark
+                                                ? AppColors.darkInkWhite
+                                                : AppColors.inkBlack,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                             ],
                           ),
                         ],
