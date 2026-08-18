@@ -15,6 +15,10 @@ build/
 windows/flutter/ephemeral/
 linux/flutter/ephemeral/
 
+# Generated Flutter Plugin Registrants
+**/GeneratedPluginRegistrant.java
+android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+
 # Android Keystores & Signing Keys
 *.keystore
 *.jks
