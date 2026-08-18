@@ -21,6 +21,7 @@ class ThemeService extends ChangeNotifier {
   static const String _keyShowReadingCarousel = 'app_show_reading_carousel';
   static const String _keyCompactMode = 'app_compact_mode';
   static const String _keyHighRefreshRate = 'app_high_refresh_rate';
+  static const String _keyEnablePaperTexture = 'app_enable_paper_texture';
 
   ThemeMode _themeMode = ThemeMode.system;
   AppThemeVariant _lightVariant = AppThemeVariant.classicPaperback;
@@ -31,6 +32,7 @@ class ThemeService extends ChangeNotifier {
   bool _showReadingCarousel = true;
   bool _compactMode = false;
   bool _highRefreshRate = true;
+  bool _enablePaperTexture = true;
   bool _isFullscreen = false;
 
   ColorScheme? _lightDynamic;
@@ -47,6 +49,7 @@ class ThemeService extends ChangeNotifier {
   bool get showReadingCarousel => _showReadingCarousel;
   bool get compactMode => _compactMode;
   bool get highRefreshRate => _highRefreshRate;
+  bool get enablePaperTexture => _enablePaperTexture;
   bool get isFullscreen => _isFullscreen;
 
   ThemeData get currentLightTheme {
@@ -105,6 +108,7 @@ class ThemeService extends ChangeNotifier {
     _showReadingCarousel = prefs.getBool(_keyShowReadingCarousel) ?? true;
     _compactMode = prefs.getBool(_keyCompactMode) ?? false;
     _highRefreshRate = prefs.getBool(_keyHighRefreshRate) ?? true;
+    _enablePaperTexture = prefs.getBool(_keyEnablePaperTexture) ?? true;
 
     // Apply native edge-to-edge transparent system UI
     if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
@@ -248,6 +252,15 @@ class ThemeService extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyDarkVariant, variant.name);
+  }
+
+  Future<void> setEnablePaperTexture(bool val) async {
+    if (_enablePaperTexture == val) return;
+    _enablePaperTexture = val;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyEnablePaperTexture, val);
   }
 }
 
