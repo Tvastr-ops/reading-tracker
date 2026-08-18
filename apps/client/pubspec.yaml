@@ -1,7 +1,7 @@
 name: reading_tracker_app
 description: "Paperback Reader client app for Android, Web, Windows, and Linux."
 publish_to: "none"
-version: 1.6.0+350
+version: 1.6.0-a+352
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
