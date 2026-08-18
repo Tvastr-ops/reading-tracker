@@ -8,12 +8,15 @@ void main() {
       expect(UpdateService.compareVersions('v1.6.0c', 'v1.6.0b'), greaterThan(0));
       expect(UpdateService.compareVersions('v1.6.0a', 'v1.6.0c'), lessThan(0));
       expect(UpdateService.compareVersions('v1.6.0c', 'v1.6.0c'), equals(0));
+      expect(UpdateService.compareVersions('v1.7.0a', 'v1.7.0'), greaterThan(0));
+      expect(UpdateService.compareVersions('v1.7.0', 'v1.7.0'), equals(0));
     });
 
     test('compareVersions accurately compares minor rollover releases', () {
       expect(UpdateService.compareVersions('v1.7.0', 'v1.6.0c'), greaterThan(0));
       expect(UpdateService.compareVersions('v1.7.0a', 'v1.7.0'), greaterThan(0));
       expect(UpdateService.compareVersions('v1.6.0c', 'v1.7.0'), lessThan(0));
+      expect(UpdateService.compareVersions('v1.8.0', 'v1.7.0c'), greaterThan(0));
     });
 
     test('compareVersions accurately compares major generation rollover', () {
@@ -22,10 +25,10 @@ void main() {
     });
 
     test('isNewerVersion flags updates correctly', () {
-      expect(UpdateService.isNewerVersion('v1.7.0', 'v1.6.0c'), isTrue);
-      expect(UpdateService.isNewerVersion('v1.6.0d', 'v1.6.0c'), isTrue);
-      expect(UpdateService.isNewerVersion('v1.6.0c', 'v1.6.0c'), isFalse);
-      expect(UpdateService.isNewerVersion('v1.6.0b', 'v1.6.0c'), isFalse);
+      expect(UpdateService.isNewerVersion('v1.7.0a', 'v1.7.0'), isTrue);
+      expect(UpdateService.isNewerVersion('v1.8.0', 'v1.7.0'), isTrue);
+      expect(UpdateService.isNewerVersion('v1.7.0', 'v1.7.0'), isFalse);
+      expect(UpdateService.isNewerVersion('v1.6.0c', 'v1.7.0'), isFalse);
     });
   });
 }

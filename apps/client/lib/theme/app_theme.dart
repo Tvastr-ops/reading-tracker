@@ -26,19 +26,25 @@ class AppColors {
 }
 
 enum AppThemeVariant {
-  // Light Variants (5)
+  // Light Variants (8)
   classicPaperback,
   mangaInkpaper,
   matchaWashi,
   retroPulpComic,
   sakuraManuscript,
+  nordicGlacier,
+  draftingVellum,
+  crumpledKraft,
 
-  // Dark Variants (5)
+  // Dark Variants (8)
   charcoalLedger,
-  nordicNight,
   mangaNoir,
+  midnightMatcha,
   darkAcademia,
+  midnightSakura,
+  nordicNight,
   cyanotypeBlueprint,
+  charredPapyrus,
 }
 
 extension AppThemeVariantMeta on AppThemeVariant {
@@ -46,6 +52,7 @@ extension AppThemeVariantMeta on AppThemeVariant {
 
   String get label {
     switch (this) {
+      // Light
       case AppThemeVariant.classicPaperback:
         return 'Classic Paperback';
       case AppThemeVariant.mangaInkpaper:
@@ -56,41 +63,70 @@ extension AppThemeVariantMeta on AppThemeVariant {
         return 'Retro Pulp Comic';
       case AppThemeVariant.sakuraManuscript:
         return 'Sakura Manuscript';
+      case AppThemeVariant.nordicGlacier:
+        return 'Nordic Glacier';
+      case AppThemeVariant.draftingVellum:
+        return 'Drafting Vellum';
+      case AppThemeVariant.crumpledKraft:
+        return 'Crumpled Kraft';
+
+      // Dark
       case AppThemeVariant.charcoalLedger:
         return 'Charcoal Ledger';
-      case AppThemeVariant.nordicNight:
-        return 'Nordic Night (Fjord)';
       case AppThemeVariant.mangaNoir:
         return 'Manga Noir (OLED)';
+      case AppThemeVariant.midnightMatcha:
+        return 'Midnight Matcha';
       case AppThemeVariant.darkAcademia:
         return 'Dark Academia';
+      case AppThemeVariant.midnightSakura:
+        return 'Midnight Sakura';
+      case AppThemeVariant.nordicNight:
+        return 'Nordic Night (Fjord)';
       case AppThemeVariant.cyanotypeBlueprint:
         return 'Cyanotype Blueprint';
+      case AppThemeVariant.charredPapyrus:
+        return 'Charred Papyrus';
     }
   }
 
   String get description {
     switch (this) {
+      // Light
       case AppThemeVariant.classicPaperback:
         return 'Warm vintage cream with crimson red bookmark.';
       case AppThemeVariant.mangaInkpaper:
-        return 'Crisp newsprint & deep manga comic ink.';
+        return 'Crisp newsprint & deep comic cobalt ink.';
       case AppThemeVariant.matchaWashi:
-        return 'Japanese washi paper with ceremonial matcha.';
+        return 'Japanese washi paper with ceremonial matcha green.';
       case AppThemeVariant.retroPulpComic:
-        return 'Aged yellowed pulp & high-contrast comic strip.';
+        return 'Aged yellowed pulp & vintage goldenrod amber.';
       case AppThemeVariant.sakuraManuscript:
-        return 'Pale sakura cream with vivid blossom crimson.';
+        return 'Pale sakura cream with blossom rose crimson.';
+      case AppThemeVariant.nordicGlacier:
+        return 'Crisp arctic glacier paper with fjord sky blue.';
+      case AppThemeVariant.draftingVellum:
+        return 'Drafting parchment with technical blueprint orange.';
+      case AppThemeVariant.crumpledKraft:
+        return 'Raw unbleached kraft notebook with terracotta wax seal.';
+
+      // Dark
       case AppThemeVariant.charcoalLedger:
         return 'Warm charcoal slate with off-white paper ink.';
-      case AppThemeVariant.nordicNight:
-        return 'Deep arctic midnight slate with fjord cyan.';
       case AppThemeVariant.mangaNoir:
         return 'True pitch black OLED with neon manga red.';
+      case AppThemeVariant.midnightMatcha:
+        return 'Forest charcoal slate with luminous matcha jade.';
       case AppThemeVariant.darkAcademia:
-        return 'Mahogany & leather with candlelight parchment.';
+        return 'Mahogany & leather with candlelight parchment gold.';
+      case AppThemeVariant.midnightSakura:
+        return 'Deep nocturnal plum with glowing blossom magenta.';
+      case AppThemeVariant.nordicNight:
+        return 'Deep arctic midnight slate with fjord cyan.';
       case AppThemeVariant.cyanotypeBlueprint:
-        return 'Drafting navy manuscript with safety orange.';
+        return 'Drafting navy manuscript with safety drafting orange.';
+      case AppThemeVariant.charredPapyrus:
+        return 'Fibrous black kraft slate with warm terracotta amber.';
     }
   }
 
@@ -101,18 +137,25 @@ extension AppThemeVariantMeta on AppThemeVariant {
       case AppThemeVariant.matchaWashi:
       case AppThemeVariant.retroPulpComic:
       case AppThemeVariant.sakuraManuscript:
+      case AppThemeVariant.nordicGlacier:
+      case AppThemeVariant.draftingVellum:
+      case AppThemeVariant.crumpledKraft:
         return false;
       case AppThemeVariant.charcoalLedger:
-      case AppThemeVariant.nordicNight:
       case AppThemeVariant.mangaNoir:
+      case AppThemeVariant.midnightMatcha:
       case AppThemeVariant.darkAcademia:
+      case AppThemeVariant.midnightSakura:
+      case AppThemeVariant.nordicNight:
       case AppThemeVariant.cyanotypeBlueprint:
+      case AppThemeVariant.charredPapyrus:
         return true;
     }
   }
 
   Color get previewCanvas {
     switch (this) {
+      // Light
       case AppThemeVariant.classicPaperback:
         return const Color(0xFFFCFAED);
       case AppThemeVariant.mangaInkpaper:
@@ -123,21 +166,36 @@ extension AppThemeVariantMeta on AppThemeVariant {
         return const Color(0xFFFAF4D3);
       case AppThemeVariant.sakuraManuscript:
         return const Color(0xFFFCF8F8);
+      case AppThemeVariant.nordicGlacier:
+        return const Color(0xFFF0F9FF);
+      case AppThemeVariant.draftingVellum:
+        return const Color(0xFFFFFDF5);
+      case AppThemeVariant.crumpledKraft:
+        return const Color(0xFFF2E8D5);
+
+      // Dark
       case AppThemeVariant.charcoalLedger:
         return const Color(0xFF12130F);
-      case AppThemeVariant.nordicNight:
-        return const Color(0xFF0C121E);
       case AppThemeVariant.mangaNoir:
         return const Color(0xFF000000);
+      case AppThemeVariant.midnightMatcha:
+        return const Color(0xFF111813);
       case AppThemeVariant.darkAcademia:
         return const Color(0xFF15100D);
+      case AppThemeVariant.midnightSakura:
+        return const Color(0xFF170F1C);
+      case AppThemeVariant.nordicNight:
+        return const Color(0xFF0C121E);
       case AppThemeVariant.cyanotypeBlueprint:
         return const Color(0xFF0A1220);
+      case AppThemeVariant.charredPapyrus:
+        return const Color(0xFF14120E);
     }
   }
 
   Color get previewCard {
     switch (this) {
+      // Light
       case AppThemeVariant.classicPaperback:
         return const Color(0xFFF0EEE2);
       case AppThemeVariant.mangaInkpaper:
@@ -148,41 +206,70 @@ extension AppThemeVariantMeta on AppThemeVariant {
         return const Color(0xFFEFE8BE);
       case AppThemeVariant.sakuraManuscript:
         return const Color(0xFFF5EDED);
+      case AppThemeVariant.nordicGlacier:
+        return const Color(0xFFE0F2FE);
+      case AppThemeVariant.draftingVellum:
+        return const Color(0xFFFBF4E4);
+      case AppThemeVariant.crumpledKraft:
+        return const Color(0xFFE5D7BE);
+
+      // Dark
       case AppThemeVariant.charcoalLedger:
         return const Color(0xFF1E2018);
-      case AppThemeVariant.nordicNight:
-        return const Color(0xFF151F2E);
       case AppThemeVariant.mangaNoir:
         return const Color(0xFF141414);
+      case AppThemeVariant.midnightMatcha:
+        return const Color(0xFF1A261D);
       case AppThemeVariant.darkAcademia:
         return const Color(0xFF221A15);
+      case AppThemeVariant.midnightSakura:
+        return const Color(0xFF23162B);
+      case AppThemeVariant.nordicNight:
+        return const Color(0xFF151F2E);
       case AppThemeVariant.cyanotypeBlueprint:
         return const Color(0xFF122036);
+      case AppThemeVariant.charredPapyrus:
+        return const Color(0xFF1F1B15);
     }
   }
 
   Color get previewAccent {
     switch (this) {
+      // Light
       case AppThemeVariant.classicPaperback:
         return const Color(0xFFBB0114);
       case AppThemeVariant.mangaInkpaper:
-        return const Color(0xFFFF3B30);
+        return const Color(0xFF1D4ED8); // Deep Cobalt Comic Ink
       case AppThemeVariant.matchaWashi:
-        return const Color(0xFF3D6B4F);
+        return const Color(0xFF2D6A4F); // Ceremonial Matcha Green
       case AppThemeVariant.retroPulpComic:
-        return const Color(0xFFDC2626);
+        return const Color(0xFFD97706); // Goldenrod Amber
       case AppThemeVariant.sakuraManuscript:
-        return const Color(0xFFE11D48);
+        return const Color(0xFFE11D48); // Blossom Rose
+      case AppThemeVariant.nordicGlacier:
+        return const Color(0xFF0284C7); // Fjord Cyan
+      case AppThemeVariant.draftingVellum:
+        return const Color(0xFFEA580C); // Drafting Orange
+      case AppThemeVariant.crumpledKraft:
+        return const Color(0xFFC2410C); // Terracotta Wax Seal
+
+      // Dark
       case AppThemeVariant.charcoalLedger:
         return const Color(0xFFE02929);
-      case AppThemeVariant.nordicNight:
-        return const Color(0xFF38BDF8);
       case AppThemeVariant.mangaNoir:
         return const Color(0xFFFF2E54);
+      case AppThemeVariant.midnightMatcha:
+        return const Color(0xFF34D399); // Luminous Matcha Jade
       case AppThemeVariant.darkAcademia:
-        return const Color(0xFFD97706);
+        return const Color(0xFFE0A96D); // Candlelight Gold
+      case AppThemeVariant.midnightSakura:
+        return const Color(0xFFFB7185); // Glowing Blossom Rose
+      case AppThemeVariant.nordicNight:
+        return const Color(0xFF38BDF8); // Arctic Fjord Cyan
       case AppThemeVariant.cyanotypeBlueprint:
-        return const Color(0xFFF97316);
+        return const Color(0xFFF97316); // Safety Drafting Orange
+      case AppThemeVariant.charredPapyrus:
+        return const Color(0xFFEA580C); // Warm Terracotta Amber
     }
   }
 }
@@ -282,6 +369,7 @@ class AppTheme {
 
   static AppThemeDetails getDetails(AppThemeVariant variant) {
     switch (variant) {
+      // 1. Flagship Paperback Pair
       case AppThemeVariant.classicPaperback:
         return const AppThemeDetails(
           canvasColor: Color(0xFFFCFAED),
@@ -292,50 +380,6 @@ class AppTheme {
           accentColor: Color(0xFFBB0114),
           secondaryAccent: Color(0xFFD97706),
           borderColor: Color(0xFF1B1C15),
-        );
-      case AppThemeVariant.mangaInkpaper:
-        return const AppThemeDetails(
-          canvasColor: Color(0xFFF6F6F6),
-          cardColor: Color(0xFFEBEAE5),
-          cardHighColor: Color(0xFFDFDED8),
-          inkColor: Color(0xFF0A0A0A),
-          inkMutedColor: Color(0xFF666666),
-          accentColor: Color(0xFFFF3B30),
-          secondaryAccent: Color(0xFF2563EB),
-          borderColor: Color(0xFF0A0A0A),
-        );
-      case AppThemeVariant.matchaWashi:
-        return const AppThemeDetails(
-          canvasColor: Color(0xFFF7F6EE),
-          cardColor: Color(0xFFEBE9DC),
-          cardHighColor: Color(0xFFE2E0CF),
-          inkColor: Color(0xFF18231C),
-          inkMutedColor: Color(0xFF55665C),
-          accentColor: Color(0xFF3D6B4F),
-          secondaryAccent: Color(0xFFB8860B),
-          borderColor: Color(0xFF18231C),
-        );
-      case AppThemeVariant.retroPulpComic:
-        return const AppThemeDetails(
-          canvasColor: Color(0xFFFAF4D3),
-          cardColor: Color(0xFFEFE8BE),
-          cardHighColor: Color(0xFFE4DCAC),
-          inkColor: Color(0xFF0A0A0A),
-          inkMutedColor: Color(0xFF5C5446),
-          accentColor: Color(0xFFDC2626),
-          secondaryAccent: Color(0xFFEAB308),
-          borderColor: Color(0xFF0A0A0A),
-        );
-      case AppThemeVariant.sakuraManuscript:
-        return const AppThemeDetails(
-          canvasColor: Color(0xFFFCF8F8),
-          cardColor: Color(0xFFF5EDED),
-          cardHighColor: Color(0xFFECE2E2),
-          inkColor: Color(0xFF201A1E),
-          inkMutedColor: Color(0xFF6E5D66),
-          accentColor: Color(0xFFE11D48),
-          secondaryAccent: Color(0xFFDB2777),
-          borderColor: Color(0xFF201A1E),
         );
       case AppThemeVariant.charcoalLedger:
         return const AppThemeDetails(
@@ -348,16 +392,18 @@ class AppTheme {
           secondaryAccent: Color(0xFFF59E0B),
           borderColor: Color(0xFFF6F4E8),
         );
-      case AppThemeVariant.nordicNight:
+
+      // 2. Manga & Graphic Novel Pair
+      case AppThemeVariant.mangaInkpaper:
         return const AppThemeDetails(
-          canvasColor: Color(0xFF0C121E),
-          cardColor: Color(0xFF151F2E),
-          cardHighColor: Color(0xFF1F2D40),
-          inkColor: Color(0xFFE2E8F0),
-          inkMutedColor: Color(0xFF94A3B8),
-          accentColor: Color(0xFF38BDF8),
-          secondaryAccent: Color(0xFFF43F5E),
-          borderColor: Color(0xFFE2E8F0),
+          canvasColor: Color(0xFFF6F6F6),
+          cardColor: Color(0xFFEBEAE5),
+          cardHighColor: Color(0xFFDFDED8),
+          inkColor: Color(0xFF0A0A0A),
+          inkMutedColor: Color(0xFF666666),
+          accentColor: Color(0xFF1D4ED8),
+          secondaryAccent: Color(0xFF0284C7),
+          borderColor: Color(0xFF0A0A0A),
         );
       case AppThemeVariant.mangaNoir:
         return const AppThemeDetails(
@@ -370,6 +416,43 @@ class AppTheme {
           secondaryAccent: Color(0xFF00F0FF),
           borderColor: Color(0xFFFFFFFF),
         );
+
+      // 3. Japanese Botanical / Matcha Pair
+      case AppThemeVariant.matchaWashi:
+        return const AppThemeDetails(
+          canvasColor: Color(0xFFF7F6EE),
+          cardColor: Color(0xFFEBE9DC),
+          cardHighColor: Color(0xFFE2E0CF),
+          inkColor: Color(0xFF18231C),
+          inkMutedColor: Color(0xFF55665C),
+          accentColor: Color(0xFF2D6A4F),
+          secondaryAccent: Color(0xFFB8860B),
+          borderColor: Color(0xFF18231C),
+        );
+      case AppThemeVariant.midnightMatcha:
+        return const AppThemeDetails(
+          canvasColor: Color(0xFF111813),
+          cardColor: Color(0xFF1A261D),
+          cardHighColor: Color(0xFF243628),
+          inkColor: Color(0xFFE8F5E9),
+          inkMutedColor: Color(0xFF81C784),
+          accentColor: Color(0xFF34D399),
+          secondaryAccent: Color(0xFFA7F3D0),
+          borderColor: Color(0xFFE8F5E9),
+        );
+
+      // 4. Pulp & Academia Pair
+      case AppThemeVariant.retroPulpComic:
+        return const AppThemeDetails(
+          canvasColor: Color(0xFFFAF4D3),
+          cardColor: Color(0xFFEFE8BE),
+          cardHighColor: Color(0xFFE4DCAC),
+          inkColor: Color(0xFF0A0A0A),
+          inkMutedColor: Color(0xFF5C5446),
+          accentColor: Color(0xFFD97706),
+          secondaryAccent: Color(0xFFDC2626),
+          borderColor: Color(0xFF0A0A0A),
+        );
       case AppThemeVariant.darkAcademia:
         return const AppThemeDetails(
           canvasColor: Color(0xFF15100D),
@@ -377,9 +460,70 @@ class AppTheme {
           cardHighColor: Color(0xFF2E241E),
           inkColor: Color(0xFFEFE3D3),
           inkMutedColor: Color(0xFFA89887),
-          accentColor: Color(0xFFD97706),
+          accentColor: Color(0xFFE0A96D),
           secondaryAccent: Color(0xFFB91C1C),
           borderColor: Color(0xFFEFE3D3),
+        );
+
+      // 5. Sakura Manuscript Pair
+      case AppThemeVariant.sakuraManuscript:
+        return const AppThemeDetails(
+          canvasColor: Color(0xFFFCF8F8),
+          cardColor: Color(0xFFF5EDED),
+          cardHighColor: Color(0xFFECE2E2),
+          inkColor: Color(0xFF201A1E),
+          inkMutedColor: Color(0xFF6E5D66),
+          accentColor: Color(0xFFE11D48),
+          secondaryAccent: Color(0xFFDB2777),
+          borderColor: Color(0xFF201A1E),
+        );
+      case AppThemeVariant.midnightSakura:
+        return const AppThemeDetails(
+          canvasColor: Color(0xFF170F1C),
+          cardColor: Color(0xFF23162B),
+          cardHighColor: Color(0xFF321F3D),
+          inkColor: Color(0xFFFDF2F8),
+          inkMutedColor: Color(0xFFF472B6),
+          accentColor: Color(0xFFFB7185),
+          secondaryAccent: Color(0xFFE879F9),
+          borderColor: Color(0xFFFDF2F8),
+        );
+
+      // 6. Nordic Arctic Pair
+      case AppThemeVariant.nordicGlacier:
+        return const AppThemeDetails(
+          canvasColor: Color(0xFFF0F9FF),
+          cardColor: Color(0xFFE0F2FE),
+          cardHighColor: Color(0xFFBAE6FD),
+          inkColor: Color(0xFF0C1A2E),
+          inkMutedColor: Color(0xFF475569),
+          accentColor: Color(0xFF0284C7),
+          secondaryAccent: Color(0xFF0EA5E9),
+          borderColor: Color(0xFF0C1A2E),
+        );
+      case AppThemeVariant.nordicNight:
+        return const AppThemeDetails(
+          canvasColor: Color(0xFF0C121E),
+          cardColor: Color(0xFF151F2E),
+          cardHighColor: Color(0xFF1F2D40),
+          inkColor: Color(0xFFE2E8F0),
+          inkMutedColor: Color(0xFF94A3B8),
+          accentColor: Color(0xFF38BDF8),
+          secondaryAccent: Color(0xFFF43F5E),
+          borderColor: Color(0xFFE2E8F0),
+        );
+
+      // 7. Drafting & Blueprint Pair
+      case AppThemeVariant.draftingVellum:
+        return const AppThemeDetails(
+          canvasColor: Color(0xFFFFFDF5),
+          cardColor: Color(0xFFFBF4E4),
+          cardHighColor: Color(0xFFF3E7CA),
+          inkColor: Color(0xFF181511),
+          inkMutedColor: Color(0xFF6B5F4D),
+          accentColor: Color(0xFFEA580C),
+          secondaryAccent: Color(0xFF0284C7),
+          borderColor: Color(0xFF181511),
         );
       case AppThemeVariant.cyanotypeBlueprint:
         return const AppThemeDetails(
@@ -391,6 +535,30 @@ class AppTheme {
           accentColor: Color(0xFFF97316),
           secondaryAccent: Color(0xFF38BDF8),
           borderColor: Color(0xFFE0F2FE),
+        );
+
+      // 8. Crumpled Kraft & Charred Papyrus Pair
+      case AppThemeVariant.crumpledKraft:
+        return const AppThemeDetails(
+          canvasColor: Color(0xFFF2E8D5),
+          cardColor: Color(0xFFE5D7BE),
+          cardHighColor: Color(0xFFD8C7AA),
+          inkColor: Color(0xFF221D18),
+          inkMutedColor: Color(0xFF6E6152),
+          accentColor: Color(0xFFC2410C),
+          secondaryAccent: Color(0xFF9A3412),
+          borderColor: Color(0xFF221D18),
+        );
+      case AppThemeVariant.charredPapyrus:
+        return const AppThemeDetails(
+          canvasColor: Color(0xFF14120E),
+          cardColor: Color(0xFF1F1B15),
+          cardHighColor: Color(0xFF2C261E),
+          inkColor: Color(0xFFF5EEDB),
+          inkMutedColor: Color(0xFFA89880),
+          accentColor: Color(0xFFEA580C),
+          secondaryAccent: Color(0xFFF97316),
+          borderColor: Color(0xFFF5EEDB),
         );
     }
   }
@@ -450,20 +618,19 @@ class AppTheme {
         color: d.inkColor,
       ),
       bodyLarge: GoogleFonts.plusJakartaSans(
-        fontSize: 15,
-        fontWeight: FontWeight.w500,
+        fontSize: 14,
         color: d.inkColor,
+        fontWeight: FontWeight.w600,
       ),
       bodyMedium: GoogleFonts.plusJakartaSans(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        color: d.inkColor,
-      ),
-      labelLarge: GoogleFonts.plusJakartaSans(
         fontSize: 13,
-        fontWeight: FontWeight.w800,
         color: d.inkColor,
-        letterSpacing: 0.8,
+        fontWeight: FontWeight.w500,
+      ),
+      bodySmall: GoogleFonts.plusJakartaSans(
+        fontSize: 11,
+        color: d.inkMutedColor,
+        fontWeight: FontWeight.w500,
       ),
     );
 
@@ -471,62 +638,39 @@ class AppTheme {
       useMaterial3: true,
       brightness: isDark ? Brightness.dark : Brightness.light,
       scaffoldBackgroundColor: d.canvasColor,
+      canvasColor: d.canvasColor,
       cardColor: d.cardColor,
-      textTheme: textTheme,
+      dividerColor: isDark ? Colors.white12 : Colors.black12,
       extensions: [d],
-      colorScheme: ColorScheme(
-        brightness: isDark ? Brightness.dark : Brightness.light,
-        primary: d.accentColor,
-        onPrimary: Colors.white,
-        primaryContainer: d.accentColor.withValues(alpha: 0.2),
-        onPrimaryContainer: d.inkColor,
-        secondary: d.secondaryAccent,
-        onSecondary: Colors.white,
-        surface: d.cardColor,
-        onSurface: d.inkColor,
-        error: const Color(0xFFBA1A1A),
-        onError: Colors.white,
-      ),
+      colorScheme: isDark
+          ? ColorScheme.dark(
+              primary: d.accentColor,
+              onPrimary: Colors.white,
+              surface: d.cardColor,
+              onSurface: d.inkColor,
+              outline: d.borderColor,
+            )
+          : ColorScheme.light(
+              primary: d.accentColor,
+              onPrimary: Colors.white,
+              surface: d.cardColor,
+              onSurface: d.inkColor,
+              outline: d.borderColor,
+            ),
+      textTheme: textTheme,
       appBarTheme: AppBarTheme(
         backgroundColor: d.canvasColor,
         foregroundColor: d.inkColor,
         elevation: 0,
-        centerTitle: false,
-        systemOverlayStyle: SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-          statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
-          systemNavigationBarColor: d.canvasColor,
-          systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-        ),
-        titleTextStyle: GoogleFonts.lora(
-          fontSize: 20,
+        scrolledUnderElevation: 0,
+        systemOverlayStyle: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+        titleTextStyle: GoogleFonts.plusJakartaSans(
+          fontSize: 18,
           fontWeight: FontWeight.w900,
+          letterSpacing: -0.5,
           color: d.inkColor,
-          letterSpacing: 0.5,
         ),
-      ),
-      dividerTheme: DividerThemeData(
-        color: d.borderColor,
-        thickness: 1.5,
-        space: 1.5,
-      ),
-      scrollbarTheme: ScrollbarThemeData(
-        thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.dragged) || states.contains(WidgetState.hovered)) {
-            return d.accentColor;
-          }
-          return d.borderColor.withValues(alpha: isDark ? 0.45 : 0.35);
-        }),
-        trackColor: WidgetStateProperty.all(Colors.transparent),
-        radius: Radius.zero,
-        thickness: WidgetStateProperty.all(8.0),
-        thumbVisibility: WidgetStateProperty.all(true),
-        interactive: true,
       ),
     );
   }
-
-  static ThemeData get lightTheme => buildTheme(AppThemeVariant.classicPaperback);
-  static ThemeData get darkTheme => buildTheme(AppThemeVariant.charcoalLedger);
 }

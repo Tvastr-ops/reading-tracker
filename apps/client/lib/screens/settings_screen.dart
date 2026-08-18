@@ -379,7 +379,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'ABOUT PAPERBACK',
           _isAboutExpanded,
           () => _toggleSection(_keyPrefAbout, _isAboutExpanded, (v) => _isAboutExpanded = v),
-          badgeLabel: 'v1.6.0c',
+          badgeLabel: 'v1.7.0',
         ),
         const SizedBox(height: 6),
         if (_isAboutExpanded) ...[
@@ -484,7 +484,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   'ABOUT PAPERBACK',
                   _isAboutExpanded,
                   () => _toggleSection(_keyPrefAbout, _isAboutExpanded, (v) => _isAboutExpanded = v),
-                  badgeLabel: 'v1.6.0c',
+                  badgeLabel: 'v1.7.0',
                 ),
                 const SizedBox(height: 6),
                 if (_isAboutExpanded) ...[
@@ -728,7 +728,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1),
                 ),
                 child: const Text(
-                  'v1.6.0c',
+                  'v1.7.0',
                   style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white),
                 ),
               ),
@@ -1356,7 +1356,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const Icon(Icons.wb_sunny_outlined, size: 14),
                 const SizedBox(width: 6),
                 Text(
-                  'LIGHT PALETTES (5)',
+                  'LIGHT PALETTES (${lightVariants.length})',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -1367,8 +1367,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            ...lightVariants.map((v) => _buildPaletteCard(v, _themeService.lightVariant == v, isDark)),
-            const SizedBox(height: 12),
+            _buildVariantGrid(lightVariants, _themeService.lightVariant, isDark),
+            const SizedBox(height: 14),
           ],
 
           // Dark Palettes
@@ -1378,7 +1378,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const Icon(Icons.nightlight_round_outlined, size: 14),
                 const SizedBox(width: 6),
                 Text(
-                  'DARK PALETTES (5)',
+                  'DARK PALETTES (${darkVariants.length})',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -1389,7 +1389,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            ...darkVariants.map((v) => _buildPaletteCard(v, _themeService.darkVariant == v, isDark)),
+            _buildVariantGrid(darkVariants, _themeService.darkVariant, isDark),
           ],
         ],
       ),
@@ -1718,11 +1718,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildPaletteCard(AppThemeVariant variant, bool isSelected, bool isDark) {
+  Widget _buildVariantGrid(List<AppThemeVariant> variants, AppThemeVariant selectedVariant, bool isDark) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = constraints.maxWidth > 700
+            ? 4
+            : (constraints.maxWidth > 450 ? 3 : 2);
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+            mainAxisExtent: 74,
+          ),
+          itemCount: variants.length,
+          itemBuilder: (context, index) {
+            final v = variants[index];
+            return _buildCompactPaletteTile(v, selectedVariant == v, isDark);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildCompactPaletteTile(AppThemeVariant variant, bool isSelected, bool isDark) {
     final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+    return Tooltip(
+      message: '${variant.label}: ${variant.description}',
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: InkWell(
@@ -1734,75 +1760,85 @@ class _SettingsScreenState extends State<SettingsScreen> {
             }
           },
           child: Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             decoration: BoxDecoration(
               color: isSelected
                   ? (isDark ? AppColors.darkSurfaceHigh : Colors.white)
                   : (isDark ? AppColors.darkSurface : AppColors.paperSurface),
               border: Border.all(
-                color: isSelected ? variant.previewAccent : borderColor.withValues(alpha: 0.5),
+                color: isSelected ? variant.previewAccent : borderColor.withValues(alpha: 0.4),
                 width: isSelected ? 2.5 : 1.5,
               ),
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: borderColor,
+                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
                         offset: AppTheme.shadowOffsetSm,
                         blurRadius: 0,
                       ),
                     ]
                   : null,
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: variant.previewCanvas,
-                    border: Border.all(color: borderColor, width: 1.5),
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: 20,
-                      height: 20,
-                      color: variant.previewAccent,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        variant.label.toUpperCase(),
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 12.5,
-                          color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Triple Color Swatch
+                    Row(
+                      children: [
+                        Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: variant.previewCanvas,
+                            border: Border.all(color: borderColor, width: 1),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        variant.description,
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.65),
+                        const SizedBox(width: 3),
+                        Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: variant.previewCard,
+                            border: Border.all(color: borderColor, width: 1),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (isSelected)
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: variant.previewAccent,
-                      shape: BoxShape.circle,
+                        const SizedBox(width: 3),
+                        Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: variant.previewAccent,
+                            border: Border.all(color: borderColor, width: 1),
+                          ),
+                        ),
+                      ],
                     ),
-                    child: const Icon(Icons.check_rounded, size: 14, color: Colors.white),
+                    if (isSelected)
+                      Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: variant.previewAccent,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.check_rounded, size: 12, color: Colors.white),
+                      ),
+                  ],
+                ),
+                Text(
+                  variant.label.toUpperCase(),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 10.5,
+                    letterSpacing: -0.1,
+                    color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
