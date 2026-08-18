@@ -60,6 +60,14 @@ class LibraryScreenState extends State<LibraryScreen> {
   @override
   void initState() {
     super.initState();
+    final defaultModeStr = ThemeService.instance.defaultViewMode;
+    if (defaultModeStr == 'covers') {
+      _viewMode = LibraryViewMode.covers;
+    } else if (defaultModeStr == 'table') {
+      _viewMode = LibraryViewMode.table;
+    } else {
+      _viewMode = LibraryViewMode.cards;
+    }
     _searchFocusNode.addListener(_onSearchFocusChanged);
     _loadBooks();
   }
@@ -154,6 +162,91 @@ class LibraryScreenState extends State<LibraryScreen> {
         ),
       );
     }
+  }
+
+  void _showBookContextMenu(BuildContext context, TapDownDetails details, Book book, bool isWideScreen) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final themeDetails = Theme.of(context).extension<AppThemeDetails>();
+    final borderColor = themeDetails?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final menuBg = themeDetails?.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg);
+    final inkColor = themeDetails?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final accentColor = themeDetails?.accentColor ?? Theme.of(context).colorScheme.primary;
+
+    final position = RelativeRect.fromRect(
+      details.globalPosition & const Size(40, 40),
+      Offset.zero & MediaQuery.of(context).size,
+    );
+
+    showMenu<String>(
+      context: context,
+      position: position,
+      color: menuBg,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: borderColor, width: AppTheme.borderLight),
+        borderRadius: BorderRadius.zero,
+      ),
+      elevation: 4,
+      items: [
+        PopupMenuItem<String>(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit_outlined, size: 16, color: inkColor),
+              const SizedBox(width: 10),
+              Text('Edit Details', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: inkColor)),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'log',
+          child: Row(
+            children: [
+              Icon(Icons.edit_calendar_rounded, size: 16, color: accentColor),
+              const SizedBox(width: 10),
+              Text('Quick Log Progress', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: inkColor)),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'favorite',
+          child: Row(
+            children: [
+              Icon(
+                book.isFavorite == true ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                size: 16,
+                color: AppColors.primaryRed,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                book.isFavorite == true ? 'Unmark Favorite' : 'Mark Favorite',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: inkColor),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(height: 1),
+        const PopupMenuItem<String>(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline_rounded, size: 16, color: AppColors.primaryRed),
+              SizedBox(width: 10),
+              Text('Move to Trash', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: AppColors.primaryRed)),
+            ],
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value == 'edit') {
+        _onBookClick(book, isWideScreen);
+      } else if (value == 'log') {
+        _openQuickLog(book);
+      } else if (value == 'favorite') {
+        _toggleFavorite(book);
+      } else if (value == 'delete') {
+        _deleteBook(book);
+      }
+    });
   }
 
   void _openQuickLog(Book book) {
@@ -280,18 +373,21 @@ class LibraryScreenState extends State<LibraryScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: sheetBg,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
 
-            return SafeArea(
+            return Center(
               child: Container(
                 constraints: BoxConstraints(
+                  maxWidth: 540,
                   maxHeight: MediaQuery.of(context).size.height * 0.85,
                 ),
+                margin: const EdgeInsets.symmetric(horizontal: 16),
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: sheetBg,
@@ -299,6 +395,13 @@ class LibraryScreenState extends State<LibraryScreen> {
                     color: borderColor,
                     width: AppTheme.borderHeavy,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: borderColor,
+                      offset: details?.shadowOffset ?? AppTheme.shadowOffset,
+                      blurRadius: 0,
+                    ),
+                  ],
                 ),
                 child: SingleChildScrollView(
                   child: Column(
@@ -646,15 +749,17 @@ class LibraryScreenState extends State<LibraryScreen> {
       );
     }
 
+    final isCompact = ThemeService.instance.compactMode;
+
     if (_viewMode == LibraryViewMode.covers) {
       return SliverPadding(
         padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 80),
         sliver: SliverGrid(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: isExtraWide ? 5 : (isWideScreen ? 3 : 2),
+          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: isCompact ? 160 : 200,
             childAspectRatio: 0.65,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
+            crossAxisSpacing: isCompact ? 8 : 10,
+            mainAxisSpacing: isCompact ? 8 : 10,
           ),
           delegate: SliverChildBuilderDelegate(
             (context, index) {
@@ -667,6 +772,7 @@ class LibraryScreenState extends State<LibraryScreen> {
                 onEdit: () => _onBookClick(book, isWideScreen),
                 onQuickIncrement: (amt) => _quickIncrement(book, amt),
                 onToggleFavorite: () => _toggleFavorite(book),
+                onContextMenu: (d) => _showBookContextMenu(context, d, book, isWideScreen),
               );
             },
             childCount: filtered.length,
@@ -690,6 +796,7 @@ class LibraryScreenState extends State<LibraryScreen> {
                 onEdit: () => _onBookClick(book, isWideScreen),
                 onQuickIncrement: (amt) => _quickIncrement(book, amt),
                 onToggleFavorite: () => _toggleFavorite(book),
+                onContextMenu: (d) => _showBookContextMenu(context, d, book, isWideScreen),
               );
             },
             childCount: filtered.length,
@@ -703,11 +810,11 @@ class LibraryScreenState extends State<LibraryScreen> {
       return SliverPadding(
         padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 80),
         sliver: SliverGrid(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: isExtraWide ? 3 : 2,
-            childAspectRatio: isExtraWide ? 1.85 : 1.75,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
+          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: isCompact ? 380 : 440,
+            mainAxisExtent: isCompact ? 200 : 225,
+            crossAxisSpacing: isCompact ? 8 : 12,
+            mainAxisSpacing: isCompact ? 8 : 12,
           ),
           delegate: SliverChildBuilderDelegate(
             (context, index) {
@@ -724,6 +831,7 @@ class LibraryScreenState extends State<LibraryScreen> {
                 },
                 onQuickIncrement: (amt) => _quickIncrement(book, amt),
                 onToggleFavorite: () => _toggleFavorite(book),
+                onContextMenu: (d) => _showBookContextMenu(context, d, book, isWideScreen),
               );
             },
             childCount: filtered.length,
@@ -750,6 +858,7 @@ class LibraryScreenState extends State<LibraryScreen> {
               },
               onQuickIncrement: (amt) => _quickIncrement(book, amt),
               onToggleFavorite: () => _toggleFavorite(book),
+              onContextMenu: (d) => _showBookContextMenu(context, d, book, isWideScreen),
             );
           },
           childCount: filtered.length,
@@ -757,6 +866,7 @@ class LibraryScreenState extends State<LibraryScreen> {
       ),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -813,8 +923,11 @@ class LibraryScreenState extends State<LibraryScreen> {
 
     final isCustomFilterActive = _sortBy != 'updated_at' || _ratingFilter != 'All' || _typeFilter != 'All' || _sortAscending;
     final activeReadingBooks = _books.where((b) => b.status == BookStatus.reading).toList();
-    final showCarousel = _searchQuery.isEmpty && (_selectedStatus == 'All' || _selectedStatus == BookStatus.reading) && activeReadingBooks.isNotEmpty;
-
+    final showCarousel = ThemeService.instance.showReadingCarousel &&
+        _searchQuery.isEmpty &&
+        (_selectedStatus == 'All' || _selectedStatus == BookStatus.reading) &&
+        activeReadingBooks.isNotEmpty;
+    
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.slash): () {
@@ -833,6 +946,7 @@ class LibraryScreenState extends State<LibraryScreen> {
         const SingleActivator(LogicalKeyboardKey.digit1, control: true): () => setState(() => _viewMode = LibraryViewMode.cards),
         const SingleActivator(LogicalKeyboardKey.digit2, control: true): () => setState(() => _viewMode = LibraryViewMode.covers),
         const SingleActivator(LogicalKeyboardKey.digit3, control: true): () => setState(() => _viewMode = LibraryViewMode.table),
+        const SingleActivator(LogicalKeyboardKey.f11): () => ThemeService.instance.toggleFullscreen(),
         const SingleActivator(LogicalKeyboardKey.escape): () {
           if (_selectedBookForDetail != null) {
             setState(() => _selectedBookForDetail = null);
@@ -848,146 +962,225 @@ class LibraryScreenState extends State<LibraryScreen> {
       },
       child: Focus(
         autofocus: true,
-        child: Scaffold(
-          appBar: AppBar(
-            title: Row(
-              children: [
-                const Text(
-                  'PAPERBACK READER',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
-                    fontSize: 18,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
-                    border: Border.all(color: isDark ? Colors.white24 : AppColors.inkBlack, width: 1),
-                  ),
-                  child: Text(
-                    'LEDGER',
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.5,
-                      color: isDark ? Colors.white70 : AppColors.inkBlack,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.settings_outlined),
-                tooltip: 'Settings',
-                onPressed: widget.onNavigateToSync,
-              ),
-            ],
-          ),
-          body: RefreshIndicator(
-            onRefresh: () async {
-              await _syncManager.syncNow();
-              await _loadBooks();
-            },
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isWideScreen = constraints.maxWidth >= 720;
-                final isExtraWide = constraints.maxWidth >= 1150;
-                final isMasterDetailScreen = constraints.maxWidth >= 840;
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWideScreen = constraints.maxWidth >= 720;
+            final isExtraWide = constraints.maxWidth >= 1150;
+            final isMasterDetailScreen = constraints.maxWidth >= 840;
+            final activeReadingCount = _books.where((b) => b.status == BookStatus.reading).length;
 
-                final masterScrollView = CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    // Sliver 1: Animated Paper Scroll Search & Filter Toolbar
-                    SliverToBoxAdapter(
-                      child: _buildSearchAndToolbar(
-                        isDark: isDark,
-                        borderColor: borderColor,
-                        accentColor: accentColor,
-                        isCustomFilterActive: isCustomFilterActive,
+            final masterScrollView = CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                // Sliver 0: Paper Masthead on Desktop (or Mobile Header)
+                if (isWideScreen)
+                  SliverToBoxAdapter(
+                    child: Container(
+                      margin: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkSurface : Colors.white,
+                        border: Border.all(color: borderColor, width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: borderColor,
+                            offset: AppTheme.shadowOffsetSm,
+                            blurRadius: 0,
+                          ),
+                        ],
                       ),
-                    ),
-
-                    // Sliver 2: Currently Reading Carousel (Smoothly scrolls away with page!)
-                    if (showCarousel)
-                      SliverToBoxAdapter(
-                        child: ReadingCarousel(
-                          readingBooks: activeReadingBooks,
-                          onLogProgress: _openQuickLog,
-                          onEdit: (b) => _onBookClick(b, isWideScreen),
-                          onQuickIncrement: _quickIncrement,
-                        ),
-                      ),
-
-                    // Sliver 3: Status Filter Horizontal Tabs (Fluid or Sticky Pinned based on Setting)
-                    ThemeService.instance.stickyStatusFilter
-                        ? SliverPersistentHeader(
-                            pinned: true,
-                            delegate: _StickyStatusFilterDelegate(
-                              backgroundColor: details?.canvasColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg),
-                              child: _buildStatusFilterTabs(accentColor, borderColor, isDark),
+                      child: Row(
+                        children: [
+                          // Bookmark Ribbon Tag
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: accentColor,
+                              border: Border.all(color: borderColor, width: 1.5),
                             ),
-                          )
-                        : SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.only(bottom: 6),
-                              child: _buildStatusFilterTabs(accentColor, borderColor, isDark),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.bookmark_rounded, size: 13, color: Colors.white),
+                                SizedBox(width: 4),
+                                Text(
+                                  'READING LOG',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 10.5,
+                                    letterSpacing: 0.5,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 6)),
-
-                    // Sliver 4: Unified Book Content Grid/List/Table
-                    _buildBookContentSliver(
-                      filtered: filtered,
-                      isWideScreen: isWideScreen,
-                      isExtraWide: isExtraWide,
-                      details: details,
-                    ),
-                  ],
-                );
-
-                if (isMasterDetailScreen && _selectedBookForDetail != null) {
-                  return Row(
-                    children: [
-                      Expanded(child: masterScrollView),
-                      BookDetailPanel(
-                        book: _selectedBookForDetail!,
-                        onClose: () => setState(() => _selectedBookForDetail = null),
-                        onUpdateBook: (b) async {
-                          await _loadBooks();
-                          setState(() => _selectedBookForDetail = b);
-                        },
-                        onOpenFullEdit: () => _openEditDialog(_selectedBookForDetail),
-                        onOpenQuickLog: () => _openQuickLog(_selectedBookForDetail!),
-                        onDelete: () => _deleteBook(_selectedBookForDetail!),
-                        onToggleFavorite: () => _toggleFavorite(_selectedBookForDetail!),
-                        onQuickIncrement: (c, v) => _quickIncrementBoth(_selectedBookForDetail!, c, v),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              '${_books.length} VOLUMES TOTAL • $activeReadingCount IN PROGRESS',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.3,
+                                color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
+                              ),
+                            ),
+                          ),
+                          if (_syncManager.offlineMode)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isDark ? Colors.white10 : AppColors.paperSurfaceHighest,
+                                border: Border.all(color: borderColor.withValues(alpha: 0.4), width: 1),
+                              ),
+                              child: Text(
+                                'OFFLINE',
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w900,
+                                  color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                    ],
-                  );
-                }
+                    ),
+                  ),
 
-                return masterScrollView;
-              },
-            ),
-          ),
-          floatingActionButton: FloatingActionButton(
-            backgroundColor: accentColor,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              side: BorderSide(
-                color: borderColor,
-                width: AppTheme.borderHeavy,
+                // Sliver 1: Animated Paper Scroll Search & Filter Toolbar
+                SliverToBoxAdapter(
+                  child: _buildSearchAndToolbar(
+                    isDark: isDark,
+                    borderColor: borderColor,
+                    accentColor: accentColor,
+                    isCustomFilterActive: isCustomFilterActive,
+                  ),
+                ),
+
+                // Sliver 2: Currently Reading Carousel (Smoothly scrolls away with page!)
+                if (showCarousel)
+                  SliverToBoxAdapter(
+                    child: ReadingCarousel(
+                      readingBooks: activeReadingBooks,
+                      onLogProgress: _openQuickLog,
+                      onEdit: (b) => _onBookClick(b, isWideScreen),
+                      onQuickIncrement: _quickIncrement,
+                    ),
+                  ),
+
+                // Sliver 3: Paper Tabs with Live Status Counts
+                ThemeService.instance.stickyStatusFilter
+                    ? SliverPersistentHeader(
+                        pinned: true,
+                        delegate: _StickyStatusFilterDelegate(
+                          backgroundColor: details?.canvasColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg),
+                          child: _buildStatusFilterTabs(accentColor, borderColor, isDark),
+                        ),
+                      )
+                    : SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: _buildStatusFilterTabs(accentColor, borderColor, isDark),
+                        ),
+                      ),
+                const SliverToBoxAdapter(child: SizedBox(height: 6)),
+
+                // Sliver 4: Unified Book Content Grid/List/Table
+                _buildBookContentSliver(
+                  filtered: filtered,
+                  isWideScreen: isWideScreen,
+                  isExtraWide: isExtraWide,
+                  details: details,
+                ),
+              ],
+            );
+
+            return Scaffold(
+              appBar: !isWideScreen
+                  ? AppBar(
+                      title: Row(
+                        children: [
+                          const Text(
+                            'PAPERBACK',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.5,
+                              fontSize: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
+                              border: Border.all(color: isDark ? Colors.white24 : AppColors.inkBlack, width: 1),
+                            ),
+                            child: Text(
+                              '${_books.length} BOOKS',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5,
+                                color: isDark ? Colors.white70 : AppColors.inkBlack,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        IconButton(
+                          icon: const Icon(Icons.settings_outlined),
+                          tooltip: 'Settings',
+                          onPressed: widget.onNavigateToSync,
+                        ),
+                      ],
+                    )
+                  : null,
+              body: RefreshIndicator(
+                onRefresh: () async {
+                  await _syncManager.syncNow();
+                  await _loadBooks();
+                },
+                child: isMasterDetailScreen && _selectedBookForDetail != null
+                    ? Row(
+                        children: [
+                          Expanded(child: masterScrollView),
+                          BookDetailPanel(
+                            book: _selectedBookForDetail!,
+                            onClose: () => setState(() => _selectedBookForDetail = null),
+                            onUpdateBook: (b) async {
+                              await _loadBooks();
+                              setState(() => _selectedBookForDetail = b);
+                            },
+                            onOpenFullEdit: () => _openEditDialog(_selectedBookForDetail),
+                            onOpenQuickLog: () => _openQuickLog(_selectedBookForDetail!),
+                            onDelete: () => _deleteBook(_selectedBookForDetail!),
+                            onToggleFavorite: () => _toggleFavorite(_selectedBookForDetail!),
+                            onQuickIncrement: (c, v) => _quickIncrementBoth(_selectedBookForDetail!, c, v),
+                          ),
+                        ],
+                      )
+                    : masterScrollView,
               ),
-              borderRadius: BorderRadius.zero,
-            ),
-            elevation: 0,
-            onPressed: () => _openEditDialog(),
-            child: const Icon(Icons.add, size: 28),
-          ),
+              floatingActionButton: !isWideScreen
+                  ? FloatingActionButton(
+                      backgroundColor: accentColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        side: BorderSide(
+                          color: borderColor,
+                          width: AppTheme.borderHeavy,
+                        ),
+                        borderRadius: BorderRadius.zero,
+                      ),
+                      elevation: 0,
+                      onPressed: () => _openEditDialog(),
+                      child: const Icon(Icons.add, size: 28),
+                    )
+                  : null,
+            );
+          },
         ),
       ),
     );
@@ -1225,13 +1418,16 @@ class LibraryScreenState extends State<LibraryScreen> {
         itemBuilder: (context, idx) {
           final status = _statusFilters[idx];
           final isSelected = _selectedStatus == status;
+          final count = status == 'All'
+              ? _books.length
+              : _books.where((b) => b.status == status).length;
 
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: GestureDetector(
               onTap: () => setState(() => _selectedStatus = status),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? accentColor
@@ -1242,15 +1438,43 @@ class LibraryScreenState extends State<LibraryScreen> {
                   ),
                 ),
                 alignment: Alignment.center,
-                child: Text(
-                  status.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: isSelected
-                        ? Colors.white
-                        : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      status.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: isSelected
+                            ? Colors.white
+                            : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? Colors.white.withValues(alpha: 0.25)
+                            : (isDark ? Colors.white10 : AppColors.paperSurfaceHighest),
+                        border: Border.all(
+                          color: isSelected ? Colors.white60 : borderColor.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        '$count',
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w900,
+                          color: isSelected
+                              ? Colors.white
+                              : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

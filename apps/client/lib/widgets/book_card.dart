@@ -12,6 +12,7 @@ class BookCard extends StatelessWidget {
   final VoidCallback onDelete;
   final Function(double) onQuickIncrement;
   final VoidCallback? onToggleFavorite;
+  final void Function(TapDownDetails details)? onContextMenu;
   final bool isSelected;
 
   const BookCard({
@@ -22,6 +23,7 @@ class BookCard extends StatelessWidget {
     required this.onDelete,
     required this.onQuickIncrement,
     this.onToggleFavorite,
+    this.onContextMenu,
     this.isSelected = false,
   });
 
@@ -34,6 +36,7 @@ class BookCard extends StatelessWidget {
 
     return BrutalistCard(
       onTap: onEdit,
+      onSecondaryTapDown: onContextMenu != null ? (d) => onContextMenu!(d) : null,
       borderColor: isSelected ? accentColor : null,
       borderWidth: isSelected ? 2.5 : AppTheme.borderLight,
       shadowOffset: isSelected ? const Offset(4.0, 4.0) : null,

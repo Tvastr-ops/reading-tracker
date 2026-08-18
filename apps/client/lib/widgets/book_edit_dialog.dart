@@ -183,6 +183,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       backgroundColor: dialogBg,
       child: Container(
+        constraints: const BoxConstraints(maxWidth: 580),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: dialogBg,

@@ -136,17 +136,20 @@ class _TimelineScreenState extends State<TimelineScreen> {
                     ],
                   ),
                 )
-              : RefreshIndicator(
-                  onRefresh: () async {
-                    await _syncManager.syncNow();
-                    await _loadInitialLogs();
-                  },
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    itemCount: _logs.length + (_hasMore ? 1 : 0),
-                    itemBuilder: (context, index) {
+              : Center(
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 850),
+                    child: RefreshIndicator(
+                      onRefresh: () async {
+                        await _syncManager.syncNow();
+                        await _loadInitialLogs();
+                      },
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        itemCount: _logs.length + (_hasMore ? 1 : 0),
+                        itemBuilder: (context, index) {
                       if (index == _logs.length) {
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 20),
@@ -285,6 +288,8 @@ class _TimelineScreenState extends State<TimelineScreen> {
                     },
                   ),
                 ),
+              ),
+            ),
     );
   }
 }

@@ -8,6 +8,7 @@ class BrutalistCard extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final EdgeInsetsGeometry margin;
   final VoidCallback? onTap;
+  final GestureTapDownCallback? onSecondaryTapDown;
   final double borderWidth;
   final Offset? shadowOffset;
 
@@ -19,6 +20,7 @@ class BrutalistCard extends StatelessWidget {
     this.padding = const EdgeInsets.all(16),
     this.margin = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     this.onTap,
+    this.onSecondaryTapDown,
     this.borderWidth = AppTheme.borderLight,
     this.shadowOffset,
   });
@@ -50,10 +52,15 @@ class BrutalistCard extends StatelessWidget {
       ),
     );
 
-    if (onTap != null) {
-      return GestureDetector(
-        onTap: onTap,
-        child: content,
+    if (onTap != null || onSecondaryTapDown != null) {
+      return MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          onSecondaryTapDown: onSecondaryTapDown,
+          child: content,
+        ),
       );
     }
     return content;

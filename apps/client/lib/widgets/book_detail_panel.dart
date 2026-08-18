@@ -317,16 +317,23 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                       const SizedBox(height: 12),
 
                       // Quick Increment Buttons
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: [
-                          _buildIncrementButton('+1 Ch', () => widget.onQuickIncrement?.call(1, 0), accentColor, borderColor, isDark),
-                          _buildIncrementButton('+5 Ch', () => widget.onQuickIncrement?.call(5, 0), accentColor, borderColor, isDark),
-                          if (b.progressStructure == 'volume_chapter' || b.parentProgress != null)
-                            _buildIncrementButton('+1 Vol', () => widget.onQuickIncrement?.call(0, 1), accentColor, borderColor, isDark),
-                          _buildActionButton('LOG PROGRESS', Icons.edit_calendar_rounded, widget.onOpenQuickLog, accentColor, borderColor, isDark),
-                        ],
+                      Builder(
+                        builder: (context) {
+                          final unitLabel = getUnitLabel(b.type, b.unitType);
+                          final unitAbbr = unitLabel.startsWith('page') ? 'Pg' : unitLabel.startsWith('chapter') ? 'Ch' : unitLabel.startsWith('vol') ? 'Vol' : '';
+                          final quickOptions = getQuickChipOptions(b.type);
+
+                          return Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: [
+                              ...quickOptions.take(2).map((amt) => _buildIncrementButton('+$amt $unitAbbr'.trim(), () => widget.onQuickIncrement?.call(amt, 0), accentColor, borderColor, isDark)),
+                              if (b.progressStructure == 'volume_chapter' || b.parentProgress != null)
+                                _buildIncrementButton('+1 Vol', () => widget.onQuickIncrement?.call(0, 1), accentColor, borderColor, isDark),
+                              _buildActionButton('LOG PROGRESS', Icons.edit_calendar_rounded, widget.onOpenQuickLog, accentColor, borderColor, isDark),
+                            ],
+                          );
+                        },
                       ),
                     ],
                   ),
