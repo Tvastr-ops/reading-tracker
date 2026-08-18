@@ -878,9 +878,20 @@ class LibraryScreenState extends State<LibraryScreen> {
     // Filter books
     var filtered = _books.where((b) {
       final matchesStatus = _selectedStatus == 'All' || b.status == _selectedStatus;
-      final matchesSearch = _searchQuery.isEmpty ||
-          b.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          (b.author != null && b.author!.toLowerCase().contains(_searchQuery.toLowerCase()));
+      final q = _searchQuery.toLowerCase();
+      bool matchesSearch = false;
+      if (_searchQuery.isEmpty) {
+        matchesSearch = true;
+      } else if (q.startsWith('#') || q.startsWith('tag:')) {
+        final tagQuery = (q.startsWith('#') ? q.substring(1) : q.substring(4)).trim();
+        matchesSearch = tagQuery.isEmpty ||
+            (b.genreTags != null && b.genreTags!.toLowerCase().contains(tagQuery));
+      } else {
+        matchesSearch = b.title.toLowerCase().contains(q) ||
+            (b.author != null && b.author!.toLowerCase().contains(q)) ||
+            (b.genreTags != null && b.genreTags!.toLowerCase().contains(q)) ||
+            b.type.toLowerCase().contains(q);
+      }
 
       bool matchesRating = true;
       if (_ratingFilter == '5') {
@@ -1158,6 +1169,13 @@ class LibraryScreenState extends State<LibraryScreen> {
                             onDelete: () => _deleteBook(_selectedBookForDetail!),
                             onToggleFavorite: () => _toggleFavorite(_selectedBookForDetail!),
                             onQuickIncrement: (c, v) => _quickIncrementBoth(_selectedBookForDetail!, c, v),
+                            onTagClick: (tag) {
+                              _searchController.text = '#$tag';
+                              setState(() {
+                                _searchQuery = '#$tag';
+                                _isSearchExpanded = true;
+                              });
+                            },
                           ),
                         ],
                       )
