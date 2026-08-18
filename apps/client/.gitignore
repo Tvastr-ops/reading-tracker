@@ -5,12 +5,20 @@
 .packages
 .pub-cache/
 .pub/
+.metadata
 build/
 *.lock
 .env.local
 .DS_Store
 .idea/
 *.iml
-.metadata
 windows/flutter/ephemeral/
 linux/flutter/ephemeral/
+
+# Android Keystores & Signing Keys
+*.keystore
+*.jks
+*.p8
+*.p12
+key.properties
+android/app/release.keystore

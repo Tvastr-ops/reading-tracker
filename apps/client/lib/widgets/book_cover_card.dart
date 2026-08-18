@@ -9,6 +9,7 @@ class BookCoverCard extends StatelessWidget {
   final VoidCallback onLogProgress;
   final VoidCallback onEdit;
   final Function(double) onQuickIncrement;
+  final VoidCallback? onToggleFavorite;
   final bool isSelected;
 
   const BookCoverCard({
@@ -17,6 +18,7 @@ class BookCoverCard extends StatelessWidget {
     required this.onLogProgress,
     required this.onEdit,
     required this.onQuickIncrement,
+    this.onToggleFavorite,
     this.isSelected = false,
   });
 
@@ -38,58 +40,81 @@ class BookCoverCard extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             color: details?.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white),
-            border: Border.all(color: borderColor, width: isSelected ? 3.0 : AppTheme.borderHeavy),
+            border: Border.all(color: borderColor, width: isSelected ? 2.5 : AppTheme.borderLight),
             boxShadow: [
               BoxShadow(
                 color: borderColor,
-                offset: isSelected ? const Offset(3.5, 3.5) : (details?.shadowOffsetSm ?? AppTheme.shadowOffsetSm),
+                offset: isSelected ? const Offset(4.0, 4.0) : const Offset(2.5, 2.5),
                 blurRadius: 0,
               ),
             ],
           ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Cover Image Background / Fallback
-            if (book.coverUrl != null && book.coverUrl!.isNotEmpty)
-              Image.network(
-                book.coverUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _buildFallbackPattern(isDark),
-              )
-            else
-              _buildFallbackPattern(isDark),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Cover Image Background / Fallback
+              if (book.coverUrl != null && book.coverUrl!.isNotEmpty)
+                Image.network(
+                  book.coverUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _buildFallbackPattern(isDark),
+                )
+              else
+                _buildFallbackPattern(isDark),
 
-            // Top Badges (Format & Rating)
-            Positioned(
-              top: 6,
-              left: 6,
-              right: 6,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: accentColor,
-                      border: Border.all(color: Colors.white, width: 1),
+              // Top Badges (Format, Favorite & Rating)
+              Positioned(
+                top: 6,
+                left: 6,
+                right: 6,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: accentColor,
+                            border: Border.all(color: Colors.white, width: 1),
+                          ),
+                          child: Text(
+                            book.type.toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        if (onToggleFavorite != null) ...[
+                          const SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: onToggleFavorite,
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                                border: Border.all(color: AppColors.inkBlack, width: 1),
+                              ),
+                              child: Icon(
+                                book.isFavorite == true ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                size: 12,
+                                color: book.isFavorite == true ? AppColors.primaryRed : AppColors.inkBlack,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                    child: Text(
-                      book.type.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  if (book.rating != null && book.rating! > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFB800),
+                    if (book.rating != null && book.rating! > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFB800),
                         border: Border.all(color: AppColors.inkBlack, width: 1),
                       ),
                       child: Row(
@@ -190,7 +215,7 @@ class BookCoverCard extends StatelessWidget {
       ),
     ),
   );
-  }
+}
 
   Widget _buildFallbackPattern(bool isDark) {
     return Container(

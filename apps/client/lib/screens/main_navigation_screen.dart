@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/sync/sync_manager.dart';
 import '../theme/app_theme.dart';
 import 'library_screen.dart';
 import 'settings_screen.dart';
@@ -19,7 +20,7 @@ class MainNavigationScreen extends StatefulWidget {
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
+class _MainNavigationScreenState extends State<MainNavigationScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
   final GlobalKey<LibraryScreenState> _libraryKey = GlobalKey<LibraryScreenState>();
   late Widget _libraryScreen;
@@ -29,12 +30,34 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
     _libraryScreen = LibraryScreen(
       key: _libraryKey,
       onNavigateToSync: () => setState(() => _currentIndex = 3),
     );
     _statsScreen = const StatsScreen();
     _timelineScreen = const TimelineScreen();
+
+    // Auto-sync on app boot if enabled
+    if (SyncManager.instance.autoSync) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        SyncManager.instance.syncNow();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && SyncManager.instance.autoSync) {
+      SyncManager.instance.syncNow();
+    }
   }
 
   @override

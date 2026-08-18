@@ -11,6 +11,7 @@ class BookCard extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final Function(double) onQuickIncrement;
+  final VoidCallback? onToggleFavorite;
   final bool isSelected;
 
   const BookCard({
@@ -20,6 +21,7 @@ class BookCard extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onQuickIncrement,
+    this.onToggleFavorite,
     this.isSelected = false,
   });
 
@@ -193,24 +195,41 @@ class BookCard extends StatelessWidget {
                 }).toList(),
               ),
 
-              // Action Button (Log Progress)
-              BrutalistButton(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                backgroundColor: isDark ? AppColors.darkSurfaceHigh : Colors.white,
-                textColor: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                onPressed: onLogProgress,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.edit_note_rounded,
-                      size: 17,
-                      color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+              // Action Buttons (Favorite + Log Progress)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    icon: Icon(
+                      book.isFavorite == true ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                      color: book.isFavorite == true ? AppColors.primaryRed : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                      size: 20,
                     ),
-                    const SizedBox(width: 4),
-                    const Text('LOG', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
-                  ],
-                ),
+                    tooltip: book.isFavorite == true ? 'Unmark Favorite' : 'Mark as Favorite',
+                    onPressed: onToggleFavorite,
+                  ),
+                  const SizedBox(width: 4),
+                  BrutalistButton(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    backgroundColor: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                    textColor: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                    onPressed: onLogProgress,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.edit_note_rounded,
+                          size: 17,
+                          color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                        ),
+                        const SizedBox(width: 4),
+                        const Text('LOG', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

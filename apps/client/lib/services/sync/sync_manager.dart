@@ -43,6 +43,10 @@ class SyncManager extends ChangeNotifier {
     _serverUrl = prefs.getString('server_url') ?? '';
     _apiKey = prefs.getString('api_key') ?? '';
     _yearlyGoal = prefs.getInt('yearly_goal') ?? 25;
+    final lastSyncedStr = prefs.getString('last_synced_at');
+    if (lastSyncedStr != null && lastSyncedStr.isNotEmpty) {
+      _lastSyncedAt = DateTime.tryParse(lastSyncedStr);
+    }
     final typeIdx = prefs.getInt('backend_type') ?? 0;
     _backendType = SyncBackendType.values[typeIdx.clamp(0, SyncBackendType.values.length - 1)];
 
@@ -111,13 +115,23 @@ class SyncManager extends ChangeNotifier {
         return await _dbHelper.getBooks();
       }
 
+      // 0. Push durable permanent delete tombstones
+      final tombstones = await _dbHelper.getPendingTombstones();
+      for (final tomb in tombstones) {
+        final recordId = tomb['record_id'] as String;
+        final ok = await _activeProvider!.deleteBook(recordId, permanent: true);
+        if (ok) {
+          await _dbHelper.removeTombstone(tomb['id'] as String);
+        }
+      }
+
       // 1. Push pending local book mutations
       final pending = await _dbHelper.getPendingSyncBooks();
       final failedPushIds = <String>{};
 
       for (final book in pending) {
         if (book.syncStatus == 'pending_delete') {
-          final ok = await _activeProvider!.deleteBook(book.id);
+          final ok = await _activeProvider!.deleteBook(book.id, permanent: false);
           if (ok) {
             await _dbHelper.markBookSynced(book.id);
           } else {
@@ -133,12 +147,14 @@ class SyncManager extends ChangeNotifier {
         }
       }
 
-      // 1b. Push pending local reading logs
+      // 1b. Push pending local reading logs (only for non-failing books)
       final pendingLogs = await _dbHelper.getPendingSyncReadingLogs();
       for (final log in pendingLogs) {
-        final ok = await _activeProvider!.pushReadingLog(log);
-        if (ok) {
-          await _dbHelper.markReadingLogSynced(log.id);
+        if (!failedPushIds.contains(log.bookId)) {
+          final ok = await _activeProvider!.pushReadingLog(log);
+          if (ok) {
+            await _dbHelper.markReadingLogSynced(log.id);
+          }
         }
       }
 
@@ -169,6 +185,9 @@ class SyncManager extends ChangeNotifier {
       }
 
       _lastSyncedAt = DateTime.now();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('last_synced_at', _lastSyncedAt!.toIso8601String());
+
       _connectionStatus = failedPushIds.isEmpty ? 'Connected' : 'Sync Partially Succeeded';
     } catch (_) {
       _connectionStatus = 'Sync Interrupted';

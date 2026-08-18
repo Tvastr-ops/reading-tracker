@@ -86,6 +86,78 @@ void main() {
       expect(reconstructed.toProgress, 25.0);
       expect(reconstructed.note, 'Finished arc 1');
       expect(reconstructed.syncStatus, 'pending_create');
+
+      final remoteMap = log.toRemoteMap();
+      expect(remoteMap.containsKey('sync_status'), isFalse);
+      expect(remoteMap['id'], 'log-456');
+    });
+
+    test('toRemoteMap strips local-only SQLite sync_status', () {
+      const book = Book(
+        id: '100',
+        title: 'Clean Remote Test',
+        progress: 10,
+        createdAt: '',
+        updatedAt: '',
+        syncStatus: 'pending_create',
+        isFavorite: true,
+      );
+
+      final remote = book.toRemoteMap();
+      expect(remote.containsKey('sync_status'), isFalse);
+      expect(remote['id'], '100');
+      expect(remote['is_favorite'], true);
+    });
+
+    test('copyWith unsetting sentinels work correctly', () {
+      const original = Book(
+        id: '101',
+        title: 'Original',
+        rating: 4.5,
+        totalUnits: 500,
+        latestUnits: 50,
+        coverUrl: 'https://example.com/cover.jpg',
+        notes: 'Some notes',
+        dateStarted: '2026-01-01',
+        dateFinished: '2026-02-01',
+        deletedAt: '2026-03-01',
+        createdAt: '',
+        updatedAt: '',
+      );
+
+      final unSet = original.copyWith(
+        clearRating: true,
+        clearTotalUnits: true,
+        clearLatestUnits: true,
+        clearCoverUrl: true,
+        clearNotes: true,
+        clearDateStarted: true,
+        clearDateFinished: true,
+        clearDeletedAt: true,
+      );
+
+      expect(unSet.rating, isNull);
+      expect(unSet.totalUnits, isNull);
+      expect(unSet.latestUnits, isNull);
+      expect(unSet.coverUrl, isNull);
+      expect(unSet.notes, isNull);
+      expect(unSet.dateStarted, isNull);
+      expect(unSet.dateFinished, isNull);
+      expect(unSet.deletedAt, isNull);
+    });
+
+    test('completionPercentage calculates against latestUnits for ongoing works', () {
+      const ongoingBook = Book(
+        id: '102',
+        title: 'Ongoing Manga',
+        progress: 50,
+        isOngoing: true,
+        latestUnits: 100,
+        createdAt: '',
+        updatedAt: '',
+      );
+
+      expect(ongoingBook.completionPercentage, 50.0);
     });
   });
 }
