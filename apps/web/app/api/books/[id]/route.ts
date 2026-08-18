@@ -61,7 +61,10 @@ export const PATCH = withAuth(async (req: NextRequest, { params }: RouteContext)
         }
       }
     }
-    update.updated_at = new Date().toISOString();
+    const isOnlyFavoriteUpdate = Object.keys(update).length === 1 && 'is_favorite' in update;
+    if (!isOnlyFavoriteUpdate && body.preserve_updated_at !== true) {
+      update.updated_at = new Date().toISOString();
+    }
   }
 
   if (Object.keys(update).length === 0) {

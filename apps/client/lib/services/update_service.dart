@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:package_info_plus/package_info_plus.dart';
 
 class UpdateInfo {
   final String latestVersion;
@@ -24,9 +25,29 @@ class UpdateService {
   static final UpdateService instance = UpdateService._init();
   UpdateService._init();
 
-  static const String currentAppVersion = 'v1.7.0';
   static const String repoOwner = 'Tvastr-ops';
   static const String repoName = 'reading-tracker';
+
+  String? _cachedAppVersion;
+
+  /// Returns the current app version formatted with 'v' prefix (e.g. 'v1.7.0').
+  /// Reads directly from pubspec.yaml via PackageInfo at runtime.
+  Future<String> getCurrentAppVersion() async {
+    if (_cachedAppVersion != null) return _cachedAppVersion!;
+    try {
+      final info = await PackageInfo.fromPlatform();
+      final version = info.version.trim();
+      if (version.isNotEmpty) {
+        _cachedAppVersion = version.startsWith('v') || version.startsWith('V')
+            ? version
+            : 'v$version';
+        return _cachedAppVersion!;
+      }
+    } catch (e) {
+      debugPrint('Error getting package info: $e');
+    }
+    return 'v1.7.0';
+  }
 
   /// Compares two base-10 letter suffix versions (e.g., v1.6.0b vs v1.6.0c).
   /// Returns > 0 if [a] is newer than [b], 0 if equal, < 0 if older.
@@ -68,6 +89,7 @@ class UpdateService {
   /// Checks GitHub releases API for the latest published tag.
   Future<UpdateInfo?> checkForUpdates() async {
     try {
+      final currentVersion = await getCurrentAppVersion();
       final uri = Uri.parse('https://api.github.com/repos/$repoOwner/$repoName/releases/latest');
       final res = await http.get(uri, headers: {
         'Accept': 'application/vnd.github.v3+json',
@@ -83,11 +105,11 @@ class UpdateService {
           final body = data['body']?.toString();
           final publishedAt = data['published_at']?.toString();
 
-          final hasUpdate = isNewerVersion(tagName, currentAppVersion);
+          final hasUpdate = isNewerVersion(tagName, currentVersion);
 
           return UpdateInfo(
             latestVersion: tagName,
-            currentVersion: currentAppVersion,
+            currentVersion: currentVersion,
             hasUpdate: hasUpdate,
             releaseUrl: htmlUrl,
             releaseNotes: body,

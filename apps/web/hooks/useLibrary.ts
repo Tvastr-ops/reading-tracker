@@ -217,8 +217,8 @@ export function useLibrary() {
   const handleToggleFavorite = useCallback(
     async (b: Book) => {
       const newVal = !b.is_favorite;
-      const patchData = { is_favorite: newVal, updated_at: new Date().toISOString() };
-      setBooks((prev) => prev.map((x) => (x.id === b.id ? { ...x, ...patchData } : x)));
+      const patchData = { is_favorite: newVal };
+      setBooks((prev) => prev.map((x) => (x.id === b.id ? { ...x, is_favorite: newVal } : x)));
 
       const res = await fetch(`/api/books/${b.id}`, {
         method: 'PATCH',

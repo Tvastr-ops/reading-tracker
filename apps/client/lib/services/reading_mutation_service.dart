@@ -136,13 +136,12 @@ class ReadingMutationService {
     return updatedBook;
   }
 
-  /// Toggles the favorite flag on a book.
+  /// Toggles the favorite flag on a book without modifying its shelf position.
   Future<Book> toggleFavorite({required Book book}) async {
-    final now = DateTime.now().toUtc().toIso8601String();
     final nextFav = !(book.isFavorite == true);
     final updatedBook = book.copyWith(
       isFavorite: nextFav,
-      updatedAt: now,
+      // Preserve existing updatedAt so shelf order remains undisturbed
       syncStatus: 'pending_update',
     );
 
