@@ -1,5 +1,3 @@
-# 📖 Paperback Reading Tracker
-
 <div align="center">
 
 ![Paperback Reading Tracker](assets/header.svg)
