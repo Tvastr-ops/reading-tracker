@@ -20,50 +20,46 @@
 
 ---
 
-## 🏛️ Monorepo Architecture
+## 🏛️ Repository Layout
 
-This repository is structured as an integrated `pnpm` monorepo containing the web application, cross-platform client app, and database migrations:
+This monorepo contains the web dashboard, companion client app, and database migrations:
 
 ```text
 reading-tracker/
-├── 🌐 apps/web/        # Next.js 16 App Router, React 19, Tailwind CSS (Web Dashboard & REST API)
-├── 📱 apps/client/     # Flutter Multi-Platform Client (Android, Windows, Linux, Web)
-├── 🗄️ supabase/        # Versioned PostgreSQL migrations, RLS policies & RPC functions
-└── 📄 DEPLOYMENT_GUIDE # Complete end-to-end self-hosting & cloud deployment guide
+├── apps/web/        # Next.js 16 App Router, React 19, Tailwind CSS (Web Dashboard & API)
+├── apps/client/     # Flutter Client for Android, Windows, Linux, and Web
+├── supabase/        # PostgreSQL migrations (v02–v11), RLS policies, and triggers
+└── doc/             # Technical guides, API references, and architecture docs
 ```
 
 ---
 
-## 📦 Workspace Packages
+## 📦 Packages
 
-| Package | Technology Stack | Primary Purpose |
+| Package | Stack | What it does |
 | :--- | :--- | :--- |
-| [`apps/web`](./apps/web) | **Next.js 16**, React 19, Tailwind CSS v4, Biome | Full-featured web dashboard, serverless REST API endpoints, PWA support, and authentication gating. |
-| [`apps/client`](./apps/client) | **Flutter 3.19+**, Dart 3, SQLite (`sqflite`), Material 3 | Native offline-first companion app for Android APK, Windows `.exe`, Linux, and Web with 16 thematic color palettes. |
-| [`supabase`](./supabase) | **PostgreSQL**, Row Level Security (RLS), PL/pgSQL | Chronologically sorted database migrations (`v02`–`v11`), atomic progress logging RPCs, and automated triggers. |
+| [`apps/web`](./apps/web) | Next.js 16, React 19, Tailwind CSS, Biome | Web dashboard, serverless REST API, and session auth. |
+| [`apps/client`](./apps/client) | Flutter 3.19+, Dart 3, SQLite (`sqflite`) | Offline-first native client with 16 thematic color palettes. |
+| [`supabase`](./supabase) | PostgreSQL, PL/pgSQL | Versioned migrations, atomic progress RPCs, and smart triggers. |
 
 ---
 
-## ⚡ Core Ecosystem Capabilities
+## ✨ Features
 
-### 📚 1. Advanced Multi-Tier Progression Engine
-* **Flexible Unit Types**: Track progress across **Pages**, **Chapters**, **Volumes**, or **Words**.
-* **Volume ➔ Chapter Hierarchy**: Designed specifically for Light Novels and Web Serials with support for continuous progression or per-volume chapter resets.
-* **Ongoing Serial Tracking**: Handles ongoing works with dynamic *"Caught Up"* and *"Chapters Behind"* indicators.
+### Multi-Tier Progression for Complex Reads
+* **Flexible Units**: Track in Pages, Chapters, Volumes, or Words.
+* **Volume ➔ Chapter Hierarchy**: Built specifically for Light Novels and Web Serials, supporting continuous chapter counts or volume-based resets.
+* **Ongoing Serialization Tracker**: Live "Caught Up" and "X chapters behind" indicators for ongoing web fiction and manga.
 
-### 🔄 2. Dual Sync & Offline-First Architecture
-* **Direct Supabase Cloud Sync**: Serverless PostgreSQL sync with Row Level Security.
-* **Self-Hosted REST API**: Sync directly with your private Next.js deployment.
-* **Local-First SQLite Engine**: Full offline database on mobile and desktop devices with automatic sync queueing and conflict resolution.
+### Offline-First Dual Sync
+* **Local SQLite Database**: Full offline functionality on mobile and desktop. Updates save instantly and sync when you're back online.
+* **Two Sync Modes**: Connect directly to Supabase via RLS, or sync through your self-hosted Next.js web server.
+* **Smart Favorite Preservation**: Toggling favorite status never scrambles your "Recently Read" shelf order.
 
-### 📊 3. Reading Analytics & Pace Calculation
-* **Live Reading Velocity**: Real-time reading pace calculation (e.g. `14.2 ch/day` or `45 pgs/day`).
-* **Pace-to-Goal Countdown**: Smart forecasting for annual reading goals and estimated completion dates.
-* **Rating Distribution & Monthly Charts**: Half-star and decimal rating distributions with monthly reading volume summaries.
-
-### 🎨 4. Tactile Editorial Paper Aesthetic
-* **High-Contrast Editorial Styling**: Bold typographic hierarchy inspired by vintage paperbacks and physical bookplates.
-* **16 Thematic Color Schemes**: Symmetrical Light/Dark pairs (Classic Paperback, Charcoal Ledger, Manga Inkpaper, Manga Noir OLED, Matcha & Washi, Cyanotype Blueprint, Crumpled Kraft, and more).
+### Reading Velocity & Goal Forecasting
+* **Live Pace Calculations**: Real-time reading speed tracking (e.g. `14 chapters/week`).
+* **Goal Countdown**: Dynamic monthly pacing to help hit annual reading targets.
+* **16 Thematic Paper Palettes**: 8 symmetrical light/dark theme pairs inspired by vintage paperbacks, Japanese washi, drafting vellum, and OLED manga noir.
 
 ---
 
@@ -106,7 +102,7 @@ flowchart LR
 
 ### Prerequisites
 * **Node.js** `>= 20.0.0`
-* **pnpm** `>= 9.0.0`
+* **pnpm**, **npm**, or **bun**
 * **Flutter SDK** `>= 3.19.0` (for mobile/desktop development)
 
 ### Quick Start
@@ -116,18 +112,16 @@ flowchart LR
 git clone https://github.com/Tvastr-ops/reading-tracker.git
 cd reading-tracker
 
-# 2. Install workspace dependencies
-pnpm install
+# 2. Install workspace dependencies (using your preferred package manager)
+pnpm install   # Or: bun install / npm install
 
 # 3. Launch the Web Application (http://localhost:3000)
-pnpm run dev:web
+pnpm run dev:web   # Or: bun --filter web dev / npm run dev --workspace=web
 
 # 4. Launch the Flutter Client Application
 pnpm run dev:client
 # Or: cd apps/client && flutter run
 ```
-
-> **💡 Package Manager Note**: The root workspace is orchestrated with **`pnpm`** (`pnpm-workspace.yaml`). If developing exclusively inside the [`apps/web`](./apps/web) subfolder, you may also use **`npm`**, **`yarn`**, or **`bun`** directly.
 
 ### Workspace Commands
 

@@ -1,29 +1,19 @@
-# Tutorial: Quickstart Guide
+# Quickstart Guide
 
-This tutorial guides you through setting up the Paperback Reading Tracker monorepo locally, launching the development server, and logging your first book in under 5 minutes.
-
----
-
-## 🎯 What You Will Learn
-1. How to clone and install the monorepo workspace dependencies.
-2. How to run the Next.js Web dashboard locally.
-3. How to add a new book and log reading progress.
-4. How to run the Flutter client app.
+Get the Paperback Reading Tracker running locally and log your first reading entry.
 
 ---
 
-## 📋 Prerequisites
-Before starting, ensure you have the following installed on your machine:
-* **Node.js** `>= 20.0.0` ([Download Node.js](https://nodejs.org/))
-* **pnpm** `>= 9.0.0` (`npm install -g pnpm`)
-* **Git** ([Download Git](https://git-scm.com/))
-* *(Optional)* **Flutter SDK** `>= 3.19.0` (if running the mobile/desktop app)
+## Prerequisites
+
+* **Node.js** `>= 20.0.0`
+* **pnpm** `>= 9.0.0` (or `npm` / `bun`)
+* **Git**
+* *(Optional)* **Flutter SDK** `>= 3.19.0` (for mobile or desktop client development)
 
 ---
 
-## 🚀 Step 1: Clone the Repository
-
-Open your terminal and clone the repository:
+## Step 1: Clone Repository
 
 ```bash
 git clone https://github.com/Tvastr-ops/reading-tracker.git
@@ -32,67 +22,64 @@ cd reading-tracker
 
 ---
 
-## 📦 Step 2: Choose Your Development Track
+## Step 2: Install Dependencies & Run
 
-### 🌟 Track A: Full Monorepo Setup (`pnpm` — Recommended)
-Install dependencies across all workspaces and launch both services:
+The monorepo supports **`pnpm`**, **`npm`**, and **`bun`** directly from the root repository directory:
 
+### Option A: Using `pnpm` (Recommended)
 ```bash
-# Install all packages
+# Install workspace dependencies
 pnpm install
 
-# Run Web Dashboard (http://localhost:3000)
+# Start Web Dashboard (http://localhost:3000)
 pnpm run dev:web
 
-# Run Flutter Client (in a separate terminal)
+# Start Flutter Client (in a separate terminal)
 pnpm run dev:client
 ```
 
+> [!TIP]
+> `pnpm` deduplicates packages across the monorepo, saving disk space and speeding up local builds.
+
 ---
 
-### 🌐 Track B: Standalone Web Dashboard (`npm` / `bun`)
-If you only want to work on the Next.js web application:
-
+### Option B: Using `bun`
 ```bash
-# Navigate to web app
-cd apps/web
-
-# Using npm:
-npm install
-npm run dev
-
-# Or using Bun:
+# Install workspace dependencies
 bun install
-bun dev
+
+# Start Web Dashboard
+bun --filter web dev
+
+# Start Flutter Client
+cd apps/client && flutter run
 ```
 
 ---
 
-### 📱 Track C: Standalone Flutter Client (`flutter`)
-If you only want to develop on the native Android, Windows, or Linux app:
-
+### Option C: Using standard `npm`
 ```bash
-# Navigate to client app
-cd apps/client
+# Install workspace dependencies
+npm install
 
-# Resolve Dart dependencies
-flutter pub get
+# Start Web Dashboard
+npm run dev --workspace=web
 
-# Launch on connected phone, emulator, or desktop
-flutter run
+# Start Flutter Client
+cd apps/client && flutter run
 ```
 
 ---
 
-## ⚙️ Step 3: Configure Local Environment
+## Step 3: Configure Environment
 
-Copy the example environment file for the web application:
+Copy the example environment configuration:
 
 ```bash
 cp apps/web/.env.example apps/web/.env.local
 ```
 
-Open `apps/web/.env.local` in your editor and configure your secrets:
+Edit `apps/web/.env.local` with your configuration:
 
 ```env
 APP_PASSWORD=your_secure_password
@@ -101,22 +88,21 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 ```
 
-*(If you don't have a Supabase database yet, see the [Deploy to Vercel & Supabase Guide](../how-to/DeployVercelSupabase.md) to set one up in 2 minutes).*
+*(To provision a cloud database, see [Deploy to Vercel & Supabase](../how-to/DeployVercelSupabase.md)).*
 
 ---
 
-## 📖 Step 4: Add Your First Book
+## Step 4: Add Your First Book
 
-1. Open your browser and navigate to **`http://localhost:3000`**.
-2. Enter the `APP_PASSWORD` you configured in `.env.local`.
-3. Click **Add Entry (`N`)** in the top bar.
-4. Enter a book title (e.g. *The King in Yellow*), select **Novel**, set total pages to `203`, and click **Add Book**.
-5. Click the book card to open the quick-log dialog and advance your progress by `30 pages`.
-6. Observe the live progress bar, reading velocity calculation, and dashboard chart updates!
+1. Open `http://localhost:3000` in your browser.
+2. Enter the configured `APP_PASSWORD`.
+3. Press `N` (or click **Add Entry**).
+4. Enter a title (e.g. *The King in Yellow*), select **Novel**, set total units to `203 pages`, and submit.
+5. Click the book card to open the quick-log modal and increment progress.
 
 ---
 
-## 🎓 Next Steps
-* Learn how to deploy to the cloud: **[`DeployVercelSupabase.md`](../how-to/DeployVercelSupabase.md)**
-* Learn how to track complex multi-tier Light Novels: **[`ProgressionMath.md`](../explanation/ProgressionMath.md)**
-* Browse available API endpoints: **[`ApiEndpoints.md`](../reference/ApiEndpoints.md)**
+## Next Steps
+* [Deploy to Vercel & Supabase](../how-to/DeployVercelSupabase.md)
+* [Compile Android APKs](../how-to/BuildAndroidWindows.md)
+* [REST API Reference](../reference/ApiEndpoints.md)

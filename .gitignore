@@ -29,10 +29,9 @@ Thumbs.db
 .venv/
 *.pyc
 
-# Local reports & roadmap
+# Private local documentation, concepts & reports
 AUDIT_REPORT.md
-doc/local-reports/
-doc/roadmap/
+doc/private/
 
 # Android Keystores & Signing Keys
 *.keystore

@@ -1,26 +1,32 @@
-# Technical Reference: REST API Endpoints
+# API Reference: REST Endpoints
 
-This document provides the authoritative technical reference for all REST API endpoints provided by the Next.js serverless backend (`apps/web`).
-
----
-
-## 🔒 Authentication
-
-All API endpoints (except `/api/auth/login`) require authentication via one of three methods:
-
-1. **Session Cookie**: Signed HttpOnly JWT cookie (`reading_tracker_session`).
-2. **API Key Header**: `x-api-key: <APP_PASSWORD>`
-3. **Bearer Token**: `Authorization: Bearer <APP_PASSWORD>`
+REST API endpoints provided by the Next.js backend (`apps/web`).
 
 ---
 
-## 📚 Books Endpoints
+## Authentication
+
+Endpoints require authentication via one of the following methods:
+
+* **Session Cookie**: `reading_tracker_session` (Signed HttpOnly JWT)
+* **API Key Header**: `x-api-key: <APP_PASSWORD>`
+* **Bearer Token**: `Authorization: Bearer <APP_PASSWORD>`
+
+> [!TIP]
+> For quick terminal testing or automation scripts, pass the `x-api-key: <APP_PASSWORD>` header:
+> ```bash
+> curl -H "x-api-key: your_password" http://localhost:3000/api/books
+> ```
+
+---
+
+## Books
 
 ### `GET /api/books`
-Returns active library books or soft-deleted items in the trash.
+Lists library books.
 
 * **Query Parameters**:
-  * `trash` *(optional, string)*: Set `trash=1` to list soft-deleted items.
+  * `trash` *(optional)*: Pass `trash=1` to list soft-deleted records.
 * **Response**: `200 OK`
   ```json
   {
@@ -49,7 +55,7 @@ Returns active library books or soft-deleted items in the trash.
 ---
 
 ### `POST /api/books`
-Creates a new book entry.
+Creates a book record.
 
 * **Request Body**:
   ```json
@@ -69,11 +75,11 @@ Creates a new book entry.
 ---
 
 ### `PATCH /api/books/[id]`
-Updates an existing book's metadata or progression.
+Updates book metadata or reading status.
 
 * **Path Parameters**:
-  * `id` *(UUID)*: Book identifier.
-* **Request Body** *(Partial)*:
+  * `id` *(UUID)*: Book record identifier.
+* **Request Body**:
   ```json
   {
     "progress": 35,
@@ -81,25 +87,25 @@ Updates an existing book's metadata or progression.
     "is_favorite": true
   }
   ```
-* **Special Flags**:
+* **Flags**:
   * `{ "restore": true }`: Restores a soft-deleted book from trash.
 * **Response**: `200 OK`
 
 ---
 
 ### `DELETE /api/books/[id]`
-Soft-deletes a book (moves to trash) or permanently removes it.
+Deletes a book record.
 
 * **Query Parameters**:
-  * `permanent` *(optional)*: Set `permanent=1` for hard deletion.
+  * `permanent` *(optional)*: Pass `permanent=1` for hard deletion; otherwise, sets `deleted_at` (soft delete).
 * **Response**: `200 OK`
 
 ---
 
-## 📝 Reading Logs Endpoints
+## Reading Logs
 
 ### `POST /api/books/[id]/log`
-Records an atomic reading session advancement.
+Records an atomic reading session update.
 
 * **Request Body**:
   ```json
@@ -111,7 +117,7 @@ Records an atomic reading session advancement.
 * **Response**: `200 OK`
   ```json
   {
-    "entry_id": "uuid-of-new-log",
+    "entry_id": "uuid",
     "from_progress": 30,
     "to_progress": 45,
     "pace": 15.0
@@ -120,7 +126,7 @@ Records an atomic reading session advancement.
 
 ---
 
-## ⚙️ Settings & Import/Export
+## Settings & Utilities
 
 * `GET /api/settings` — Returns user display preferences and goals.
 * `PATCH /api/settings` — Updates settings (rating style, reading goals, density).
