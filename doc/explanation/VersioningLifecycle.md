@@ -24,9 +24,9 @@ $$\text{v1.6.0} \longrightarrow \text{v1.6.0a} \longrightarrow \text{v1.6.0b} \l
 New functional releases increment the minor version and reset the suffix:
 $$\text{v1.6.0c} \longrightarrow \text{v1.7.0} \longrightarrow \text{v1.7.0a} \dots \longrightarrow \text{v1.9.0c}$$
 
-### 3. Major Generation Rollover (`.9` -> `2.0.0`)
-Base-10 rollover into the next major platform generation:
-$$\text{v1.9.0c} \longrightarrow \text{v2.0.0}$$
+### 3. Major Generation Rollover (`.9` -> Next Major)
+Base-10 rollover into subsequent major generations:
+$$\text{v1.9.0c} \longrightarrow \text{v2.0.0} \longrightarrow \text{v3.0.0} \dots$$
 
 ---
 
