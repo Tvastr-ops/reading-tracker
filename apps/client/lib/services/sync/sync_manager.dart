@@ -77,6 +77,7 @@ class SyncManager extends ChangeNotifier {
     _apiKey = apiKey.trim();
     _offlineMode = offlineMode;
     _autoSync = autoSync;
+    _lastSyncedAt = null;
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('backend_type', type.index);
@@ -84,6 +85,7 @@ class SyncManager extends ChangeNotifier {
     await prefs.setString('api_key', _apiKey);
     await prefs.setBool('offline_mode', _offlineMode);
     await prefs.setBool('auto_sync', _autoSync);
+    await prefs.remove('last_synced_at');
 
     _updateProvider();
     await checkConnection();
@@ -168,8 +170,10 @@ class SyncManager extends ChangeNotifier {
         }
       }
 
-      // 2b. Fetch remote reading logs (incremental based on _lastSyncedAt)
-      final remoteLogs = await _activeProvider!.fetchRemoteReadingLogs(since: _lastSyncedAt);
+      // 2b. Fetch remote reading logs (incremental based on _lastSyncedAt, or full if local is empty)
+      final localLogCount = await _dbHelper.getReadingLogsCount();
+      final sinceParam = (localLogCount == 0) ? null : _lastSyncedAt;
+      final remoteLogs = await _activeProvider!.fetchRemoteReadingLogs(since: sinceParam);
       if (remoteLogs.isNotEmpty) {
         for (final log in remoteLogs) {
           await _dbHelper.upsertRemoteReadingLog(log);

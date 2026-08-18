@@ -382,7 +382,7 @@ class DatabaseHelper {
         b.type as book_type,
         b.cover_url as book_cover_url
       FROM reading_log l
-      INNER JOIN books b ON l.book_id = b.id
+      LEFT JOIN books b ON l.book_id = b.id
       ORDER BY l.logged_at DESC
       LIMIT ? OFFSET ?
     ''', [limit, offset]);
@@ -390,7 +390,7 @@ class DatabaseHelper {
 
   Future<int> getReadingLogsCount() async {
     final db = await instance.database;
-    final res = await db.rawQuery('SELECT COUNT(*) as count FROM reading_log l INNER JOIN books b ON l.book_id = b.id');
+    final res = await db.rawQuery('SELECT COUNT(*) as count FROM reading_log l');
     if (res.isNotEmpty && res.first['count'] != null) {
       return (res.first['count'] as num).toInt();
     }

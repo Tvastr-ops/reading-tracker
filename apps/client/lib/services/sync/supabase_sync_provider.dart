@@ -178,12 +178,15 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
   Future<bool> pushYearlyGoal(int goal) async {
     if (supabaseUrl.isEmpty || anonKey.isEmpty) return false;
     try {
-      final uri = Uri.parse('$supabaseUrl/rest/v1/app_settings');
+      final uri = Uri.parse('$supabaseUrl/rest/v1/app_settings?on_conflict=key');
       final now = DateTime.now().toIso8601String();
       final res = await http
           .post(
             uri,
-            headers: _headers,
+            headers: {
+              ..._headers,
+              'Prefer': 'resolution=merge-duplicates',
+            },
             body: jsonEncode([
               {
                 'key': 'yearly_goal',
