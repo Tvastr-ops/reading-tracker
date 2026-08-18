@@ -1726,128 +1726,167 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildVariantGrid(List<AppThemeVariant> variants, AppThemeVariant selectedVariant, bool isDark) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 700
-            ? 4
-            : (constraints.maxWidth > 450 ? 3 : 2);
+    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
 
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            mainAxisExtent: 74,
-          ),
-          itemCount: variants.length,
-          itemBuilder: (context, index) {
-            final v = variants[index];
-            return _buildCompactPaletteTile(v, selectedVariant == v, isDark);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final crossAxisCount = constraints.maxWidth > 700
+                ? 4
+                : (constraints.maxWidth > 450 ? 3 : 2);
+
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                mainAxisExtent: 74,
+              ),
+              itemCount: variants.length,
+              itemBuilder: (context, index) {
+                final v = variants[index];
+                return _buildCompactPaletteTile(v, selectedVariant == v, isDark);
+              },
+            );
           },
-        );
-      },
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+            border: Border.all(
+              color: borderColor.withValues(alpha: 0.25),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: selectedVariant.previewAccent,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${selectedVariant.label} — ${selectedVariant.description}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.85) : AppColors.inkBlack.withValues(alpha: 0.85),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildCompactPaletteTile(AppThemeVariant variant, bool isSelected, bool isDark) {
     final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
 
-    return Tooltip(
-      message: '${variant.label}: ${variant.description}',
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: InkWell(
-          onTap: () {
-            if (variant.isDark) {
-              _themeService.setDarkVariant(variant);
-            } else {
-              _themeService.setLightVariant(variant);
-            }
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? (isDark ? AppColors.darkSurfaceHigh : Colors.white)
-                  : (isDark ? AppColors.darkSurface : AppColors.paperSurface),
-              border: Border.all(
-                color: isSelected ? variant.previewAccent : borderColor.withValues(alpha: 0.4),
-                width: isSelected ? 2.5 : 1.5,
-              ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                        offset: AppTheme.shadowOffsetSm,
-                        blurRadius: 0,
-                      ),
-                    ]
-                  : null,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: InkWell(
+        onTap: () {
+          if (variant.isDark) {
+            _themeService.setDarkVariant(variant);
+          } else {
+            _themeService.setLightVariant(variant);
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (isDark ? AppColors.darkSurfaceHigh : Colors.white)
+                : (isDark ? AppColors.darkSurface : AppColors.paperSurface),
+            border: Border.all(
+              color: isSelected ? variant.previewAccent : borderColor.withValues(alpha: 0.4),
+              width: isSelected ? 2.5 : 1.5,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Triple Color Swatch
-                    Row(
-                      children: [
-                        Container(
-                          width: 14,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            color: variant.previewCanvas,
-                            border: Border.all(color: borderColor, width: 1),
-                          ),
-                        ),
-                        const SizedBox(width: 3),
-                        Container(
-                          width: 14,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            color: variant.previewCard,
-                            border: Border.all(color: borderColor, width: 1),
-                          ),
-                        ),
-                        const SizedBox(width: 3),
-                        Container(
-                          width: 14,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            color: variant.previewAccent,
-                            border: Border.all(color: borderColor, width: 1),
-                          ),
-                        ),
-                      ],
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                      offset: AppTheme.shadowOffsetSm,
+                      blurRadius: 0,
                     ),
-                    if (isSelected)
+                  ]
+                : null,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Triple Color Swatch
+                  Row(
+                    children: [
                       Container(
-                        padding: const EdgeInsets.all(2),
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: variant.previewCanvas,
+                          border: Border.all(color: borderColor, width: 1),
+                        ),
+                      ),
+                      const SizedBox(width: 3),
+                      Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: variant.previewCard,
+                          border: Border.all(color: borderColor, width: 1),
+                        ),
+                      ),
+                      const SizedBox(width: 3),
+                      Container(
+                        width: 14,
+                        height: 14,
                         decoration: BoxDecoration(
                           color: variant.previewAccent,
-                          shape: BoxShape.circle,
+                          border: Border.all(color: borderColor, width: 1),
                         ),
-                        child: const Icon(Icons.check_rounded, size: 12, color: Colors.white),
                       ),
-                  ],
-                ),
-                Text(
-                  variant.label.toUpperCase(),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 10.5,
-                    letterSpacing: -0.1,
-                    color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                    ],
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  if (isSelected)
+                    Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: variant.previewAccent,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.check_rounded, size: 12, color: Colors.white),
+                    ),
+                ],
+              ),
+              Text(
+                variant.label.toUpperCase(),
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 10.5,
+                  letterSpacing: -0.1,
+                  color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
                 ),
-              ],
-            ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
         ),
       ),

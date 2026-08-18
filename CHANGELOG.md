@@ -7,6 +7,15 @@ and this project adheres to the [Project Release Versioning Specification](.gemi
 
 ---
 
+## [1.7.0a] - 2026-08-18
+
+### Changed
+- **Settings Theme Selector UX**: Removed intrusive hover tooltips over theme swatches and added a clean, tactile footer description container inside the palette section.
+- **Universal Monorepo Support**: Added root `workspaces` in `package.json` for seamless `pnpm`, `bun`, and `npm` local development.
+- **Diátaxis Documentation Suite**: Restructured technical documentation into PascalCase directories (`tutorials`, `how-to`, `reference`, `explanation`, `roadmap`) with visual callouts and Docker self-hosting guides.
+
+---
+
 ## [1.7.0] - 2026-08-18
 
 ### Added
