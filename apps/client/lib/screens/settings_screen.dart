@@ -371,7 +371,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'ABOUT PAPERBACK',
           _isAboutExpanded,
           () => _toggleSection(_keyPrefAbout, _isAboutExpanded, (v) => _isAboutExpanded = v),
-          badgeLabel: 'v1.5.0',
+          badgeLabel: 'v1.5.0a',
         ),
         const SizedBox(height: 6),
         if (_isAboutExpanded) ...[
