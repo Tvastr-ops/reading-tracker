@@ -24,12 +24,18 @@ android {
 
     signingConfigs {
         create("release") {
-            val keystoreFile = file("release.keystore")
-            if (keystoreFile.exists()) {
-                storeFile = keystoreFile
-                storePassword = "paperback123"
-                keyAlias = "paperback"
-                keyPassword = "paperback123"
+            val keyPropsFile = rootProject.file("key.properties")
+            val keyProps = java.util.Properties()
+            if (keyPropsFile.exists()) {
+                keyProps.load(java.io.FileInputStream(keyPropsFile))
+            }
+            val customStorePath = System.getenv("KEYSTORE_PATH") ?: keyProps.getProperty("storeFile")
+            val targetStoreFile = if (customStorePath != null) file(customStorePath) else file("release.keystore")
+            if (targetStoreFile.exists()) {
+                storeFile = targetStoreFile
+                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: keyProps.getProperty("storePassword") ?: "paperback123"
+                keyAlias = System.getenv("KEY_ALIAS") ?: keyProps.getProperty("keyAlias") ?: "paperback"
+                keyPassword = System.getenv("KEY_PASSWORD") ?: keyProps.getProperty("keyPassword") ?: "paperback123"
                 enableV1Signing = true
                 enableV2Signing = true
             } else {

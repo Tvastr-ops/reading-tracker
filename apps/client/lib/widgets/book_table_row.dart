@@ -9,6 +9,7 @@ class BookTableRow extends StatelessWidget {
   final VoidCallback onLogProgress;
   final VoidCallback onEdit;
   final Function(double) onQuickIncrement;
+  final VoidCallback? onToggleFavorite;
   final bool isSelected;
 
   const BookTableRow({
@@ -17,6 +18,7 @@ class BookTableRow extends StatelessWidget {
     required this.onLogProgress,
     required this.onEdit,
     required this.onQuickIncrement,
+    this.onToggleFavorite,
     this.isSelected = false,
   });
 
@@ -178,6 +180,20 @@ class BookTableRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
+
+            // Favorite Button
+            if (onToggleFavorite != null)
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                icon: Icon(
+                  book.isFavorite == true ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  size: 18,
+                  color: book.isFavorite == true ? AppColors.primaryRed : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                ),
+                tooltip: book.isFavorite == true ? 'Unmark Favorite' : 'Mark as Favorite',
+                onPressed: onToggleFavorite,
+              ),
 
             // Log Button
             IconButton(

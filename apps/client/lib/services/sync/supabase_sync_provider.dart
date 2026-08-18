@@ -61,11 +61,15 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
   Future<bool> pushBook(Book book) async {
     if (supabaseUrl.isEmpty || anonKey.isEmpty) return false;
     try {
-      final uri = Uri.parse('$supabaseUrl/rest/v1/books');
+      final uri = Uri.parse('$supabaseUrl/rest/v1/books?on_conflict=id');
       final res = await http
-          .post(uri, headers: _headers, body: jsonEncode([book.toSupabaseJson()]))
-          .timeout(const Duration(seconds: 6));
-      return res.statusCode >= 200 && res.statusCode < 300;
+          .post(uri, headers: _headers, body: jsonEncode([book.toRemoteMap()]))
+          .timeout(const Duration(seconds: 8));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        return true;
+      }
+      debugPrint('SupabaseSyncProvider pushBook failed [${res.statusCode}]: ${res.body}');
+      return false;
     } catch (e) {
       debugPrint('SupabaseSyncProvider pushBook error: $e');
       return false;
@@ -73,10 +77,15 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
   }
 
   @override
-  Future<bool> deleteBook(String id) async {
+  Future<bool> deleteBook(String id, {bool permanent = false}) async {
     if (supabaseUrl.isEmpty || anonKey.isEmpty) return false;
     try {
       final uri = Uri.parse('$supabaseUrl/rest/v1/books?id=eq.$id');
+      if (permanent) {
+        final res = await http.delete(uri, headers: _headers).timeout(const Duration(seconds: 8));
+        return res.statusCode >= 200 && res.statusCode < 300;
+      }
+
       final now = DateTime.now().toIso8601String();
       final res = await http
           .patch(
@@ -87,7 +96,7 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
               'updated_at': now,
             }),
           )
-          .timeout(const Duration(seconds: 6));
+          .timeout(const Duration(seconds: 8));
       return res.statusCode >= 200 && res.statusCode < 300;
     } catch (e) {
       debugPrint('SupabaseSyncProvider deleteBook error: $e');
@@ -107,10 +116,14 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
               ..._headers,
               'Prefer': 'resolution=merge-duplicates',
             },
-            body: jsonEncode([entry.toSupabaseJson()]),
+            body: jsonEncode([entry.toRemoteMap()]),
           )
-          .timeout(const Duration(seconds: 6));
-      return res.statusCode >= 200 && res.statusCode < 300;
+          .timeout(const Duration(seconds: 8));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        return true;
+      }
+      debugPrint('SupabaseSyncProvider pushReadingLog failed [${res.statusCode}]: ${res.body}');
+      return false;
     } catch (e) {
       debugPrint('SupabaseSyncProvider pushReadingLog error: $e');
       return false;

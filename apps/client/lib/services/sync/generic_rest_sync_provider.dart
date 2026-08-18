@@ -69,11 +69,24 @@ class GenericRestSyncProvider implements RemoteSyncProvider {
   Future<bool> pushBook(Book book) async {
     if (serverUrl.isEmpty) return false;
     try {
-      final uri = Uri.parse(_cleanUrl('/api/books'));
-      final res = await http
-          .post(uri, headers: _headers, body: jsonEncode(book.toSupabaseJson()))
-          .timeout(const Duration(seconds: 6));
-      return res.statusCode >= 200 && res.statusCode < 300;
+      if (book.syncStatus == 'pending_delete') {
+        return await deleteBook(book.id, permanent: false);
+      }
+
+      final isCreate = book.syncStatus == 'pending_create';
+      final path = isCreate ? '/api/books' : '/api/books/${book.id}';
+      final uri = Uri.parse(_cleanUrl(path));
+      final payload = jsonEncode(book.toRemoteMap());
+
+      final res = isCreate
+          ? await http.post(uri, headers: _headers, body: payload).timeout(const Duration(seconds: 8))
+          : await http.patch(uri, headers: _headers, body: payload).timeout(const Duration(seconds: 8));
+
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        return true;
+      }
+      debugPrint('GenericRestSyncProvider pushBook (${isCreate ? "POST" : "PATCH"}) failed [${res.statusCode}]: ${res.body}');
+      return false;
     } catch (e) {
       debugPrint('GenericRestSyncProvider pushBook error: $e');
       return false;
@@ -81,12 +94,17 @@ class GenericRestSyncProvider implements RemoteSyncProvider {
   }
 
   @override
-  Future<bool> deleteBook(String id) async {
+  Future<bool> deleteBook(String id, {bool permanent = false}) async {
     if (serverUrl.isEmpty) return false;
     try {
-      final uri = Uri.parse(_cleanUrl('/api/books/$id'));
-      final res = await http.delete(uri, headers: _headers).timeout(const Duration(seconds: 6));
-      return res.statusCode >= 200 && res.statusCode < 300;
+      final path = permanent ? '/api/books/$id?permanent=true' : '/api/books/$id';
+      final uri = Uri.parse(_cleanUrl(path));
+      final res = await http.delete(uri, headers: _headers).timeout(const Duration(seconds: 8));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        return true;
+      }
+      debugPrint('GenericRestSyncProvider deleteBook failed [${res.statusCode}]: ${res.body}');
+      return false;
     } catch (e) {
       debugPrint('GenericRestSyncProvider deleteBook error: $e');
       return false;
@@ -99,9 +117,13 @@ class GenericRestSyncProvider implements RemoteSyncProvider {
     try {
       final uri = Uri.parse(_cleanUrl('/api/books/${entry.bookId}/log'));
       final res = await http
-          .post(uri, headers: _headers, body: jsonEncode(entry.toSupabaseJson()))
-          .timeout(const Duration(seconds: 6));
-      return res.statusCode >= 200 && res.statusCode < 300;
+          .post(uri, headers: _headers, body: jsonEncode(entry.toRemoteMap()))
+          .timeout(const Duration(seconds: 8));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        return true;
+      }
+      debugPrint('GenericRestSyncProvider pushReadingLog failed [${res.statusCode}]: ${res.body}');
+      return false;
     } catch (e) {
       debugPrint('GenericRestSyncProvider pushReadingLog error: $e');
       return false;

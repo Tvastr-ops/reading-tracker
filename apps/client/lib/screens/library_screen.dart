@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/book.dart';
 import '../services/database_helper.dart';
+import '../services/reading_mutation_service.dart';
 import '../services/sync/sync_manager.dart';
 import '../services/theme_service.dart';
 import '../theme/app_theme.dart';
@@ -29,6 +30,7 @@ class LibraryScreen extends StatefulWidget {
 class LibraryScreenState extends State<LibraryScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
   final SyncManager _syncManager = SyncManager.instance;
+  final ReadingMutationService _mutationService = ReadingMutationService.instance;
   final FocusNode _searchFocusNode = FocusNode();
   final TextEditingController _searchController = TextEditingController();
 
@@ -97,40 +99,10 @@ class LibraryScreenState extends State<LibraryScreen> {
       return;
     }
 
-    final newProgress = book.progress + amount;
-    final clampedProgress = total != null && newProgress > total ? total : newProgress;
-
-    String newStatus = book.status;
-    if (clampedProgress > 0 && book.status == BookStatus.planToRead) {
-      newStatus = BookStatus.reading;
-    } else if (book.status == BookStatus.completed && clampedProgress > book.progress) {
-      // Reopening ongoing book with new chapters
-      newStatus = BookStatus.reading;
+    final updated = await _mutationService.advanceProgress(book: book, delta: amount);
+    if (_selectedBookForDetail?.id == book.id) {
+      setState(() => _selectedBookForDetail = updated);
     }
-
-    if (total != null && clampedProgress >= total) {
-      newStatus = BookStatus.completed;
-    }
-
-    final updated = book.copyWith(
-      progress: clampedProgress,
-      status: newStatus,
-      updatedAt: DateTime.now().toIso8601String(),
-      syncStatus: 'pending_update',
-    );
-
-    await _dbHelper.updateBook(updated);
-
-    final logEntry = ReadingLogEntry(
-      id: generateUuidV4(),
-      bookId: book.id,
-      fromProgress: book.progress,
-      toProgress: clampedProgress,
-      loggedAt: DateTime.now().toIso8601String(),
-      syncStatus: 'pending_create',
-    );
-    await _dbHelper.insertReadingLog(logEntry);
-
     await _loadBooks();
   }
 
@@ -149,49 +121,22 @@ class LibraryScreenState extends State<LibraryScreen> {
   }
 
   Future<void> _quickIncrementBoth(Book book, int chaptersDelta, int volumesDelta) async {
-    double newProgress = book.progress + chaptersDelta;
-    if (book.totalUnits != null && newProgress > book.totalUnits!) {
-      newProgress = book.totalUnits!;
-    }
-    num? newParentProgress = book.parentProgress;
-    if (volumesDelta > 0) {
-      newParentProgress = (newParentProgress ?? 0) + volumesDelta;
-      if (book.parentTotal != null && newParentProgress > book.parentTotal!) {
-        newParentProgress = book.parentTotal!;
-      }
-    }
-
-    String newStatus = book.status;
-    if (newProgress > 0 && book.status == BookStatus.planToRead) {
-      newStatus = BookStatus.reading;
-    }
-    if (book.totalUnits != null && newProgress >= book.totalUnits!) {
-      newStatus = BookStatus.completed;
-    }
-
-    final updated = book.copyWith(
-      progress: newProgress,
-      parentProgress: newParentProgress,
-      status: newStatus,
-      updatedAt: DateTime.now().toIso8601String(),
-      syncStatus: 'pending_update',
+    final updated = await _mutationService.advanceMultiTierProgress(
+      book: book,
+      chaptersDelta: chaptersDelta,
+      volumesDelta: volumesDelta,
     );
-
-    await _dbHelper.updateBook(updated);
-
-    final logEntry = ReadingLogEntry(
-      id: generateUuidV4(),
-      bookId: book.id,
-      fromProgress: book.progress,
-      toProgress: newProgress,
-      loggedAt: DateTime.now().toIso8601String(),
-      syncStatus: 'pending_create',
-    );
-    await _dbHelper.insertReadingLog(logEntry);
-
     setState(() {
       _selectedBookForDetail = updated;
     });
+    await _loadBooks();
+  }
+
+  Future<void> _toggleFavorite(Book book) async {
+    final updated = await _mutationService.toggleFavorite(book: book);
+    if (_selectedBookForDetail?.id == book.id) {
+      setState(() => _selectedBookForDetail = updated);
+    }
     await _loadBooks();
   }
 
@@ -721,6 +666,7 @@ class LibraryScreenState extends State<LibraryScreen> {
                 onLogProgress: () => _openQuickLog(book),
                 onEdit: () => _onBookClick(book, isWideScreen),
                 onQuickIncrement: (amt) => _quickIncrement(book, amt),
+                onToggleFavorite: () => _toggleFavorite(book),
               );
             },
             childCount: filtered.length,
@@ -743,6 +689,7 @@ class LibraryScreenState extends State<LibraryScreen> {
                 onLogProgress: () => _openQuickLog(book),
                 onEdit: () => _onBookClick(book, isWideScreen),
                 onQuickIncrement: (amt) => _quickIncrement(book, amt),
+                onToggleFavorite: () => _toggleFavorite(book),
               );
             },
             childCount: filtered.length,
@@ -776,6 +723,7 @@ class LibraryScreenState extends State<LibraryScreen> {
                   await _loadBooks();
                 },
                 onQuickIncrement: (amt) => _quickIncrement(book, amt),
+                onToggleFavorite: () => _toggleFavorite(book),
               );
             },
             childCount: filtered.length,
@@ -801,6 +749,7 @@ class LibraryScreenState extends State<LibraryScreen> {
                 await _loadBooks();
               },
               onQuickIncrement: (amt) => _quickIncrement(book, amt),
+              onToggleFavorite: () => _toggleFavorite(book),
             );
           },
           childCount: filtered.length,
@@ -1014,6 +963,7 @@ class LibraryScreenState extends State<LibraryScreen> {
                         onOpenFullEdit: () => _openEditDialog(_selectedBookForDetail),
                         onOpenQuickLog: () => _openQuickLog(_selectedBookForDetail!),
                         onDelete: () => _deleteBook(_selectedBookForDetail!),
+                        onToggleFavorite: () => _toggleFavorite(_selectedBookForDetail!),
                         onQuickIncrement: (c, v) => _quickIncrementBoth(_selectedBookForDetail!, c, v),
                       ),
                     ],

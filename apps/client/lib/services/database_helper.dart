@@ -28,8 +28,9 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -84,10 +85,25 @@ class DatabaseHelper {
         table_name TEXT NOT NULL,
         record_id TEXT NOT NULL,
         action TEXT NOT NULL,
-        payload TEXT NOT NULL,
+        payload TEXT,
         created_at TEXT NOT NULL
       )
     ''');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS sync_queue (
+          id TEXT PRIMARY KEY,
+          table_name TEXT NOT NULL,
+          record_id TEXT NOT NULL,
+          action TEXT NOT NULL,
+          payload TEXT,
+          created_at TEXT NOT NULL
+        )
+      ''');
+    }
   }
 
   Future<List<Book>> getBooks() async {
@@ -252,8 +268,35 @@ class DatabaseHelper {
 
   Future<int> permanentDeleteBook(String id) async {
     final db = await instance.database;
-    await db.delete('reading_log', where: 'book_id = ?', whereArgs: [id]);
-    return await db.delete('books', where: 'id = ?', whereArgs: [id]);
+    return await db.transaction((txn) async {
+      await txn.insert('sync_queue', {
+        'id': id,
+        'table_name': 'books',
+        'record_id': id,
+        'action': 'delete_permanent',
+        'payload': '{}',
+        'created_at': DateTime.now().toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      await txn.delete('reading_log', where: 'book_id = ?', whereArgs: [id]);
+      return await txn.delete('books', where: 'id = ?', whereArgs: [id]);
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getPendingTombstones() async {
+    final db = await instance.database;
+    return await db.query(
+      'sync_queue',
+      where: "action = 'delete_permanent'",
+    );
+  }
+
+  Future<int> removeTombstone(String id) async {
+    final db = await instance.database;
+    return await db.delete(
+      'sync_queue',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   Future<int> insertReadingLog(ReadingLogEntry entry) async {

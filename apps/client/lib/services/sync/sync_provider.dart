@@ -13,7 +13,7 @@ abstract class RemoteSyncProvider {
   Future<bool> testConnection();
   Future<List<Book>> fetchRemoteBooks();
   Future<bool> pushBook(Book book);
-  Future<bool> deleteBook(String id);
+  Future<bool> deleteBook(String id, {bool permanent = false});
   Future<bool> pushReadingLog(ReadingLogEntry entry);
   Future<List<ReadingLogEntry>> fetchRemoteReadingLogs({DateTime? since});
   Future<int?> fetchYearlyGoal();

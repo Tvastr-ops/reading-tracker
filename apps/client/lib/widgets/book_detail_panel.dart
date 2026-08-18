@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/book.dart';
 import '../services/database_helper.dart';
+import '../services/reading_mutation_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import 'brutalist_widgets.dart';
@@ -13,6 +14,7 @@ class BookDetailPanel extends StatefulWidget {
   final VoidCallback onOpenFullEdit;
   final VoidCallback onOpenQuickLog;
   final VoidCallback onDelete;
+  final VoidCallback? onToggleFavorite;
   final Future<void> Function(int chaptersDelta, int volumesDelta)? onQuickIncrement;
 
   const BookDetailPanel({
@@ -23,6 +25,7 @@ class BookDetailPanel extends StatefulWidget {
     required this.onOpenFullEdit,
     required this.onOpenQuickLog,
     required this.onDelete,
+    this.onToggleFavorite,
     this.onQuickIncrement,
   });
 
@@ -32,6 +35,7 @@ class BookDetailPanel extends StatefulWidget {
 
 class _BookDetailPanelState extends State<BookDetailPanel> {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  final ReadingMutationService _mutationService = ReadingMutationService.instance;
   List<ReadingLogEntry> _logs = [];
   bool _isLoadingLogs = false;
 
@@ -61,11 +65,7 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
   }
 
   Future<void> _changeStatus(String newStatus) async {
-    final updated = widget.book.copyWith(
-      status: newStatus,
-      updatedAt: DateTime.now().toIso8601String(),
-    );
-    await _dbHelper.updateBook(updated);
+    final updated = await _mutationService.changeStatus(book: widget.book, newStatus: newStatus);
     widget.onUpdateBook(updated);
   }
 
@@ -477,6 +477,16 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                       ),
                     ),
                     const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: widget.onToggleFavorite,
+                      icon: Icon(
+                        b.isFavorite == true ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                        color: b.isFavorite == true ? AppColors.primaryRed : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                        size: 20,
+                      ),
+                      tooltip: b.isFavorite == true ? 'Unmark Favorite' : 'Mark as Favorite',
+                    ),
+                    const SizedBox(width: 4),
                     IconButton(
                       onPressed: widget.onDelete,
                       icon: const Icon(Icons.delete_outline_rounded, color: AppColors.primaryRed, size: 20),
