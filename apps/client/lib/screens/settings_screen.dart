@@ -373,7 +373,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'ABOUT PAPERBACK',
           _isAboutExpanded,
           () => _toggleSection(_keyPrefAbout, _isAboutExpanded, (v) => _isAboutExpanded = v),
-          badgeLabel: 'v1.5.0a',
+          badgeLabel: 'v1.6.0',
         ),
         const SizedBox(height: 6),
         if (_isAboutExpanded) ...[
@@ -478,7 +478,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   'ABOUT PAPERBACK',
                   _isAboutExpanded,
                   () => _toggleSection(_keyPrefAbout, _isAboutExpanded, (v) => _isAboutExpanded = v),
-                  badgeLabel: 'v1.5.0',
+                  badgeLabel: 'v1.6.0',
                 ),
                 const SizedBox(height: 6),
                 if (_isAboutExpanded) ...[
@@ -722,7 +722,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1),
                 ),
                 child: const Text(
-                  'v1.5.0',
+                  'v1.6.0',
                   style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white),
                 ),
               ),
