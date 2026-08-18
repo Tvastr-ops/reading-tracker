@@ -269,7 +269,7 @@ class LibraryScreenState extends State<LibraryScreen> {
           final updated = book.copyWith(
             progress: newProgress,
             status: newStatus,
-            updatedAt: DateTime.now().toIso8601String(),
+            updatedAt: DateTime.now().toUtc().toIso8601String(),
             syncStatus: 'pending_update',
           );
           await _dbHelper.updateBook(updated);
@@ -280,7 +280,7 @@ class LibraryScreenState extends State<LibraryScreen> {
             fromProgress: book.progress,
             toProgress: newProgress,
             note: note,
-            loggedAt: DateTime.now().toIso8601String(),
+            loggedAt: DateTime.now().toUtc().toIso8601String(),
             syncStatus: 'pending_create',
           );
           await _dbHelper.insertReadingLog(logEntry);

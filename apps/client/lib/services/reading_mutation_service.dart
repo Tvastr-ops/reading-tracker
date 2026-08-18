@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import '../models/book.dart';
 import '../utils/formatters.dart';
 import 'database_helper.dart';
@@ -39,7 +40,7 @@ class ReadingMutationService {
     final currentVol = (book.parentProgress ?? 0).toInt();
     final newVol = currentVol + volumesDelta;
 
-    final now = DateTime.now().toIso8601String();
+    final now = DateTime.now().toUtc().toIso8601String();
     var newStatus = book.status;
     if (newStatus == BookStatus.planToRead && (newCh > 0 || newVol > 0)) {
       newStatus = BookStatus.reading;
@@ -80,7 +81,7 @@ class ReadingMutationService {
     double? fromProgress,
     String? note,
   }) async {
-    final now = DateTime.now().toIso8601String();
+    final now = DateTime.now().toUtc().toIso8601String();
     final startVal = fromProgress ?? book.progress;
 
     var newStatus = book.status;
@@ -120,11 +121,12 @@ class ReadingMutationService {
     required Book book,
     required String newStatus,
   }) async {
-    final now = DateTime.now().toIso8601String();
+    final now = DateTime.now().toUtc().toIso8601String();
+    final localDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final updatedBook = book.copyWith(
       status: newStatus,
-      dateFinished: newStatus == BookStatus.completed ? (book.dateFinished ?? now.substring(0, 10)) : book.dateFinished,
-      dateStarted: (newStatus == BookStatus.reading && book.dateStarted == null) ? now.substring(0, 10) : book.dateStarted,
+      dateFinished: newStatus == BookStatus.completed ? (book.dateFinished ?? localDate) : book.dateFinished,
+      dateStarted: (newStatus == BookStatus.reading && book.dateStarted == null) ? localDate : book.dateStarted,
       updatedAt: now,
       syncStatus: 'pending_update',
     );
@@ -136,7 +138,7 @@ class ReadingMutationService {
 
   /// Toggles the favorite flag on a book.
   Future<Book> toggleFavorite({required Book book}) async {
-    final now = DateTime.now().toIso8601String();
+    final now = DateTime.now().toUtc().toIso8601String();
     final nextFav = !(book.isFavorite == true);
     final updatedBook = book.copyWith(
       isFavorite: nextFav,

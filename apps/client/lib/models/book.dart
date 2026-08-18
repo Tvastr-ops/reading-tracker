@@ -249,8 +249,8 @@ class Book {
       notes: map['notes']?.toString(),
       isFavorite: map['is_favorite'] == null ? null : (map['is_favorite'] == 1 || map['is_favorite'] == true),
       deletedAt: map['deleted_at']?.toString(),
-      createdAt: map['created_at']?.toString() ?? DateTime.now().toIso8601String(),
-      updatedAt: map['updated_at']?.toString() ?? DateTime.now().toIso8601String(),
+      createdAt: map['created_at']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
+      updatedAt: map['updated_at']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
       syncStatus: map['sync_status']?.toString() ?? 'synced',
     );
   }
@@ -310,7 +310,7 @@ class ReadingLogEntry {
       fromProgress: map['from_progress'] != null ? (map['from_progress'] as num).toDouble() : null,
       toProgress: (map['to_progress'] as num?)?.toDouble() ?? 0.0,
       note: map['note']?.toString(),
-      loggedAt: map['logged_at']?.toString() ?? DateTime.now().toIso8601String(),
+      loggedAt: map['logged_at']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
       syncStatus: map['sync_status']?.toString() ?? 'synced',
     );
   }

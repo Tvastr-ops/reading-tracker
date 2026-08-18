@@ -134,7 +134,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
-    final now = DateTime.now().toIso8601String();
+    final now = DateTime.now().toUtc().toIso8601String();
     final progressVal = double.tryParse(_progressController.text) ?? 0.0;
     final totalUnitsVal = double.tryParse(_totalUnitsController.text);
     final parentProgVal = num.tryParse(_parentProgressController.text);
