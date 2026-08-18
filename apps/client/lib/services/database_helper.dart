@@ -23,7 +23,26 @@ class DatabaseHelper {
       databaseFactory = databaseFactoryFfi;
     }
 
-    final dbPath = await getDatabasesPath();
+    String dbPath;
+    if (!kIsWeb && (Platform.isWindows || Platform.isLinux)) {
+      try {
+        final exeDir = File(Platform.resolvedExecutable).parent.path;
+        final portableDataDir = Directory(join(exeDir, 'portable_data'));
+        final portableMarker = File(join(exeDir, '.portable'));
+        if (portableDataDir.existsSync() || portableMarker.existsSync()) {
+          if (!portableDataDir.existsSync()) {
+            portableDataDir.createSync(recursive: true);
+          }
+          dbPath = portableDataDir.path;
+        } else {
+          dbPath = await getDatabasesPath();
+        }
+      } catch (_) {
+        dbPath = await getDatabasesPath();
+      }
+    } else {
+      dbPath = await getDatabasesPath();
+    }
     final path = join(dbPath, filePath);
 
     return await openDatabase(

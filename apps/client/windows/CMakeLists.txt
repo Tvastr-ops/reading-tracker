@@ -7,16 +7,20 @@ cmake_policy(SET CMP0063 NEW)
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/plugins")
 
-include(flutter/generated_plugins.cmake)
+# Apply standard build settings for targets and plugins
+if(NOT COMMAND apply_standard_settings)
+  function(apply_standard_settings TARGET)
+    target_compile_features(${TARGET} PUBLIC cxx_std_17)
+    target_compile_options(${TARGET} PRIVATE /W4 /wd"4100")
+    target_compile_options(${TARGET} PRIVATE "$<$<NOT:$<CONFIG:Debug>>:/O2>")
+    target_compile_definitions(${TARGET} PRIVATE "$<$<NOT:$<CONFIG:Debug>>:NDEBUG>")
+  endfunction()
+endif()
 
 set(FLUTTER_MANAGED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/flutter")
 
-add_subdirectory(${FLUTTER_MANAGED_DIR} ${CMAKE_CURRENT_BINARY_DIR}/flutter)
+add_subdirectory(${FLUTTER_MANAGED_DIR} flutter)
 
 add_subdirectory(runner)
 
-list(APPEND FLUTTER_PLUGIN_LIST)
-
-foreach(plugin ${FLUTTER_PLUGIN_LIST})
-  add_subdirectory(flutter/ephemeral/.plugin_symlinks/${plugin}/windows plugins/${plugin})
-endforeach()
+include(flutter/generated_plugins.cmake)
