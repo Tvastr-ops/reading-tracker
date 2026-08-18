@@ -127,6 +127,8 @@ pnpm run dev:client
 # Or: cd apps/client && flutter run
 ```
 
+> **💡 Package Manager Note**: The root workspace is orchestrated with **`pnpm`** (`pnpm-workspace.yaml`). If developing exclusively inside the [`apps/web`](./apps/web) subfolder, you may also use **`npm`**, **`yarn`**, or **`bun`** directly.
+
 ### Workspace Commands
 
 | Command | Action |
@@ -143,7 +145,7 @@ pnpm run dev:client
 
 Detailed instructions for deploying to **Vercel**, configuring **Supabase**, generating API keys, and compiling native Android APKs can be found in the:
 
-👉 **[`DEPLOYMENT_GUIDE.md`](./DEPLOYMENT_GUIDE.md)**
+👉 **[Deployment & Self-Hosting Guide](./doc/how-to/DeployVercelSupabase.md)**
 
 ---
 
