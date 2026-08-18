@@ -24,7 +24,7 @@ class UpdateService {
   static final UpdateService instance = UpdateService._init();
   UpdateService._init();
 
-  static const String currentAppVersion = 'v1.6.0c';
+  static const String currentAppVersion = 'v1.7.0';
   static const String repoOwner = 'Tvastr-ops';
   static const String repoName = 'reading-tracker';
 
