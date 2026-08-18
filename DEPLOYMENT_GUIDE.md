@@ -157,7 +157,7 @@ The Flutter client app (`apps/client`) runs on **Android, iOS, Web, Windows, and
 
 ### Option A: Direct Supabase Cloud Sync (Serverless / No Web App Required)
 1. In your Supabase Dashboard, open **SQL Editor** → **New Query**.
-2. Copy and paste the contents of `supabase/migration_v8_rls.sql` and click **Run**.
+2. Copy and paste the contents of `supabase/migration_v08_rls.sql` and click **Run**.
 3. In the client app, go to **Settings (⚙️) → Remote Sync**:
    - Set **Backend Type** to `Supabase`.
    - Enter your **Project URL** (e.g. `https://your-project.supabase.co`).
@@ -182,9 +182,9 @@ The Flutter client app (`apps/client`) runs on **Android, iOS, Web, Windows, and
 If you deployed an earlier version of Reading Tracker, run the migration scripts in your Supabase SQL Editor:
 
 1. Open **Supabase Dashboard** → **SQL Editor** → **New Query**.
-2. If upgrading from **v1**: Open `supabase/migration_v2.sql`, copy all text, paste into Supabase, and click **Run**. Next, open `supabase/migration_v3.sql`, copy all text, paste into Supabase, and click **Run**.
-3. If upgrading from **v2**: Open `supabase/migration_v3.sql`, copy all text, paste into Supabase, and click **Run**.
-4. To enable direct mobile client Supabase sync: Open `supabase/migration_v8_rls.sql`, copy all text, paste into Supabase, and click **Run**.
+2. If upgrading from **v1**: Open `supabase/migration_v02.sql`, copy all text, paste into Supabase, and click **Run**. Next, open `supabase/migration_v03.sql`, copy all text, paste into Supabase, and click **Run**.
+3. If upgrading from **v2**: Open `supabase/migration_v03.sql`, copy all text, paste into Supabase, and click **Run**.
+4. To enable direct mobile client Supabase sync: Open `supabase/migration_v08_rls.sql`, copy all text, paste into Supabase, and click **Run**.
 
 ---
 
@@ -198,7 +198,7 @@ the **Deployments** tab and click the **⋯** menu on the latest one →
 **Redeploy**.
 
 **"500 Internal Server Error" when adding a reading log entry:**
-This means your Supabase database is missing the `reading_pace` column added in v3. Go to Supabase **SQL Editor** → **New Query**, copy the contents of `supabase/migration_v3.sql` (`ALTER TABLE books ADD COLUMN IF NOT EXISTS reading_pace numeric;`), and click **Run**.
+This means your Supabase database is missing the `reading_pace` column added in v3. Go to Supabase **SQL Editor** → **New Query**, copy the contents of `supabase/migration_v03.sql` (`ALTER TABLE books ADD COLUMN IF NOT EXISTS reading_pace numeric;`), and click **Run**.
 
 **Login page says "Incorrect password":**
 Double check `APP_PASSWORD` in Vercel's environment variables has no extra
