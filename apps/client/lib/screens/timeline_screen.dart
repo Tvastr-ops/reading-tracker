@@ -26,15 +26,23 @@ class _TimelineScreenState extends State<TimelineScreen> {
   @override
   void initState() {
     super.initState();
+    _syncManager.addListener(_onSyncManagerUpdated);
     _loadInitialLogs();
     _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
+    _syncManager.removeListener(_onSyncManagerUpdated);
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onSyncManagerUpdated() {
+    if (mounted && !_syncManager.isSyncing) {
+      _loadInitialLogs();
+    }
   }
 
   void _onScroll() {
@@ -118,20 +126,47 @@ class _TimelineScreenState extends State<TimelineScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _logs.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+              ? RefreshIndicator(
+                  onRefresh: () async {
+                    await _syncManager.syncNow();
+                    await _loadInitialLogs();
+                  },
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     children: [
-                      const BrutalistBadge(label: 'NO READING LOGS YET'),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Use the +1 chips or LOG button in Library to record progress',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                          color: mutedInk,
+                      SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const BrutalistBadge(label: 'NO READING LOGS YET'),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Use the +1 chips or LOG button in Library to record progress',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                                color: mutedInk,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            BrutalistButton(
+                              onPressed: () async {
+                                await _syncManager.syncNow();
+                                await _loadInitialLogs();
+                              },
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.sync_rounded, size: 16, color: Colors.white),
+                                  SizedBox(width: 6),
+                                  Text('SYNC LOGS NOW', style: TextStyle(color: Colors.white, fontSize: 12)),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
