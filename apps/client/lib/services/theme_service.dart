@@ -186,7 +186,15 @@ class ThemeService extends ChangeNotifier {
         }
       } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
         try {
-          await windowManager.setFullScreen(_isFullscreen);
+          if (_isFullscreen) {
+            final isMax = await windowManager.isMaximized();
+            if (isMax) {
+              await windowManager.unmaximize();
+            }
+            await windowManager.setFullScreen(true);
+          } else {
+            await windowManager.setFullScreen(false);
+          }
         } catch (_) {}
       }
     }

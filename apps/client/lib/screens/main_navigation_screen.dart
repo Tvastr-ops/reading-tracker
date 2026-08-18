@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/sync/sync_manager.dart';
+import '../services/theme_service.dart';
 import '../theme/app_theme.dart';
 import 'library_screen.dart';
 import 'settings_screen.dart';
@@ -78,9 +80,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
       ),
     ];
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isDesktopOrTablet = constraints.maxWidth >= 800;
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.f11): () => ThemeService.instance.toggleFullscreen(),
+      },
+      child: Focus(
+        autofocus: true,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktopOrTablet = constraints.maxWidth >= 800;
 
         if (isDesktopOrTablet) {
           // Desktop / Widescreen Layout: Left Navigation Rail + Expanded Page Stack
@@ -317,7 +325,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
           ),
         );
       },
-    );
+    ),
+  ),
+);
   }
 
   Widget _buildRailNavItem({

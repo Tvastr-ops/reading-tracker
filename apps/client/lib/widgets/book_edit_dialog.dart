@@ -181,9 +181,10 @@ class _BookEditDialogState extends State<BookEditDialog> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-      backgroundColor: dialogBg,
       child: Container(
         constraints: BoxConstraints(
           maxWidth: 580,
@@ -197,9 +198,9 @@ class _BookEditDialogState extends State<BookEditDialog> {
           ),
           boxShadow: [
             BoxShadow(
-              color: borderColor,
-              offset: details?.shadowOffset ?? AppTheme.shadowOffset,
-              blurRadius: 0,
+              color: isDark ? Colors.black.withValues(alpha: 0.7) : borderColor,
+              offset: isDark ? const Offset(3, 3) : (details?.shadowOffset ?? AppTheme.shadowOffset),
+              blurRadius: isDark ? 4 : 0,
             ),
           ],
         ),
@@ -576,7 +577,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
                     ],
                     const Spacer(),
                     BrutalistButton(
-                      backgroundColor: Colors.transparent,
+                      backgroundColor: details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface),
                       textColor: inkColor,
                       borderWidth: 1.5,
                       onPressed: () => Navigator.pop(context),
