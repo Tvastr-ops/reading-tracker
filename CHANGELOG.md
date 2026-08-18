@@ -7,6 +7,18 @@ and this project adheres to the [Project Release Versioning Specification](.gemi
 
 ---
 
+## [1.7.0c] - 2026-08-18
+
+### Fixed
+- **Desktop Card Button Clipping**: Expanded grid cell extent to prevent button slicing and hanging footers on books with multi-line titles and multiple badges.
+- **Mobile 3-Column Compact Covers**: Resolved 2-column lock on mobile devices, unlocking 3 covers per row in compact mode.
+- **Live Theme & Texture Reactivity**: Connected listeners in `MainNavigationScreen` and `LibraryScreen` so compact mode and paper texture toggles take effect instantly.
+- **Tactile Paper Texture Visibility**: Tuned vector pattern opacity and stroke widths for crisp, tangible stationery textures.
+- **Desktop Reading Carousel Proportions**: Constrained widescreen width to eliminate 1400px empty voids.
+- **Table View Alignment & Metadata**: Added structured desktop columnar alignment, header bar, author/ongoing metadata, and mobile compact scaling.
+
+---
+
 ## [1.7.0b] - 2026-08-18
 
 ### Added

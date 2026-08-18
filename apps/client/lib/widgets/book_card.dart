@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/book.dart';
+import '../services/theme_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import 'brutalist_widgets.dart';
@@ -33,8 +34,14 @@ class BookCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
     final progressFraction = (book.completionPercentage / 100).clamp(0.0, 1.0);
+    final isCompact = ThemeService.instance.compactMode;
+    final coverWidth = isCompact ? 50.0 : 60.0;
+    final coverHeight = isCompact ? 76.0 : 90.0;
+    final cardPadding = isCompact ? const EdgeInsets.all(10) : const EdgeInsets.all(12);
 
     return BrutalistCard(
+      margin: EdgeInsets.zero,
+      padding: cardPadding,
       onTap: onEdit,
       onSecondaryTapDown: onContextMenu != null ? (d) => onContextMenu!(d) : null,
       borderColor: isSelected ? accentColor : null,
@@ -49,8 +56,8 @@ class BookCard extends StatelessWidget {
             children: [
               // Cover
               Container(
-                width: 60,
-                height: 90,
+                width: coverWidth,
+                height: coverHeight,
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh,
                   border: Border.all(
@@ -66,7 +73,7 @@ class BookCard extends StatelessWidget {
                       )
                     : _buildPlaceholderIcon(),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
 
               // Title, Author, Tags
               Expanded(
@@ -75,9 +82,9 @@ class BookCard extends StatelessWidget {
                   children: [
                     Text(
                       book.title.toUpperCase(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w900,
-                        fontSize: 16,
+                        fontSize: isCompact ? 14 : 15.5,
                         letterSpacing: -0.2,
                       ),
                       maxLines: 2,
@@ -132,7 +139,7 @@ class BookCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: isCompact ? 8 : 10),
 
           // Progress section
           Row(
@@ -152,9 +159,9 @@ class BookCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 5),
           BrutalistProgressBar(progress: progressFraction),
-          const SizedBox(height: 12),
+          SizedBox(height: isCompact ? 8 : 10),
 
           // Quick Action Footer
           Row(
@@ -164,14 +171,14 @@ class BookCard extends StatelessWidget {
               Row(
                 children: getQuickChipOptions(book.type).take(3).map((amt) {
                   return Padding(
-                    padding: const EdgeInsets.only(right: 6),
+                    padding: const EdgeInsets.only(right: 5),
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: () => onQuickIncrement(amt.toDouble()),
                         child: Container(
-                          constraints: const BoxConstraints(minWidth: 38, minHeight: 32),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          constraints: BoxConstraints(minWidth: isCompact ? 32 : 38, minHeight: isCompact ? 28 : 32),
+                          padding: EdgeInsets.symmetric(horizontal: isCompact ? 7 : 9, vertical: isCompact ? 4 : 5),
                           decoration: BoxDecoration(
                             color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
                             border: Border.all(
@@ -189,7 +196,7 @@ class BookCard extends StatelessWidget {
                           alignment: Alignment.center,
                           child: Text(
                             '+$amt',
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+                            style: TextStyle(fontSize: isCompact ? 10 : 11, fontWeight: FontWeight.w900),
                           ),
                         ),
                       ),

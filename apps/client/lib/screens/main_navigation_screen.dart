@@ -34,6 +34,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    ThemeService.instance.addListener(_onThemeServiceChanged);
 
     _libraryScreen = LibraryScreen(
       key: _libraryKey,
@@ -50,8 +51,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
     }
   }
 
+  void _onThemeServiceChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    ThemeService.instance.removeListener(_onThemeServiceChanged);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
