@@ -44,6 +44,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   UpdateInfo? _updateInfo;
   bool _isCheckingUpdate = false;
   String? _updateError;
+  String _appVersion = 'v1.7.0';
 
   // Persisted Collapsible section states
   static const String _keyPrefAppearance = 'settings_expanded_appearance';
@@ -72,6 +73,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _syncManager.addListener(_onSyncUpdate);
     _themeService.addListener(_onThemeUpdate);
     _loadSectionPreferences();
+
+    _updateService.getCurrentAppVersion().then((v) {
+      if (mounted) {
+        setState(() => _appVersion = v);
+      }
+    });
   }
 
   @override
@@ -379,7 +386,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'ABOUT PAPERBACK',
           _isAboutExpanded,
           () => _toggleSection(_keyPrefAbout, _isAboutExpanded, (v) => _isAboutExpanded = v),
-          badgeLabel: 'v1.7.0',
+          badgeLabel: _appVersion,
         ),
         const SizedBox(height: 6),
         if (_isAboutExpanded) ...[
@@ -484,7 +491,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   'ABOUT PAPERBACK',
                   _isAboutExpanded,
                   () => _toggleSection(_keyPrefAbout, _isAboutExpanded, (v) => _isAboutExpanded = v),
-                  badgeLabel: 'v1.7.0',
+                  badgeLabel: _appVersion,
                 ),
                 const SizedBox(height: 6),
                 if (_isAboutExpanded) ...[
@@ -727,9 +734,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   color: Theme.of(context).colorScheme.primary,
                   border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1),
                 ),
-                child: const Text(
-                  'v1.7.0',
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white),
+                child: Text(
+                  _appVersion,
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white),
                 ),
               ),
             ],
