@@ -1,11 +1,17 @@
+import 'dart:io';
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:window_manager/window_manager.dart';
 import 'screens/main_navigation_screen.dart';
 import 'services/sync/sync_manager.dart';
 import 'services/theme_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+    await windowManager.ensureInitialized();
+  }
   await ThemeService.instance.init();
   await SyncManager.instance.init();
   runApp(const ReadingTrackerApp());

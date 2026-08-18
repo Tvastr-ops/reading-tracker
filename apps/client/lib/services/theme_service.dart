@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:window_manager/window_manager.dart';
 import '../theme/app_theme.dart';
 
 class ThemeService extends ChangeNotifier {
@@ -176,11 +177,17 @@ class ThemeService extends ChangeNotifier {
     _isFullscreen = !_isFullscreen;
     notifyListeners();
 
-    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-      if (_isFullscreen) {
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-      } else {
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    if (!kIsWeb) {
+      if (Platform.isAndroid || Platform.isIOS) {
+        if (_isFullscreen) {
+          SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+        } else {
+          SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+        }
+      } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+        try {
+          await windowManager.setFullScreen(_isFullscreen);
+        } catch (_) {}
       }
     }
   }

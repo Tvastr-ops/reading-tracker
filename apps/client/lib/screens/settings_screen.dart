@@ -1373,52 +1373,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 10),
           ],
 
-          // 5. Desktop Fullscreen Mode Toggle
-          if (!isMobile) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
-                border: Border.all(color: borderColor, width: 1.5),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'DISTRACTION-FREE FULLSCREEN (F11)',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                            color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Toggle borderless fullscreen mode (Shortcut: F11)',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.65),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: Switch(
-                      value: isFullscreen,
-                      activeThumbColor: Theme.of(context).colorScheme.primary,
-                      onChanged: (val) => _themeService.toggleFullscreen(),
-                    ),
-                  ),
-                ],
-              ),
+          // 5. Fullscreen Mode Toggle (Desktop & Mobile)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+              border: Border.all(color: borderColor, width: 1.5),
             ),
-          ],
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isMobile ? 'IMMERSIVE FULLSCREEN' : 'DISTRACTION-FREE FULLSCREEN (F11)',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isMobile
+                            ? 'Hide status bar & navigation bar for focused reading'
+                            : 'Toggle borderless fullscreen mode (Shortcut: F11)',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.65),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: Switch(
+                    value: isFullscreen,
+                    activeThumbColor: Theme.of(context).colorScheme.primary,
+                    onChanged: (val) => _themeService.toggleFullscreen(),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
