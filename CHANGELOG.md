@@ -5,6 +5,13 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [1.8.0e] - 2026-08-19
+
+### Added
+- **5-Minute Periodic Auto-Sync Heartbeat**: Added background heartbeat timer in `SyncManager` ensuring long-running desktop and mobile sessions automatically pull external updates without requiring window focus or manual interaction.
+
+---
+
 ## [1.8.0d] - 2026-08-19
 
 ### Fixed
