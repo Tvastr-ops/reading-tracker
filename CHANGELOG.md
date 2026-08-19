@@ -5,6 +5,16 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [1.8.0f] - 2026-08-19
+
+### Fixed
+- **Client-Side Permanent Deletion Execution**: Added immediate `SyncManager.instance.syncNow()` invocation upon clicking permanent delete / restore in `TrashScreen`, ensuring durable deletion tombstones are immediately sent to the cloud backend.
+- **Web API Permanent Deletion Handler**: Fixed `DELETE /api/books/[id]` treating `?permanent=true` as soft-delete, and ensured child `reading_log` entries are purged before deleting the parent book row.
+- **Supabase Direct Delete Headers**: Removed `Prefer: resolution=merge-duplicates` conflict header on Supabase direct `DELETE` requests, and ensured child reading logs are purged.
+- **Broad Duplicate Title Reconciliation**: Updated SQLite `upsertRemoteBook` to proactively delete any duplicate local records with matching titles upon cloud receipt.
+
+---
+
 ## [1.8.0e] - 2026-08-19
 
 ### Added

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/book.dart';
 import '../services/database_helper.dart';
+import '../services/sync/sync_manager.dart';
 import '../theme/app_theme.dart';
 import '../widgets/brutalist_widgets.dart';
 
@@ -37,6 +38,7 @@ class _TrashScreenState extends State<TrashScreen> {
     await _dbHelper.restoreBook(book.id);
     widget.onDataChanged();
     await _loadTrash();
+    SyncManager.instance.syncNow();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Restored "${book.title}" to Library')),
@@ -87,6 +89,7 @@ class _TrashScreenState extends State<TrashScreen> {
       await _dbHelper.permanentDeleteBook(book.id);
       widget.onDataChanged();
       await _loadTrash();
+      SyncManager.instance.syncNow();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Permanently removed "${book.title}"')),

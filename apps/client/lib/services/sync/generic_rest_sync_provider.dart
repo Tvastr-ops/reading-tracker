@@ -108,7 +108,7 @@ class GenericRestSyncProvider implements RemoteSyncProvider {
   Future<bool> deleteBook(String id, {bool permanent = false}) async {
     if (serverUrl.isEmpty) return false;
     try {
-      final path = permanent ? '/api/books/$id?permanent=true' : '/api/books/$id';
+      final path = permanent ? '/api/books/$id?permanent=1' : '/api/books/$id';
       final uri = Uri.parse(_cleanUrl(path));
       final res = await http.delete(uri, headers: _headers).timeout(const Duration(seconds: 8));
       if (res.statusCode >= 200 && res.statusCode < 300) {
