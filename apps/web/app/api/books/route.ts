@@ -30,10 +30,11 @@ export const GET = withAuth(async (req: NextRequest) => {
   );
 });
 
-function sanitize(input: Partial<BookInput>) {
+function sanitize(input: Partial<BookInput> & { id?: string }) {
   // Only allow known fields through — never trust the raw request body
   // straight into the database.
   const {
+    id,
     title,
     type,
     unit_type,
@@ -76,7 +77,10 @@ function sanitize(input: Partial<BookInput>) {
   const cleanLatest =
     latest_units != null && !Number.isNaN(Number(latest_units)) ? Number(latest_units) : null;
 
+  const validUuid = typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id.trim()) ? id.trim() : undefined;
+
   return {
+    ...(validUuid ? { id: validUuid } : {}),
     title: title.trim(),
     type: type || 'Novel',
     unit_type: unit_type || 'pages',

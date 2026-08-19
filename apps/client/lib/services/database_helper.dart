@@ -197,8 +197,41 @@ class DatabaseHelper {
     );
   }
 
+  Future<void> remapBookId(String oldId, String newId) async {
+    final db = await instance.database;
+    await db.transaction((txn) async {
+      await txn.delete('books', where: 'id = ?', whereArgs: [newId]);
+      await txn.update(
+        'books',
+        {'id': newId, 'sync_status': 'synced'},
+        where: 'id = ?',
+        whereArgs: [oldId],
+      );
+      await txn.update(
+        'reading_logs',
+        {'book_id': newId},
+        where: 'book_id = ?',
+        whereArgs: [oldId],
+      );
+    });
+  }
+
   Future<void> upsertRemoteBook(Book b) async {
     final db = await instance.database;
+
+    // Proactively clean up any un-synced duplicate placeholder created locally with identical title
+    try {
+      final duplicates = await db.query(
+        'books',
+        where: "title = ? AND sync_status = 'pending_create' AND id != ?",
+        whereArgs: [b.title, b.id],
+      );
+      for (final dup in duplicates) {
+        final dupId = dup['id'] as String;
+        await db.delete('books', where: 'id = ?', whereArgs: [dupId]);
+      }
+    } catch (_) {}
+
     await db.rawInsert('''
       INSERT INTO books (
         id, title, type, unit_type, progress_structure, parent_progress, parent_total,
