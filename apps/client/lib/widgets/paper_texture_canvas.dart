@@ -103,12 +103,12 @@ class _PaperPatternPainter extends CustomPainter {
   void _drawDotGrid(Canvas canvas, Size size) {
     const spacing = 22.0;
     final paint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.18 : 0.14)
+      ..color = inkColor.withValues(alpha: isDark ? 0.12 : 0.10)
       ..style = PaintingStyle.fill;
 
     for (double x = spacing; x < size.width; x += spacing) {
       for (double y = spacing; y < size.height; y += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.3, paint);
+        canvas.drawCircle(Offset(x, y), 1.15, paint);
       }
     }
   }
@@ -116,13 +116,13 @@ class _PaperPatternPainter extends CustomPainter {
   /// Japanese handmade washi fiber flecks for Matcha & Washi, Midnight Matcha, and Charred Papyrus
   void _drawWashiFibers(Canvas canvas, Size size) {
     final fiberPaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.16 : 0.13)
-      ..strokeWidth = 1.3
+      ..color = inkColor.withValues(alpha: isDark ? 0.12 : 0.10)
+      ..strokeWidth = 1.1
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 
     final specklePaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.18 : 0.14)
+      ..color = inkColor.withValues(alpha: isDark ? 0.13 : 0.11)
       ..style = PaintingStyle.fill;
 
     // Deterministic procedural fiber flecks across a 75px repeatable grid
@@ -146,7 +146,7 @@ class _PaperPatternPainter extends CustomPainter {
         if (rand.nextDouble() > 0.25) {
           final sx = cx + rand.nextDouble() * cellSize;
           final sy = cy + rand.nextDouble() * cellSize;
-          canvas.drawCircle(Offset(sx, sy), 1.2, specklePaint);
+          canvas.drawCircle(Offset(sx, sy), 1.1, specklePaint);
         }
       }
     }
@@ -157,8 +157,8 @@ class _PaperPatternPainter extends CustomPainter {
     const colSpacing = 26.0;
     const rowSpacing = 26.0;
     final linePaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.15 : 0.11)
-      ..strokeWidth = 0.9
+      ..color = inkColor.withValues(alpha: isDark ? 0.10 : 0.08)
+      ..strokeWidth = 0.75
       ..style = PaintingStyle.stroke;
 
     for (double x = colSpacing; x < size.width; x += colSpacing) {
@@ -173,8 +173,8 @@ class _PaperPatternPainter extends CustomPainter {
   void _drawLedgerLines(Canvas canvas, Size size) {
     const spacing = 28.0;
     final linePaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.15 : 0.12)
-      ..strokeWidth = 1.0
+      ..color = inkColor.withValues(alpha: isDark ? 0.11 : 0.09)
+      ..strokeWidth = 0.85
       ..style = PaintingStyle.stroke;
 
     for (double y = spacing; y < size.height; y += spacing) {
@@ -184,8 +184,8 @@ class _PaperPatternPainter extends CustomPainter {
     // Left vertical margin line (classic accounting ledger rule)
     if (size.width > 60) {
       final marginPaint = Paint()
-        ..color = inkColor.withValues(alpha: isDark ? 0.18 : 0.14)
-        ..strokeWidth = 1.2
+        ..color = inkColor.withValues(alpha: isDark ? 0.13 : 0.11)
+        ..strokeWidth = 1.0
         ..style = PaintingStyle.stroke;
       canvas.drawLine(const Offset(44, 0), Offset(44, size.height), marginPaint);
     }
@@ -195,14 +195,14 @@ class _PaperPatternPainter extends CustomPainter {
   void _drawHalftoneDots(Canvas canvas, Size size) {
     const spacing = 16.0;
     final paint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.16 : 0.13)
+      ..color = inkColor.withValues(alpha: isDark ? 0.12 : 0.10)
       ..style = PaintingStyle.fill;
 
     bool stagger = false;
     for (double y = spacing; y < size.height; y += spacing) {
       final offsetX = stagger ? spacing / 2 : 0.0;
       for (double x = spacing + offsetX; x < size.width; x += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.25, paint);
+        canvas.drawCircle(Offset(x, y), 1.15, paint);
       }
       stagger = !stagger;
     }
@@ -211,7 +211,7 @@ class _PaperPatternPainter extends CustomPainter {
   /// Organic book paper grain & tactile speckling for Classic Paperback
   void _drawPaperGrain(Canvas canvas, Size size) {
     final grainPaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.15 : 0.12)
+      ..color = inkColor.withValues(alpha: isDark ? 0.11 : 0.09)
       ..style = PaintingStyle.fill;
 
     const blockSize = 60.0;
@@ -223,7 +223,7 @@ class _PaperPatternPainter extends CustomPainter {
         for (int i = 0; i < 7; i++) {
           final gx = bx + rand.nextDouble() * blockSize;
           final gy = by + rand.nextDouble() * blockSize;
-          canvas.drawCircle(Offset(gx, gy), 0.9 + rand.nextDouble() * 0.6, grainPaint);
+          canvas.drawCircle(Offset(gx, gy), 0.8 + rand.nextDouble() * 0.5, grainPaint);
         }
       }
     }
@@ -235,13 +235,13 @@ class _PaperPatternPainter extends CustomPainter {
     const majorSpacing = 64.0;
 
     final minorPaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.12 : 0.09)
-      ..strokeWidth = 0.7
+      ..color = inkColor.withValues(alpha: isDark ? 0.08 : 0.06)
+      ..strokeWidth = 0.6
       ..style = PaintingStyle.stroke;
 
     final majorPaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.22 : 0.16)
-      ..strokeWidth = 1.2
+      ..color = inkColor.withValues(alpha: isDark ? 0.13 : 0.10)
+      ..strokeWidth = 1.0
       ..style = PaintingStyle.stroke;
 
     // Minor grid

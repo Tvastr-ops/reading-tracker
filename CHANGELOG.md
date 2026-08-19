@@ -5,6 +5,14 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [1.8.0a] - 2026-08-19
+
+### Changed
+- **Paper Texture Opacity & Hairlines**: Tuned pattern opacities to a balanced $10\% - 12\%$ with crisp $0.75\text{px}-1.15\text{px}$ strokes for an elegant tactile stationery look without visual clutter.
+- **Desktop Covers Grid Density**: Set widescreen covers extent to $140\text{px}$ ($\sim 8-9$ columns) for comfortable cover art breathing room and un-truncated progress text, while keeping $120\text{px}$ ($3$ columns) on mobile devices.
+
+---
+
 ## [1.8.0] - 2026-08-19
 
 ### Added

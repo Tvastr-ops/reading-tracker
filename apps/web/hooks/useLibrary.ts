@@ -7,20 +7,68 @@ import { normalizeStatusTransition } from '@/lib/progress';
 import { type Book, type BookInput, STATUSES } from '@/lib/types';
 import { getLocalDateString } from '@/lib/utils';
 
+export type ThemePalette = 'classic' | 'paperback' | 'matcha' | 'nordic';
+export type ThemeMode = 'light' | 'dark';
+
 export function useLibrary() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showTrash, setShowTrash] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [themePalette, setThemePaletteState] = useState<ThemePalette>('classic');
+  const [themeMode, setThemeModeState] = useState<ThemeMode>('light');
+  const [paperTexture, setPaperTextureState] = useState<boolean>(true);
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState('');
   const router = useRouter();
 
-  // Initialize theme
+  // Initialize theme state from DOM attributes initialized by layout script
   useEffect(() => {
-    const current = document.documentElement.getAttribute('data-theme');
-    setTheme(current === 'dark' ? 'dark' : 'light');
+    const currentTheme = document.documentElement.getAttribute('data-theme') as ThemePalette;
+    const currentMode = document.documentElement.getAttribute('data-mode') as ThemeMode;
+    const hasPattern = document.documentElement.getAttribute('data-pattern') === 'true';
+
+    if (currentTheme && ['classic', 'paperback', 'matcha', 'nordic'].includes(currentTheme)) {
+      setThemePaletteState(currentTheme);
+    }
+    setThemeModeState(currentMode === 'dark' ? 'dark' : 'light');
+    setPaperTextureState(hasPattern);
+  }, []);
+
+  const setThemePalette = useCallback((palette: ThemePalette) => {
+    setThemePaletteState(palette);
+    document.documentElement.setAttribute('data-theme', palette);
+    window.localStorage.setItem('theme_palette', palette);
+  }, []);
+
+  const setThemeMode = useCallback((mode: ThemeMode) => {
+    setThemeModeState(mode);
+    document.documentElement.setAttribute('data-mode', mode);
+    window.localStorage.setItem('theme_mode', mode);
+    window.localStorage.setItem('theme', mode);
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setThemeModeState((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-mode', next);
+      window.localStorage.setItem('theme_mode', next);
+      window.localStorage.setItem('theme', next);
+      return next;
+    });
+  }, []);
+
+  const togglePaperTexture = useCallback(() => {
+    setPaperTextureState((prev) => {
+      const next = !prev;
+      if (next) {
+        document.documentElement.setAttribute('data-pattern', 'true');
+      } else {
+        document.documentElement.removeAttribute('data-pattern');
+      }
+      window.localStorage.setItem('theme_pattern', String(next));
+      return next;
+    });
   }, []);
 
   const load = useCallback(
@@ -52,15 +100,6 @@ export function useLibrary() {
   useEffect(() => {
     load();
   }, [load]);
-
-  const toggleTheme = useCallback(() => {
-    setTheme((prev) => {
-      const next = prev === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', next);
-      window.localStorage.setItem('theme', next);
-      return next;
-    });
-  }, []);
 
   const logout = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -283,8 +322,14 @@ export function useLibrary() {
     error,
     showTrash,
     setShowTrash,
-    theme,
+    theme: themeMode,
+    themePalette,
+    themeMode,
+    paperTexture,
+    setThemePalette,
+    setThemeMode,
     toggleTheme,
+    togglePaperTexture,
     importing,
     importMsg,
     handleImportFile,
