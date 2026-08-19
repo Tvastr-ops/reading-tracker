@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:reading_tracker_app/services/update_service.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   group('UpdateService Version Comparison Tests', () {
     test('compareVersions accurately compares letter suffixes within same minor release', () {
       expect(UpdateService.compareVersions('v1.6.0b', 'v1.6.0a'), greaterThan(0));
@@ -33,7 +34,7 @@ void main() {
 
     test('getCurrentAppVersion returns currentReleaseVersion when package info is unconfigured', () async {
       final version = await UpdateService.instance.getCurrentAppVersion();
-      expect(version, equals('v1.7.0c'));
+      expect(version, equals('v1.8.0'));
     });
   });
 }

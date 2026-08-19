@@ -49,6 +49,7 @@ class BookCard extends StatelessWidget {
       shadowOffset: isSelected ? const Offset(4.0, 4.0) : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Row: Cover + Details
           Row(
@@ -84,7 +85,7 @@ class BookCard extends StatelessWidget {
                       book.title.toUpperCase(),
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
-                        fontSize: isCompact ? 14 : 15.5,
+                        fontSize: isCompact ? 13.5 : 15.0,
                         letterSpacing: -0.2,
                       ),
                       maxLines: 2,
@@ -95,7 +96,7 @@ class BookCard extends StatelessWidget {
                       Text(
                         book.author!,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11.5,
                           color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
                           fontWeight: FontWeight.w500,
                         ),
@@ -103,12 +104,12 @@ class BookCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
 
                     // Badges
                     Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
+                      spacing: 5,
+                      runSpacing: 3,
                       children: [
                         BrutalistBadge(label: book.type),
                         if (book.isOngoing == true)
@@ -139,105 +140,117 @@ class BookCard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: isCompact ? 8 : 10),
 
-          // Progress section
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Bottom Section: Progress + Action Footer
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                formatProgressDisplay(book).toUpperCase(),
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
-              ),
-              Text(
-                '${book.completionPercentage.toInt()}%',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  color: Theme.of(context).extension<AppThemeDetails>()?.accentColor ?? Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 5),
-          BrutalistProgressBar(progress: progressFraction),
-          SizedBox(height: isCompact ? 8 : 10),
-
-          // Quick Action Footer
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Quick Increment Chips
+              // Progress section
               Row(
-                children: getQuickChipOptions(book.type).take(3).map((amt) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 5),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => onQuickIncrement(amt.toDouble()),
-                        child: Container(
-                          constraints: BoxConstraints(minWidth: isCompact ? 32 : 38, minHeight: isCompact ? 28 : 32),
-                          padding: EdgeInsets.symmetric(horizontal: isCompact ? 7 : 9, vertical: isCompact ? 4 : 5),
-                          decoration: BoxDecoration(
-                            color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
-                            border: Border.all(
-                              color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                              width: 1.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                                offset: const Offset(1.5, 1.5),
-                                blurRadius: 0,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    formatProgressDisplay(book).toUpperCase(),
+                    style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800),
+                  ),
+                  Text(
+                    '${book.completionPercentage.toInt()}%',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w900,
+                      color: Theme.of(context).extension<AppThemeDetails>()?.accentColor ?? Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              BrutalistProgressBar(progress: progressFraction, height: isCompact ? 3.5 : 4.0),
+              SizedBox(height: isCompact ? 6 : 8),
+
+              // Quick Action Footer
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Quick Increment Chips
+                  Row(
+                    children: getQuickChipOptions(book.type).take(3).map((amt) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 4),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => onQuickIncrement(amt.toDouble()),
+                            child: Container(
+                              constraints: BoxConstraints(minWidth: isCompact ? 30 : 36, minHeight: isCompact ? 26 : 30),
+                              padding: EdgeInsets.symmetric(horizontal: isCompact ? 6 : 8, vertical: isCompact ? 3 : 4),
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                                border: Border.all(
+                                  color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                  width: 1.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                    offset: const Offset(1.5, 1.5),
+                                    blurRadius: 0,
+                                  ),
+                                ],
                               ),
-                            ],
+                              alignment: Alignment.center,
+                              child: Text(
+                                '+$amt',
+                                style: TextStyle(fontSize: isCompact ? 9.5 : 10.5, fontWeight: FontWeight.w900),
+                              ),
+                            ),
                           ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '+$amt',
-                            style: TextStyle(fontSize: isCompact ? 10 : 11, fontWeight: FontWeight.w900),
-                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+
+                  // Action Buttons (Favorite + Log Progress)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        icon: Icon(
+                          book.isFavorite == true ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                          color: book.isFavorite == true ? AppColors.primaryRed : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                          size: 18,
+                        ),
+                        tooltip: book.isFavorite == true ? 'Unmark Favorite' : 'Mark as Favorite',
+                        onPressed: onToggleFavorite,
+                      ),
+                      const SizedBox(width: 2),
+                      BrutalistButton(
+                        padding: EdgeInsets.symmetric(horizontal: isCompact ? 10 : 12, vertical: isCompact ? 5 : 7),
+                        backgroundColor: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                        textColor: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                        onPressed: onLogProgress,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.edit_note_rounded,
+                              size: isCompact ? 15 : 17,
+                              color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              'LOG',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: isCompact ? 11 : 12,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  );
-                }).toList(),
-              ),
-
-              // Action Buttons (Favorite + Log Progress)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                    icon: Icon(
-                      book.isFavorite == true ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                      color: book.isFavorite == true ? AppColors.primaryRed : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-                      size: 20,
-                    ),
-                    tooltip: book.isFavorite == true ? 'Unmark Favorite' : 'Mark as Favorite',
-                    onPressed: onToggleFavorite,
-                  ),
-                  const SizedBox(width: 4),
-                  BrutalistButton(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                    backgroundColor: isDark ? AppColors.darkSurfaceHigh : Colors.white,
-                    textColor: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                    onPressed: onLogProgress,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.edit_note_rounded,
-                          size: 17,
-                          color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                        ),
-                        const SizedBox(width: 4),
-                        const Text('LOG', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
-                      ],
-                    ),
+                    ],
                   ),
                 ],
               ),

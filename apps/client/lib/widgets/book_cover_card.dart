@@ -69,157 +69,187 @@ class BookCoverCard extends StatelessWidget {
 
               // Top Badges (Format, Favorite & Rating)
               Positioned(
-                top: 6,
-                left: 6,
-                right: 6,
+                top: 5,
+                left: 5,
+                right: 5,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Format Tag
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: accentColor,
+                        border: Border.all(color: Colors.white, width: 0.8),
+                      ),
+                      child: Text(
+                        book.type.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.3,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+
+                    // Top-Right Badges (Rating & Favorite)
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: accentColor,
-                            border: Border.all(color: Colors.white, width: 1),
-                          ),
-                          child: Text(
-                            book.type.toUpperCase(),
-                            style: const TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.5,
-                              color: Colors.white,
+                        if (book.rating != null && book.rating! > 0) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFB800),
+                              border: Border.all(color: AppColors.inkBlack, width: 0.8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.star_rounded, size: 10, color: AppColors.inkBlack),
+                                const SizedBox(width: 1),
+                                Text(
+                                  book.rating!.toStringAsFixed(1),
+                                  style: const TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppColors.inkBlack,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                        if (onToggleFavorite != null) ...[
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 3),
+                        ],
+                        if (onToggleFavorite != null)
                           GestureDetector(
                             onTap: onToggleFavorite,
                             child: Container(
                               padding: const EdgeInsets.all(2),
                               decoration: BoxDecoration(
                                 color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
-                                border: Border.all(color: AppColors.inkBlack, width: 1),
+                                border: Border.all(color: AppColors.inkBlack, width: 0.8),
                               ),
                               child: Icon(
                                 book.isFavorite == true ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                                size: 12,
-                                color: book.isFavorite == true ? AppColors.primaryRed : AppColors.inkBlack,
+                                size: 11,
+                                color: book.isFavorite == true ? AppColors.primaryRed : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
                               ),
                             ),
                           ),
-                        ],
                       ],
-                    ),
-                    if (book.rating != null && book.rating! > 0)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFB800),
-                        border: Border.all(color: AppColors.inkBlack, width: 1),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.star_rounded, size: 11, color: AppColors.inkBlack),
-                          const SizedBox(width: 2),
-                          Text(
-                            book.rating!.toStringAsFixed(1),
-                            style: const TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w900,
-                              color: AppColors.inkBlack,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
-
-            // Bottom Information Overlay
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
-                  border: Border(
-                    top: BorderSide(color: borderColor, width: 1.5),
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      book.title.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.3,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            formatProgressDisplay(book),
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        // Mini +1 Quick Chip
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => onQuickIncrement(quickAmt.toDouble()),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
-                                border: Border.all(color: borderColor, width: 1),
-                              ),
-                              child: Text(
-                                '+$quickAmt',
-                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 5),
-                    BrutalistProgressBar(
-                      progress: book.completionPercentage / 100.0,
-                      height: 4,
-                      fillColor: accentColor,
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+
+              // Floating Quick Stepper Chip (Bottom-Right over cover)
+              Positioned(
+                bottom: 53,
+                right: 5,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => onQuickIncrement(quickAmt.toDouble()),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkSurface : Colors.white,
+                        border: Border.all(color: borderColor, width: 1.2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: borderColor,
+                            offset: const Offset(1.5, 1.5),
+                            blurRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        '+$quickAmt',
+                        style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Bottom Information Overlay (100% full-width for text!)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+                    border: Border(
+                      top: BorderSide(color: borderColor, width: 1.5),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title (Line 1)
+                      Text(
+                        book.title.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+
+                      // Progress String + % (Line 2 - Full Width!)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              formatProgressDisplay(book),
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.75) : AppColors.inkMuted,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            '${book.completionPercentage.toInt()}%',
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w900,
+                              color: accentColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+
+                      // Progress Bar (Line 3)
+                      BrutalistProgressBar(
+                        progress: book.completionPercentage / 100.0,
+                        height: 3.5,
+                        fillColor: accentColor,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildFallbackPattern(bool isDark) {
     return Container(
