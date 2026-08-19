@@ -5,6 +5,17 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [1.9.0] - 2026-08-19
+
+### Added
+- **Compact Cover View Shorthands**: Implemented uniform neo-brutalist acronyms for all 11 publication formats (`NOV`, `NVLA`, `NVLT`, `LN`, `WN`, `SS`, `COLL`, `ANTH`, `ESY`, `FF`, `OTH`).
+- **Compact Progress Formatting**: Added streamlined progress text on compact cover cards (`Ch. 1450 • Up`, `V.14 • Ch. 42/50`, `0 / 300 p`), micro-padding adjustments, and proportional typography.
+
+### Fixed
+- **Mobile Edit Dialog Overflow**: Added `clipBehavior: Clip.antiAlias` to the dialog container and responsive padding / sizing to the action footer buttons (`TRASH`, `CANCEL`, `SAVE CHANGES`), ensuring the modal never overflows on narrow mobile screens.
+
+---
+
 ## [1.8.0f] - 2026-08-19
 
 ### Fixed

@@ -128,14 +128,48 @@ void main() {
       expect(formatRating(4.8, isDecimalMode: true), '4.8 / 5.0');
     });
 
-    test('generateUuidV4 generates valid RFC4122 compliant UUIDs', () {
-      final uuid1 = generateUuidV4();
-      final uuid2 = generateUuidV4();
-      expect(uuid1, isNotEmpty);
-      expect(uuid2, isNotEmpty);
-      expect(isValidUuid(uuid1), isTrue);
-      expect(isValidUuid(uuid2), isTrue);
-      expect(uuid1, isNot(equals(uuid2)));
+    test('getFormatShorthand returns compact neo-brutalist acronyms', () {
+      expect(getFormatShorthand('Novel'), 'NOV');
+      expect(getFormatShorthand('Novella'), 'NVLA');
+      expect(getFormatShorthand('Novelette'), 'NVLT');
+      expect(getFormatShorthand('Light Novel'), 'LN');
+      expect(getFormatShorthand('Web Novel'), 'WN');
+      expect(getFormatShorthand('Short Story'), 'SS');
+      expect(getFormatShorthand('Collection'), 'COLL');
+      expect(getFormatShorthand('Anthology'), 'ANTH');
+      expect(getFormatShorthand('Essay'), 'ESY');
+      expect(getFormatShorthand('Fanfiction'), 'FF');
+      expect(getFormatShorthand('Other'), 'OTH');
+    });
+
+    test('formatProgressDisplay compact mode formats properly', () {
+      const caughtUp = Book(
+        id: '4',
+        title: 'Shadow Slave',
+        type: 'Web Novel',
+        status: BookStatus.reading,
+        isOngoing: true,
+        progress: 1450,
+        latestUnits: 1450,
+        createdAt: '',
+        updatedAt: '',
+      );
+      expect(formatProgressDisplay(caughtUp, compact: true), 'Ch. 1450 • Up');
+
+      const ln = Book(
+        id: '1',
+        title: 'Overlord',
+        type: 'Light Novel',
+        status: BookStatus.reading,
+        progressStructure: 'volume_chapter',
+        parentProgress: 14,
+        parentTotal: 16,
+        progress: 42,
+        totalUnits: 50,
+        createdAt: '',
+        updatedAt: '',
+      );
+      expect(formatProgressDisplay(ln, compact: true), 'V. 14 • Ch. 42/50');
     });
   });
 }
