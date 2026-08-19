@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/book.dart';
@@ -11,6 +12,7 @@ class SyncManager extends ChangeNotifier {
 
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
   RemoteSyncProvider? _activeProvider;
+  Timer? _periodicTimer;
 
   bool _isSyncing = false;
   bool _offlineMode = false;
@@ -51,7 +53,19 @@ class SyncManager extends ChangeNotifier {
     _backendType = SyncBackendType.values[typeIdx.clamp(0, SyncBackendType.values.length - 1)];
 
     _updateProvider();
+    _startPeriodicTimer();
     await checkConnection();
+  }
+
+  void _startPeriodicTimer() {
+    _periodicTimer?.cancel();
+    if (_autoSync && !_offlineMode && _activeProvider != null) {
+      _periodicTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+        if (!_isSyncing) {
+          syncNow();
+        }
+      });
+    }
   }
 
   void _updateProvider() {
@@ -63,6 +77,7 @@ class SyncManager extends ChangeNotifier {
     } else {
       _activeProvider = GenericRestSyncProvider(serverUrl: _serverUrl, apiKey: _apiKey);
     }
+    _startPeriodicTimer();
   }
 
   Future<void> updateConfig({
