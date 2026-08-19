@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
 @theme {
-  --font-serif: var(--font-newsreader), Georgia, serif;
-  --font-sans: var(--font-jakarta), system-ui, sans-serif;
+  --font-serif: var(--font-theme-serif, var(--font-newsreader), Georgia, serif);
+  --font-sans: var(--font-theme-sans, var(--font-jakarta), system-ui, sans-serif);
+  --font-anton: var(--font-anton), Impact, sans-serif;
+  --font-hanken: var(--font-hanken), system-ui, sans-serif;
 
   --color-bg: var(--bg);
   --color-card-bg: var(--card-bg);
@@ -57,8 +59,14 @@
   scrollbar-width: none;
 }
 
+/* ==========================================================================
+   1. Default / Classic Editorial Theme (Light & Dark)
+   ========================================================================== */
 :root {
   color-scheme: light;
+
+  --font-theme-serif: var(--font-newsreader), Georgia, serif;
+  --font-theme-sans: var(--font-jakarta), system-ui, sans-serif;
 
   --bg: #f1ebdd;
   --card-bg: #fbf8f1;
@@ -89,7 +97,6 @@
   --shadow-vignette: inset 0 0 12px rgba(0, 0, 0, 0.25);
   --card-glass-bg: rgba(251, 248, 241, 0.88);
   --rim-highlight: rgba(255, 255, 255, 0.85);
-  --font-serif: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, serif;
 
   --space-1: 4px;
   --space-2: 8px;
@@ -107,13 +114,14 @@
   --duration-base: 0.15s;
   --duration-slow: 0.3s;
 
-  /* Spring physics easing tokens (linear() curve with standard bounce fallback) */
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-soft: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-[data-theme="dark"] {
+[data-theme="dark"],
+[data-theme="classic"][data-mode="dark"],
+:root[data-mode="dark"]:not([data-theme="paperback"]):not([data-theme="matcha"]):not([data-theme="nordic"]) {
   color-scheme: dark;
 
   --bg: #120e0a;
@@ -146,6 +154,277 @@
   --shadow-groove: inset 0 1px 3px rgba(0, 0, 0, 0.5);
   --card-glass-bg: rgba(43, 35, 26, 0.85);
   --rim-highlight: rgba(254, 243, 199, 0.18);
+}
+
+/* ==========================================================================
+   2. Neo-Paper Brutalist: Classic Paperback & Charcoal Ledger
+   ========================================================================== */
+[data-theme="paperback"] {
+  color-scheme: light;
+
+  --font-theme-serif: var(--font-anton), Impact, sans-serif;
+  --font-theme-sans: var(--font-hanken), system-ui, sans-serif;
+
+  --bg: #fcfaed;
+  --card-bg: #ffffff;
+  --surface: #f0eee2;
+  --border: #1b1c15;
+  --border-soft: #5e5e5e;
+  --text: #1b1c15;
+  --text-muted: #5c403c;
+  --text-faint: #916f6b;
+  --accent-bg: #bb0114;
+  --accent-bg-hover: #960110;
+  --accent-text: #ffffff;
+  --input-bg: #ffffff;
+  --input-border: #1b1c15;
+  --btn-border: #1b1c15;
+  --secondary-hover: #f0eee2;
+  --danger: #ba1a1a;
+  --danger-hover: #93000a;
+  --row-hover: #f5f3e7;
+  --progress-track: #e5e3d7;
+  --star-empty: #e5e3d7;
+  --star-filled: #bb0114;
+  --shadow-t1: 2px 2px 0px #1b1c15;
+  --shadow-t2: 3.5px 3.5px 0px #1b1c15;
+  --shadow-t2-hover: 4.5px 4.5px 0px #1b1c15;
+  --shadow-t3: 5px 5px 0px #1b1c15;
+  --shadow-groove: inset 0 2px 0px #1b1c15;
+  --shadow-vignette: inset 0 0 0px transparent;
+  --card-glass-bg: #ffffff;
+  --rim-highlight: #1b1c15;
+
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+}
+
+[data-theme="paperback"][data-mode="dark"] {
+  color-scheme: dark;
+
+  --bg: #12130f;
+  --card-bg: #1e2018;
+  --surface: #2b2d24;
+  --border: #3a3e31;
+  --border-soft: #525746;
+  --text: #f6f4e8;
+  --text-muted: #c4c1b0;
+  --text-faint: #8f8c7d;
+  --accent-bg: #bb0114;
+  --accent-bg-hover: #e02929;
+  --accent-text: #ffffff;
+  --input-bg: #181913;
+  --input-border: #3a3e31;
+  --btn-border: #3a3e31;
+  --secondary-hover: #2b2d24;
+  --danger: #ff5449;
+  --danger-hover: #ff897d;
+  --row-hover: #23261c;
+  --progress-track: #2b2d24;
+  --star-empty: #3a3e31;
+  --star-filled: #ff5449;
+  --shadow-t1: 2px 2px 0px #000000;
+  --shadow-t2: 3.5px 3.5px 0px #000000;
+  --shadow-t2-hover: 4.5px 4.5px 0px #000000;
+  --shadow-t3: 5px 5px 0px #000000;
+  --shadow-groove: inset 0 2px 0px #000000;
+  --card-glass-bg: #1e2018;
+  --rim-highlight: #3a3e31;
+
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+}
+
+/* ==========================================================================
+   3. Matcha & Washi / Midnight Matcha
+   ========================================================================== */
+[data-theme="matcha"] {
+  color-scheme: light;
+
+  --font-theme-serif: var(--font-anton), Impact, sans-serif;
+  --font-theme-sans: var(--font-hanken), system-ui, sans-serif;
+
+  --bg: #f7f6ee;
+  --card-bg: #ffffff;
+  --surface: #ebe9dc;
+  --border: #18231c;
+  --border-soft: #495e50;
+  --text: #18231c;
+  --text-muted: #495e50;
+  --text-faint: #7a9182;
+  --accent-bg: #2d6a4f;
+  --accent-bg-hover: #1b4332;
+  --accent-text: #ffffff;
+  --input-bg: #ffffff;
+  --input-border: #18231c;
+  --btn-border: #18231c;
+  --secondary-hover: #ebe9dc;
+  --danger: #ba1a1a;
+  --danger-hover: #93000a;
+  --row-hover: #f0eee2;
+  --progress-track: #ebe9dc;
+  --star-empty: #ebe9dc;
+  --star-filled: #2d6a4f;
+  --shadow-t1: 2px 2px 0px #18231c;
+  --shadow-t2: 3.5px 3.5px 0px #18231c;
+  --shadow-t2-hover: 4.5px 4.5px 0px #18231c;
+  --shadow-t3: 5px 5px 0px #18231c;
+  --card-glass-bg: #ffffff;
+  --rim-highlight: #18231c;
+
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+}
+
+[data-theme="matcha"][data-mode="dark"] {
+  color-scheme: dark;
+
+  --bg: #111813;
+  --card-bg: #1a261d;
+  --surface: #243528;
+  --border: #354f3c;
+  --border-soft: #4d7056;
+  --text: #eef8f1;
+  --text-muted: #a6c9af;
+  --text-faint: #73947c;
+  --accent-bg: #34d399;
+  --accent-bg-hover: #10b981;
+  --accent-text: #062817;
+  --input-bg: #141f17;
+  --input-border: #354f3c;
+  --btn-border: #354f3c;
+  --secondary-hover: #243528;
+  --danger: #ff5449;
+  --danger-hover: #ff897d;
+  --row-hover: #1e2c22;
+  --progress-track: #243528;
+  --star-empty: #354f3c;
+  --star-filled: #34d399;
+  --shadow-t1: 2px 2px 0px #000000;
+  --shadow-t2: 3.5px 3.5px 0px #000000;
+  --shadow-t2-hover: 4.5px 4.5px 0px #000000;
+  --shadow-t3: 5px 5px 0px #000000;
+  --card-glass-bg: #1a261d;
+  --rim-highlight: #354f3c;
+
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+}
+
+/* ==========================================================================
+   4. Nordic Glacier / Nordic Night
+   ========================================================================== */
+[data-theme="nordic"] {
+  color-scheme: light;
+
+  --font-theme-serif: var(--font-anton), Impact, sans-serif;
+  --font-theme-sans: var(--font-hanken), system-ui, sans-serif;
+
+  --bg: #f0f9ff;
+  --card-bg: #ffffff;
+  --surface: #e0f2fe;
+  --border: #0c1c2e;
+  --border-soft: #385675;
+  --text: #0c1c2e;
+  --text-muted: #385675;
+  --text-faint: #6788a8;
+  --accent-bg: #0284c7;
+  --accent-bg-hover: #0369a1;
+  --accent-text: #ffffff;
+  --input-bg: #ffffff;
+  --input-border: #0c1c2e;
+  --btn-border: #0c1c2e;
+  --secondary-hover: #e0f2fe;
+  --danger: #ba1a1a;
+  --danger-hover: #93000a;
+  --row-hover: #eaf5fc;
+  --progress-track: #e0f2fe;
+  --star-empty: #e0f2fe;
+  --star-filled: #0284c7;
+  --shadow-t1: 2px 2px 0px #0c1c2e;
+  --shadow-t2: 3.5px 3.5px 0px #0c1c2e;
+  --shadow-t2-hover: 4.5px 4.5px 0px #0c1c2e;
+  --shadow-t3: 5px 5px 0px #0c1c2e;
+  --card-glass-bg: #ffffff;
+  --rim-highlight: #0c1c2e;
+
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+}
+
+[data-theme="nordic"][data-mode="dark"] {
+  color-scheme: dark;
+
+  --bg: #0c121e;
+  --card-bg: #151f2e;
+  --surface: #1e2c40;
+  --border: #2c425f;
+  --border-soft: #42638e;
+  --text: #f0f7ff;
+  --text-muted: #9dc3e6;
+  --text-faint: #6c91b5;
+  --accent-bg: #38bdf8;
+  --accent-bg-hover: #0ea5e9;
+  --accent-text: #041d2e;
+  --input-bg: #0f1826;
+  --input-border: #2c425f;
+  --btn-border: #2c425f;
+  --secondary-hover: #1e2c40;
+  --danger: #ff5449;
+  --danger-hover: #ff897d;
+  --row-hover: #182333;
+  --progress-track: #1e2c40;
+  --star-empty: #2c425f;
+  --star-filled: #38bdf8;
+  --shadow-t1: 2px 2px 0px #000000;
+  --shadow-t2: 3.5px 3.5px 0px #000000;
+  --shadow-t2-hover: 4.5px 4.5px 0px #000000;
+  --shadow-t3: 5px 5px 0px #000000;
+  --card-glass-bg: #151f2e;
+  --rim-highlight: #2c425f;
+
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+}
+
+/* ==========================================================================
+   5. GPU Hardware-Accelerated Ambient Paper Patterns (8% to 10% Opacity)
+   ========================================================================== */
+html[data-pattern="true"][data-theme="paperback"] body {
+  background-image: radial-gradient(color-mix(in srgb, var(--border) 9%, transparent) 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-attachment: fixed;
+}
+
+html[data-pattern="true"][data-theme="matcha"] body {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--border) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--border) 8%, transparent) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-attachment: fixed;
+}
+
+html[data-pattern="true"][data-theme="nordic"] body {
+  background-image: radial-gradient(color-mix(in srgb, var(--border) 9%, transparent) 1.2px, transparent 1.2px);
+  background-size: 22px 22px;
+  background-attachment: fixed;
+}
+
+/* Tactile Brutalist Interactive Push-Down on Tap */
+html:not([data-theme="classic"]):not([data-theme="dark"]) .btn:active,
+html:not([data-theme="classic"]):not([data-theme="dark"]) button:active:not(:disabled) {
+  transform: translate(1.5px, 1.5px);
+  box-shadow: none !important;
+}
+
+html:not([data-theme="classic"]):not([data-theme="dark"]) .surface-t2:hover {
+  transform: translateY(-2px);
 }
 
 /* ═══════════════════════════════════════════════════════════

@@ -763,7 +763,7 @@ class LibraryScreenState extends State<LibraryScreen> {
         padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 80),
         sliver: SliverGrid(
           gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: isCompact ? 120 : 180,
+            maxCrossAxisExtent: isWideScreen ? (isCompact ? 140 : 180) : (isCompact ? 120 : 180),
             childAspectRatio: 0.65,
             crossAxisSpacing: isCompact ? 8 : 10,
             mainAxisSpacing: isCompact ? 8 : 10,

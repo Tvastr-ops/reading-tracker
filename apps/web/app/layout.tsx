@@ -1,6 +1,6 @@
 import './globals.css';
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import { Newsreader, Plus_Jakarta_Sans } from 'next/font/google';
+import { Anton, Hanken_Grotesk, Newsreader, Plus_Jakarta_Sans } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 
 const newsreader = Newsreader({
@@ -13,6 +13,19 @@ const newsreader = Newsreader({
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-jakarta',
+  display: 'swap',
+});
+
+const anton = Anton({
+  subsets: ['latin'],
+  weight: ['400'],
+  variable: '--font-anton',
+  display: 'swap',
+});
+
+const hanken = Hanken_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-hanken',
   display: 'swap',
 });
 
@@ -83,16 +96,24 @@ export const viewport = {
 };
 
 // Runs before paint (no framework, so no hydration mismatch risk) to avoid
-// a flash of the wrong theme on load. Reads a plain localStorage value —
-// nothing sensitive, nothing that touches the auth/session system.
+// a flash of the wrong theme on load. Reads plain localStorage values.
 const THEME_INIT_SCRIPT = `
 (function () {
   try {
-    var saved = localStorage.getItem('theme');
-    var theme = saved === 'dark' || saved === 'light'
-      ? saved
+    var savedTheme = localStorage.getItem('theme_palette') || 'classic';
+    var savedMode = localStorage.getItem('theme_mode') || localStorage.getItem('theme');
+    var mode = (savedMode === 'dark' || savedMode === 'light')
+      ? savedMode
       : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    document.documentElement.setAttribute('data-theme', theme);
+    var pattern = localStorage.getItem('theme_pattern') !== 'false';
+
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.documentElement.setAttribute('data-mode', mode);
+    if (pattern) {
+      document.documentElement.setAttribute('data-pattern', 'true');
+    } else {
+      document.documentElement.removeAttribute('data-pattern');
+    }
   } catch (e) {}
 })();
 `;
@@ -102,12 +123,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${newsreader.variable} ${jakarta.variable}`}
+      className={`${newsreader.variable} ${jakarta.variable} ${anton.variable} ${hanken.variable}`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className="bg-bg font-sans text-text antialiased">
+      <body className="bg-bg font-sans text-text antialiased transition-colors duration-200">
         <main>{children}</main>
         <Toaster position="bottom-right" richColors closeButton />
         <SpeedInsights />
