@@ -34,7 +34,7 @@ void main() {
 
     test('getCurrentAppVersion returns currentReleaseVersion when package info is unconfigured', () async {
       final version = await UpdateService.instance.getCurrentAppVersion();
-      expect(version, equals('v1.8.0f'));
+      expect(version, equals('v1.9.0'));
     });
   });
 }

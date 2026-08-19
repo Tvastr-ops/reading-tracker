@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/book.dart';
+import '../services/theme_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import 'brutalist_widgets.dart';
@@ -26,6 +27,7 @@ class BookCoverCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = ThemeService.instance.compactMode;
     final details = Theme.of(context).extension<AppThemeDetails>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final borderColor = isSelected
@@ -76,17 +78,20 @@ class BookCoverCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Format Tag
+                    // Format Tag (Neo-Brutalist Shorthand)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isCompact ? 3.5 : 4,
+                        vertical: isCompact ? 1 : 1.5,
+                      ),
                       decoration: BoxDecoration(
                         color: accentColor,
                         border: Border.all(color: Colors.white, width: 0.8),
                       ),
                       child: Text(
-                        book.type.toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 8,
+                        getFormatShorthand(book.type),
+                        style: TextStyle(
+                          fontSize: isCompact ? 7.5 : 8,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.3,
                           color: Colors.white,
@@ -147,7 +152,7 @@ class BookCoverCard extends StatelessWidget {
 
               // Floating Quick Stepper Chip (Bottom-Right over cover)
               Positioned(
-                bottom: 53,
+                bottom: isCompact ? 48 : 53,
                 right: 5,
                 child: Material(
                   color: Colors.transparent,
@@ -181,7 +186,7 @@ class BookCoverCard extends StatelessWidget {
                 left: 0,
                 right: 0,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                  padding: EdgeInsets.symmetric(horizontal: isCompact ? 5 : 6, vertical: isCompact ? 4 : 5),
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
                     border: Border(
@@ -195,8 +200,8 @@ class BookCoverCard extends StatelessWidget {
                       // Title (Line 1)
                       Text(
                         book.title.toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 11,
+                        style: TextStyle(
+                          fontSize: isCompact ? 10.5 : 11,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.2,
                         ),
@@ -207,9 +212,9 @@ class BookCoverCard extends StatelessWidget {
 
                       // Progress String (Line 2 - Full 100% Width!)
                       Text(
-                        formatProgressDisplay(book),
+                        formatProgressDisplay(book, compact: isCompact),
                         style: TextStyle(
-                          fontSize: 9.5,
+                          fontSize: isCompact ? 9 : 9.5,
                           fontWeight: FontWeight.w700,
                           color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.75) : AppColors.inkMuted,
                         ),

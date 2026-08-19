@@ -66,8 +66,38 @@ String getUnitLabel(String bookType, [String? unitType]) {
   }
 }
 
+/// Returns a concise, standardized neo-brutalist shorthand for publication formats.
+String getFormatShorthand(String bookType) {
+  switch (bookType.toLowerCase()) {
+    case 'novel':
+      return 'NOV';
+    case 'novella':
+      return 'NVLA';
+    case 'novelette':
+      return 'NVLT';
+    case 'light novel':
+      return 'LN';
+    case 'web novel':
+      return 'WN';
+    case 'short story':
+      return 'SS';
+    case 'collection':
+      return 'COLL';
+    case 'anthology':
+      return 'ANTH';
+    case 'essay':
+      return 'ESY';
+    case 'fanfiction':
+      return 'FF';
+    case 'other':
+      return 'OTH';
+    default:
+      return bookType.toUpperCase();
+  }
+}
+
 /// Formats the progress presentation text matching the web application semantics 1:1.
-String formatProgressDisplay(Book book) {
+String formatProgressDisplay(Book book, {bool compact = false}) {
   final current = book.progress;
   final total = book.totalUnits;
   final unit = getUnitLabel(book.type, book.unitType);
@@ -80,31 +110,36 @@ String formatProgressDisplay(Book book) {
   if (isPlanned && current == 0 && (parentProg == null || parentProg == 0)) {
     if (structure == 'volume_chapter') {
       if (unit == 'volumes') {
-        if (parentTot != null && parentTot > 0) return 'Vol. 0 / ${formatNum(parentTot)}';
-        if (total != null && total > 0) return 'Vol. 0 / ${formatNum(total)}';
-        return 'Vol. 0';
+        if (parentTot != null && parentTot > 0) return '${compact ? "V." : "Vol."} 0 / ${formatNum(parentTot)}';
+        if (total != null && total > 0) return '${compact ? "V." : "Vol."} 0 / ${formatNum(total)}';
+        return '${compact ? "V." : "Vol."} 0';
       }
       if (total != null && total > 0 && parentTot != null && parentTot > 0) {
-        return '${formatNum(total)} $unit • ${formatNum(parentTot)} vols';
+        return compact
+            ? '${formatNum(total)} ch • ${formatNum(parentTot)} v'
+            : '${formatNum(total)} $unit • ${formatNum(parentTot)} vols';
       }
-      if (total != null && total > 0) return '${formatNum(total)} $unit';
-      if (parentTot != null && parentTot > 0) return '${formatNum(parentTot)} volumes';
+      if (total != null && total > 0) return '${formatNum(total)} ${compact && unit == "chapters" ? "ch" : unit}';
+      if (parentTot != null && parentTot > 0) return '${formatNum(parentTot)} ${compact ? "vols" : "volumes"}';
       return 'Plan to Read';
     }
 
     if (structure == 'part_chapter') {
       if (total != null && total > 0 && parentTot != null && parentTot > 0) {
-        return '${formatNum(total)} $unit • ${formatNum(parentTot)} parts';
+        return compact
+            ? '${formatNum(total)} ch • ${formatNum(parentTot)} pt'
+            : '${formatNum(total)} $unit • ${formatNum(parentTot)} parts';
       }
-      if (total != null && total > 0) return '${formatNum(total)} $unit';
+      if (total != null && total > 0) return '${formatNum(total)} ${compact && unit == "chapters" ? "ch" : unit}';
       if (parentTot != null && parentTot > 0) return '${formatNum(parentTot)} parts';
       return 'Plan to Read';
     }
 
     // Single structure planned
     if (total != null && total > 0) {
-      if (unit == 'chapters') return '0 / ${formatNum(total)} chapters';
-      if (unit == 'volumes') return '0 / ${formatNum(total)} volumes';
+      if (unit == 'chapters') return '0 / ${formatNum(total)} ${compact ? "ch" : "chapters"}';
+      if (unit == 'volumes') return '0 / ${formatNum(total)} ${compact ? "vol" : "volumes"}';
+      if (compact && unit == 'pages') return '0 / ${formatNum(total)} p';
       return '0 / ${formatNum(total)} $unit';
     }
     return 'Plan to Read';
@@ -115,9 +150,10 @@ String formatProgressDisplay(Book book) {
     if (book.latestUnits != null && book.latestUnits! > 0) {
       final latest = book.latestUnits!;
       if (current >= latest) {
-        if (unit == 'chapters') return 'Ch. ${formatNum(current)} • Caught Up';
-        if (unit == 'volumes') return 'Vol. ${formatNum(current)} • Caught Up';
-        return '${formatNum(current)} $unit • Caught Up';
+        final caughtLabel = compact ? 'Up' : 'Caught Up';
+        if (unit == 'chapters') return 'Ch. ${formatNum(current)} • $caughtLabel';
+        if (unit == 'volumes') return 'Vol. ${formatNum(current)} • $caughtLabel';
+        return '${formatNum(current)} $unit • $caughtLabel';
       }
       final behind = (latest - current);
       if (unit == 'chapters') return 'Ch. ${formatNum(current)} (${formatNum(behind)} behind)';
@@ -134,33 +170,36 @@ String formatProgressDisplay(Book book) {
 
   // 3. Multi-tier: Volume -> Chapter
   if (structure == 'volume_chapter') {
+    final vPrefix = compact ? 'V.' : 'Vol.';
     if (unit == 'volumes') {
       if (parentProg != null && parentTot != null) {
-        return 'Vol. ${formatNum(parentProg)} / ${formatNum(parentTot)}';
+        return '$vPrefix ${formatNum(parentProg)} / ${formatNum(parentTot)}';
       }
       if (parentTot != null) {
-        return 'Vol. ${formatNum(parentProg ?? current)} / ${formatNum(parentTot)}';
+        return '$vPrefix ${formatNum(parentProg ?? current)} / ${formatNum(parentTot)}';
       }
       if (total != null && total > 0) {
-        return 'Vol. ${formatNum(current)} / ${formatNum(total)}';
+        return '$vPrefix ${formatNum(current)} / ${formatNum(total)}';
       }
-      return 'Vol. ${formatNum(current)}';
+      return '$vPrefix ${formatNum(current)}';
     }
 
     var volStr = '';
     if (total != null && total > 0) {
-      // Continuous chapters across series: volume is milestone marker ("Vol. 1")
+      // Continuous chapters across series: volume is milestone marker ("Vol. 1" / "V.1")
       if (parentProg != null) {
-        volStr = 'Vol. ${formatNum(parentProg)}';
+        volStr = '$vPrefix ${formatNum(parentProg)}';
       }
     } else {
-      // Per-volume reset chapters: volume is main series total ("Vol. 3 / 12")
+      // Per-volume reset chapters: volume is main series total ("Vol. 3 / 12" / "V.3/12")
       if (parentProg != null && parentTot != null) {
-        volStr = 'Vol. ${formatNum(parentProg)} / ${formatNum(parentTot)}';
+        volStr = compact
+            ? 'V.${formatNum(parentProg)}/${formatNum(parentTot)}'
+            : 'Vol. ${formatNum(parentProg)} / ${formatNum(parentTot)}';
       } else if (parentProg != null) {
-        volStr = 'Vol. ${formatNum(parentProg)}';
+        volStr = '$vPrefix ${formatNum(parentProg)}';
       } else if (parentTot != null) {
-        volStr = 'Vol. 0 / ${formatNum(parentTot)}';
+        volStr = '$vPrefix 0 / ${formatNum(parentTot)}';
       }
     }
 
@@ -168,17 +207,17 @@ String formatProgressDisplay(Book book) {
     if (unit == 'chapters') {
       unitStr = 'Ch. ${formatNum(current)}';
     } else if (unit == 'words') {
-      unitStr = '${formatNum(current)} words';
+      unitStr = compact ? '${formatNum(current)} w' : '${formatNum(current)} words';
     } else if (unit == 'percent') {
       unitStr = '${formatNum(current)}%';
     } else if (unit == 'units') {
       unitStr = '${formatNum(current)} units';
     } else {
-      unitStr = '${formatNum(current)} pages';
+      unitStr = compact ? '${formatNum(current)} p' : '${formatNum(current)} pages';
     }
 
     if (total != null && total > 0) {
-      unitStr += ' / ${formatNum(total)}';
+      unitStr += compact ? '/${formatNum(total)}' : ' / ${formatNum(total)}';
     }
 
     if (volStr.isNotEmpty && (current > 0 || unit == 'chapters')) {
@@ -192,38 +231,39 @@ String formatProgressDisplay(Book book) {
 
   // 4. Multi-tier: Part -> Chapter
   if (structure == 'part_chapter') {
+    final ptPrefix = compact ? 'Pt.' : 'Part';
     var partStr = '';
     if (total != null && total > 0) {
       if (parentProg != null) {
-        partStr = 'Part ${toRoman(parentProg)}';
+        partStr = '$ptPrefix ${toRoman(parentProg)}';
       }
     } else {
       if (parentProg != null && parentTot != null) {
-        partStr = 'Part ${toRoman(parentProg)} / ${toRoman(parentTot)}';
+        partStr = '$ptPrefix ${toRoman(parentProg)} / ${toRoman(parentTot)}';
       } else if (parentProg != null) {
-        partStr = 'Part ${toRoman(parentProg)}';
+        partStr = '$ptPrefix ${toRoman(parentProg)}';
       } else if (parentTot != null) {
-        partStr = 'Part I / ${toRoman(parentTot)}';
+        partStr = '$ptPrefix I / ${toRoman(parentTot)}';
       }
     }
 
     var unitStr = '';
     if (unit == 'volumes') {
-      unitStr = 'Vol. ${formatNum(current)}';
+      unitStr = '${compact ? "V." : "Vol."} ${formatNum(current)}';
     } else if (unit == 'chapters') {
       unitStr = 'Ch. ${formatNum(current)}';
     } else if (unit == 'words') {
-      unitStr = '${formatNum(current)} words';
+      unitStr = compact ? '${formatNum(current)} w' : '${formatNum(current)} words';
     } else if (unit == 'percent') {
       unitStr = '${formatNum(current)}%';
     } else if (unit == 'units') {
       unitStr = '${formatNum(current)} units';
     } else {
-      unitStr = '${formatNum(current)} pages';
+      unitStr = compact ? '${formatNum(current)} p' : '${formatNum(current)} pages';
     }
 
     if (total != null && total > 0) {
-      unitStr += ' / ${formatNum(total)}';
+      unitStr += compact ? '/${formatNum(total)}' : ' / ${formatNum(total)}';
     }
 
     if (partStr.isNotEmpty && (current > 0 || unit == 'chapters' || unit == 'volumes')) {
@@ -242,14 +282,15 @@ String formatProgressDisplay(Book book) {
         : 'Ch. ${formatNum(current)}';
   }
   if (unit == 'volumes') {
+    final vPrefix = compact ? 'V.' : 'Vol.';
     return total != null && total > 0
-        ? 'Vol. ${formatNum(current)} / ${formatNum(total)}'
-        : 'Vol. ${formatNum(current)}';
+        ? '$vPrefix ${formatNum(current)} / ${formatNum(total)}'
+        : '$vPrefix ${formatNum(current)}';
   }
   if (unit == 'words') {
     return total != null && total > 0
-        ? '${formatNum(current)} / ${formatNum(total)} words'
-        : '${formatNum(current)} words';
+        ? '${formatNum(current)} / ${formatNum(total)} ${compact ? "w" : "words"}'
+        : '${formatNum(current)} ${compact ? "w" : "words"}';
   }
   if (unit == 'percent') {
     return '${formatNum(current)}%';
@@ -261,6 +302,11 @@ String formatProgressDisplay(Book book) {
   }
 
   // Default: pages
+  if (compact) {
+    return total != null && total > 0
+        ? '${formatNum(current)} / ${formatNum(total)} p'
+        : '${formatNum(current)} p';
+  }
   return total != null && total > 0
       ? '${formatNum(current)} / ${formatNum(total)} pages'
       : '${formatNum(current)} pages';

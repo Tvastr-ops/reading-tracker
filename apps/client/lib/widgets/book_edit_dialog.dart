@@ -190,6 +190,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
           maxWidth: 580,
           maxHeight: screenHeight * 0.88,
         ),
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: dialogBg,
           border: Border.all(
@@ -550,7 +551,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
 
               // 3. Fixed Footer Actions (Always visible & pinned)
               Container(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
                 decoration: BoxDecoration(
                   color: details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface),
                   border: Border(
@@ -567,28 +568,37 @@ class _BookEditDialogState extends State<BookEditDialog> {
                         backgroundColor: Colors.transparent,
                         textColor: AppColors.primaryRed,
                         borderWidth: 1.5,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                         onPressed: () {
                           widget.onDelete!(widget.book!.id);
                           Navigator.pop(context);
                         },
-                        child: const Text('TRASH', style: TextStyle(color: AppColors.primaryRed, fontSize: 12)),
+                        child: const Text(
+                          'TRASH',
+                          style: TextStyle(color: AppColors.primaryRed, fontSize: 11, fontWeight: FontWeight.w900),
+                        ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                     ],
                     const Spacer(),
                     BrutalistButton(
                       backgroundColor: details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface),
                       textColor: inkColor,
                       borderWidth: 1.5,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('CANCEL', style: TextStyle(fontSize: 12)),
+                      child: Text(
+                        'CANCEL',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: inkColor),
+                      ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     BrutalistButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       onPressed: _submit,
                       child: Text(
                         isEditing ? 'SAVE CHANGES' : 'CREATE BOOK',
-                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900),
                       ),
                     ),
                   ],
