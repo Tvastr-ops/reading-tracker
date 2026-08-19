@@ -285,8 +285,8 @@ class BookTableRow extends StatelessWidget {
     required int quickAmt,
     required bool isCompact,
   }) {
-    final thumbW = isCompact ? 26.0 : 32.0;
-    final thumbH = isCompact ? 36.0 : 44.0;
+    final thumbW = isCompact ? 28.0 : 32.0;
+    final thumbH = isCompact ? 38.0 : 44.0;
 
     return Row(
       children: [
@@ -298,17 +298,33 @@ class BookTableRow extends StatelessWidget {
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Title & Badges
+              // Line 1: Full-Width Title (Zero badge collision!)
+              Text(
+                book.title.toUpperCase(),
+                style: TextStyle(
+                  fontSize: isCompact ? 12.5 : 13.0,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.2,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+
+              // Line 2: Progress & Author on Left, Badges & % on Right
               Row(
                 children: [
                   Expanded(
                     child: Text(
-                      book.title.toUpperCase(),
+                      (book.author != null && book.author!.isNotEmpty && !isCompact)
+                          ? '${book.author} • ${formatProgressDisplay(book)}'
+                          : formatProgressDisplay(book),
                       style: TextStyle(
-                        fontSize: isCompact ? 12 : 13,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.2,
+                        fontSize: isCompact ? 10.0 : 10.5,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -317,55 +333,30 @@ class BookTableRow extends StatelessWidget {
                   const SizedBox(width: 4),
                   BrutalistBadge(label: book.type),
                   if (book.rating != null && book.rating! > 0) ...[
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 3),
                     BrutalistBadge(
                       label: '${book.rating!.toStringAsFixed(1)} ★',
                       backgroundColor: const Color(0xFFFFB800),
                       textColor: AppColors.inkBlack,
                     ),
                   ],
-                ],
-              ),
-              if (book.author != null && book.author!.isNotEmpty && !isCompact) ...[
-                const SizedBox(height: 1),
-                Text(
-                  book.author!,
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w500,
-                    color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.65) : AppColors.inkMuted,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-              const SizedBox(height: 3),
-
-              // Progress Text
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      formatProgressDisplay(book),
-                      style: TextStyle(
-                        fontSize: isCompact ? 10 : 10.5,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
+                  const SizedBox(width: 4),
                   Text(
                     '${book.completionPercentage.toInt()}%',
-                    style: TextStyle(fontSize: isCompact ? 10 : 10.5, fontWeight: FontWeight.w900),
+                    style: TextStyle(
+                      fontSize: isCompact ? 10.0 : 10.5,
+                      fontWeight: FontWeight.w900,
+                      color: accentColor,
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 3),
+
+              // Line 3: Progress Bar
               BrutalistProgressBar(
                 progress: book.completionPercentage / 100.0,
-                height: isCompact ? 3 : 4,
+                height: isCompact ? 3.0 : 4.0,
                 fillColor: accentColor,
               ),
             ],

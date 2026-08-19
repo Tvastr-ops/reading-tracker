@@ -157,27 +157,28 @@ extension AppThemeVariantMeta on AppThemeVariant {
   PaperPatternType get defaultPattern {
     switch (this) {
       case AppThemeVariant.classicPaperback:
+        return PaperPatternType.paperGrain;
       case AppThemeVariant.mangaInkpaper:
       case AppThemeVariant.mangaNoir:
-      case AppThemeVariant.nordicGlacier:
-      case AppThemeVariant.nordicNight:
-      case AppThemeVariant.darkAcademia:
-        return PaperPatternType.paperGrain;
+      case AppThemeVariant.retroPulpComic:
+        return PaperPatternType.halftoneDots;
       case AppThemeVariant.matchaWashi:
       case AppThemeVariant.midnightMatcha:
       case AppThemeVariant.charredPapyrus:
         return PaperPatternType.washiFibers;
-      case AppThemeVariant.draftingVellum:
-      case AppThemeVariant.cyanotypeBlueprint:
-        return PaperPatternType.dotGrid;
       case AppThemeVariant.sakuraManuscript:
       case AppThemeVariant.midnightSakura:
+      case AppThemeVariant.darkAcademia:
         return PaperPatternType.manuscriptGrid;
+      case AppThemeVariant.draftingVellum:
+      case AppThemeVariant.nordicGlacier:
+      case AppThemeVariant.nordicNight:
+        return PaperPatternType.dotGrid;
+      case AppThemeVariant.cyanotypeBlueprint:
+        return PaperPatternType.blueprintGrid;
       case AppThemeVariant.crumpledKraft:
       case AppThemeVariant.charcoalLedger:
         return PaperPatternType.ledgerLines;
-      case AppThemeVariant.retroPulpComic:
-        return PaperPatternType.halftoneDots;
     }
   }
 

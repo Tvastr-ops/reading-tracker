@@ -5,6 +5,16 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [1.8.0] - 2026-08-19
+
+### Added
+- **Architectural & Authentic Paper Texture Engine**: Overhauled procedural canvas textures with enhanced visibility ($13\% - 22\%$ opacity) and heritage-accurate stationery mapping across all 16 theme variants (including authentic Manga screentone newsprint, Japanese *Genkō Yōshi* manuscript grid, Blueprint drafting grid, accounting ledger lines, and mulberry washi fibers).
+
+### Fixed
+- **Mobile Table View Title Truncation**: Relocated format & rating badges off the title line so book titles receive 100% full column width without truncation or missing titles.
+- **Cover View Progress & Stepper Collision**: Restructured cover bottom overlay to give full width to title, progress display strings, and completion percentage; repositioned quick stepper chip to prevent text clipping.
+- **Desktop Cards Vertical Alignment**: Optimized card vertical distribution with bottom-docked action clusters and refined grid extents to eliminate bottom voids on single-badge cards while gracefully housing 4-badge entries.
+
 ---
 
 ## [1.7.0c] - 2026-08-18
