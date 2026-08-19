@@ -43,7 +43,7 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
   Future<List<Book>> fetchRemoteBooks() async {
     if (supabaseUrl.isEmpty || anonKey.isEmpty) return [];
     try {
-      final uri = Uri.parse('$supabaseUrl/rest/v1/books?deleted_at=is.null&order=updated_at.desc');
+      final uri = Uri.parse('$supabaseUrl/rest/v1/books?order=updated_at.desc');
       final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 8));
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final List<dynamic> list = jsonDecode(res.body);

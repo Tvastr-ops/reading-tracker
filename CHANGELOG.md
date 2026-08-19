@@ -5,6 +5,14 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [1.8.0d] - 2026-08-19
+
+### Fixed
+- **Cross-Client Soft Delete Synchronization**: Removed `deleted_at=is.null` query filters on remote book fetches in `SupabaseSyncProvider` and `GenericRestSyncProvider`, ensuring soft-deleted / trash books update their `deleted_at` timestamp across all connected clients.
+- **Permanent Deletion Remote Cleanup**: Added `cleanupMissingRemoteBooks` in `DatabaseHelper` and `SyncManager` to automatically purge local synced records when they are permanently removed from the remote database or web trash.
+
+---
+
 ## [1.8.0c] - 2026-08-19
 
 ### Fixed

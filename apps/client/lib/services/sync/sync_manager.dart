@@ -160,14 +160,22 @@ class SyncManager extends ChangeNotifier {
         }
       }
 
-      // 2. Fetch remote updates (only upsert if local copy has no unpushed local changes)
+      // 2. Fetch remote updates (including soft-deleted/trash books)
       final remote = await _activeProvider!.fetchRemoteBooks();
       if (remote.isNotEmpty) {
+        final remoteIds = <String>{};
         for (final b in remote) {
           if (!failedPushIds.contains(b.id)) {
+            remoteIds.add(b.id);
             await _dbHelper.upsertRemoteBook(b);
           }
         }
+        if (failedPushIds.isEmpty) {
+          await _dbHelper.cleanupMissingRemoteBooks(remoteIds);
+        }
+      } else if (failedPushIds.isEmpty && _lastSyncedAt != null) {
+        // If remote database is empty after successful connection, cleanup all synced books
+        await _dbHelper.cleanupMissingRemoteBooks({});
       }
 
       // 2b. Fetch remote reading logs (incremental based on _lastSyncedAt, or full if local is empty)

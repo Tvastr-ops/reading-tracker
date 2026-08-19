@@ -293,6 +293,23 @@ class DatabaseHelper {
     ]);
   }
 
+  /// Removes local synced books that have been permanently deleted from the remote backend.
+  Future<void> cleanupMissingRemoteBooks(Set<String> remoteIds) async {
+    final db = await instance.database;
+    final localSynced = await db.query(
+      'books',
+      columns: ['id'],
+      where: "sync_status = 'synced'",
+    );
+    for (final row in localSynced) {
+      final localId = row['id'] as String;
+      if (!remoteIds.contains(localId)) {
+        await db.delete('reading_log', where: 'book_id = ?', whereArgs: [localId]);
+        await db.delete('books', where: 'id = ?', whereArgs: [localId]);
+      }
+    }
+  }
+
   Future<List<Book>> getTrashBooks() async {
     final db = await instance.database;
     final result = await db.query(
