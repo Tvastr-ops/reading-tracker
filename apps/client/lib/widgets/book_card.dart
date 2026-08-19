@@ -150,10 +150,15 @@ class BookCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    formatProgressDisplay(book).toUpperCase(),
-                    style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800),
+                  Expanded(
+                    child: Text(
+                      formatProgressDisplay(book).toUpperCase(),
+                      style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
+                  const SizedBox(width: 4),
                   Text(
                     '${book.completionPercentage.toInt()}%',
                     style: TextStyle(

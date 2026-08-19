@@ -5,6 +5,16 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [1.8.0c] - 2026-08-19
+
+### Fixed
+- **Mobile Table View Streamlining**: Overhauled `BookTableRow` on mobile to a clean 2-line layout with full $252\text{px}$ title width, inline format + author/progress sentence, full-width progress bar, and large tactile `+$quickAmt` stepper, eliminating button clutter and badge pileup on 360px–410px devices.
+- **Cards View Progress Overflow**: Protected progress counter text in `BookCard` with responsive `Expanded` and ellipsis handling.
+- **Sync Duplicate & ID Preservation**: Fixed REST API `/api/books` stripping client UUIDs during creation, which previously led to duplicate entries upon sync. Added client-side ID remapping and automatic duplicate cleanup.
+- **Direct Supabase Sync Constraint Compliance**: Added safe defaults and rating sanitization in `Book.toRemoteMap()` so new book insertions strictly comply with PostgreSQL check constraints and `NOT NULL` requirements.
+
+---
+
 ## [1.8.0b] - 2026-08-19
 
 ### Fixed

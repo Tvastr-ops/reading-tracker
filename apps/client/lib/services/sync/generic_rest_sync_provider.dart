@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../models/book.dart';
+import '../database_helper.dart';
 import 'sync_provider.dart';
 
 class GenericRestSyncProvider implements RemoteSyncProvider {
@@ -83,6 +84,16 @@ class GenericRestSyncProvider implements RemoteSyncProvider {
           : await http.patch(uri, headers: _headers, body: payload).timeout(const Duration(seconds: 8));
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
+        if (isCreate) {
+          try {
+            final dynamic data = jsonDecode(res.body);
+            final bookMap = data is Map ? (data['book'] as Map? ?? data) : null;
+            final remoteId = bookMap?['id']?.toString();
+            if (remoteId != null && remoteId.isNotEmpty && remoteId != book.id) {
+              await DatabaseHelper.instance.remapBookId(book.id, remoteId);
+            }
+          } catch (_) {}
+        }
         return true;
       }
       debugPrint('GenericRestSyncProvider pushBook (${isCreate ? "POST" : "PATCH"}) failed [${res.statusCode}]: ${res.body}');

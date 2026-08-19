@@ -277,7 +277,7 @@ class BookTableRow extends StatelessWidget {
     );
   }
 
-  /// Mobile / Narrow Screens: Responsive Stacked Row
+  /// Mobile / Narrow Screens: Clean High-Hierarchy Responsive Row
   Widget _buildMobileRow({
     required bool isDark,
     required Color borderColor,
@@ -300,11 +300,11 @@ class BookTableRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Line 1: Full-Width Title (Zero badge collision!)
+              // Line 1: Full-Width Title (Massive 250px+ width!)
               Text(
                 book.title.toUpperCase(),
                 style: TextStyle(
-                  fontSize: isCompact ? 12.5 : 13.0,
+                  fontSize: isCompact ? 12.0 : 13.0,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.2,
                 ),
@@ -313,16 +313,18 @@ class BookTableRow extends StatelessWidget {
               ),
               const SizedBox(height: 2),
 
-              // Line 2: Progress & Author on Left, Badges & % on Right
+              // Line 2: Format Badge on Left, Author & Progress in Middle, % on Right
               Row(
                 children: [
+                  BrutalistBadge(label: book.type),
+                  const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      (book.author != null && book.author!.isNotEmpty && !isCompact)
+                      (book.author != null && book.author!.isNotEmpty)
                           ? '${book.author} • ${formatProgressDisplay(book)}'
                           : formatProgressDisplay(book),
                       style: TextStyle(
-                        fontSize: isCompact ? 10.0 : 10.5,
+                        fontSize: isCompact ? 9.5 : 10.5,
                         fontWeight: FontWeight.w600,
                         color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
                       ),
@@ -330,17 +332,7 @@ class BookTableRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  BrutalistBadge(label: book.type),
-                  if (book.rating != null && book.rating! > 0) ...[
-                    const SizedBox(width: 3),
-                    BrutalistBadge(
-                      label: '${book.rating!.toStringAsFixed(1)} ★',
-                      backgroundColor: const Color(0xFFFFB800),
-                      textColor: AppColors.inkBlack,
-                    ),
-                  ],
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 6),
                   Text(
                     '${book.completionPercentage.toInt()}%',
                     style: TextStyle(
@@ -356,7 +348,7 @@ class BookTableRow extends StatelessWidget {
               // Line 3: Progress Bar
               BrutalistProgressBar(
                 progress: book.completionPercentage / 100.0,
-                height: isCompact ? 3.0 : 4.0,
+                height: isCompact ? 3.0 : 3.5,
                 fillColor: accentColor,
               ),
             ],
@@ -364,14 +356,20 @@ class BookTableRow extends StatelessWidget {
         ),
         const SizedBox(width: 8),
 
-        // Quick Stepper Chip
+        // Prominent Single Stepper Button (Large & Tactile)
         Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: () => onQuickIncrement(quickAmt.toDouble()),
             child: Container(
-              constraints: BoxConstraints(minWidth: isCompact ? 30 : 34, minHeight: isCompact ? 26 : 30),
-              padding: EdgeInsets.symmetric(horizontal: isCompact ? 5 : 7, vertical: isCompact ? 3 : 5),
+              constraints: BoxConstraints(
+                minWidth: isCompact ? 32 : 36,
+                minHeight: isCompact ? 28 : 32,
+              ),
+              padding: EdgeInsets.symmetric(
+                horizontal: isCompact ? 6 : 8,
+                vertical: isCompact ? 4 : 5,
+              ),
               decoration: BoxDecoration(
                 color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
                 border: Border.all(color: borderColor, width: 1.5),
@@ -386,33 +384,13 @@ class BookTableRow extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 '+$quickAmt',
-                style: TextStyle(fontSize: isCompact ? 10 : 11, fontWeight: FontWeight.w900),
+                style: TextStyle(
+                  fontSize: isCompact ? 10.5 : 11.5,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 2),
-
-        // Favorite Button
-        if (onToggleFavorite != null)
-          IconButton(
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-            icon: Icon(
-              book.isFavorite == true ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-              size: 17,
-              color: book.isFavorite == true ? AppColors.primaryRed : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-            ),
-            tooltip: book.isFavorite == true ? 'Unmark Favorite' : 'Mark as Favorite',
-            onPressed: onToggleFavorite,
-          ),
-
-        // Log Button
-        IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-          icon: Icon(Icons.edit_note_rounded, size: 19, color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-          onPressed: onLogProgress,
         ),
       ],
     );
