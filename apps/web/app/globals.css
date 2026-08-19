@@ -121,7 +121,9 @@
 
 [data-theme="dark"],
 [data-theme="classic"][data-mode="dark"],
-:root[data-mode="dark"]:not([data-theme="paperback"]):not([data-theme="matcha"]):not([data-theme="nordic"]) {
+:root[data-mode="dark"]:not([data-theme="paperback"]):not([data-theme="matcha"]):not(
+  [data-theme="nordic"]
+) {
   color-scheme: dark;
 
   --bg: #120e0a;
@@ -397,21 +399,35 @@
    5. GPU Hardware-Accelerated Ambient Paper Patterns (8% to 10% Opacity)
    ========================================================================== */
 html[data-pattern="true"][data-theme="paperback"] body {
-  background-image: radial-gradient(color-mix(in srgb, var(--border) 9%, transparent) 1px, transparent 1px);
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--border) 9%, transparent) 1px,
+    transparent 1px
+  );
   background-size: 20px 20px;
   background-attachment: fixed;
 }
 
 html[data-pattern="true"][data-theme="matcha"] body {
   background-image:
-    linear-gradient(to right, color-mix(in srgb, var(--border) 8%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--border) 8%, transparent) 1px, transparent 1px);
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--border) 8%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--border) 8%, transparent) 1px,
+      transparent 1px
+    );
   background-size: 24px 24px;
   background-attachment: fixed;
 }
 
 html[data-pattern="true"][data-theme="nordic"] body {
-  background-image: radial-gradient(color-mix(in srgb, var(--border) 9%, transparent) 1.2px, transparent 1.2px);
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--border) 9%, transparent) 1.2px,
+    transparent 1.2px
+  );
   background-size: 22px 22px;
   background-attachment: fixed;
 }
@@ -420,7 +436,7 @@ html[data-pattern="true"][data-theme="nordic"] body {
 html:not([data-theme="classic"]):not([data-theme="dark"]) .btn:active,
 html:not([data-theme="classic"]):not([data-theme="dark"]) button:active:not(:disabled) {
   transform: translate(1.5px, 1.5px);
-  box-shadow: none !important;
+  box-shadow: none;
 }
 
 html:not([data-theme="classic"]):not([data-theme="dark"]) .surface-t2:hover {

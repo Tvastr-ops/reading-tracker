@@ -1,14 +1,6 @@
 'use client';
 
-import {
-  Check,
-  Download,
-  Grid,
-  LogOut,
-  Moon,
-  Sun,
-  Upload,
-} from 'lucide-react';
+import { Check, Download, Grid, LogOut, Moon, Sun, Upload } from 'lucide-react';
 import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useLibraryData } from '@/contexts/LibraryDataContext';
-import type { ThemeMode, ThemePalette } from '@/hooks/useLibrary';
+import type { ThemePalette } from '@/hooks/useLibrary';
 
 interface PaletteOption {
   id: ThemePalette;
@@ -168,8 +160,7 @@ export function LibraryNavbar() {
                       <span
                         className="h-4 w-4 rounded-full border border-border shadow-xs"
                         style={{
-                          backgroundColor:
-                            themeMode === 'dark' ? palette.darkBg : palette.lightBg,
+                          backgroundColor: themeMode === 'dark' ? palette.darkBg : palette.lightBg,
                         }}
                       />
                       <span
@@ -203,9 +194,7 @@ export function LibraryNavbar() {
               </div>
               <span
                 className={`font-semibold text-[10px] px-1.5 py-0.5 rounded ${
-                  paperTexture
-                    ? 'bg-accent-color text-accent-text'
-                    : 'bg-surface text-text-muted'
+                  paperTexture ? 'bg-accent-color text-accent-text' : 'bg-surface text-text-muted'
                 }`}
               >
                 {paperTexture ? 'ON' : 'OFF'}
