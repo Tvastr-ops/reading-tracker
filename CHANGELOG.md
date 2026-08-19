@@ -5,6 +5,13 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [1.8.0b] - 2026-08-19
+
+### Fixed
+- **Cover View 100% Progress Text Width**: Granted 100% of horizontal overlay width to the chapter/page counter in `BookCoverCard` by relying on the brutalist progress bar for completion percentage, preventing any text truncation on 3-column mobile screens.
+
+---
+
 ## [1.8.0a] - 2026-08-19
 
 ### Changed

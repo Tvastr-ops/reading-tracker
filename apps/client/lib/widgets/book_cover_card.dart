@@ -205,32 +205,16 @@ class BookCoverCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
 
-                      // Progress String + % (Line 2 - Full Width!)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              formatProgressDisplay(book),
-                              style: TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w700,
-                                color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.75) : AppColors.inkMuted,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            '${book.completionPercentage.toInt()}%',
-                            style: TextStyle(
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w900,
-                              color: accentColor,
-                            ),
-                          ),
-                        ],
+                      // Progress String (Line 2 - Full 100% Width!)
+                      Text(
+                        formatProgressDisplay(book),
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.75) : AppColors.inkMuted,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
 
