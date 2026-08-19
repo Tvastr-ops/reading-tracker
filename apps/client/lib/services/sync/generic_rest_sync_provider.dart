@@ -51,7 +51,7 @@ class GenericRestSyncProvider implements RemoteSyncProvider {
   Future<List<Book>> fetchRemoteBooks() async {
     if (serverUrl.isEmpty) return [];
     try {
-      final uri = Uri.parse(_cleanUrl('/api/books'));
+      final uri = Uri.parse(_cleanUrl('/api/books?all=1'));
       final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 8));
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final dynamic data = jsonDecode(res.body);
