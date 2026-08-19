@@ -164,10 +164,13 @@ export const DELETE = withAuth(async (req: NextRequest, { params }: RouteContext
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
 
-  const permanent = req.nextUrl.searchParams.get('permanent') === '1';
+  const permanentParam = req.nextUrl.searchParams.get('permanent');
+  const permanent = permanentParam === '1' || permanentParam === 'true';
   const supabase = supabaseServer();
 
   if (permanent) {
+    // Delete any dependent reading log rows first
+    await supabase.from('reading_log').delete().eq('book_id', id);
     const { error } = await supabase.from('books').delete().eq('id', id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true });

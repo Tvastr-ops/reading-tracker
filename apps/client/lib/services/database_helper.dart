@@ -208,7 +208,7 @@ class DatabaseHelper {
         whereArgs: [oldId],
       );
       await txn.update(
-        'reading_logs',
+        'reading_log',
         {'book_id': newId},
         where: 'book_id = ?',
         whereArgs: [oldId],
@@ -219,15 +219,16 @@ class DatabaseHelper {
   Future<void> upsertRemoteBook(Book b) async {
     final db = await instance.database;
 
-    // Proactively clean up any un-synced duplicate placeholder created locally with identical title
+    // Proactively clean up any duplicate entries created locally with identical title
     try {
       final duplicates = await db.query(
         'books',
-        where: "title = ? AND sync_status = 'pending_create' AND id != ?",
+        where: "title = ? AND id != ?",
         whereArgs: [b.title, b.id],
       );
       for (final dup in duplicates) {
         final dupId = dup['id'] as String;
+        await db.delete('reading_log', where: 'book_id = ?', whereArgs: [dupId]);
         await db.delete('books', where: 'id = ?', whereArgs: [dupId]);
       }
     } catch (_) {}

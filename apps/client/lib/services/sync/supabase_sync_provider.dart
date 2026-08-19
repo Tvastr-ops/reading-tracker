@@ -82,7 +82,21 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
     try {
       final uri = Uri.parse('$supabaseUrl/rest/v1/books?id=eq.$id');
       if (permanent) {
-        final res = await http.delete(uri, headers: _headers).timeout(const Duration(seconds: 8));
+        // First delete child reading log entries in Supabase
+        try {
+          final logUri = Uri.parse('$supabaseUrl/rest/v1/reading_log?book_id=eq.$id');
+          await http.delete(logUri, headers: {
+            'apikey': anonKey,
+            'Authorization': 'Bearer $anonKey',
+            'Prefer': 'return=minimal',
+          }).timeout(const Duration(seconds: 4));
+        } catch (_) {}
+
+        final res = await http.delete(uri, headers: {
+          'apikey': anonKey,
+          'Authorization': 'Bearer $anonKey',
+          'Prefer': 'return=minimal',
+        }).timeout(const Duration(seconds: 8));
         return res.statusCode >= 200 && res.statusCode < 300;
       }
 
