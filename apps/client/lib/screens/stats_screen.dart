@@ -19,6 +19,7 @@ class _StatsScreenState extends State<StatsScreen> {
   List<Book> _books = [];
   double _totalUnitsLogged = 0.0;
   int _totalLogsCount = 0;
+  Map<String, double> _unitBreakdown = {};
   bool _isLoading = true;
   int _distributionTabIndex = 0; // 0: Formats, 1: Genres, 2: Ratings
   int? _selectedMonthIndex;
@@ -52,11 +53,13 @@ class _StatsScreenState extends State<StatsScreen> {
     setState(() => _isLoading = true);
     final books = await _dbHelper.getBooks();
     final agg = await _dbHelper.getAggregatedReadingStats();
+    final unitBreakdown = await _dbHelper.getUnitBreakdownStats();
     if (mounted) {
       setState(() {
         _books = books;
         _totalUnitsLogged = (agg['totalUnits'] as num?)?.toDouble() ?? 0.0;
         _totalLogsCount = (agg['totalLogs'] as num?)?.toInt() ?? 0;
+        _unitBreakdown = unitBreakdown;
         _isLoading = false;
       });
     }
@@ -193,19 +196,26 @@ class _StatsScreenState extends State<StatsScreen> {
     final expectedByNow = yearlyGoal > 0 ? (yearlyGoal / 12.0) * currentMonth : 0.0;
     final paceDiff = completedThisYear - expectedByNow.round();
     final String goalPaceStatus;
+    final IconData goalPaceIcon;
     final Color goalPaceColor;
+    final bool isGoalAchieved = yearlyGoal > 0 && completedThisYear >= yearlyGoal;
+
     if (yearlyGoal == 0) {
       goalPaceStatus = 'NO GOAL SET';
+      goalPaceIcon = Icons.flag_outlined;
       goalPaceColor = isDark ? Colors.white60 : AppColors.inkMuted;
-    } else if (completedThisYear >= yearlyGoal) {
-      goalPaceStatus = 'GOAL ACHIEVED! 🏆';
-      goalPaceColor = AppColors.successGreen;
+    } else if (isGoalAchieved) {
+      goalPaceStatus = 'GOAL ACHIEVED!';
+      goalPaceIcon = Icons.emoji_events_rounded;
+      goalPaceColor = primaryColor;
     } else if (paceDiff >= 0) {
       goalPaceStatus = paceDiff == 0 ? 'ON TRACK' : '+$paceDiff AHEAD';
-      goalPaceColor = AppColors.successGreen;
+      goalPaceIcon = paceDiff == 0 ? Icons.check_circle_outline_rounded : Icons.trending_up_rounded;
+      goalPaceColor = isDark ? const Color(0xFF69F0AE) : const Color(0xFF00897B);
     } else {
       goalPaceStatus = '${paceDiff.abs()} BEHIND';
-      goalPaceColor = AppColors.amberWarning;
+      goalPaceIcon = Icons.trending_down_rounded;
+      goalPaceColor = isDark ? const Color(0xFFFF8A80) : const Color(0xFFD32F2F);
     }
 
     // Formats distribution
@@ -290,18 +300,33 @@ class _StatsScreenState extends State<StatsScreen> {
                               children: [
                                 if (yearlyGoal > 0) ...[
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                                     decoration: BoxDecoration(
-                                      color: goalPaceColor.withValues(alpha: 0.15),
-                                      border: Border.all(color: goalPaceColor, width: 1),
-                                    ),
-                                    child: Text(
-                                      goalPaceStatus,
-                                      style: TextStyle(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w900,
-                                        color: goalPaceColor,
+                                      color: isGoalAchieved
+                                          ? primaryColor
+                                          : goalPaceColor.withValues(alpha: isDark ? 0.20 : 0.12),
+                                      border: Border.all(
+                                        color: isGoalAchieved
+                                            ? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack)
+                                            : goalPaceColor,
+                                        width: 1.2,
                                       ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(goalPaceIcon, size: 11, color: isGoalAchieved ? Colors.white : goalPaceColor),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          goalPaceStatus,
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 0.3,
+                                            color: isGoalAchieved ? Colors.white : (isDark ? Colors.white : AppColors.inkBlack),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                   const SizedBox(width: 6),
@@ -556,57 +581,262 @@ class _StatsScreenState extends State<StatsScreen> {
                   // Velocity & Forecast Card
                   final velocityCard = BrutalistCard(
                     margin: EdgeInsets.zero,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Row(
                               children: [
                                 Icon(Icons.speed_rounded, size: 16, color: primaryColor),
                                 const SizedBox(width: 6),
                                 const Text(
-                                  'READING VELOCITY',
+                                  'READING VELOCITY & FORECAST',
                                   style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              completedThisYear > 0
-                                  ? '~${(completedThisYear / currentMonth).toStringAsFixed(1)} books/month pace'
-                                  : 'Start logging reads to establish pace',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                            if (completedThisYear > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHighest,
+                                  border: Border.all(
+                                    color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                    width: 1.5,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                      offset: const Offset(1.5, 1.5),
+                                      blurRadius: 0,
+                                    ),
+                                  ],
+                                ),
+                                child: Text(
+                                  '~${((completedThisYear / currentMonth) * 12).round()} YR EST.',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.3,
+                                    color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh,
+                                  border: Border.all(
+                                    color: isDark
+                                        ? AppColors.darkInkWhite.withValues(alpha: 0.3)
+                                        : AppColors.inkBlack.withValues(alpha: 0.2),
+                                    width: 1.0,
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'MONTHLY RATE',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w800,
+                                        color: isDark ? Colors.white60 : AppColors.inkMuted,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      completedThisYear > 0
+                                          ? '${(completedThisYear / currentMonth).toStringAsFixed(1)} books/mo'
+                                          : '0.0 books/mo',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w900,
+                                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh,
+                                  border: Border.all(
+                                    color: isDark
+                                        ? AppColors.darkInkWhite.withValues(alpha: 0.3)
+                                        : AppColors.inkBlack.withValues(alpha: 0.2),
+                                    width: 1.0,
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'WEEKLY PACE',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w800,
+                                        color: isDark ? Colors.white60 : AppColors.inkMuted,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      completedThisYear > 0
+                                          ? '~${((completedThisYear / currentMonth) / 4.33).toStringAsFixed(1)} books/wk'
+                                          : 'No active pace',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w900,
+                                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
                         ),
-                        if (completedThisYear > 0)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.paperSurfaceHighest,
-                              border: Border.all(
-                                color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Text(
-                              '~${((completedThisYear / currentMonth) * 12).round()} YR EST.',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.inkBlack,
-                              ),
-                            ),
-                          ),
                       ],
                     ),
                   );
+
+                  // Unit Volume Breakdown Card
+                  final unitEntries = _unitBreakdown.entries.where((e) => e.value > 0).toList();
+                  Widget? unitVolumeCard;
+                  if (unitEntries.isNotEmpty) {
+                    IconData getUnitIcon(String unit) {
+                      switch (unit) {
+                        case 'pages':
+                          return Icons.auto_stories_rounded;
+                        case 'chapters':
+                          return Icons.format_list_numbered_rounded;
+                        case 'volumes':
+                          return Icons.inventory_2_outlined;
+                        case 'words':
+                          return Icons.text_snippet_outlined;
+                        default:
+                          return Icons.bookmark_added_rounded;
+                      }
+                    }
+
+                    Color getUnitColor(String unit) {
+                      switch (unit) {
+                        case 'pages':
+                          return AppColors.skyBlue;
+                        case 'chapters':
+                          return primaryColor;
+                        case 'volumes':
+                          return AppColors.amberWarning;
+                        case 'words':
+                          return AppColors.successGreen;
+                        default:
+                          return primaryColor;
+                      }
+                    }
+
+                    String formatUnitVal(double val) {
+                      if (val >= 1000000) {
+                        return '${(val / 1000000).toStringAsFixed(1)}M';
+                      } else if (val >= 1000) {
+                        return '${(val / 1000).toStringAsFixed(1)}k';
+                      }
+                      return val % 1 == 0 ? val.toInt().toString() : val.toStringAsFixed(1);
+                    }
+
+                    unitVolumeCard = BrutalistCard(
+                      margin: EdgeInsets.zero,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.collections_bookmark_rounded, size: 16, color: primaryColor),
+                              const SizedBox(width: 6),
+                              const Text(
+                                'READING VOLUME BY UNIT',
+                                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: unitEntries.map((entry) {
+                              final unitKey = entry.key;
+                              final unitVal = entry.value;
+                              final unitIcon = getUnitIcon(unitKey);
+                              final unitColor = getUnitColor(unitKey);
+
+                              return Container(
+                                constraints: const BoxConstraints(minWidth: 130),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh,
+                                  border: Border.all(
+                                    color: isDark
+                                        ? AppColors.darkInkWhite.withValues(alpha: 0.3)
+                                        : AppColors.inkBlack.withValues(alpha: 0.2),
+                                    width: 1.0,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(5),
+                                      decoration: BoxDecoration(
+                                        color: unitColor.withValues(alpha: 0.15),
+                                        border: Border.all(color: unitColor, width: 1.0),
+                                      ),
+                                      child: Icon(unitIcon, size: 15, color: unitColor),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          formatUnitVal(unitVal),
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w900,
+                                            color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                          ),
+                                        ),
+                                        Text(
+                                          unitKey.toUpperCase(),
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w800,
+                                            color: isDark ? Colors.white60 : AppColors.inkMuted,
+                                            letterSpacing: 0.3,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
 
                   // Stacked Metric Bars (Formats / Genres / Ratings)
                   final stackedDistributionCard = Column(
@@ -676,10 +906,18 @@ class _StatsScreenState extends State<StatsScreen> {
                             ),
                             const SizedBox(width: 20),
 
-                            // Right Column: Stacked Distribution Analytics
+                            // Right Column: Stacked Distribution & Unit Breakdown
                             Expanded(
                               flex: 4,
-                              child: stackedDistributionCard,
+                              child: Column(
+                                children: [
+                                  if (unitVolumeCard != null) ...[
+                                    unitVolumeCard,
+                                    const SizedBox(height: 16),
+                                  ],
+                                  stackedDistributionCard,
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -695,6 +933,10 @@ class _StatsScreenState extends State<StatsScreen> {
                       yearlyGoalCard,
                       const SizedBox(height: 16),
                       metricsGrid,
+                      if (unitVolumeCard != null) ...[
+                        const SizedBox(height: 16),
+                        unitVolumeCard,
+                      ],
                       const SizedBox(height: 16),
                       monthlyChartCard,
                       const SizedBox(height: 16),

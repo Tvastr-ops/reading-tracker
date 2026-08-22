@@ -532,6 +532,57 @@ class DatabaseHelper {
     return {'totalUnits': 0.0, 'totalLogs': 0};
   }
 
+  /// Calculates cumulative volume read broken down by unit_type (pages, chapters, volumes, words, etc.)
+  Future<Map<String, double>> getUnitBreakdownStats() async {
+    final db = await instance.database;
+    final breakdown = <String, double>{};
+
+    try {
+      // 1. Sum deltas from reading_log joined with books
+      final logRes = await db.rawQuery('''
+        SELECT 
+          LOWER(COALESCE(b.unit_type, 'pages')) as unit_type,
+          SUM(CASE WHEN l.to_progress > l.from_progress THEN (l.to_progress - l.from_progress) ELSE 0 END) as logged_units
+        FROM reading_log l
+        INNER JOIN books b ON l.book_id = b.id
+        WHERE l.deleted_at IS NULL AND b.deleted_at IS NULL
+        GROUP BY LOWER(COALESCE(b.unit_type, 'pages'))
+      ''');
+
+      for (final row in logRes) {
+        final type = (row['unit_type'] as String?) ?? 'pages';
+        final units = ((row['logged_units'] as num?) ?? 0).toDouble();
+        if (units > 0) {
+          breakdown[type] = (breakdown[type] ?? 0.0) + units;
+        }
+      }
+
+      // 2. Fallback: Include base progress for books that have progress but no log rows yet
+      final fallbackRes = await db.rawQuery('''
+        SELECT 
+          LOWER(COALESCE(unit_type, 'pages')) as unit_type,
+          SUM(progress) as book_progress
+        FROM books
+        WHERE deleted_at IS NULL 
+          AND progress > 0
+          AND id NOT IN (SELECT DISTINCT book_id FROM reading_log WHERE deleted_at IS NULL)
+        GROUP BY LOWER(COALESCE(unit_type, 'pages'))
+      ''');
+
+      for (final row in fallbackRes) {
+        final type = (row['unit_type'] as String?) ?? 'pages';
+        final units = ((row['book_progress'] as num?) ?? 0).toDouble();
+        if (units > 0) {
+          breakdown[type] = (breakdown[type] ?? 0.0) + units;
+        }
+      }
+    } catch (e) {
+      debugPrint('[DatabaseHelper] getUnitBreakdownStats error: $e');
+    }
+
+    return breakdown;
+  }
+
   Future<int> deleteReadingLog(String id) async {
     final db = await instance.database;
     return await db.delete('reading_log', where: 'id = ?', whereArgs: [id]);

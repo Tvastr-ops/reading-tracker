@@ -5,6 +5,22 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [1.9.0d] - 2026-08-22
+
+### Added
+- **Universal Standalone Linux AppImage (`.AppImage`)**: Added single-file executable AppImage distribution bundled with `appimagetool` and zero-dependency execution across any Linux distribution without installation.
+- **Standalone `libsqlite3.so` Bundling**: Embedded standalone SQLite database engine directly into Linux `lib/` directory for resilient offline local storage without requiring host OS packages.
+- **Universal Plugin `.so` Library Harvest**: Automated scanning and bundling of all compiled plugin shared libraries (`dynamic_color`, `window_manager`, `url_launcher`) into release bundles.
+- **Dedicated Reading Volume by Unit Breakdown**: Added a dedicated Stats section dynamically rendering exact volumes read for **Pages**, **Chapters**, **Volumes**, and **Words** queried entirely from local SQLite log history.
+- **Theme-Adaptive On-Track Indicator & Trend Badges**: Upgraded Goal Card with high-contrast tactile stamp badges, trend icons (`▲ +X AHEAD`, `● ON TRACK`, `▼ X BEHIND`, `🏆 GOAL ACHIEVED`), and full theme color synchronization.
+- **Dual-Metric Reading Velocity & Forecast Dashboard**: Redesigned velocity card into a dual rate meter displaying Monthly completion rate, Weekly pace, and year-end projections.
+
+### Fixed
+- **Linux `flutter_assets` Runtime Bundle**: Added missing CMake install directive in `runner/CMakeLists.txt` and packaging failsafe to ensure all fonts, asset manifests, Dart bytecode, and UI assets are fully bundled into Linux `.deb`, `.tar.gz`, and `.AppImage` packages.
+- **Portable Tarball Directory Hierarchy**: Enclosed portable Linux `.tar.gz` archive in a root `paperback-reader/` directory to prevent in-place extraction clutter.
+
+---
+
 ## [1.9.0c] - 2026-08-22
 
 ### Added
