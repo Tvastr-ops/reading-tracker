@@ -5,6 +5,20 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [1.9.0a] - 2026-08-22
+
+### Added
+- **Pure Progression Domain Engine (`progression_logic.dart`)**: Established 1:1 progression domain parity with the Web application, automating lifecycle status normalization (`dateStarted`, `dateFinished`, auto-filling completed progress, and clearing `isOngoing`).
+- **Offline Reading Pace Computation**: Calculates weekly reading velocity (`units/week`) directly from SQLite log history matching PostgreSQL RPC formulas.
+- **Max 3-Letter Format Tags & Ultra-Compact Units**: Optimized format badges to strictly $\le 3$ characters in compact mode (`NOV`, `NVL`, `NVT`, `LN`, `WN`, `SS`, `COL`, `ANT`, `ESY`, `FF`, `OTH`), retained full labels in comfortable mode, and standardized volume prefix notation (`Vol. 0 / 17` / `V.0/17`) and `pg` unit shorthand (`120/350 pg`).
+
+### Fixed
+- **Web API Idempotent Log Upsert**: Updated `POST /api/books/[id]/log` to respect client-provided UUIDs, eliminating duplicate reading log generation and timeline duplication across Generic REST connections.
+- **SQLite Self-Healing Deduplication**: Added time-window reconciliation in `DatabaseHelper.upsertRemoteReadingLog` to automatically purge legacy duplicate records upon cloud sync.
+- **Linux Desktop Launch Wrapper & Dependencies**: Fixed Linux installation execution failure by adding working directory and `LD_LIBRARY_PATH` configuration to the `/usr/bin/paperback-reader` wrapper script, updating `.deb` metadata to support modern Ubuntu 24.04 (`t64`) / Debian transitions, and including a standalone `run.sh` launcher in the portable `.tar.gz`.
+
+---
+
 ## [1.9.0] - 2026-08-19
 
 ### Added
