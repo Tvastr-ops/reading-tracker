@@ -24,7 +24,7 @@ echo "Packaging portable Linux tarball..."
 PORTABLE_DIR="portable-linux"
 rm -rf "$PORTABLE_DIR"
 mkdir -p "$PORTABLE_DIR"
-cp -r "$BUNDLE_DIR"/* "$PORTABLE_DIR/"
+cp -rL "$BUNDLE_DIR"/* "$PORTABLE_DIR/"
 
 # Portable runner script
 cat > "$PORTABLE_DIR/run.sh" << 'EOF'
@@ -36,7 +36,7 @@ exec "${SCRIPT_DIR}/paperback_reader" "$@"
 EOF
 chmod 755 "$PORTABLE_DIR/run.sh"
 
-tar -czf "$RELEASE_ASSETS_DIR/paperback-v${VERSION_CLEAN}-linux-x64.tar.gz" -C "$PORTABLE_DIR" .
+tar -hczf "$RELEASE_ASSETS_DIR/paperback-v${VERSION_CLEAN}-linux-x64.tar.gz" -C "$PORTABLE_DIR" .
 rm -rf "$PORTABLE_DIR"
 
 # 2. Package Native .deb Package
@@ -49,8 +49,8 @@ mkdir -p "$DEB_DIR/usr/bin"
 mkdir -p "$DEB_DIR/usr/share/applications"
 mkdir -p "$DEB_DIR/usr/share/icons/hicolor/512x512/apps"
 
-# Copy binaries and bundle assets
-cp -r "$BUNDLE_DIR"/* "$DEB_DIR/usr/lib/paperback-reader/"
+# Copy binaries and bundle assets (dereference symlinks to ensure physical .so files)
+cp -rL "$BUNDLE_DIR"/* "$DEB_DIR/usr/lib/paperback-reader/"
 
 # Ensure proper permissions across the package
 find "$DEB_DIR/usr/lib/paperback-reader" -type d -exec chmod 755 {} +
