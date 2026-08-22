@@ -6,7 +6,6 @@ import '../services/reading_mutation_service.dart';
 import '../services/sync/sync_manager.dart';
 import '../services/theme_service.dart';
 import '../theme/app_theme.dart';
-import '../utils/formatters.dart';
 import '../widgets/book_card.dart';
 import '../widgets/book_cover_card.dart';
 import '../widgets/book_detail_panel.dart';
@@ -261,36 +260,14 @@ class LibraryScreenState extends State<LibraryScreen> {
       builder: (ctx) => QuickLogDialog(
         book: book,
         onSave: (newProgress, note) async {
-          String newStatus = book.status;
-          if (newProgress > 0 && book.status == BookStatus.planToRead) {
-            newStatus = BookStatus.reading;
-          } else if (book.status == BookStatus.completed && newProgress > book.progress) {
-            newStatus = BookStatus.reading;
-          }
-
-          if (book.totalUnits != null && newProgress >= book.totalUnits!) {
-            newStatus = BookStatus.completed;
-          }
-
-          final updated = book.copyWith(
-            progress: newProgress,
-            status: newStatus,
-            updatedAt: DateTime.now().toUtc().toIso8601String(),
-            syncStatus: 'pending_update',
-          );
-          await _dbHelper.updateBook(updated);
-
-          final logEntry = ReadingLogEntry(
-            id: generateUuidV4(),
-            bookId: book.id,
-            fromProgress: book.progress,
-            toProgress: newProgress,
+          final updated = await _mutationService.setProgress(
+            book: book,
+            newProgress: newProgress,
             note: note,
-            loggedAt: DateTime.now().toUtc().toIso8601String(),
-            syncStatus: 'pending_create',
           );
-          await _dbHelper.insertReadingLog(logEntry);
-
+          if (_selectedBookForDetail?.id == book.id) {
+            setState(() => _selectedBookForDetail = updated);
+          }
           await _loadBooks();
         },
       ),

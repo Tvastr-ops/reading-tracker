@@ -271,6 +271,9 @@ export function getStatusAwareProgressText(book: Book): string {
 
   if (status === 'Plan to Read' && current === 0) {
     if (total != null && total > 0) {
+      if (unit === 'volumes') {
+        return `Vol. 0 / ${total}`;
+      }
       if (book.progress_structure === 'volume_chapter' && book.parent_total != null) {
         return `${total} ${unit} • ${book.parent_total} vols`;
       }
@@ -280,6 +283,9 @@ export function getStatusAwareProgressText(book: Book): string {
       return `${total} ${unit}`;
     }
     if (book.is_ongoing && book.latest_units != null && book.latest_units > 0) {
+      if (unit === 'volumes') {
+        return `Vol. 0 (Ongoing)`;
+      }
       return `${book.latest_units} ${unit} (Ongoing)`;
     }
     return 'Not started';

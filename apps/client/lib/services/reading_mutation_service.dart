@@ -1,6 +1,5 @@
-import 'package:intl/intl.dart';
 import '../models/book.dart';
-import '../utils/formatters.dart';
+import '../utils/progression_logic.dart';
 import 'database_helper.dart';
 import 'sync/sync_manager.dart';
 
@@ -17,12 +16,10 @@ class ReadingMutationService {
     required double delta,
     String? note,
   }) async {
-    final fromProgress = book.progress;
-    final toProgress = fromProgress + delta;
+    final toProgress = book.progress + delta;
     return await setProgress(
       book: book,
       newProgress: toProgress,
-      fromProgress: fromProgress,
       note: note,
     );
   }
@@ -40,100 +37,45 @@ class ReadingMutationService {
     final currentVol = (book.parentProgress ?? 0).toInt();
     final newVol = currentVol + volumesDelta;
 
-    final now = DateTime.now().toUtc().toIso8601String();
-    var newStatus = book.status;
-    if (newStatus == BookStatus.planToRead && (newCh > 0 || newVol > 0)) {
-      newStatus = BookStatus.reading;
-    }
-
-    final updatedBook = book.copyWith(
-      progress: newCh.toDouble(),
+    final updatedBook = await _dbHelper.recordBookProgress(
+      book,
+      newCh.toDouble(),
       parentProgress: newVol > 0 ? newVol : null,
-      status: newStatus,
-      updatedAt: now,
-      syncStatus: 'pending_update',
-    );
-
-    final logEntry = ReadingLogEntry(
-      id: generateUuidV4(),
-      bookId: book.id,
-      fromProgress: fromProgress,
-      toProgress: newCh.toDouble(),
       note: note ?? (volumesDelta > 0 ? 'Advanced to Vol $newVol, Ch $newCh' : null),
-      loggedAt: now,
-      syncStatus: 'pending_create',
     );
-
-    final db = await _dbHelper.database;
-    await db.transaction((txn) async {
-      await txn.insert('reading_log', logEntry.toMap());
-      await txn.update('books', updatedBook.toMap(), where: 'id = ?', whereArgs: [book.id]);
-    });
 
     _syncManager.syncNow();
     return updatedBook;
   }
 
-  /// Sets absolute progress and logs the reading session.
+  /// Sets absolute progress and logs the reading session using pure domain logic.
   Future<Book> setProgress({
     required Book book,
     required double newProgress,
     double? fromProgress,
+    num? parentProgress,
     String? note,
   }) async {
-    final now = DateTime.now().toUtc().toIso8601String();
-    final startVal = fromProgress ?? book.progress;
-
-    var newStatus = book.status;
-    if (newStatus == BookStatus.planToRead && newProgress > 0) {
-      newStatus = BookStatus.reading;
-    }
-
-    final updatedBook = book.copyWith(
-      progress: newProgress,
-      status: newStatus,
-      updatedAt: now,
-      syncStatus: 'pending_update',
-    );
-
-    final logEntry = ReadingLogEntry(
-      id: generateUuidV4(),
-      bookId: book.id,
-      fromProgress: startVal,
-      toProgress: newProgress,
+    final updatedBook = await _dbHelper.recordBookProgress(
+      book,
+      newProgress,
+      parentProgress: parentProgress,
       note: note,
-      loggedAt: now,
-      syncStatus: 'pending_create',
     );
-
-    final db = await _dbHelper.database;
-    await db.transaction((txn) async {
-      await txn.insert('reading_log', logEntry.toMap());
-      await txn.update('books', updatedBook.toMap(), where: 'id = ?', whereArgs: [book.id]);
-    });
 
     _syncManager.syncNow();
     return updatedBook;
   }
 
-  /// Changes the reading status (e.g. Reading, Completed, Dropped).
+  /// Changes the reading status with canonical lifecycle normalization.
   Future<Book> changeStatus({
     required Book book,
     required String newStatus,
   }) async {
-    final now = DateTime.now().toUtc().toIso8601String();
-    final localDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final updatedBook = book.copyWith(
-      status: newStatus,
-      dateFinished: newStatus == BookStatus.completed ? (book.dateFinished ?? localDate) : book.dateFinished,
-      dateStarted: (newStatus == BookStatus.reading && book.dateStarted == null) ? localDate : book.dateStarted,
-      updatedAt: now,
-      syncStatus: 'pending_update',
-    );
-
-    await _dbHelper.updateBook(updatedBook);
+    final normalized = normalizeStatusTransition(book, newStatus);
+    await _dbHelper.updateBook(normalized);
     _syncManager.syncNow();
-    return updatedBook;
+    return normalized;
   }
 
   /// Toggles the favorite flag on a book without modifying its shelf position.

@@ -78,20 +78,20 @@ class BookCoverCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Format Tag (Neo-Brutalist Shorthand)
+                    // Format Tag (Full title in Comfortable, Max 3-Letter in Compact)
                     Container(
                       padding: EdgeInsets.symmetric(
-                        horizontal: isCompact ? 3.5 : 4,
-                        vertical: isCompact ? 1 : 1.5,
+                        horizontal: isCompact ? 3.5 : 5,
+                        vertical: isCompact ? 1 : 2,
                       ),
                       decoration: BoxDecoration(
                         color: accentColor,
                         border: Border.all(color: Colors.white, width: 0.8),
                       ),
                       child: Text(
-                        getFormatShorthand(book.type),
+                        isCompact ? getFormatShorthand(book.type) : book.type.toUpperCase(),
                         style: TextStyle(
-                          fontSize: isCompact ? 7.5 : 8,
+                          fontSize: isCompact ? 7.5 : 8.5,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.3,
                           color: Colors.white,
@@ -105,7 +105,10 @@ class BookCoverCard extends StatelessWidget {
                       children: [
                         if (book.rating != null && book.rating! > 0) ...[
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isCompact ? 3 : 4.5,
+                              vertical: isCompact ? 1 : 1.5,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFFFB800),
                               border: Border.all(color: AppColors.inkBlack, width: 0.8),
@@ -113,12 +116,16 @@ class BookCoverCard extends StatelessWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.star_rounded, size: 10, color: AppColors.inkBlack),
+                                Icon(
+                                  Icons.star_rounded,
+                                  size: isCompact ? 9.5 : 10.5,
+                                  color: AppColors.inkBlack,
+                                ),
                                 const SizedBox(width: 1),
                                 Text(
                                   book.rating!.toStringAsFixed(1),
-                                  style: const TextStyle(
-                                    fontSize: 8,
+                                  style: TextStyle(
+                                    fontSize: isCompact ? 7.5 : 8.5,
                                     fontWeight: FontWeight.w900,
                                     color: AppColors.inkBlack,
                                   ),
@@ -132,14 +139,14 @@ class BookCoverCard extends StatelessWidget {
                           GestureDetector(
                             onTap: onToggleFavorite,
                             child: Container(
-                              padding: const EdgeInsets.all(2),
+                              padding: EdgeInsets.all(isCompact ? 1.5 : 2.5),
                               decoration: BoxDecoration(
                                 color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
                                 border: Border.all(color: AppColors.inkBlack, width: 0.8),
                               ),
                               child: Icon(
                                 book.isFavorite == true ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                                size: 11,
+                                size: isCompact ? 10.5 : 12,
                                 color: book.isFavorite == true ? AppColors.primaryRed : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
                               ),
                             ),
