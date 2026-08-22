@@ -10,7 +10,7 @@ mkdir -p "$RELEASE_ASSETS_DIR"
 
 VERSION_CLEAN="${GITHUB_REF_NAME#v}"
 if [ -z "$VERSION_CLEAN" ] || [ "$VERSION_CLEAN" = "main" ] || [ "$VERSION_CLEAN" = "dev" ]; then
-  VERSION_CLEAN="1.9.0d"
+  VERSION_CLEAN="1.9.0e"
 fi
 
 # Failsafe: Verify and guarantee data/flutter_assets is present in the release bundle
@@ -61,6 +61,8 @@ cat > "$PORTABLE_ROOT/run.sh" << 'EOF'
 #!/bin/sh
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 export LD_LIBRARY_PATH="${SCRIPT_DIR}/lib:${LD_LIBRARY_PATH}"
+export FLUTTER_ENGINE_SWITCHES="${FLUTTER_ENGINE_SWITCHES:-1}"
+export FLUTTER_ENGINE_SWITCH_1="${FLUTTER_ENGINE_SWITCH_1:-enable-impeller=false}"
 cd "${SCRIPT_DIR}"
 exec "${SCRIPT_DIR}/paperback_reader" "$@"
 EOF
@@ -95,6 +97,8 @@ cat > "$DEB_DIR/usr/bin/paperback-reader" << 'EOF'
 #!/bin/sh
 APP_DIR="/usr/lib/paperback-reader"
 export LD_LIBRARY_PATH="${APP_DIR}/lib:${LD_LIBRARY_PATH}"
+export FLUTTER_ENGINE_SWITCHES="${FLUTTER_ENGINE_SWITCHES:-1}"
+export FLUTTER_ENGINE_SWITCH_1="${FLUTTER_ENGINE_SWITCH_1:-enable-impeller=false}"
 cd "${APP_DIR}"
 exec "${APP_DIR}/paperback_reader" "$@"
 EOF
@@ -149,6 +153,8 @@ cat > "$APPDIR/AppRun" << 'EOF'
 #!/bin/sh
 APPDIR="$(dirname "$(readlink -f "$0")")"
 export LD_LIBRARY_PATH="${APPDIR}/lib:${LD_LIBRARY_PATH}"
+export FLUTTER_ENGINE_SWITCHES="${FLUTTER_ENGINE_SWITCHES:-1}"
+export FLUTTER_ENGINE_SWITCH_1="${FLUTTER_ENGINE_SWITCH_1:-enable-impeller=false}"
 cd "${APPDIR}"
 exec "${APPDIR}/paperback_reader" "$@"
 EOF
