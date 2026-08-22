@@ -18,7 +18,7 @@ dependencies:
   shared_preferences: ^2.2.3
   url_launcher: ^6.3.0
   google_fonts: ^8.2.1
-  dynamic_color: ^1.7.0
+  dynamic_color: ^2.1.0
   flutter_displaymode: ^0.7.0
   window_manager: ^0.5.2
   package_info_plus: ^10.2.1

@@ -116,17 +116,14 @@ export const PATCH = withAuth(async (req: NextRequest, { params }: RouteContext)
     if ('progress' in update && typeof update.progress === 'number') {
       const toProg = update.progress;
       if (existingBook.progress !== toProg) {
-        const delta = toProg - (existingBook.progress ?? 0);
-        const sign = delta >= 0 ? '+' : '';
-        const customNote = typeof body.note === 'string' ? body.note : null;
-        const note =
-          customNote || `Progress update (${sign}${delta} ${existingBook.unit_type || 'units'})`;
+        const customNote =
+          typeof body.note === 'string' && body.note.trim().length > 0 ? body.note.trim() : null;
 
         const progResult = await recordProgressChange({
           bookId: id,
           toProgress: toProg,
           createLog: true,
-          note,
+          note: customNote,
         });
 
         if (progResult.error) {

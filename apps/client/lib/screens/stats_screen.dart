@@ -32,7 +32,9 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   void _onSyncManagerUpdated() {
-    if (mounted) setState(() {});
+    if (mounted && !_syncManager.isSyncing) {
+      _loadStats();
+    }
   }
 
   Future<void> _loadStats() async {

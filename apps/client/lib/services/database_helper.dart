@@ -518,4 +518,34 @@ class DatabaseHelper {
     final db = await instance.database;
     return await db.delete('reading_log', where: 'id = ?', whereArgs: [id]);
   }
+
+  /// Fix 3: Recalculates and persists reading pace for a set of book IDs after
+  /// remote logs are synced. Prevents cross-device pace staleness where the pace
+  /// stored on the server may not reflect recent progress from another device
+  /// until this client makes a local progress entry.
+  Future<void> recalculatePaceForBooks(Set<String> bookIds) async {
+    if (bookIds.isEmpty) return;
+    final db = await instance.database;
+    for (final bookId in bookIds) {
+      try {
+        final logRows = await db.query(
+          'reading_log',
+          where: 'book_id = ?',
+          whereArgs: [bookId],
+          orderBy: 'logged_at ASC',
+        );
+        if (logRows.isEmpty) continue;
+        final logs = logRows.map((r) => ReadingLogEntry.fromMap(r)).toList();
+        final newPace = calculateReadingPaceFromLogs(logs);
+        await db.update(
+          'books',
+          {'reading_pace': newPace},
+          where: 'id = ? AND sync_status = ?',
+          whereArgs: [bookId, 'synced'],
+        );
+      } catch (e) {
+        debugPrint('[DatabaseHelper] recalculatePaceForBooks error for $bookId: $e');
+      }
+    }
+  }
 }

@@ -408,6 +408,7 @@ class BookTableRow extends StatelessWidget {
           ? Image.network(
               book.coverUrl!,
               fit: BoxFit.cover,
+              cacheWidth: 120,
               errorBuilder: (_, __, ___) => const Icon(Icons.auto_stories_rounded, size: 16),
             )
           : const Icon(Icons.auto_stories_rounded, size: 16),

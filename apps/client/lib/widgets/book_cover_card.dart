@@ -64,6 +64,7 @@ class BookCoverCard extends StatelessWidget {
                 Image.network(
                   book.coverUrl!,
                   fit: BoxFit.cover,
+                  cacheWidth: isCompact ? 280 : 380,
                   errorBuilder: (_, __, ___) => _buildFallbackPattern(isDark),
                 )
               else

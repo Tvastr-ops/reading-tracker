@@ -184,6 +184,7 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                           ? Image.network(
                               b.coverUrl!,
                               fit: BoxFit.cover,
+                              cacheWidth: 320,
                               errorBuilder: (_, __, ___) => _buildCoverFallback(b, accentColor),
                             )
                           : _buildCoverFallback(b, accentColor),

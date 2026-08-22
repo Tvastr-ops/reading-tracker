@@ -210,15 +210,7 @@ export function useLibrary() {
 
   const handleSaveInspectorBook = useCallback(
     async (draft: Book) => {
-      const originalBook = books.find((b) => b.id === draft.id);
-      let note: string | undefined;
-      if (originalBook && draft.progress !== originalBook.progress && draft.progress != null) {
-        const delta = (draft.progress ?? 0) - (originalBook.progress ?? 0);
-        const sign = delta >= 0 ? '+' : '';
-        note = `Inspector update (${sign}${delta} ${draft.unit_type || 'units'})`;
-      }
-
-      const patchData: Partial<Book> & { note?: string } = {
+      const patchData: Partial<Book> = {
         status: draft.status,
         rating: draft.rating,
         progress: draft.progress,
@@ -226,7 +218,6 @@ export function useLibrary() {
         date_started: draft.date_started,
         date_finished: draft.date_finished,
         notes: draft.notes,
-        note,
         updated_at: new Date().toISOString(),
       };
 

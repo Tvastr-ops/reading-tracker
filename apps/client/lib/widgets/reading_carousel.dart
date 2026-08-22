@@ -203,6 +203,7 @@ class _ReadingCarouselState extends State<ReadingCarousel> {
                     Image.network(
                       book.coverUrl!,
                       fit: BoxFit.cover,
+                      cacheWidth: 240,
                       errorBuilder: (_, __, ___) => const Icon(Icons.auto_stories_rounded, size: 24),
                     )
                   else
