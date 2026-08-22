@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/book.dart';
+import '../services/database_helper.dart';
 import '../services/open_library_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
@@ -34,6 +35,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
   late TextEditingController _latestUnitsController;
   late TextEditingController _coverUrlController;
   late TextEditingController _genreTagsController;
+  late TextEditingController _sourceLinkController;
   late TextEditingController _notesController;
 
   late String _type;
@@ -44,6 +46,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
   String? _dateStarted;
   String? _dateFinished;
   bool _isSearchingCover = false;
+  List<String> _availableGenres = [];
 
   @override
   void initState() {
@@ -58,6 +61,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
     _latestUnitsController = TextEditingController(text: b?.latestUnits?.toString() ?? '');
     _coverUrlController = TextEditingController(text: b?.coverUrl ?? '');
     _genreTagsController = TextEditingController(text: b?.genreTags ?? '');
+    _sourceLinkController = TextEditingController(text: b?.sourceLink ?? '');
     _notesController = TextEditingController(text: b?.notes ?? '');
 
     _type = b?.type ?? 'Novel';
@@ -67,6 +71,21 @@ class _BookEditDialogState extends State<BookEditDialog> {
     _rating = b?.rating;
     _dateStarted = b?.dateStarted;
     _dateFinished = b?.dateFinished;
+
+    _loadGenreTags();
+  }
+
+  Future<void> _loadGenreTags() async {
+    final dbTags = await DatabaseHelper.instance.getDistinctGenreTags();
+    if (mounted) {
+      setState(() {
+        if (dbTags.isNotEmpty) {
+          _availableGenres = dbTags;
+        } else {
+          _availableGenres = defaultGenreSeeds;
+        }
+      });
+    }
   }
 
   @override
@@ -80,8 +99,26 @@ class _BookEditDialogState extends State<BookEditDialog> {
     _latestUnitsController.dispose();
     _coverUrlController.dispose();
     _genreTagsController.dispose();
+    _sourceLinkController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  void _toggleGenreTag(String tag) {
+    final normalizedTag = normalizeGenreTag(tag);
+    final current = _genreTagsController.text
+        .split(',')
+        .map((t) => normalizeGenreTag(t))
+        .where((t) => t.isNotEmpty)
+        .toList();
+    if (current.any((t) => t.toLowerCase() == normalizedTag.toLowerCase())) {
+      current.removeWhere((t) => t.toLowerCase() == normalizedTag.toLowerCase());
+    } else {
+      current.add(normalizedTag);
+    }
+    setState(() {
+      _genreTagsController.text = current.join(', ');
+    });
   }
 
   Future<void> _searchCover() async {
@@ -159,6 +196,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
       dateFinished: _dateFinished,
       coverUrl: _coverUrlController.text.trim().isEmpty ? null : _coverUrlController.text.trim(),
       genreTags: _genreTagsController.text.trim().isEmpty ? null : _genreTagsController.text.trim(),
+      sourceLink: _sourceLinkController.text.trim().isEmpty ? null : _sourceLinkController.text.trim(),
       notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
       createdAt: widget.book?.createdAt ?? now,
       updatedAt: now,
@@ -537,9 +575,104 @@ class _BookEditDialogState extends State<BookEditDialog> {
                 ),
                 const SizedBox(height: 18),
 
-                // Section 5: Notes & Review
-                _buildFormSectionHeader('5. NOTES & THOUGHTS', details, inkColor, borderColor),
+                // Section 5: Genres & Tags
+                _buildFormSectionHeader('5. GENRES & TAGS', details, inkColor, borderColor),
                 const SizedBox(height: 8),
+                _buildFieldLabel('GENRES (COMMA-SEPARATED)', inkColor),
+                _buildTextInput(
+                  _genreTagsController,
+                  'e.g. Fantasy, Sci-Fi, Cultivation',
+                  details: details,
+                  borderColor: borderColor,
+                  inkColor: inkColor,
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 8),
+
+                // Quick Genre Suggestion Chips
+                Text(
+                  _availableGenres == defaultGenreSeeds
+                      ? 'POPULAR SUGGESTIONS:'
+                      : 'YOUR LIBRARY TAGS:',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                    color: details?.inkMutedColor ?? (isDark ? Colors.white60 : AppColors.inkMuted),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Builder(
+                  builder: (context) {
+                    final currentTags = _genreTagsController.text
+                        .split(',')
+                        .map((t) => t.trim().toLowerCase())
+                        .where((t) => t.isNotEmpty)
+                        .toSet();
+
+                    return Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: _availableGenres.map((genre) {
+                        final isSelected = currentTags.contains(genre.toLowerCase());
+                        return MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: () => _toggleGenreTag(genre),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 120),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? (details?.accentColor ?? Theme.of(context).colorScheme.primary)
+                                    : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                                border: Border.all(
+                                  color: isSelected ? borderColor : borderColor.withValues(alpha: 0.35),
+                                  width: isSelected ? 1.5 : 1.0,
+                                ),
+                                boxShadow: isSelected
+                                    ? [
+                                        BoxShadow(
+                                          color: borderColor,
+                                          offset: const Offset(1.5, 1.5),
+                                          blurRadius: 0,
+                                        ),
+                                      ]
+                                    : [],
+                              ),
+                              child: Text(
+                                isSelected ? '✓ $genre' : '+ $genre',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+                const SizedBox(height: 18),
+
+                // Section 6: Notes & Metadata
+                _buildFormSectionHeader('6. NOTES & SOURCE LINK', details, inkColor, borderColor),
+                const SizedBox(height: 8),
+
+                _buildFieldLabel('SOURCE / WEB LINK (OPTIONAL)', inkColor),
+                _buildTextInput(
+                  _sourceLinkController,
+                  'e.g. royalroad.com or reading web link',
+                  details: details,
+                  borderColor: borderColor,
+                  inkColor: inkColor,
+                ),
+                const SizedBox(height: 12),
+
                 _buildFieldLabel('NOTES / REVIEW', inkColor),
                 _buildTextInput(_notesController, 'Reading thoughts...', maxLines: 2, details: details, borderColor: borderColor, inkColor: inkColor),
                 const SizedBox(height: 20),
@@ -657,6 +790,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
     bool isNumber = false,
     bool isRequired = false,
     int maxLines = 1,
+    ValueChanged<String>? onChanged,
     required AppThemeDetails? details,
     required Color borderColor,
     required Color inkColor,
@@ -672,6 +806,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
+        onChanged: onChanged,
         keyboardType: isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
         validator: isRequired ? (val) => val == null || val.trim().isEmpty ? 'Required' : null : null,
         style: TextStyle(

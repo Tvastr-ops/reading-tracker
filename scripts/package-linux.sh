@@ -10,7 +10,7 @@ mkdir -p "$RELEASE_ASSETS_DIR"
 
 VERSION_CLEAN="${GITHUB_REF_NAME#v}"
 if [ -z "$VERSION_CLEAN" ] || [ "$VERSION_CLEAN" = "main" ] || [ "$VERSION_CLEAN" = "dev" ]; then
-  VERSION_CLEAN="1.9.0b"
+  VERSION_CLEAN="1.9.0c"
 fi
 
 # Ensure executable permissions on built bundle

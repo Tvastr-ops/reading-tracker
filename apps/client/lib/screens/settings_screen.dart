@@ -535,9 +535,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ),
-          Switch(
+          BrutalistSwitch(
             value: sticky,
-            activeThumbColor: Theme.of(context).colorScheme.primary,
             onChanged: (val) {
               _themeService.setStickyStatusFilter(val);
               setState(() {});
@@ -575,9 +574,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
               ),
-              Switch(
+              const SizedBox(width: 8),
+              BrutalistSwitch(
                 value: _offlineMode,
-                activeThumbColor: Theme.of(context).colorScheme.primary,
                 onChanged: (val) {
                   setState(() => _offlineMode = val);
                   _saveConfig();
@@ -611,9 +610,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
               ),
-              Switch(
+              const SizedBox(width: 8),
+              BrutalistSwitch(
                 value: _autoSync,
-                activeThumbColor: Theme.of(context).colorScheme.primary,
                 onChanged: (val) {
                   setState(() => _autoSync = val);
                   _saveConfig();
@@ -1317,9 +1316,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ),
-                Switch(
+                const SizedBox(width: 8),
+                BrutalistSwitch(
                   value: _themeService.useDynamicColor,
-                  activeThumbColor: Theme.of(context).colorScheme.primary,
                   onChanged: (val) {
                     _themeService.setUseDynamicColor(val);
                     setState(() {});
@@ -1528,13 +1527,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ),
-                MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Switch(
-                    value: showCarousel,
-                    activeThumbColor: Theme.of(context).colorScheme.primary,
-                    onChanged: (val) => _themeService.setShowReadingCarousel(val),
-                  ),
+                BrutalistSwitch(
+                  value: showCarousel,
+                  onChanged: (val) => _themeService.setShowReadingCarousel(val),
                 ),
               ],
             ),
@@ -1575,13 +1570,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ),
                   ),
-                  MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: Switch(
-                      value: highRefreshRate,
-                      activeThumbColor: Theme.of(context).colorScheme.primary,
-                      onChanged: (val) => _themeService.setHighRefreshRate(val),
-                    ),
+                  BrutalistSwitch(
+                    value: highRefreshRate,
+                    onChanged: (val) => _themeService.setHighRefreshRate(val),
                   ),
                 ],
               ),
@@ -1624,13 +1615,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ),
-                MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Switch(
-                    value: isFullscreen,
-                    activeThumbColor: Theme.of(context).colorScheme.primary,
-                    onChanged: (val) => _themeService.toggleFullscreen(),
-                  ),
+                BrutalistSwitch(
+                  value: isFullscreen,
+                  onChanged: (val) => _themeService.toggleFullscreen(),
                 ),
               ],
             ),
@@ -1670,13 +1657,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ),
-                MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Switch(
-                    value: enableTexture,
-                    activeThumbColor: Theme.of(context).colorScheme.primary,
-                    onChanged: (val) => _themeService.setEnablePaperTexture(val),
-                  ),
+                BrutalistSwitch(
+                  value: enableTexture,
+                  onChanged: (val) => _themeService.setEnablePaperTexture(val),
                 ),
               ],
             ),

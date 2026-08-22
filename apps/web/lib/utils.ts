@@ -54,3 +54,64 @@ export function getLocalDateString(d = new Date()): string {
   const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+
+const GENRE_SYNONYM_MAP: Record<string, string> = {
+  'science fiction': 'Sci-Fi',
+  scifi: 'Sci-Fi',
+  'sci fi': 'Sci-Fi',
+  sf: 'Sci-Fi',
+  progression: 'Progression Fantasy',
+  'progression fantasy': 'Progression Fantasy',
+  'lit-rpg': 'LitRPG',
+  'lit rpg': 'LitRPG',
+  litrpg: 'LitRPG',
+  gamelit: 'GameLit',
+  'non fiction': 'Non-Fiction',
+  'non-fiction': 'Non-Fiction',
+  nonfiction: 'Non-Fiction',
+  'slice-of-life': 'Slice of Life',
+  'slice of life': 'Slice of Life',
+  sol: 'Slice of Life',
+  'historical fiction': 'Historical',
+  historical: 'Historical',
+  'young adult': 'YA',
+  ya: 'YA',
+  'post-apocalyptic': 'Post-Apocalyptic',
+  'post apocalyptic': 'Post-Apocalyptic',
+  'post apocalypse': 'Post-Apocalyptic',
+  apocalypse: 'Post-Apocalyptic',
+  apocalyptic: 'Post-Apocalyptic',
+  xianxia: 'Cultivation',
+  xuanhuan: 'Cultivation',
+  cultivation: 'Cultivation',
+  wuxia: 'Martial Arts',
+  'martial arts': 'Martial Arts',
+  'urban fantasy': 'Urban Fantasy',
+  'contemporary fantasy': 'Urban Fantasy',
+  grimdark: 'Grimdark',
+  'dark fantasy': 'Dark Fantasy',
+  cyberpunk: 'Cyberpunk',
+  steampunk: 'Steampunk',
+  biography: 'Biography & Memoir',
+  autobiography: 'Biography & Memoir',
+  memoir: 'Biography & Memoir',
+  'self help': 'Self-Help',
+  'self-help': 'Self-Help',
+  psychology: 'Psychology',
+  philosophy: 'Philosophy',
+  classics: 'Classics',
+  classic: 'Classics',
+};
+
+export function normalizeGenreTag(rawTag: string): string {
+  const trimmed = rawTag.trim();
+  if (!trimmed) return '';
+  const lower = trimmed.toLowerCase();
+  if (GENRE_SYNONYM_MAP[lower]) {
+    return GENRE_SYNONYM_MAP[lower];
+  }
+  return trimmed
+    .split(' ')
+    .map((word) => (word ? word[0].toUpperCase() + word.substring(1).toLowerCase() : ''))
+    .join(' ');
+}

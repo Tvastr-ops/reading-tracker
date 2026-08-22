@@ -221,3 +221,69 @@ class BrutalistProgressBar extends StatelessWidget {
     );
   }
 }
+
+class BrutalistSwitch extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+  final Color? activeColor;
+  final Color? inactiveColor;
+  final double width;
+  final double height;
+
+  const BrutalistSwitch({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.activeColor,
+    this.inactiveColor,
+    this.width = 44.0,
+    this.height = 24.0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final details = Theme.of(context).extension<AppThemeDetails>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final activeBg = activeColor ?? details?.accentColor ?? Theme.of(context).colorScheme.primary;
+    final inactiveBg = inactiveColor ?? (details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white));
+    final thumbSize = height - 6.0;
+
+    return MouseRegion(
+      cursor: onChanged != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      child: GestureDetector(
+        onTap: onChanged != null ? () => onChanged!(!value) : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: width,
+          height: height,
+          padding: const EdgeInsets.all(1.5),
+          decoration: BoxDecoration(
+            color: value ? activeBg : inactiveBg,
+            border: Border.all(color: borderColor, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: borderColor,
+                offset: const Offset(1.5, 1.5),
+                blurRadius: 0,
+              ),
+            ],
+          ),
+          child: AnimatedAlign(
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeOutCubic,
+            alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+            child: Container(
+              width: thumbSize,
+              height: thumbSize,
+              decoration: BoxDecoration(
+                color: value ? Colors.white : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                border: Border.all(color: borderColor, width: 1.0),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

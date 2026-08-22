@@ -31,7 +31,7 @@ import {
   STATUSES,
   type UnitType,
 } from '@/lib/types';
-import { getLocalDateString } from '@/lib/utils';
+import { getLocalDateString, normalizeGenreTag } from '@/lib/utils';
 import { RatingSelect } from './RatingInput';
 import ReadingLog from './ReadingLog';
 
@@ -175,6 +175,16 @@ export default function BookForm({
     if (payload.progress_structure === 'single') {
       payload.parent_progress = null;
       payload.parent_total = null;
+    }
+
+    // Sanitization rule 2: Normalize and deduplicate genre tags
+    if (payload.genre_tags) {
+      const uniqueTags = new Set<string>();
+      for (const t of payload.genre_tags.split(',')) {
+        const norm = normalizeGenreTag(t);
+        if (norm) uniqueTags.add(norm);
+      }
+      payload.genre_tags = uniqueTags.size > 0 ? Array.from(uniqueTags).join(', ') : null;
     }
 
     // Apply normalized status transition
