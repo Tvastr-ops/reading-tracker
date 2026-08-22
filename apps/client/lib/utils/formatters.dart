@@ -399,3 +399,93 @@ bool isValidUuid(String? str) {
   final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
   return uuidRegex.hasMatch(str);
 }
+
+/// Canonical alias mapping to merge synonymous genre tags (e.g. Science Fiction -> Sci-Fi)
+const Map<String, String> _genreSynonymMap = {
+  'science fiction': 'Sci-Fi',
+  'scifi': 'Sci-Fi',
+  'sci fi': 'Sci-Fi',
+  'sf': 'Sci-Fi',
+  'progression': 'Progression Fantasy',
+  'progression fantasy': 'Progression Fantasy',
+  'lit-rpg': 'LitRPG',
+  'lit rpg': 'LitRPG',
+  'litrpg': 'LitRPG',
+  'gamelit': 'GameLit',
+  'non fiction': 'Non-Fiction',
+  'non-fiction': 'Non-Fiction',
+  'nonfiction': 'Non-Fiction',
+  'slice-of-life': 'Slice of Life',
+  'slice of life': 'Slice of Life',
+  'sol': 'Slice of Life',
+  'historical fiction': 'Historical',
+  'historical': 'Historical',
+  'young adult': 'YA',
+  'ya': 'YA',
+  'post-apocalyptic': 'Post-Apocalyptic',
+  'post apocalyptic': 'Post-Apocalyptic',
+  'post apocalypse': 'Post-Apocalyptic',
+  'apocalypse': 'Post-Apocalyptic',
+  'apocalyptic': 'Post-Apocalyptic',
+  'xianxia': 'Cultivation',
+  'xuanhuan': 'Cultivation',
+  'cultivation': 'Cultivation',
+  'wuxia': 'Martial Arts',
+  'martial arts': 'Martial Arts',
+  'urban fantasy': 'Urban Fantasy',
+  'contemporary fantasy': 'Urban Fantasy',
+  'grimdark': 'Grimdark',
+  'dark fantasy': 'Dark Fantasy',
+  'cyberpunk': 'Cyberpunk',
+  'steampunk': 'Steampunk',
+  'biography': 'Biography & Memoir',
+  'autobiography': 'Biography & Memoir',
+  'memoir': 'Biography & Memoir',
+  'self help': 'Self-Help',
+  'self-help': 'Self-Help',
+  'psychology': 'Psychology',
+  'philosophy': 'Philosophy',
+  'classics': 'Classics',
+  'classic': 'Classics',
+};
+
+/// Expanded canonical default genre seeds covering major reading genres
+const List<String> defaultGenreSeeds = [
+  'Fantasy',
+  'Sci-Fi',
+  'Progression Fantasy',
+  'LitRPG',
+  'Cultivation',
+  'Mystery',
+  'Thriller',
+  'Horror',
+  'Romance',
+  'Adventure',
+  'Slice of Life',
+  'Urban Fantasy',
+  'Cyberpunk',
+  'Post-Apocalyptic',
+  'Grimdark',
+  'Historical',
+  'Classics',
+  'Non-Fiction',
+  'Biography & Memoir',
+  'Philosophy',
+  'Self-Help',
+];
+
+/// Normalizes a genre tag string, mapping common synonyms/aliases to canonical forms
+/// and applying clean Title Case formatting.
+String normalizeGenreTag(String rawTag) {
+  final trimmed = rawTag.trim();
+  if (trimmed.isEmpty) return '';
+  final lower = trimmed.toLowerCase();
+  if (_genreSynonymMap.containsKey(lower)) {
+    return _genreSynonymMap[lower]!;
+  }
+  // Title Case formatting for unmatched custom tags
+  return trimmed.split(' ').map((word) {
+    if (word.isEmpty) return '';
+    return word[0].toUpperCase() + (word.length > 1 ? word.substring(1).toLowerCase() : '');
+  }).join(' ');
+}

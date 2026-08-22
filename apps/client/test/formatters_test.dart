@@ -240,5 +240,20 @@ void main() {
       );
       expect(formatProgressDisplay(caughtUp, compact: true), 'Ch. 1450 • Up');
     });
+
+    test('normalizeGenreTag maps synonyms accurately to canonical tags', () {
+      expect(normalizeGenreTag('science fiction'), 'Sci-Fi');
+      expect(normalizeGenreTag('scifi'), 'Sci-Fi');
+      expect(normalizeGenreTag('sf'), 'Sci-Fi');
+      expect(normalizeGenreTag('progression'), 'Progression Fantasy');
+      expect(normalizeGenreTag('lit-rpg'), 'LitRPG');
+      expect(normalizeGenreTag('litrpg'), 'LitRPG');
+      expect(normalizeGenreTag('sol'), 'Slice of Life');
+      expect(normalizeGenreTag('slice-of-life'), 'Slice of Life');
+      expect(normalizeGenreTag('xianxia'), 'Cultivation');
+      expect(normalizeGenreTag('non fiction'), 'Non-Fiction');
+      expect(normalizeGenreTag('post apocalyptic'), 'Post-Apocalyptic');
+      expect(normalizeGenreTag('custom dark magic'), 'Custom Dark Magic');
+    });
   });
 }

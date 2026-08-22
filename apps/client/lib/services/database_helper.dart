@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../models/book.dart';
+import '../utils/formatters.dart';
 import '../utils/progression_logic.dart';
 
 class DatabaseHelper {
@@ -514,6 +515,23 @@ class DatabaseHelper {
     return 0;
   }
 
+  Future<Map<String, dynamic>> getAggregatedReadingStats() async {
+    final db = await instance.database;
+    final res = await db.rawQuery('''
+      SELECT 
+        COALESCE(SUM(CASE WHEN to_progress > from_progress THEN (to_progress - from_progress) ELSE 0 END), 0) as total_units,
+        COUNT(id) as total_logs
+      FROM reading_log
+    ''');
+    if (res.isNotEmpty) {
+      return {
+        'totalUnits': ((res.first['total_units'] as num?) ?? 0).toDouble(),
+        'totalLogs': ((res.first['total_logs'] as num?) ?? 0).toInt(),
+      };
+    }
+    return {'totalUnits': 0.0, 'totalLogs': 0};
+  }
+
   Future<int> deleteReadingLog(String id) async {
     final db = await instance.database;
     return await db.delete('reading_log', where: 'id = ?', whereArgs: [id]);
@@ -547,5 +565,26 @@ class DatabaseHelper {
         debugPrint('[DatabaseHelper] recalculatePaceForBooks error for $bookId: $e');
       }
     }
+  }
+
+  /// Fetches all distinct genre tags currently saved across non-deleted books in SQLite,
+  /// ordered by frequency (most used first).
+  Future<List<String>> getDistinctGenreTags() async {
+    final db = await instance.database;
+    final results = await db.rawQuery(
+      "SELECT genre_tags FROM books WHERE genre_tags IS NOT NULL AND genre_tags != '' AND deleted_at IS NULL",
+    );
+    final tagCounts = <String, int>{};
+    for (final row in results) {
+      final tagsStr = row['genre_tags'] as String?;
+      if (tagsStr != null && tagsStr.isNotEmpty) {
+        final tags = tagsStr.split(',').map((t) => normalizeGenreTag(t)).where((t) => t.isNotEmpty);
+        for (final tag in tags) {
+          tagCounts[tag] = (tagCounts[tag] ?? 0) + 1;
+        }
+      }
+    }
+    final sorted = tagCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    return sorted.map((e) => e.key).toList();
   }
 }

@@ -5,6 +5,20 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [1.9.0c] - 2026-08-22
+
+### Added
+- **12-Month Neo-Brutalist Activity Bar Chart**: Added visual completion history across all 12 months with proportional pillars, dynamic scaling to peak reading months, active month highlights, and interactive tap inspection.
+- **3-Way Stacked Metric Distribution**: Added switchable minimal stamp tabs on Stats screen supporting **Formats**, **Genres** (dynamically aggregated from `genre_tags`), and **Ratings** (5★ to 1★ spectrum breakdown).
+- **Cumulative Units Read Metric**: Added high-level analytics tracking total volume logged (`pages`/`chapters`) from SQLite `reading_log` history.
+- **Goal Health Pace Status**: Added instant status badges (`ON TRACK`, `+X AHEAD`, `X BEHIND`, `GOAL ACHIEVED! 🏆`).
+- **Tactile `BrutalistSwitch` Control**: Replaced all generic Material round switches across Settings with custom rectangular mechanical sliding blocks featuring solid ink borders and hard brutalist drop-shadows.
+- **Dynamic Library Genre Suggestions**: Added real-time genre tag suggestions in `BookEditDialog` queried directly from local SQLite database ordered by usage frequency, falling back to 21 curated canonical genre seeds.
+- **Canonical Genre Normalization & Synonym Mapping**: Added `normalizeGenreTag` in Dart and TypeScript to automatically merge genre synonyms (e.g., `Science Fiction` / `scifi` $\rightarrow$ `Sci-Fi`, `lit-rpg` $\rightarrow$ `LitRPG`, `sol` $\rightarrow$ `Slice of Life`, `xianxia` $\rightarrow$ `Cultivation`) across both stats distribution and editing dialogs.
+- **Extended Book Edit Form Sections**: Added explicit form fields in `BookEditDialog` for **Section 5: GENRES & TAGS** and **Section 6: NOTES & SOURCE LINK**.
+
+---
+
 ## [1.9.0b] - 2026-08-22
 
 ### Added

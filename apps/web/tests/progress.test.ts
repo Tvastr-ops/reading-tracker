@@ -9,6 +9,7 @@ import {
   normalizeStatusTransition,
 } from '../lib/progress';
 import type { Book } from '../lib/types';
+import { normalizeGenreTag } from '../lib/utils';
 
 // Helper to construct mock book objects
 function createBook(overrides: Partial<Book> = {}): Book {
@@ -271,4 +272,19 @@ test('getStatusAwareProgressText presents clean summary for planned works', () =
     parent_total: 18,
   });
   assert.strictEqual(getStatusAwareProgressText(plannedHierarchical), '155 chapters • 18 vols');
+});
+
+test('normalizeGenreTag maps synonyms accurately to canonical tags in Web', () => {
+  assert.strictEqual(normalizeGenreTag('science fiction'), 'Sci-Fi');
+  assert.strictEqual(normalizeGenreTag('scifi'), 'Sci-Fi');
+  assert.strictEqual(normalizeGenreTag('sf'), 'Sci-Fi');
+  assert.strictEqual(normalizeGenreTag('progression'), 'Progression Fantasy');
+  assert.strictEqual(normalizeGenreTag('lit-rpg'), 'LitRPG');
+  assert.strictEqual(normalizeGenreTag('litrpg'), 'LitRPG');
+  assert.strictEqual(normalizeGenreTag('sol'), 'Slice of Life');
+  assert.strictEqual(normalizeGenreTag('slice-of-life'), 'Slice of Life');
+  assert.strictEqual(normalizeGenreTag('xianxia'), 'Cultivation');
+  assert.strictEqual(normalizeGenreTag('non fiction'), 'Non-Fiction');
+  assert.strictEqual(normalizeGenreTag('post apocalyptic'), 'Post-Apocalyptic');
+  assert.strictEqual(normalizeGenreTag('custom dark magic'), 'Custom Dark Magic');
 });
