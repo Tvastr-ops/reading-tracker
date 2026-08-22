@@ -185,22 +185,28 @@ class SyncManager extends ChangeNotifier {
             await _dbHelper.upsertRemoteBook(b);
           }
         }
-        if (failedPushIds.isEmpty) {
+        // Only cleanup missing remote books if we got a non-empty remote list
+        // This guards against accidental full wipe due to transient network errors
+        if (failedPushIds.isEmpty && remote.isNotEmpty) {
           await _dbHelper.cleanupMissingRemoteBooks(remoteIds);
         }
-      } else if (failedPushIds.isEmpty && _lastSyncedAt != null) {
-        // If remote database is empty after successful connection, cleanup all synced books
-        await _dbHelper.cleanupMissingRemoteBooks({});
       }
+      // NOTE: intentionally no cleanup on empty remote — avoids wiping all local
+      // books if the server returns nothing due to a transient error or quota issue.
 
-      // 2b. Fetch remote reading logs (incremental based on _lastSyncedAt, or full if local is empty)
+      // 2b. Fetch remote reading logs and recalculate pace for affected books
       final localLogCount = await _dbHelper.getReadingLogsCount();
       final sinceParam = (localLogCount == 0) ? null : _lastSyncedAt;
       final remoteLogs = await _activeProvider!.fetchRemoteReadingLogs(since: sinceParam);
       if (remoteLogs.isNotEmpty) {
+        final affectedBookIds = <String>{};
         for (final log in remoteLogs) {
           await _dbHelper.upsertRemoteReadingLog(log);
+          affectedBookIds.add(log.bookId);
         }
+        // Recalculate reading pace for every book that received new remote logs,
+        // ensuring cross-device pace stays accurate without requiring a local progress entry.
+        await _dbHelper.recalculatePaceForBooks(affectedBookIds);
       }
 
       // 3. Fetch remote yearly goal
@@ -216,7 +222,9 @@ class SyncManager extends ChangeNotifier {
       await prefs.setString('last_synced_at', _lastSyncedAt!.toIso8601String());
 
       _connectionStatus = failedPushIds.isEmpty ? 'Connected' : 'Sync Partially Succeeded';
-    } catch (_) {
+    } catch (e, stack) {
+      // Log the real error for debuggability rather than silently swallowing it
+      debugPrint('[SyncManager] syncNow error: $e\n$stack');
       _connectionStatus = 'Sync Interrupted';
     } finally {
       _isSyncing = false;

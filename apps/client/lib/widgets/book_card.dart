@@ -70,6 +70,7 @@ class BookCard extends StatelessWidget {
                     ? Image.network(
                         book.coverUrl!,
                         fit: BoxFit.cover,
+                        cacheWidth: 200,
                         errorBuilder: (_, __, ___) => _buildPlaceholderIcon(),
                       )
                     : _buildPlaceholderIcon(),

@@ -69,7 +69,14 @@ class LibraryScreenState extends State<LibraryScreen> {
     }
     _searchFocusNode.addListener(_onSearchFocusChanged);
     ThemeService.instance.addListener(_onThemeSettingsChanged);
+    _syncManager.addListener(_onSyncManagerUpdated);
     _loadBooks();
+  }
+
+  void _onSyncManagerUpdated() {
+    if (mounted && !_syncManager.isSyncing) {
+      _loadBooks();
+    }
   }
 
   void _onThemeSettingsChanged() {
@@ -84,6 +91,7 @@ class LibraryScreenState extends State<LibraryScreen> {
 
   @override
   void dispose() {
+    _syncManager.removeListener(_onSyncManagerUpdated);
     ThemeService.instance.removeListener(_onThemeSettingsChanged);
     _searchFocusNode.removeListener(_onSearchFocusChanged);
     _searchFocusNode.dispose();
