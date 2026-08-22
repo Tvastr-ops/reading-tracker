@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../models/book.dart';
+import '../utils/progression_logic.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -398,13 +399,78 @@ class DatabaseHelper {
     );
   }
 
+  /// Upserts a remote reading log entry, actively deduplicating any legacy local rows
+  /// that match the same progress transition within a close time window.
   Future<int> upsertRemoteReadingLog(ReadingLogEntry entry) async {
     final db = await instance.database;
+    try {
+      final duplicates = await db.query(
+        'reading_log',
+        where: 'book_id = ? AND from_progress = ? AND to_progress = ? AND id != ?',
+        whereArgs: [entry.bookId, entry.fromProgress, entry.toProgress, entry.id],
+      );
+      if (duplicates.isNotEmpty) {
+        final remoteTime = DateTime.tryParse(entry.loggedAt);
+        for (final row in duplicates) {
+          final localLoggedAt = row['logged_at']?.toString();
+          if (localLoggedAt != null && remoteTime != null) {
+            final localTime = DateTime.tryParse(localLoggedAt);
+            if (localTime != null) {
+              final diffSec = remoteTime.difference(localTime).inSeconds.abs();
+              if (diffSec <= 60) {
+                await db.delete('reading_log', where: 'id = ?', whereArgs: [row['id']]);
+              }
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
     return await db.insert(
       'reading_log',
       entry.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+  }
+
+  /// Authoritative atomic operation for mutating reading progress in SQLite:
+  /// Applies lifecycle normalization, updates the book, inserts a pending log entry,
+  /// and recalculates reading pace in one synchronous transaction.
+  Future<Book> recordBookProgress(
+    Book book,
+    double toProgress, {
+    num? parentProgress,
+    String? note,
+  }) async {
+    final db = await instance.database;
+    final existingLogs = await getReadingLogs(book.id);
+
+    final mutation = applyProgressIncrement(
+      book,
+      toProgress,
+      parentProgress: parentProgress,
+      note: note,
+      existingLogs: existingLogs,
+    );
+
+    await db.transaction((txn) async {
+      await txn.update(
+        'books',
+        mutation.updatedBook.toMap(),
+        where: 'id = ?',
+        whereArgs: [book.id],
+      );
+
+      if (mutation.logEntry != null) {
+        await txn.insert(
+          'reading_log',
+          mutation.logEntry!.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    });
+
+    return mutation.updatedBook;
   }
 
   Future<List<ReadingLogEntry>> getReadingLogs(String bookId) async {

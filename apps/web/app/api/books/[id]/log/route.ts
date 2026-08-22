@@ -36,8 +36,53 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
     );
   }
   const note = typeof body?.note === 'string' ? body.note.slice(0, 500) : null;
+  const clientLogId = typeof body?.id === 'string' && UUID_RE.test(body.id) ? body.id : null;
+  const fromProgress = Number.isFinite(Number(body?.from_progress))
+    ? Number(body.from_progress)
+    : 0;
+  const loggedAt =
+    typeof body?.logged_at === 'string' && !Number.isNaN(Date.parse(body.logged_at))
+      ? body.logged_at
+      : new Date().toISOString();
 
-  // Execute authoritative atomic domain operation
+  // If client provided a deterministic UUID (from offline sync or mobile client), upsert directly
+  if (clientLogId) {
+    const supabase = supabaseServer();
+    const { data: logEntry, error: logError } = await supabase
+      .from('reading_log')
+      .upsert(
+        {
+          id: clientLogId,
+          book_id: id,
+          from_progress: fromProgress,
+          to_progress: toProgress,
+          note: note,
+          logged_at: loggedAt,
+        },
+        { onConflict: 'id' },
+      )
+      .select('*')
+      .single();
+
+    if (logError) {
+      return NextResponse.json({ error: logError.message }, { status: 500 });
+    }
+
+    // Update book progress & trigger atomic pace recalculation
+    const progressResult = await recordProgressChange({
+      bookId: id,
+      toProgress,
+      createLog: false,
+      note,
+    });
+
+    return NextResponse.json(
+      { entry: logEntry, pace: progressResult.data?.pace ?? null },
+      { status: 201 },
+    );
+  }
+
+  // Execute authoritative atomic domain operation when log ID is generated server-side
   const result = await recordProgressChange({
     bookId: id,
     toProgress,

@@ -128,36 +128,63 @@ void main() {
       expect(formatRating(4.8, isDecimalMode: true), '4.8 / 5.0');
     });
 
-    test('getFormatShorthand returns compact neo-brutalist acronyms', () {
+    test('getFormatShorthand returns max 3-letter acronyms', () {
       expect(getFormatShorthand('Novel'), 'NOV');
-      expect(getFormatShorthand('Novella'), 'NVLA');
-      expect(getFormatShorthand('Novelette'), 'NVLT');
+      expect(getFormatShorthand('Novella'), 'NVL');
+      expect(getFormatShorthand('Novelette'), 'NVT');
       expect(getFormatShorthand('Light Novel'), 'LN');
       expect(getFormatShorthand('Web Novel'), 'WN');
       expect(getFormatShorthand('Short Story'), 'SS');
-      expect(getFormatShorthand('Collection'), 'COLL');
-      expect(getFormatShorthand('Anthology'), 'ANTH');
+      expect(getFormatShorthand('Collection'), 'COL');
+      expect(getFormatShorthand('Anthology'), 'ANT');
       expect(getFormatShorthand('Essay'), 'ESY');
       expect(getFormatShorthand('Fanfiction'), 'FF');
       expect(getFormatShorthand('Other'), 'OTH');
+      expect(getFormatShorthand('Manga'), 'MNG');
+      expect(getFormatShorthand('Manhwa'), 'MHW');
     });
 
-    test('formatProgressDisplay compact mode formats properly', () {
-      const caughtUp = Book(
-        id: '4',
-        title: 'Shadow Slave',
-        type: 'Web Novel',
-        status: BookStatus.reading,
-        isOngoing: true,
-        progress: 1450,
-        latestUnits: 1450,
+    test('formatProgressDisplay compact mode formats with pg and ultra-compact units', () {
+      const plannedNovel = Book(
+        id: '1',
+        title: 'Dune',
+        type: 'Novel',
+        status: BookStatus.planToRead,
+        progress: 0,
+        totalUnits: 600,
         createdAt: '',
         updatedAt: '',
       );
-      expect(formatProgressDisplay(caughtUp, compact: true), 'Ch. 1450 • Up');
+      expect(formatProgressDisplay(plannedNovel, compact: true), '0/600 pg');
 
-      const ln = Book(
-        id: '1',
+      const readingNovel = Book(
+        id: '1b',
+        title: 'Dune',
+        type: 'Novel',
+        status: BookStatus.reading,
+        progress: 120,
+        totalUnits: 600,
+        createdAt: '',
+        updatedAt: '',
+      );
+      expect(formatProgressDisplay(readingNovel, compact: true), '120/600 pg');
+
+      const plannedLN = Book(
+        id: '2',
+        title: 'Ascendance of a Bookworm',
+        type: 'Light Novel',
+        status: BookStatus.planToRead,
+        progressStructure: 'volume_chapter',
+        parentTotal: 18,
+        progress: 0,
+        totalUnits: 155,
+        createdAt: '',
+        updatedAt: '',
+      );
+      expect(formatProgressDisplay(plannedLN, compact: true), '155 ch • 18 v');
+
+      const readingLNContinuous = Book(
+        id: '3',
         title: 'Overlord',
         type: 'Light Novel',
         status: BookStatus.reading,
@@ -169,7 +196,49 @@ void main() {
         createdAt: '',
         updatedAt: '',
       );
-      expect(formatProgressDisplay(ln, compact: true), 'V. 14 • Ch. 42/50');
+      expect(formatProgressDisplay(readingLNContinuous, compact: true), 'V.14 • Ch. 42/50');
+
+      const readingLNPerVol = Book(
+        id: '4',
+        title: 'Overlord',
+        type: 'Light Novel',
+        status: BookStatus.reading,
+        progressStructure: 'volume_chapter',
+        parentProgress: 3,
+        parentTotal: 12,
+        progress: 2,
+        totalUnits: null,
+        createdAt: '',
+        updatedAt: '',
+      );
+      expect(formatProgressDisplay(readingLNPerVol, compact: true), 'V.3/12 • Ch. 2');
+
+      const volumeOnly = Book(
+        id: '5',
+        title: 'Complete Works',
+        type: 'Anthology',
+        unitType: 'volumes',
+        status: BookStatus.reading,
+        progress: 4,
+        totalUnits: 17,
+        createdAt: '',
+        updatedAt: '',
+      );
+      expect(formatProgressDisplay(volumeOnly, compact: false), 'Vol. 4 / 17');
+      expect(formatProgressDisplay(volumeOnly, compact: true), 'V.4/17');
+
+      const caughtUp = Book(
+        id: '6',
+        title: 'Shadow Slave',
+        type: 'Web Novel',
+        status: BookStatus.reading,
+        isOngoing: true,
+        progress: 1450,
+        latestUnits: 1450,
+        createdAt: '',
+        updatedAt: '',
+      );
+      expect(formatProgressDisplay(caughtUp, compact: true), 'Ch. 1450 • Up');
     });
   });
 }
