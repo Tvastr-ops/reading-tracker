@@ -5,6 +5,13 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [1.9.0e] - 2026-08-22
+
+### Fixed
+- **Linux Wayland & VM Textual Glyph Corruptions**: Automatically disabled experimental Impeller Vulkan rendering engine by default on Linux desktop in favor of rock-solid Skia OpenGL (`enable-impeller=false` engine switch injected in runner `main.cc`, Debian `/usr/bin/paperback-reader`, AppImage `AppRun`, and portable `run.sh`), completely eliminating font glyph atlas corruptions, visual glitches, and flickering on Wayland compositors, VirtualBox, VMware, and Mesa software rasterizers.
+
+---
+
 ## [1.9.0d] - 2026-08-22
 
 ### Added
