@@ -5,6 +5,21 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [1.9.0b] - 2026-08-22
+
+### Added
+- **Dynamic Color 2.1.0 & Dependency Refresh**: Upgraded `dynamic_color` to `^2.1.0`, `sqlite3` to `3.5.2`, `path_provider_foundation` to `2.6.0`, `archive` to `4.1.0`, `image` to `4.9.2`, and `vm_service` to `15.3.0`.
+- **Desktop Smooth Inertial Scroll Physics**: Configured custom desktop scroll behavior with smooth continuous deceleration and multi-pointer drag capabilities (`mouse`, `touch`, `trackpad`, `stylus`).
+- **Downscaled Image Decode Caching**: Added bounded `cacheWidth` across all book cards, cover views, carousels, detail panels, and table rows, reducing GPU texture memory usage by over 80% and eliminating scroll stutter on high refresh rate monitors.
+
+### Fixed
+- **Instant Desktop Sync Reloads**: Registered `SyncManager` listeners on `LibraryScreen` and `StatsScreen` so changes synced from Web or background heartbeats render on screen immediately without requiring an app restart.
+- **Unpolluted Reading Log Notes**: Cleaned up Web API `/api/books/[id]` and inspector handlers to avoid injecting redundant auto-generated text notes, preserving unified numerical transitions across Web and Client.
+- **Sync Safety & Wipe Protection**: Guarded `cleanupMissingRemoteBooks` against transient empty network responses and enabled error stack logging on sync interruptions.
+- **Cross-Device Pace Synchronization**: Added `recalculatePaceForBooks` to keep reading velocities accurate across multiple devices upon receiving remote logs.
+
+---
+
 ## [1.9.0a] - 2026-08-22
 
 ### Added

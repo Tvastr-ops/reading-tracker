@@ -133,7 +133,7 @@ jobs:
           cd apps/client
           VERSION_NAME="${GITHUB_REF_NAME#v}"
           if [ -z "$VERSION_NAME" ] || [ "$VERSION_NAME" = "main" ] || [ "$VERSION_NAME" = "dev" ]; then
-            VERSION_NAME="1.9.0a"
+            VERSION_NAME="1.9.0b"
           fi
           flutter build linux --release --build-name="$VERSION_NAME"
 
