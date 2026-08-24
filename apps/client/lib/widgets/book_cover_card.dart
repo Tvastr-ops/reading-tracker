@@ -249,15 +249,10 @@ class BookCoverCard extends StatelessWidget {
   }
 
   Widget _buildFallbackPattern(bool isDark) {
-    return Container(
-      color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh,
-      child: Center(
-        child: Icon(
-          Icons.auto_stories_rounded,
-          size: 40,
-          color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.2),
-        ),
-      ),
+    return TypographicBookCover(
+      title: book.title,
+      author: book.author,
+      type: book.type,
     );
   }
 }

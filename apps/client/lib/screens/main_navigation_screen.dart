@@ -99,6 +99,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
       child: CallbackShortcuts(
         bindings: {
           const SingleActivator(LogicalKeyboardKey.f11): () => ThemeService.instance.toggleFullscreen(),
+          const SingleActivator(LogicalKeyboardKey.f1): () => _openKeyboardShortcutsDialog(context),
+          const SingleActivator(LogicalKeyboardKey.slash, shift: true): () => _openKeyboardShortcutsDialog(context),
+          const SingleActivator(LogicalKeyboardKey.digit1): () => setState(() => _currentIndex = 0),
+          const SingleActivator(LogicalKeyboardKey.digit2): () => setState(() => _currentIndex = 1),
+          const SingleActivator(LogicalKeyboardKey.digit3): () => setState(() => _currentIndex = 2),
+          const SingleActivator(LogicalKeyboardKey.digit4): () => setState(() => _currentIndex = 3),
         },
         child: Focus(
           autofocus: true,
@@ -258,6 +264,34 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 0.5,
                                   color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Keyboard Shortcuts Button
+                      GestureDetector(
+                        onTap: () => _openKeyboardShortcutsDialog(context),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                            border: Border.all(color: borderColor, width: 1.0),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text('⌨️', style: TextStyle(fontSize: 12)),
+                              const SizedBox(width: 6),
+                              Text(
+                                'SHORTCUTS (?)',
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.3,
+                                  color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
                                 ),
                               ),
                             ],
@@ -450,6 +484,95 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _openKeyboardShortcutsDialog(BuildContext context) {
+    final details = Theme.of(context).extension<AppThemeDetails>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBg = details?.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg);
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
+    final shortcuts = [
+      {'key': '1 – 4', 'desc': 'Switch Navigation Tabs (Library, Stats, Timeline, Settings)'},
+      {'key': '/', 'desc': 'Focus Search Bar in Library'},
+      {'key': 'F11', 'desc': 'Toggle Fullscreen Mode'},
+      {'key': '? / F1', 'desc': 'Open Keyboard Shortcuts Help'},
+      {'key': 'Esc', 'desc': 'Close Modal / Cancel Search / Deselect Book'},
+    ];
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        backgroundColor: dialogBg,
+        title: Row(
+          children: [
+            Icon(Icons.keyboard_rounded, size: 20, color: primaryColor),
+            const SizedBox(width: 8),
+            Text(
+              'KEYBOARD SHORTCUTS',
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: inkColor),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 420,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: shortcuts.map((s) {
+              return Container(
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                  border: Border.all(color: borderColor.withValues(alpha: 0.3), width: 1.0),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: primaryColor.withValues(alpha: 0.15),
+                        border: Border.all(color: primaryColor, width: 1.0),
+                      ),
+                      child: Text(
+                        s['key']!,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          color: primaryColor,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        s['desc']!,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: inkColor,
+                        ),
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('CLOSE', style: TextStyle(color: inkColor, fontWeight: FontWeight.w800)),
+          ),
+        ],
       ),
     );
   }

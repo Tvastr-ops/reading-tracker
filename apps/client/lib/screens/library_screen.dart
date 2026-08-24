@@ -30,6 +30,7 @@ class LibraryScreenState extends State<LibraryScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
   final SyncManager _syncManager = SyncManager.instance;
   final ReadingMutationService _mutationService = ReadingMutationService.instance;
+  final ThemeService _themeService = ThemeService.instance;
   final FocusNode _searchFocusNode = FocusNode();
   final TextEditingController _searchController = TextEditingController();
 
@@ -120,11 +121,96 @@ class LibraryScreenState extends State<LibraryScreen> {
       return;
     }
 
+    // Tactile micro-haptic on mobile
+    HapticFeedback.lightImpact();
+
     final updated = await _mutationService.advanceProgress(book: book, delta: amount);
     if (_selectedBookForDetail?.id == book.id) {
       setState(() => _selectedBookForDetail = updated);
     }
     await _loadBooks();
+
+    if (_themeService.promptNoteOnQuickLog && mounted) {
+      _promptQuickNoteDialog(book, amount);
+    }
+  }
+
+  void _promptQuickNoteDialog(Book book, double delta) {
+    final details = Theme.of(context).extension<AppThemeDetails>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBg = details?.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg);
+    final inputBg = details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white);
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final mutedInk = details?.inkMutedColor ?? (isDark ? Colors.white60 : AppColors.inkMuted);
+    final controller = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        backgroundColor: dialogBg,
+        title: Text(
+          'LOG NOTE (+${delta % 1 == 0 ? delta.toInt() : delta} ${(book.unitType ?? 'pages').toUpperCase()})',
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: inkColor),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Add an optional note to this progress update:',
+              style: TextStyle(fontSize: 12, color: mutedInk),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              decoration: BoxDecoration(
+                color: inputBg,
+                border: Border.all(color: borderColor, width: 1.5),
+              ),
+              child: TextField(
+                controller: controller,
+                autofocus: true,
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: inkColor),
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  border: InputBorder.none,
+                  hintText: 'e.g. Great cliffhanger at the end',
+                  hintStyle: TextStyle(color: mutedInk),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('SKIP', style: TextStyle(color: mutedInk, fontWeight: FontWeight.w800)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            ),
+            onPressed: () async {
+              final note = controller.text.trim();
+              Navigator.pop(ctx);
+              if (note.isNotEmpty) {
+                // Attach note to the most recent reading log for this book
+                final logs = await _dbHelper.getReadingLogs(book.id);
+                if (logs.isNotEmpty) {
+                  final latestLog = logs.first;
+                  await _dbHelper.updateReadingLog(latestLog.copyWith(note: note));
+                  await _loadBooks();
+                }
+              }
+            },
+            child: const Text('SAVE NOTE'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _onBookClick(Book book, bool isWideScreen) {
@@ -707,34 +793,106 @@ class LibraryScreenState extends State<LibraryScreen> {
     }
 
     if (filtered.isEmpty) {
+      final isLibraryEmpty = _books.isEmpty;
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+      final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
+
       return SliverFillRemaining(
         hasScrollBody: false,
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const BrutalistBadge(label: 'NO BOOKS FOUND'),
-              const SizedBox(height: 12),
-              Text(
-                _searchQuery.isNotEmpty ? 'Try a different search term' : 'Tap + to add your first book',
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.inkMuted),
-              ),
-              if (_selectedStatus != 'All' || _ratingFilter != 'All' || _typeFilter != 'All' || _searchQuery.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() {
-                      _selectedStatus = 'All';
-                      _ratingFilter = 'All';
-                      _typeFilter = 'All';
-                      _searchQuery = '';
-                    });
-                  },
-                  child: const Text('CLEAR ALL FILTERS', style: TextStyle(fontWeight: FontWeight.w900)),
-                ),
-              ],
-            ],
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: isLibraryEmpty
+                ? Container(
+                    constraints: const BoxConstraints(maxWidth: 440),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: details?.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white),
+                      border: Border.all(color: borderColor, width: AppTheme.borderHeavy),
+                      boxShadow: [
+                        BoxShadow(
+                          color: borderColor,
+                          offset: details?.shadowOffset ?? AppTheme.shadowOffset,
+                          blurRadius: 0,
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: accentColor.withValues(alpha: 0.15),
+                            border: Border.all(color: accentColor, width: 1.5),
+                          ),
+                          child: Icon(Icons.menu_book_rounded, size: 36, color: accentColor),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'YOUR LIBRARY IS EMPTY',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                            color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Start tracking your reading journey. Add your first book manually or fetch metadata online.',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w500,
+                            height: 1.4,
+                            color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 20),
+                        BrutalistButton(
+                          isFullWidth: true,
+                          backgroundColor: accentColor,
+                          textColor: Colors.white,
+                          onPressed: () => _openEditDialog(),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_rounded, size: 18, color: Colors.white),
+                              SizedBox(width: 6),
+                              Text('ADD YOUR FIRST BOOK', style: TextStyle(fontWeight: FontWeight.w900)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const BrutalistBadge(label: 'NO MATCHING BOOKS'),
+                      const SizedBox(height: 12),
+                      Text(
+                        _searchQuery.isNotEmpty ? 'No books matching "$_searchQuery"' : 'No books in this filtered view',
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.inkMuted),
+                      ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {
+                            _selectedStatus = 'All';
+                            _ratingFilter = 'All';
+                            _typeFilter = 'All';
+                            _searchQuery = '';
+                          });
+                        },
+                        child: const Text('CLEAR ALL FILTERS', style: TextStyle(fontWeight: FontWeight.w900)),
+                      ),
+                    ],
+                  ),
           ),
         ),
       );

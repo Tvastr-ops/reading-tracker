@@ -539,12 +539,10 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
   }
 
   Widget _buildCoverFallback(Book b, Color accentColor) {
-    return Center(
-      child: Icon(
-        Icons.auto_stories_rounded,
-        size: 28,
-        color: accentColor.withValues(alpha: 0.8),
-      ),
+    return TypographicBookCover(
+      title: b.title,
+      author: b.author,
+      type: b.type,
     );
   }
 

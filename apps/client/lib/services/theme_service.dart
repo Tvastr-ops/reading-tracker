@@ -22,6 +22,7 @@ class ThemeService extends ChangeNotifier {
   static const String _keyCompactMode = 'app_compact_mode';
   static const String _keyHighRefreshRate = 'app_high_refresh_rate';
   static const String _keyEnablePaperTexture = 'app_enable_paper_texture';
+  static const String _keyPromptNoteOnQuickLog = 'app_prompt_note_on_quick_log';
 
   ThemeMode _themeMode = ThemeMode.system;
   AppThemeVariant _lightVariant = AppThemeVariant.classicPaperback;
@@ -33,6 +34,7 @@ class ThemeService extends ChangeNotifier {
   bool _compactMode = false;
   bool _highRefreshRate = true;
   bool _enablePaperTexture = true;
+  bool _promptNoteOnQuickLog = false;
   bool _isFullscreen = false;
 
   ColorScheme? _lightDynamic;
@@ -50,6 +52,7 @@ class ThemeService extends ChangeNotifier {
   bool get compactMode => _compactMode;
   bool get highRefreshRate => _highRefreshRate;
   bool get enablePaperTexture => _enablePaperTexture;
+  bool get promptNoteOnQuickLog => _promptNoteOnQuickLog;
   bool get isFullscreen => _isFullscreen;
 
   ThemeData get currentLightTheme {
@@ -109,6 +112,7 @@ class ThemeService extends ChangeNotifier {
     _compactMode = prefs.getBool(_keyCompactMode) ?? false;
     _highRefreshRate = prefs.getBool(_keyHighRefreshRate) ?? true;
     _enablePaperTexture = prefs.getBool(_keyEnablePaperTexture) ?? true;
+    _promptNoteOnQuickLog = prefs.getBool(_keyPromptNoteOnQuickLog) ?? false;
 
     // Apply native edge-to-edge transparent system UI
     if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
@@ -261,6 +265,15 @@ class ThemeService extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyEnablePaperTexture, val);
+  }
+
+  Future<void> setPromptNoteOnQuickLog(bool val) async {
+    if (_promptNoteOnQuickLog == val) return;
+    _promptNoteOnQuickLog = val;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyPromptNoteOnQuickLog, val);
   }
 }
 

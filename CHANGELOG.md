@@ -5,6 +5,23 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.0.0] - 2026-08-24
+
+### Added
+- **Global Historical Year Switcher (1947 to Present)**: Added global year navigation stepper and interactive Year Picker dialog in the Stats AppBar, enabling instantaneous queries and metrics across all recorded years.
+- **Multi-Unit Annual Goal Tracker**: Expanded annual reading goals with dedicated unit selector tabs (`BOOKS`, `PAGES`, `CHAPTERS`, `VOLUMES`), independent target persistence, and real-time pacing stamps (`AHEAD`, `ON TRACK`, `BEHIND`, `GOAL ACHIEVED`).
+- **52-Week Reading Streak & Activity Heatmap**: Introduced a native 52-week calendar contribution grid with 4 intensity levels, daily tooltip details, and streak counters (`Current Streak`, `Longest Streak`, `Total Active Days`).
+- **Typographic Retro Penguin Paperback Covers (`TypographicBookCover`)**: Books without cover images automatically generate vintage Penguin paperback designs with deterministic title palettes, format ribbon banners, and centered serif typography.
+- **Zero-State Library Onboarding Card**: Clean neo-brutalist onboarding welcome state guiding new users to add books or search online catalogs.
+- **Opt-in Quick-Log Note Prompt**: Added customizable note prompt upon quick-incrementing books (`Settings > Library Preferences`) with mobile micro-haptic feedback.
+- **Desktop Keyboard Shortcuts Help Modal**: Quick-access shortcut dialog (`?` / `F1` / sidebar button) covering tab navigation (`1`–`4`), search (`/`), fullscreen (`F11`), and escape (`Esc`).
+
+### Changed
+- **Responsive Reading Velocity Card**: Streamlined velocity header and rate meters with overflow protection for compact portrait displays.
+- **Tactile Brutalist Button Physics**: Enhanced button push depth mechanics and active shadow collapsing.
+
+---
+
 ## [1.9.0f] - 2026-08-22
 
 ### Fixed

@@ -287,3 +287,135 @@ class BrutalistSwitch extends StatelessWidget {
     );
   }
 }
+
+/// Procedural Penguin-paperback style typographic cover for works without remote image URLs
+class TypographicBookCover extends StatelessWidget {
+  final String title;
+  final String? author;
+  final String? type;
+  final double? width;
+  final double? height;
+
+  const TypographicBookCover({
+    super.key,
+    required this.title,
+    this.author,
+    this.type,
+    this.width,
+    this.height,
+  });
+
+  // Curated retro Penguin/Ledger cover palettes
+  static const List<_CoverPalette> _palettes = [
+    _CoverPalette(primary: Color(0xFFD85A38), header: Color(0xFFC04624), textColor: Colors.white), // Terracotta Rust
+    _CoverPalette(primary: Color(0xFF2C5E50), header: Color(0xFF1E4338), textColor: Colors.white), // Vintage Sage
+    _CoverPalette(primary: Color(0xFF2D4674), header: Color(0xFF1E3154), textColor: Colors.white), // Oxford Navy
+    _CoverPalette(primary: Color(0xFF8C3854), header: Color(0xFF70283F), textColor: Colors.white), // Dusty Maroon
+    _CoverPalette(primary: Color(0xFFD48B28), header: Color(0xFFB8721A), textColor: Colors.white), // Ochre Mustard
+    _CoverPalette(primary: Color(0xFF4A4B56), header: Color(0xFF353640), textColor: Colors.white), // Charcoal Slate
+    _CoverPalette(primary: Color(0xFF2E6F74), header: Color(0xFF1F5155), textColor: Colors.white), // Muted Teal
+    _CoverPalette(primary: Color(0xFF6B4870), header: Color(0xFF523356), textColor: Colors.white), // Vintage Plum
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final hash = title.codeUnits.fold<int>(0, (prev, elem) => prev + elem);
+    final palette = _palettes[hash.abs() % _palettes.length];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final details = Theme.of(context).extension<AppThemeDetails>();
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+
+    final displayType = (type ?? 'NOVEL').toUpperCase();
+    final displayAuthor = (author != null && author!.trim().isNotEmpty) ? author!.trim().toUpperCase() : 'UNKNOWN AUTHOR';
+
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: palette.primary,
+        border: Border.all(color: borderColor, width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 1. Top Format Banner Band
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            color: palette.header,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    displayType,
+                    style: const TextStyle(
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.8,
+                      color: Colors.white,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const Icon(Icons.bookmark_rounded, size: 10, color: Colors.white70),
+              ],
+            ),
+          ),
+
+          // 2. Middle Title Area with Centered Paper Label
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E1E24) : const Color(0xFFF9F7F1),
+                border: Border.all(color: borderColor.withValues(alpha: 0.5), width: 1.0),
+              ),
+              child: Center(
+                child: Text(
+                  title.toUpperCase(),
+                  textAlign: TextAlign.center,
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.2,
+                    height: 1.2,
+                    color: isDark ? Colors.white : AppColors.inkBlack,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // 3. Bottom Author Footer
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            color: palette.header,
+            child: Text(
+              displayAuthor,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 8,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.4,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CoverPalette {
+  final Color primary;
+  final Color header;
+  final Color textColor;
+  const _CoverPalette({required this.primary, required this.header, required this.textColor});
+}

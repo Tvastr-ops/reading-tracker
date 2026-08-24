@@ -268,8 +268,10 @@ class BookCard extends StatelessWidget {
   }
 
   Widget _buildPlaceholderIcon() {
-    return const Center(
-      child: Icon(Icons.book_rounded, color: AppColors.inkMuted, size: 28),
+    return TypographicBookCover(
+      title: book.title,
+      author: book.author,
+      type: book.type,
     );
   }
 }

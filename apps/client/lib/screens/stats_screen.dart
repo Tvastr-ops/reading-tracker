@@ -20,9 +20,13 @@ class _StatsScreenState extends State<StatsScreen> {
   double _totalUnitsLogged = 0.0;
   int _totalLogsCount = 0;
   Map<String, double> _unitBreakdown = {};
+  Map<String, double> _dailyActivity = {};
+  Map<String, int> _streakStats = {'currentStreak': 0, 'longestStreak': 0, 'totalDays': 0};
   bool _isLoading = true;
   int _distributionTabIndex = 0; // 0: Formats, 1: Genres, 2: Ratings
   int? _selectedMonthIndex;
+  int _selectedYear = DateTime.now().year;
+  String _selectedGoalMetric = 'books'; // 'books', 'pages', 'chapters', 'volumes'
 
   static const List<String> _monthLabels = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
   static const List<String> _monthNames = [
@@ -52,17 +56,96 @@ class _StatsScreenState extends State<StatsScreen> {
   Future<void> _loadStats() async {
     setState(() => _isLoading = true);
     final books = await _dbHelper.getBooks();
-    final agg = await _dbHelper.getAggregatedReadingStats();
-    final unitBreakdown = await _dbHelper.getUnitBreakdownStats();
+    final agg = await _dbHelper.getAggregatedReadingStats(year: _selectedYear);
+    final unitBreakdown = await _dbHelper.getUnitBreakdownStats(year: _selectedYear);
+    final dailyActivity = await _dbHelper.getDailyReadingActivityMap(year: _selectedYear);
+    final streakStats = await _dbHelper.getReadingStreakStats();
+
     if (mounted) {
       setState(() {
         _books = books;
         _totalUnitsLogged = (agg['totalUnits'] as num?)?.toDouble() ?? 0.0;
         _totalLogsCount = (agg['totalLogs'] as num?)?.toInt() ?? 0;
         _unitBreakdown = unitBreakdown;
+        _dailyActivity = dailyActivity;
+        _streakStats = streakStats;
         _isLoading = false;
       });
     }
+  }
+
+  void _openYearPickerDialog() {
+    final details = Theme.of(context).extension<AppThemeDetails>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBg = details?.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg);
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final currentYear = DateTime.now().year;
+
+    final years = List<int>.generate(currentYear - 1947 + 1, (i) => currentYear - i);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        backgroundColor: dialogBg,
+        title: Text(
+          'SELECT YEAR ARCHIVE',
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: inkColor),
+        ),
+        content: SizedBox(
+          width: 320,
+          height: 380,
+          child: GridView.builder(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              childAspectRatio: 2.2,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+            ),
+            itemCount: years.length,
+            itemBuilder: (context, idx) {
+              final y = years[idx];
+              final isSelected = y == _selectedYear;
+              return GestureDetector(
+                onTap: () {
+                  Navigator.pop(ctx);
+                  setState(() {
+                    _selectedYear = y;
+                    _selectedMonthIndex = null;
+                  });
+                  _loadStats();
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? primaryColor
+                        : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                    border: Border.all(color: borderColor, width: 1.5),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '$y',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                      color: isSelected ? Colors.white : inkColor,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('CLOSE', style: TextStyle(color: inkColor, fontWeight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _openSetGoalDialog() {
@@ -73,7 +156,8 @@ class _StatsScreenState extends State<StatsScreen> {
     final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
     final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
     final mutedInk = details?.inkMutedColor ?? (isDark ? Colors.white60 : AppColors.inkMuted);
-    final controller = TextEditingController(text: _syncManager.yearlyGoal.toString());
+    final currentTarget = _syncManager.getGoalFor(year: _selectedYear, metric: _selectedGoalMetric);
+    final controller = TextEditingController(text: currentTarget > 0 ? currentTarget.toString() : '');
 
     showDialog(
       context: context,
@@ -81,15 +165,15 @@ class _StatsScreenState extends State<StatsScreen> {
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         backgroundColor: dialogBg,
         title: Text(
-          'SET ANNUAL READING GOAL',
-          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: inkColor),
+          'SET $_selectedYear ${_selectedGoalMetric.toUpperCase()} GOAL',
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: inkColor),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Target number of books to finish this year:',
+              'Target number of ${_selectedGoalMetric.toLowerCase()} to finish in $_selectedYear:',
               style: TextStyle(fontSize: 12, color: mutedInk),
             ),
             const SizedBox(height: 12),
@@ -113,7 +197,7 @@ class _StatsScreenState extends State<StatsScreen> {
                 decoration: InputDecoration(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   border: InputBorder.none,
-                  hintText: 'e.g. 30',
+                  hintText: 'e.g. 25',
                   hintStyle: TextStyle(color: mutedInk),
                 ),
               ),
@@ -135,12 +219,12 @@ class _StatsScreenState extends State<StatsScreen> {
               final val = int.tryParse(controller.text.trim());
               if (val != null && val >= 0) {
                 Navigator.pop(ctx);
-                await _syncManager.updateYearlyGoal(val);
+                await _syncManager.setGoalFor(year: _selectedYear, metric: _selectedGoalMetric, target: val);
                 await _loadStats();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Yearly goal updated to $val books!'),
+                      content: Text('$_selectedYear ${_selectedGoalMetric.toUpperCase()} goal updated to $val!'),
                       duration: const Duration(seconds: 2),
                     ),
                   );
@@ -158,16 +242,19 @@ class _StatsScreenState extends State<StatsScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = Theme.of(context).colorScheme.primary;
-    final currentYear = DateTime.now().year;
-    final currentMonth = DateTime.now().month;
+    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+    final inkColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+    final mutedInk = isDark ? Colors.white60 : AppColors.inkMuted;
 
-    final completed = _books.where((b) => b.status == BookStatus.completed).length;
+    final currentCalendarYear = DateTime.now().year;
+    final currentCalendarMonth = DateTime.now().month;
+    final isCurrentYearSelected = _selectedYear == currentCalendarYear;
+
     final reading = _books.where((b) => b.status == BookStatus.reading).length;
     final plan = _books.where((b) => b.status == BookStatus.planToRead).length;
 
-    // Monthly completions for current year
     final monthlyCounts = List<int>.filled(12, 0);
-    int completedThisYear = 0;
+    int completedInSelectedYear = 0;
 
     for (final b in _books) {
       if (b.status != BookStatus.completed) continue;
@@ -176,8 +263,8 @@ class _StatsScreenState extends State<StatsScreen> {
         dt = DateTime.tryParse(b.dateFinished!);
       }
       dt ??= DateTime.tryParse(b.updatedAt);
-      if (dt != null && dt.year == currentYear) {
-        completedThisYear++;
+      if (dt != null && dt.year == _selectedYear) {
+        completedInSelectedYear++;
         if (dt.month >= 1 && dt.month <= 12) {
           monthlyCounts[dt.month - 1]++;
         }
@@ -189,18 +276,28 @@ class _StatsScreenState extends State<StatsScreen> {
         ? 0.0
         : ratedBooks.map((b) => b.rating!).reduce((a, b) => a + b) / ratedBooks.length;
 
-    final yearlyGoal = _syncManager.yearlyGoal;
-    final goalProgress = yearlyGoal > 0 ? (completedThisYear / yearlyGoal).clamp(0.0, 1.0) : 0.0;
+    final metricGoalTarget = _syncManager.getGoalFor(year: _selectedYear, metric: _selectedGoalMetric);
+    final double metricProgressVal;
+    if (_selectedGoalMetric == 'books') {
+      metricProgressVal = completedInSelectedYear.toDouble();
+    } else {
+      metricProgressVal = _unitBreakdown[_selectedGoalMetric] ?? 0.0;
+    }
 
-    // Goal pace health
-    final expectedByNow = yearlyGoal > 0 ? (yearlyGoal / 12.0) * currentMonth : 0.0;
-    final paceDiff = completedThisYear - expectedByNow.round();
+    final goalProgress = metricGoalTarget > 0 ? (metricProgressVal / metricGoalTarget).clamp(0.0, 1.0) : 0.0;
+    final isGoalAchieved = metricGoalTarget > 0 && metricProgressVal >= metricGoalTarget;
+
+    final double elapsedMonths = isCurrentYearSelected
+        ? currentCalendarMonth.toDouble()
+        : (_selectedYear < currentCalendarYear ? 12.0 : 1.0);
+    final expectedByNow = metricGoalTarget > 0 ? (metricGoalTarget / 12.0) * elapsedMonths : 0.0;
+    final paceDiff = (metricProgressVal - expectedByNow).round();
+
     final String goalPaceStatus;
     final IconData goalPaceIcon;
     final Color goalPaceColor;
-    final bool isGoalAchieved = yearlyGoal > 0 && completedThisYear >= yearlyGoal;
 
-    if (yearlyGoal == 0) {
+    if (metricGoalTarget == 0) {
       goalPaceStatus = 'NO GOAL SET';
       goalPaceIcon = Icons.flag_outlined;
       goalPaceColor = isDark ? Colors.white60 : AppColors.inkMuted;
@@ -218,14 +315,12 @@ class _StatsScreenState extends State<StatsScreen> {
       goalPaceColor = isDark ? const Color(0xFFFF8A80) : const Color(0xFFD32F2F);
     }
 
-    // Formats distribution
     final typeCounts = <String, int>{};
     for (final b in _books) {
       typeCounts[b.type] = (typeCounts[b.type] ?? 0) + 1;
     }
     final sortedTypes = typeCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
 
-    // Genres distribution (parsed from comma-separated genre_tags with synonym normalization)
     final genreCounts = <String, int>{};
     for (final b in _books) {
       if (b.genreTags != null && b.genreTags!.isNotEmpty) {
@@ -237,7 +332,6 @@ class _StatsScreenState extends State<StatsScreen> {
     }
     final sortedGenres = genreCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
 
-    // Star rating distribution (5, 4, 3, 2, 1)
     final starCounts = <int, int>{5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
     for (final b in ratedBooks) {
       final r = b.rating!.round().clamp(1, 5);
@@ -247,9 +341,76 @@ class _StatsScreenState extends State<StatsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'ANALYTICS & STATS',
+          'ANALYTICS',
           style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.5, fontSize: 18),
         ),
+        actions: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.chevron_left_rounded, size: 22),
+                tooltip: 'Previous Year',
+                onPressed: _selectedYear > 1947
+                    ? () {
+                        setState(() {
+                          _selectedYear--;
+                          _selectedMonthIndex = null;
+                        });
+                        _loadStats();
+                      }
+                    : null,
+              ),
+              GestureDetector(
+                onTap: _openYearPickerDialog,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                    border: Border.all(color: borderColor, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: borderColor,
+                        offset: const Offset(1.5, 1.5),
+                        blurRadius: 0,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '$_selectedYear',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                          color: inkColor,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(Icons.arrow_drop_down_rounded, size: 18, color: inkColor),
+                    ],
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right_rounded, size: 22),
+                tooltip: 'Next Year',
+                onPressed: _selectedYear < currentCalendarYear
+                    ? () {
+                        setState(() {
+                          _selectedYear++;
+                          _selectedMonthIndex = null;
+                        });
+                        _loadStats();
+                      }
+                    : null,
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -262,7 +423,6 @@ class _StatsScreenState extends State<StatsScreen> {
                 builder: (context, constraints) {
                   final isWide = constraints.maxWidth >= 840;
 
-                  // Yearly Goal Card
                   final yearlyGoalCard = BrutalistCard(
                     margin: EdgeInsets.zero,
                     child: Column(
@@ -277,109 +437,150 @@ class _StatsScreenState extends State<StatsScreen> {
                                 children: [
                                   Flexible(
                                     child: Text(
-                                      '$currentYear READING GOAL',
-                                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+                                      '$_selectedYear ANNUAL GOAL',
+                                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   const SizedBox(width: 6),
                                   GestureDetector(
                                     onTap: _openSetGoalDialog,
-                                    child: Icon(
-                                      Icons.edit_note_rounded,
-                                      size: 18,
-                                      color: primaryColor,
-                                    ),
+                                    child: Icon(Icons.edit_note_rounded, size: 18, color: primaryColor),
                                   ),
                                 ],
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (yearlyGoal > 0) ...[
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: isGoalAchieved
-                                          ? primaryColor
-                                          : goalPaceColor.withValues(alpha: isDark ? 0.20 : 0.12),
-                                      border: Border.all(
-                                        color: isGoalAchieved
-                                            ? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack)
-                                            : goalPaceColor,
-                                        width: 1.2,
+                            if (metricGoalTarget > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: isGoalAchieved
+                                      ? primaryColor
+                                      : goalPaceColor.withValues(alpha: isDark ? 0.20 : 0.12),
+                                  border: Border.all(
+                                    color: isGoalAchieved
+                                        ? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack)
+                                        : goalPaceColor,
+                                    width: 1.2,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(goalPaceIcon, size: 11, color: isGoalAchieved ? Colors.white : goalPaceColor),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      goalPaceStatus,
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.3,
+                                        color: isGoalAchieved ? Colors.white : (isDark ? Colors.white : AppColors.inkBlack),
                                       ),
                                     ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(goalPaceIcon, size: 11, color: isGoalAchieved ? Colors.white : goalPaceColor),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          goalPaceStatus,
-                                          style: TextStyle(
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.w900,
-                                            letterSpacing: 0.3,
-                                            color: isGoalAchieved ? Colors.white : (isDark ? Colors.white : AppColors.inkBlack),
-                                          ),
-                                        ),
-                                      ],
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: ['books', 'pages', 'chapters', 'volumes'].map((metricKey) {
+                            final isTabSelected = _selectedGoalMetric == metricKey;
+                            return Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 2),
+                                child: GestureDetector(
+                                  onTap: () => setState(() => _selectedGoalMetric = metricKey),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: isTabSelected
+                                          ? primaryColor
+                                          : (isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh),
+                                      border: Border.all(
+                                        color: isTabSelected ? primaryColor : borderColor.withValues(alpha: 0.3),
+                                        width: 1.0,
+                                      ),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      metricKey.toUpperCase(),
+                                      style: TextStyle(
+                                        fontSize: 9.5,
+                                        fontWeight: isTabSelected ? FontWeight.w900 : FontWeight.w700,
+                                        letterSpacing: 0.3,
+                                        color: isTabSelected
+                                            ? Colors.white
+                                            : (isDark ? Colors.white70 : AppColors.inkBlack),
+                                      ),
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
-                                ],
-                                BrutalistBadge(
-                                  label: '${(goalProgress * 100).toInt()}% COMPLETED',
-                                  backgroundColor: primaryColor,
-                                  textColor: Colors.white,
                                 ),
-                              ],
-                            ),
-                          ],
+                              ),
+                            );
+                          }).toList(),
                         ),
                         const SizedBox(height: 12),
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
                           children: [
-                            Text(
-                              '$completedThisYear',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w900,
-                                color: primaryColor,
-                              ),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Text(
+                                  metricProgressVal % 1 == 0
+                                      ? metricProgressVal.toInt().toString()
+                                      : metricProgressVal.toStringAsFixed(1),
+                                  style: TextStyle(
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.w900,
+                                    color: primaryColor,
+                                  ),
+                                ),
+                                const Text(
+                                  ' / ',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.inkMuted,
+                                  ),
+                                ),
+                                Text(
+                                  metricGoalTarget > 0 ? '$metricGoalTarget ${_selectedGoalMetric.toUpperCase()}' : 'NO TARGET',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: mutedInk,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const Text(
-                              ' / ',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.inkMuted,
+                            if (metricGoalTarget > 0)
+                              Text(
+                                '${(goalProgress * 100).toInt()}%',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w900,
+                                  color: primaryColor,
+                                ),
                               ),
-                            ),
-                            Text(
-                              '$yearlyGoal BOOKS',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.inkMuted,
-                              ),
-                            ),
                           ],
                         ),
                         const SizedBox(height: 8),
                         BrutalistProgressBar(
                           progress: goalProgress,
-                          height: 16,
+                          height: 14,
                           fillColor: primaryColor,
                         ),
                       ],
                     ),
                   );
 
-                  // 4 Primary Metric Tiles
                   final formattedUnits = _totalUnitsLogged >= 1000
                       ? '${(_totalUnitsLogged / 1000).toStringAsFixed(1)}k'
                       : _totalUnitsLogged.toInt().toString();
@@ -400,8 +601,8 @@ class _StatsScreenState extends State<StatsScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _buildMetricTile(
-                              'COMPLETED',
-                              '$completed',
+                              'FINISHED ($_selectedYear)',
+                              '$completedInSelectedYear',
                               Icons.done_all_rounded,
                               AppColors.successGreen,
                               'finished works',
@@ -414,7 +615,7 @@ class _StatsScreenState extends State<StatsScreen> {
                         children: [
                           Expanded(
                             child: _buildMetricTile(
-                              'UNITS LOGGED',
+                              'UNITS ($_selectedYear)',
                               _totalUnitsLogged > 0 ? formattedUnits : '$plan',
                               _totalUnitsLogged > 0 ? Icons.electric_bolt_rounded : Icons.bookmark_border_rounded,
                               _totalUnitsLogged > 0 ? primaryColor : AppColors.amberWarning,
@@ -436,7 +637,8 @@ class _StatsScreenState extends State<StatsScreen> {
                     ],
                   );
 
-                  // 12-Month Activity Bar Chart
+                  final streakHeatmapCard = _buildStreakHeatmapCard(isDark, borderColor, primaryColor);
+
                   final maxMonthly = monthlyCounts.reduce((a, b) => a > b ? a : b);
                   final monthlyChartCard = BrutalistCard(
                     margin: EdgeInsets.zero,
@@ -451,67 +653,32 @@ class _StatsScreenState extends State<StatsScreen> {
                                 Icon(Icons.bar_chart_rounded, size: 16, color: primaryColor),
                                 const SizedBox(width: 6),
                                 Text(
-                                  '$currentYear MONTHLY COMPLETIONS',
+                                  '$_selectedYear MONTHLY ACTIVITY',
                                   style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
                                 ),
                               ],
                             ),
-                            Text(
-                              '$completedThisYear Total',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
+                            if (_selectedMonthIndex != null)
+                              BrutalistBadge(
+                                label: '${_monthNames[_selectedMonthIndex!]}: ${monthlyCounts[_selectedMonthIndex!]}',
+                                backgroundColor: primaryColor,
+                                textColor: Colors.white,
                               ),
-                            ),
                           ],
                         ),
                         const SizedBox(height: 14),
-
-                        // Interactive Month Detail Banner
-                        if (_selectedMonthIndex != null) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            margin: const EdgeInsets.only(bottom: 12),
-                            decoration: BoxDecoration(
-                              color: primaryColor.withValues(alpha: 0.1),
-                              border: Border.all(color: primaryColor, width: 1.5),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  '${_monthNames[_selectedMonthIndex!]} $currentYear',
-                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
-                                ),
-                                Text(
-                                  '${monthlyCounts[_selectedMonthIndex!]} books finished',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w900,
-                                    color: primaryColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-
-                        // 12 Pillars Layout
                         SizedBox(
-                          height: 110,
+                          height: 100,
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: List.generate(12, (index) {
                               final count = monthlyCounts[index];
-                              final isCurrentMonth = index == (currentMonth - 1);
+                              final isCurrentMonth = isCurrentYearSelected && (index + 1 == currentCalendarMonth);
                               final isSelected = _selectedMonthIndex == index;
-                              final normalizedHeight = maxMonthly > 0 ? (count / maxMonthly).clamp(0.0, 1.0) : 0.0;
-                              final barHeight = (normalizedHeight * 64.0).clamp(4.0, 64.0);
+                              final double barHeight = maxMonthly > 0 ? (count / maxMonthly) * 64.0 : 0.0;
 
                               return Expanded(
                                 child: GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
                                   onTap: () {
                                     setState(() {
                                       _selectedMonthIndex = _selectedMonthIndex == index ? null : index;
@@ -520,18 +687,17 @@ class _StatsScreenState extends State<StatsScreen> {
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
-                                      // Top Count Label
                                       Text(
                                         count > 0 ? '$count' : '',
                                         style: TextStyle(
                                           fontSize: 9,
-                                          fontWeight: FontWeight.w900,
-                                          color: isSelected ? primaryColor : (isDark ? Colors.white70 : AppColors.inkBlack),
+                                          fontWeight: FontWeight.w800,
+                                          color: isSelected
+                                              ? primaryColor
+                                              : (isDark ? Colors.white60 : AppColors.inkMuted),
                                         ),
                                       ),
                                       const SizedBox(height: 3),
-
-                                      // The Bar Pillar
                                       AnimatedContainer(
                                         duration: const Duration(milliseconds: 250),
                                         height: count > 0 ? barHeight : 4.0,
@@ -553,8 +719,6 @@ class _StatsScreenState extends State<StatsScreen> {
                                         ),
                                       ),
                                       const SizedBox(height: 6),
-
-                                      // Month Initial Label
                                       Text(
                                         _monthLabels[index],
                                         style: TextStyle(
@@ -578,7 +742,6 @@ class _StatsScreenState extends State<StatsScreen> {
                     ),
                   );
 
-                  // Velocity & Forecast Card
                   final velocityCard = BrutalistCard(
                     margin: EdgeInsets.zero,
                     child: Column(
@@ -587,51 +750,58 @@ class _StatsScreenState extends State<StatsScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
-                              children: [
-                                Icon(Icons.speed_rounded, size: 16, color: primaryColor),
-                                const SizedBox(width: 6),
-                                const Text(
-                                  'READING VELOCITY & FORECAST',
-                                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
-                                ),
-                              ],
+                            Flexible(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.speed_rounded, size: 16, color: primaryColor),
+                                  const SizedBox(width: 6),
+                                  const Flexible(
+                                    child: Text(
+                                      'READING VELOCITY',
+                                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            if (completedThisYear > 0)
+                            const SizedBox(width: 8),
+                            if (completedInSelectedYear > 0)
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
                                   color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHighest,
                                   border: Border.all(
-                                    color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                    color: borderColor,
                                     width: 1.5,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                      color: borderColor,
                                       offset: const Offset(1.5, 1.5),
                                       blurRadius: 0,
                                     ),
                                   ],
                                 ),
                                 child: Text(
-                                  '~${((completedThisYear / currentMonth) * 12).round()} YR EST.',
+                                  '~${((completedInSelectedYear / elapsedMonths) * 12).round()} YR EST.',
                                   style: TextStyle(
-                                    fontSize: 10,
+                                    fontSize: 9.5,
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: 0.3,
-                                    color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                    color: inkColor,
                                   ),
                                 ),
                               ),
                           ],
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
                         Row(
                           children: [
                             Expanded(
                               child: Container(
-                                padding: const EdgeInsets.all(10),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                                 decoration: BoxDecoration(
                                   color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh,
                                   border: Border.all(
@@ -649,29 +819,29 @@ class _StatsScreenState extends State<StatsScreen> {
                                       style: TextStyle(
                                         fontSize: 9,
                                         fontWeight: FontWeight.w800,
-                                        color: isDark ? Colors.white60 : AppColors.inkMuted,
+                                        color: mutedInk,
                                         letterSpacing: 0.3,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
+                                    const SizedBox(height: 3),
                                     Text(
-                                      completedThisYear > 0
-                                          ? '${(completedThisYear / currentMonth).toStringAsFixed(1)} books/mo'
+                                      completedInSelectedYear > 0
+                                          ? '${(completedInSelectedYear / elapsedMonths).toStringAsFixed(1)} books/mo'
                                           : '0.0 books/mo',
                                       style: TextStyle(
-                                        fontSize: 13,
+                                        fontSize: 12.5,
                                         fontWeight: FontWeight.w900,
-                                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                        color: inkColor,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 8),
                             Expanded(
                               child: Container(
-                                padding: const EdgeInsets.all(10),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                                 decoration: BoxDecoration(
                                   color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh,
                                   border: Border.all(
@@ -689,19 +859,19 @@ class _StatsScreenState extends State<StatsScreen> {
                                       style: TextStyle(
                                         fontSize: 9,
                                         fontWeight: FontWeight.w800,
-                                        color: isDark ? Colors.white60 : AppColors.inkMuted,
+                                        color: mutedInk,
                                         letterSpacing: 0.3,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
+                                    const SizedBox(height: 3),
                                     Text(
-                                      completedThisYear > 0
-                                          ? '~${((completedThisYear / currentMonth) / 4.33).toStringAsFixed(1)} books/wk'
+                                      completedInSelectedYear > 0
+                                          ? '~${((completedInSelectedYear / elapsedMonths) / 4.33).toStringAsFixed(1)} books/wk'
                                           : 'No active pace',
                                       style: TextStyle(
-                                        fontSize: 13,
+                                        fontSize: 12.5,
                                         fontWeight: FontWeight.w900,
-                                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                        color: inkColor,
                                       ),
                                     ),
                                   ],
@@ -714,46 +884,32 @@ class _StatsScreenState extends State<StatsScreen> {
                     ),
                   );
 
-                  // Unit Volume Breakdown Card
                   final unitEntries = _unitBreakdown.entries.where((e) => e.value > 0).toList();
                   Widget? unitVolumeCard;
                   if (unitEntries.isNotEmpty) {
                     IconData getUnitIcon(String unit) {
                       switch (unit) {
-                        case 'pages':
-                          return Icons.auto_stories_rounded;
-                        case 'chapters':
-                          return Icons.format_list_numbered_rounded;
-                        case 'volumes':
-                          return Icons.inventory_2_outlined;
-                        case 'words':
-                          return Icons.text_snippet_outlined;
-                        default:
-                          return Icons.bookmark_added_rounded;
+                        case 'pages': return Icons.auto_stories_rounded;
+                        case 'chapters': return Icons.format_list_numbered_rounded;
+                        case 'volumes': return Icons.inventory_2_outlined;
+                        case 'words': return Icons.text_snippet_outlined;
+                        default: return Icons.bookmark_added_rounded;
                       }
                     }
 
                     Color getUnitColor(String unit) {
                       switch (unit) {
-                        case 'pages':
-                          return AppColors.skyBlue;
-                        case 'chapters':
-                          return primaryColor;
-                        case 'volumes':
-                          return AppColors.amberWarning;
-                        case 'words':
-                          return AppColors.successGreen;
-                        default:
-                          return primaryColor;
+                        case 'pages': return AppColors.skyBlue;
+                        case 'chapters': return primaryColor;
+                        case 'volumes': return AppColors.amberWarning;
+                        case 'words': return AppColors.successGreen;
+                        default: return primaryColor;
                       }
                     }
 
                     String formatUnitVal(double val) {
-                      if (val >= 1000000) {
-                        return '${(val / 1000000).toStringAsFixed(1)}M';
-                      } else if (val >= 1000) {
-                        return '${(val / 1000).toStringAsFixed(1)}k';
-                      }
+                      if (val >= 1000000) return '${(val / 1000000).toStringAsFixed(1)}M';
+                      if (val >= 1000) return '${(val / 1000).toStringAsFixed(1)}k';
                       return val % 1 == 0 ? val.toInt().toString() : val.toStringAsFixed(1);
                     }
 
@@ -766,9 +922,9 @@ class _StatsScreenState extends State<StatsScreen> {
                             children: [
                               Icon(Icons.collections_bookmark_rounded, size: 16, color: primaryColor),
                               const SizedBox(width: 6),
-                              const Text(
-                                'READING VOLUME BY UNIT',
-                                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                              Text(
+                                'READING VOLUME BY UNIT ($_selectedYear)',
+                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
                               ),
                             ],
                           ),
@@ -822,7 +978,7 @@ class _StatsScreenState extends State<StatsScreen> {
                                           style: TextStyle(
                                             fontSize: 9,
                                             fontWeight: FontWeight.w800,
-                                            color: isDark ? Colors.white60 : AppColors.inkMuted,
+                                            color: mutedInk,
                                             letterSpacing: 0.3,
                                           ),
                                         ),
@@ -838,7 +994,6 @@ class _StatsScreenState extends State<StatsScreen> {
                     );
                   }
 
-                  // Stacked Metric Bars (Formats / Genres / Ratings)
                   final stackedDistributionCard = Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -852,8 +1007,6 @@ class _StatsScreenState extends State<StatsScreen> {
                             'LIBRARY DISTRIBUTION',
                             style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
                           ),
-
-                          // Segmented Switcher Tabs
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -867,7 +1020,6 @@ class _StatsScreenState extends State<StatsScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
-
                       BrutalistCard(
                         margin: EdgeInsets.zero,
                         child: _buildDistributionContent(
@@ -889,7 +1041,6 @@ class _StatsScreenState extends State<StatsScreen> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Left Column: Goal, Velocity & Metrics
                             Expanded(
                               flex: 5,
                               child: Column(
@@ -898,6 +1049,8 @@ class _StatsScreenState extends State<StatsScreen> {
                                   const SizedBox(height: 16),
                                   metricsGrid,
                                   const SizedBox(height: 16),
+                                  streakHeatmapCard,
+                                  const SizedBox(height: 16),
                                   monthlyChartCard,
                                   const SizedBox(height: 16),
                                   velocityCard,
@@ -905,8 +1058,6 @@ class _StatsScreenState extends State<StatsScreen> {
                               ),
                             ),
                             const SizedBox(width: 20),
-
-                            // Right Column: Stacked Distribution & Unit Breakdown
                             Expanded(
                               flex: 4,
                               child: Column(
@@ -926,13 +1077,14 @@ class _StatsScreenState extends State<StatsScreen> {
                     );
                   }
 
-                  // Mobile Single-Column Layout
                   return ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     children: [
                       yearlyGoalCard,
                       const SizedBox(height: 16),
                       metricsGrid,
+                      const SizedBox(height: 16),
+                      streakHeatmapCard,
                       if (unitVolumeCard != null) ...[
                         const SizedBox(height: 16),
                         unitVolumeCard,
@@ -1166,6 +1318,232 @@ class _StatsScreenState extends State<StatsScreen> {
         }).toList(),
       );
     }
+  }
+
+  Widget _buildStreakHeatmapCard(bool isDark, Color borderColor, Color primaryColor) {
+    final currentStreak = _streakStats['currentStreak'] ?? 0;
+    final longestStreak = _streakStats['longestStreak'] ?? 0;
+    final totalDays = _streakStats['totalDays'] ?? 0;
+    final inkColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+    final mutedInk = isDark ? Colors.white60 : AppColors.inkMuted;
+
+    // Build 53-week calendar matrix for _selectedYear
+    final jan1 = DateTime(_selectedYear, 1, 1);
+    final isLeapYear = (_selectedYear % 4 == 0 && _selectedYear % 100 != 0) || (_selectedYear % 400 == 0);
+    final daysInYear = isLeapYear ? 366 : 365;
+
+    // Weekday of Jan 1 (Monday = 1, Sunday = 7 in Dart DateTime)
+    final startWeekdayOffset = jan1.weekday - 1; // 0 = Mon, 6 = Sun
+
+    return BrutalistCard(
+      margin: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header & Streak Badges
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.local_fire_department_rounded, size: 16, color: primaryColor),
+                  const SizedBox(width: 6),
+                  Text(
+                    'READING STREAK & HABITS ($_selectedYear)',
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                  ),
+                ],
+              ),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: currentStreak > 0 ? primaryColor.withValues(alpha: 0.15) : (isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh),
+                      border: Border.all(color: currentStreak > 0 ? primaryColor : borderColor.withValues(alpha: 0.3), width: 1.0),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('🔥', style: TextStyle(fontSize: 10)),
+                        const SizedBox(width: 3),
+                        Text(
+                          '$currentStreak DAYS CURRENT',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.3,
+                            color: currentStreak > 0 ? primaryColor : inkColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh,
+                      border: Border.all(color: borderColor.withValues(alpha: 0.3), width: 1.0),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('🏆', style: TextStyle(fontSize: 10)),
+                        const SizedBox(width: 3),
+                        Text(
+                          '$longestStreak DAYS MAX',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.3,
+                            color: mutedInk,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Scrollable Contribution Heatmap Grid
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            reverse: _selectedYear == DateTime.now().year,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Day of week labels (Mon, Wed, Fri)
+                Padding(
+                  padding: const EdgeInsets.only(right: 6, top: 1),
+                  child: Column(
+                    children: [
+                      _buildWeekdayLabel('M', mutedInk),
+                      _buildWeekdayLabel('', mutedInk),
+                      _buildWeekdayLabel('W', mutedInk),
+                      _buildWeekdayLabel('', mutedInk),
+                      _buildWeekdayLabel('F', mutedInk),
+                      _buildWeekdayLabel('', mutedInk),
+                      _buildWeekdayLabel('S', mutedInk),
+                    ],
+                  ),
+                ),
+
+                // 53 Weeks columns
+                ...List.generate(53, (weekIndex) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 3.5),
+                    child: Column(
+                      children: List.generate(7, (dayIndex) {
+                        final dayOfYear = (weekIndex * 7 + dayIndex) - startWeekdayOffset;
+                        if (dayOfYear < 0 || dayOfYear >= daysInYear) {
+                          return const SizedBox(width: 11, height: 11, child: SizedBox.shrink());
+                        }
+
+                        final date = jan1.add(Duration(days: dayOfYear));
+                        final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+                        final units = _dailyActivity[dateKey] ?? 0.0;
+
+                        Color cellColor;
+                        if (units <= 0) {
+                          cellColor = isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05);
+                        } else if (units < 10) {
+                          cellColor = primaryColor.withValues(alpha: 0.35);
+                        } else if (units < 30) {
+                          cellColor = primaryColor.withValues(alpha: 0.60);
+                        } else if (units < 70) {
+                          cellColor = primaryColor.withValues(alpha: 0.85);
+                        } else {
+                          cellColor = primaryColor;
+                        }
+
+                        final displayUnits = units % 1 == 0 ? units.toInt().toString() : units.toStringAsFixed(1);
+                        final tooltipText = units > 0 ? '$dateKey: $displayUnits logged' : '$dateKey: No activity';
+
+                        return Tooltip(
+                          message: tooltipText,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 3.5),
+                            width: 11,
+                            height: 11,
+                            decoration: BoxDecoration(
+                              color: cellColor,
+                              border: Border.all(
+                                color: units > 0
+                                    ? primaryColor.withValues(alpha: 0.6)
+                                    : (isDark ? Colors.white10 : Colors.black12),
+                                width: 0.5,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Heatmap Legend
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '$totalDays active reading days',
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: mutedInk),
+              ),
+              Row(
+                children: [
+                  Text('LESS', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800, color: mutedInk)),
+                  const SizedBox(width: 4),
+                  _buildLegendBox(isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05), isDark),
+                  _buildLegendBox(primaryColor.withValues(alpha: 0.35), isDark),
+                  _buildLegendBox(primaryColor.withValues(alpha: 0.60), isDark),
+                  _buildLegendBox(primaryColor.withValues(alpha: 0.85), isDark),
+                  _buildLegendBox(primaryColor, isDark),
+                  const SizedBox(width: 4),
+                  Text('MORE', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800, color: mutedInk)),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeekdayLabel(String text, Color color) {
+    return Container(
+      height: 11,
+      margin: const EdgeInsets.only(bottom: 3.5),
+      alignment: Alignment.centerLeft,
+      child: Text(
+        text,
+        style: TextStyle(fontSize: 8, fontWeight: FontWeight.w800, color: color),
+      ),
+    );
+  }
+
+  Widget _buildLegendBox(Color color, bool isDark) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 1.5),
+      width: 9,
+      height: 9,
+      decoration: BoxDecoration(
+        color: color,
+        border: Border.all(color: isDark ? Colors.white10 : Colors.black12, width: 0.5),
+      ),
+    );
   }
 
   Widget _buildMetricTile(String title, String value, IconData icon, Color accentColor, String subtext) {

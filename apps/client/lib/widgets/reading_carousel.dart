@@ -204,10 +204,18 @@ class _ReadingCarouselState extends State<ReadingCarousel> {
                       book.coverUrl!,
                       fit: BoxFit.cover,
                       cacheWidth: 240,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.auto_stories_rounded, size: 24),
+                      errorBuilder: (_, __, ___) => TypographicBookCover(
+                        title: book.title,
+                        author: book.author,
+                        type: book.type,
+                      ),
                     )
                   else
-                    const Icon(Icons.auto_stories_rounded, size: 24),
+                    TypographicBookCover(
+                      title: book.title,
+                      author: book.author,
+                      type: book.type,
+                    ),
                   Positioned(
                     bottom: 2,
                     right: 2,
