@@ -54,6 +54,7 @@ class SyncManager extends ChangeNotifier {
 
     _updateProvider();
     _startPeriodicTimer();
+    await loadCachedGoals();
     await checkConnection();
   }
 
@@ -235,14 +236,49 @@ class SyncManager extends ChangeNotifier {
   }
 
   Future<void> updateYearlyGoal(int newGoal) async {
-    if (newGoal < 0) return;
-    _yearlyGoal = newGoal;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('yearly_goal', newGoal);
-    notifyListeners();
+    await setGoalFor(year: DateTime.now().year, metric: 'books', target: newGoal);
+  }
 
-    if (!_offlineMode && _activeProvider != null) {
-      await _activeProvider!.pushYearlyGoal(newGoal);
+  int getGoalFor({required int year, required String metric}) {
+    final key = 'yearly_goal_${year}_$metric';
+    if (metric == 'books' && year == DateTime.now().year) {
+      return _yearlyGoal;
     }
+    // Fallback: If no explicit goal for that year/metric, check default
+    return _sharedPreferencesCache[key] ?? (metric == 'books' ? _yearlyGoal : 0);
+  }
+
+  final Map<String, int> _sharedPreferencesCache = {};
+
+  Future<void> loadCachedGoals() async {
+    final prefs = await SharedPreferences.getInstance();
+    final keys = prefs.getKeys();
+    for (final k in keys) {
+      if (k.startsWith('yearly_goal_')) {
+        final val = prefs.getInt(k);
+        if (val != null) {
+          _sharedPreferencesCache[k] = val;
+        }
+      }
+    }
+  }
+
+  Future<void> setGoalFor({required int year, required String metric, required int target}) async {
+    if (target < 0) return;
+    final key = 'yearly_goal_${year}_$metric';
+    _sharedPreferencesCache[key] = target;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(key, target);
+
+    if (metric == 'books' && year == DateTime.now().year) {
+      _yearlyGoal = target;
+      await prefs.setInt('yearly_goal', target);
+      if (!_offlineMode && _activeProvider != null) {
+        await _activeProvider!.pushYearlyGoal(target);
+      }
+    }
+
+    notifyListeners();
   }
 }

@@ -508,42 +508,84 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildLibraryNavPreferences(bool isDark) {
     final sticky = _themeService.stickyStatusFilter;
+    final promptNote = _themeService.promptNoteOnQuickLog;
 
-    return BrutalistCard(
-      margin: EdgeInsets.zero,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Sticky Shelf / Status Tabs',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+    return Column(
+      children: [
+        BrutalistCard(
+          margin: EdgeInsets.zero,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Sticky Shelf / Status Tabs',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      sticky
+                          ? 'Status filter tabs stay pinned at the top when scrolling through books.'
+                          : 'Status filter tabs scroll away with the search bar to maximize screen real estate.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  sticky
-                      ? 'Status filter tabs stay pinned at the top when scrolling through books.'
-                      : 'Status filter tabs scroll away with the search bar to maximize screen real estate.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
-                  ),
+              ),
+              BrutalistSwitch(
+                value: sticky,
+                onChanged: (val) {
+                  _themeService.setStickyStatusFilter(val);
+                  setState(() {});
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        BrutalistCard(
+          margin: EdgeInsets.zero,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Prompt Note on Quick Progress',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      promptNote
+                          ? 'Briefly shows a quick-note prompt after tapping +1 / +5 progress chips.'
+                          : 'Quick chips log progress instantly in 0ms without any popups.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              BrutalistSwitch(
+                value: promptNote,
+                onChanged: (val) {
+                  _themeService.setPromptNoteOnQuickLog(val);
+                  setState(() {});
+                },
+              ),
+            ],
           ),
-          BrutalistSwitch(
-            value: sticky,
-            onChanged: (val) {
-              _themeService.setStickyStatusFilter(val);
-              setState(() {});
-            },
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

@@ -485,6 +485,16 @@ class DatabaseHelper {
     return result.map((json) => ReadingLogEntry.fromMap(json)).toList();
   }
 
+  Future<int> updateReadingLog(ReadingLogEntry log) async {
+    final db = await instance.database;
+    return await db.update(
+      'reading_log',
+      log.toMap(),
+      where: 'id = ?',
+      whereArgs: [log.id],
+    );
+  }
+
   Future<List<Map<String, dynamic>>> getAllReadingLogsWithBookInfo({int limit = 30, int offset = 0}) async {
     final db = await instance.database;
     return await db.rawQuery('''
@@ -515,13 +525,15 @@ class DatabaseHelper {
     return 0;
   }
 
-  Future<Map<String, dynamic>> getAggregatedReadingStats() async {
+  Future<Map<String, dynamic>> getAggregatedReadingStats({int? year}) async {
     final db = await instance.database;
+    final yearFilter = year != null ? "WHERE logged_at LIKE '$year-%'" : "";
     final res = await db.rawQuery('''
       SELECT 
         COALESCE(SUM(CASE WHEN to_progress > from_progress THEN (to_progress - from_progress) ELSE 0 END), 0) as total_units,
         COUNT(id) as total_logs
       FROM reading_log
+      $yearFilter
     ''');
     if (res.isNotEmpty) {
       return {
@@ -533,11 +545,13 @@ class DatabaseHelper {
   }
 
   /// Calculates cumulative volume read broken down by unit_type (pages, chapters, volumes, words, etc.)
-  Future<Map<String, double>> getUnitBreakdownStats() async {
+  Future<Map<String, double>> getUnitBreakdownStats({int? year}) async {
     final db = await instance.database;
     final breakdown = <String, double>{};
 
     try {
+      final yearLogFilter = year != null ? "AND l.logged_at LIKE '$year-%'" : "";
+
       // 1. Sum deltas from reading_log joined with books
       final logRes = await db.rawQuery('''
         SELECT 
@@ -545,7 +559,7 @@ class DatabaseHelper {
           SUM(CASE WHEN l.to_progress > l.from_progress THEN (l.to_progress - l.from_progress) ELSE 0 END) as logged_units
         FROM reading_log l
         INNER JOIN books b ON l.book_id = b.id
-        WHERE b.deleted_at IS NULL
+        WHERE b.deleted_at IS NULL $yearLogFilter
         GROUP BY LOWER(COALESCE(b.unit_type, 'pages'))
       ''');
 
@@ -557,23 +571,25 @@ class DatabaseHelper {
         }
       }
 
-      // 2. Fallback: Include base progress for books that have progress but no log rows yet
-      final fallbackRes = await db.rawQuery('''
-        SELECT 
-          LOWER(COALESCE(unit_type, 'pages')) as unit_type,
-          SUM(progress) as book_progress
-        FROM books
-        WHERE deleted_at IS NULL 
-          AND progress > 0
-          AND id NOT IN (SELECT DISTINCT book_id FROM reading_log)
-        GROUP BY LOWER(COALESCE(unit_type, 'pages'))
-      ''');
+      // 2. Fallback: Include base progress for books that have progress but no log rows yet (for all-time or matching year)
+      if (year == null || year == DateTime.now().year) {
+        final fallbackRes = await db.rawQuery('''
+          SELECT 
+            LOWER(COALESCE(unit_type, 'pages')) as unit_type,
+            SUM(progress) as book_progress
+          FROM books
+          WHERE deleted_at IS NULL 
+            AND progress > 0
+            AND id NOT IN (SELECT DISTINCT book_id FROM reading_log)
+          GROUP BY LOWER(COALESCE(unit_type, 'pages'))
+        ''');
 
-      for (final row in fallbackRes) {
-        final type = (row['unit_type'] as String?) ?? 'pages';
-        final units = ((row['book_progress'] as num?) ?? 0).toDouble();
-        if (units > 0) {
-          breakdown[type] = (breakdown[type] ?? 0.0) + units;
+        for (final row in fallbackRes) {
+          final type = (row['unit_type'] as String?) ?? 'pages';
+          final units = ((row['book_progress'] as num?) ?? 0).toDouble();
+          if (units > 0) {
+            breakdown[type] = (breakdown[type] ?? 0.0) + units;
+          }
         }
       }
     } catch (e) {
@@ -581,6 +597,115 @@ class DatabaseHelper {
     }
 
     return breakdown;
+  }
+
+  /// Fetches daily reading activity units for a given year (or all time) for calendar heatmaps.
+  Future<Map<String, double>> getDailyReadingActivityMap({int? year}) async {
+    final db = await instance.database;
+    final activity = <String, double>{};
+    try {
+      final yearFilter = year != null ? "WHERE logged_at LIKE '$year-%'" : "";
+      final res = await db.rawQuery('''
+        SELECT 
+          SUBSTR(logged_at, 1, 10) as log_date,
+          SUM(CASE WHEN to_progress > from_progress THEN (to_progress - from_progress) ELSE 1 END) as daily_units
+        FROM reading_log
+        $yearFilter
+        GROUP BY SUBSTR(logged_at, 1, 10)
+      ''');
+
+      for (final row in res) {
+        final date = row['log_date'] as String?;
+        final units = ((row['daily_units'] as num?) ?? 0).toDouble();
+        if (date != null && date.isNotEmpty) {
+          activity[date] = units;
+        }
+      }
+    } catch (e) {
+      debugPrint('[DatabaseHelper] getDailyReadingActivityMap error: $e');
+    }
+    return activity;
+  }
+
+  /// Calculates reading streak statistics (current streak, longest streak, total active days).
+  Future<Map<String, int>> getReadingStreakStats() async {
+    final db = await instance.database;
+    try {
+      final res = await db.rawQuery('''
+        SELECT DISTINCT SUBSTR(logged_at, 1, 10) as log_date
+        FROM reading_log
+        WHERE logged_at IS NOT NULL AND logged_at != ''
+        ORDER BY log_date DESC
+      ''');
+
+      if (res.isEmpty) {
+        return {'currentStreak': 0, 'longestStreak': 0, 'totalDays': 0};
+      }
+
+      final dates = <DateTime>[];
+      for (final row in res) {
+        final dStr = row['log_date'] as String?;
+        if (dStr != null) {
+          final dt = DateTime.tryParse(dStr);
+          if (dt != null) {
+            dates.add(DateTime(dt.year, dt.month, dt.day));
+          }
+        }
+      }
+
+      if (dates.isEmpty) {
+        return {'currentStreak': 0, 'longestStreak': 0, 'totalDays': 0};
+      }
+
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final yesterday = today.subtract(const Duration(days: 1));
+
+      // Calculate current streak
+      int currentStreak = 0;
+      final latest = dates.first;
+      if (latest == today || latest == yesterday) {
+        DateTime expected = latest;
+        for (final d in dates) {
+          if (d == expected) {
+            currentStreak++;
+            expected = expected.subtract(const Duration(days: 1));
+          } else if (d.isBefore(expected)) {
+            break;
+          }
+        }
+      }
+
+      // Calculate longest streak
+      int longestStreak = 0;
+      int tempStreak = 0;
+      DateTime? prev;
+
+      for (final d in dates) {
+        if (prev == null) {
+          tempStreak = 1;
+        } else {
+          final diff = prev.difference(d).inDays;
+          if (diff == 1) {
+            tempStreak++;
+          } else {
+            if (tempStreak > longestStreak) longestStreak = tempStreak;
+            tempStreak = 1;
+          }
+        }
+        prev = d;
+      }
+      if (tempStreak > longestStreak) longestStreak = tempStreak;
+
+      return {
+        'currentStreak': currentStreak,
+        'longestStreak': longestStreak,
+        'totalDays': dates.length,
+      };
+    } catch (e) {
+      debugPrint('[DatabaseHelper] getReadingStreakStats error: $e');
+      return {'currentStreak': 0, 'longestStreak': 0, 'totalDays': 0};
+    }
   }
 
   Future<int> deleteReadingLog(String id) async {

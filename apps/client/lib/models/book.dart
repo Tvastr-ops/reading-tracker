@@ -314,4 +314,24 @@ class ReadingLogEntry {
       syncStatus: map['sync_status']?.toString() ?? 'synced',
     );
   }
+
+  ReadingLogEntry copyWith({
+    String? id,
+    String? bookId,
+    double? fromProgress,
+    double? toProgress,
+    String? note,
+    String? loggedAt,
+    String? syncStatus,
+  }) {
+    return ReadingLogEntry(
+      id: id ?? this.id,
+      bookId: bookId ?? this.bookId,
+      fromProgress: fromProgress ?? this.fromProgress,
+      toProgress: toProgress ?? this.toProgress,
+      note: note ?? this.note,
+      loggedAt: loggedAt ?? this.loggedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+    );
+  }
 }

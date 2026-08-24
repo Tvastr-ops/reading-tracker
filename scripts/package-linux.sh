@@ -10,7 +10,7 @@ mkdir -p "$RELEASE_ASSETS_DIR"
 
 VERSION_CLEAN="${GITHUB_REF_NAME#v}"
 if [ -z "$VERSION_CLEAN" ] || [ "$VERSION_CLEAN" = "main" ] || [ "$VERSION_CLEAN" = "dev" ]; then
-  VERSION_CLEAN="1.9.0f"
+  VERSION_CLEAN="2.0.0"
 fi
 
 # Failsafe: Verify and guarantee data/flutter_assets is present in the release bundle
