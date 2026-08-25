@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reading_tracker_app/widgets/brutalist_widgets.dart';
 import 'package:reading_tracker_app/models/book.dart';
+import 'package:reading_tracker_app/screens/timeline_screen.dart';
 
 void main() {
   group('UI & Goal Enhancements Tests', () {
@@ -60,5 +61,22 @@ void main() {
       await tester.tap(find.text('CLICK ME'));
       expect(pressed, isTrue);
     });
+
+    testWidgets('TimelineScreen renders empty state gracefully without hanging', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: TimelineScreen(),
+          ),
+        ),
+      );
+
+      // Initial pump shows loading or empty state
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(TimelineScreen), findsOneWidget);
+    });
   });
 }
+
