@@ -278,6 +278,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
     final isEditing = widget.book != null;
     final screenHeight = MediaQuery.of(context).size.height;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final dialogHeight = (screenHeight - bottomInset - 48).clamp(380.0, screenHeight * 0.88);
 
     return KeyboardListener(
       focusNode: _dialogFocusNode,
@@ -290,13 +291,11 @@ class _BookEditDialogState extends State<BookEditDialog> {
       child: Dialog(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        insetPadding: EdgeInsets.fromLTRB(16, 24, 16, 24 + bottomInset),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         child: Container(
-          constraints: BoxConstraints(
-            maxWidth: 580,
-            maxHeight: screenHeight * 0.88,
-          ),
+          constraints: const BoxConstraints(maxWidth: 580),
+          height: dialogHeight,
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: dialogBg,
@@ -315,7 +314,6 @@ class _BookEditDialogState extends State<BookEditDialog> {
           child: Form(
             key: _formKey,
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // 1. Fixed Header (Prevents scrollbar overlapping the close button)
@@ -352,7 +350,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
                 ),
 
                 // 2. Scrollable Form Content
-                Flexible(
+                Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(20),
                     child: Column(

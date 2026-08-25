@@ -1035,45 +1035,52 @@ class _StatsScreenState extends State<StatsScreen> {
                   );
 
                   if (isWide) {
-                    return ListView(
-                      padding: const EdgeInsets.all(20),
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    return Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1200),
+                        child: ListView(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                           children: [
-                            Expanded(
-                              flex: 5,
-                              child: Column(
-                                children: [
-                                  yearlyGoalCard,
-                                  const SizedBox(height: 16),
-                                  metricsGrid,
-                                  const SizedBox(height: 16),
-                                  streakHeatmapCard,
-                                  const SizedBox(height: 16),
-                                  monthlyChartCard,
-                                  const SizedBox(height: 16),
-                                  velocityCard,
-                                ],
-                              ),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Column 1: Goals, Monthly Trends & Reading Velocity (~640px)
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      yearlyGoalCard,
+                                      const SizedBox(height: 16),
+                                      monthlyChartCard,
+                                      const SizedBox(height: 16),
+                                      velocityCard,
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 20),
+                                // Column 2: Core Metrics, Streak Heatmap & Distribution (~680px)
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      metricsGrid,
+                                      const SizedBox(height: 16),
+                                      streakHeatmapCard,
+                                      if (unitVolumeCard != null) ...[
+                                        const SizedBox(height: 16),
+                                        unitVolumeCard,
+                                      ],
+                                      const SizedBox(height: 16),
+                                      stackedDistributionCard,
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 20),
-                            Expanded(
-                              flex: 4,
-                              child: Column(
-                                children: [
-                                  if (unitVolumeCard != null) ...[
-                                    unitVolumeCard,
-                                    const SizedBox(height: 16),
-                                  ],
-                                  stackedDistributionCard,
-                                ],
-                              ),
-                            ),
+                            const SizedBox(height: 40),
                           ],
                         ),
-                        const SizedBox(height: 40),
-                      ],
+                      ),
                     );
                   }
 

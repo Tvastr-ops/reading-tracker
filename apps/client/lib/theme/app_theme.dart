@@ -158,29 +158,45 @@ extension AppThemeVariantMeta on AppThemeVariant {
 
   PaperPatternType get defaultPattern {
     switch (this) {
+      // 1. Classic Paperback & Charcoal Ledger -> Deckle-Edge Paper Grain
       case AppThemeVariant.classicPaperback:
-        return PaperPatternType.paperGrain;
+      case AppThemeVariant.charcoalLedger:
+        return PaperPatternType.deckleGrain;
+
+      // 2. Manga Inkpaper & Manga Noir -> Tankobon Screentone & Halftone
       case AppThemeVariant.mangaInkpaper:
       case AppThemeVariant.mangaNoir:
-      case AppThemeVariant.retroPulpComic:
-        return PaperPatternType.halftoneDots;
+        return PaperPatternType.screentoneHalftone;
+
+      // 3. Matcha Washi & Midnight Matcha -> Botanical Kozo Mulberry Fibers
       case AppThemeVariant.matchaWashi:
       case AppThemeVariant.midnightMatcha:
-      case AppThemeVariant.charredPapyrus:
-        return PaperPatternType.washiFibers;
+        return PaperPatternType.washiBotanical;
+
+      // 4. Retro Pulp Comic & Dark Academia -> Vintage Newsprint Rosette Patina
+      case AppThemeVariant.retroPulpComic:
+      case AppThemeVariant.darkAcademia:
+        return PaperPatternType.pulpRosette;
+
+      // 5. Sakura Manuscript & Midnight Sakura -> Cherry Blossom Floral Petals & Genko-Yoshi Lattice
       case AppThemeVariant.sakuraManuscript:
       case AppThemeVariant.midnightSakura:
-      case AppThemeVariant.darkAcademia:
-        return PaperPatternType.manuscriptGrid;
-      case AppThemeVariant.draftingVellum:
+        return PaperPatternType.sakuraPetals;
+
+      // 6. Nordic Glacier & Nordic Night -> Crystalline Nordic Constellation
       case AppThemeVariant.nordicGlacier:
       case AppThemeVariant.nordicNight:
-        return PaperPatternType.dotGrid;
+        return PaperPatternType.nordicConstellation;
+
+      // 7. Drafting Vellum & Cyanotype Blueprint -> Architectural Drafting Grid
+      case AppThemeVariant.draftingVellum:
       case AppThemeVariant.cyanotypeBlueprint:
-        return PaperPatternType.blueprintGrid;
+        return PaperPatternType.blueprintDrafting;
+
+      // 8. Crumpled Kraft & Charred Papyrus -> Origami Creases & Fold Facets
       case AppThemeVariant.crumpledKraft:
-      case AppThemeVariant.charcoalLedger:
-        return PaperPatternType.ledgerLines;
+      case AppThemeVariant.charredPapyrus:
+        return PaperPatternType.crumpledCreases;
     }
   }
 
@@ -668,7 +684,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: isDark ? Brightness.dark : Brightness.light,
-      scaffoldBackgroundColor: d.canvasColor,
+      scaffoldBackgroundColor: Colors.transparent,
       canvasColor: d.canvasColor,
       cardColor: d.cardColor,
       dividerColor: isDark ? Colors.white12 : Colors.black12,
