@@ -18,6 +18,8 @@ class AppColors {
   static const Color successGreen = Color(0xFF15803D);
   static const Color skyBlue = Color(0xFF0284C7);
   static const Color amberWarning = Color(0xFFD97706);
+  static const Color warningAmber = Color(0xFFD97706);
+  static const Color electricCobalt = Color(0xFF2563EB);
 
   // Dark Brutalist Palette
   static const Color darkBg = Color(0xFF12130F);

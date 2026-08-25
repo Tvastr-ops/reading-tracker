@@ -585,6 +585,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
         ),
+        const SizedBox(height: 8),
+        BrutalistCard(
+          margin: EdgeInsets.zero,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Show All Shelves in Hero Bar',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      _themeService.alwaysShowAllShelves
+                          ? 'All custom shelves appear as horizontal tabs in the library header.'
+                          : 'Shelves appear docked on the left only when selected from filters.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              BrutalistSwitch(
+                value: _themeService.alwaysShowAllShelves,
+                onChanged: (val) {
+                  _themeService.setAlwaysShowAllShelves(val);
+                  setState(() {});
+                },
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }

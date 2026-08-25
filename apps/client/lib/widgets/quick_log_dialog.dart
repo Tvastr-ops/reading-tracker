@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/book.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
@@ -22,6 +23,7 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
   late double _currentProgress;
   late TextEditingController _progressController;
   late TextEditingController _noteController;
+  late FocusNode _dialogFocusNode;
 
   @override
   void initState() {
@@ -31,13 +33,21 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
       text: _currentProgress % 1 == 0 ? _currentProgress.toInt().toString() : _currentProgress.toString(),
     );
     _noteController = TextEditingController();
+    _dialogFocusNode = FocusNode();
   }
 
   @override
   void dispose() {
     _progressController.dispose();
     _noteController.dispose();
+    _dialogFocusNode.dispose();
     super.dispose();
+  }
+
+  void _save() {
+    final note = _noteController.text.trim().isEmpty ? null : _noteController.text.trim();
+    widget.onSave(_currentProgress, note);
+    Navigator.pop(context);
   }
 
   void _increment(double amount) {
@@ -63,194 +73,203 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
     final mutedInk = details?.inkMutedColor ?? (isDark ? Colors.white60 : AppColors.inkMuted);
     final unitLabel = getUnitLabel(widget.book.type, widget.book.unitType);
     final quickChips = getQuickChipOptions(widget.book.type);
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
-    return Dialog(
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-      backgroundColor: dialogBg,
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 440),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: dialogBg,
-          border: Border.all(
-            color: borderColor,
-            width: AppTheme.borderHeavy,
-          ),
-          boxShadow: [
-            BoxShadow(
+    return KeyboardListener(
+      focusNode: _dialogFocusNode,
+      onKeyEvent: (event) {
+        if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
+          Navigator.pop(context);
+        }
+      },
+      child: Dialog(
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        backgroundColor: dialogBg,
+        insetPadding: EdgeInsets.fromLTRB(16, 24, 16, 24 + bottomInset),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 440),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: dialogBg,
+            border: Border.all(
               color: borderColor,
-              offset: details?.shadowOffset ?? AppTheme.shadowOffset,
-              blurRadius: 0,
+              width: AppTheme.borderHeavy,
             ),
-          ],
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      'LOG PROGRESS'.toUpperCase(),
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 16,
-                        color: inkColor,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: Icon(Icons.close_rounded, size: 20, color: inkColor),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
+            boxShadow: [
+              BoxShadow(
+                color: borderColor,
+                offset: details?.shadowOffset ?? AppTheme.shadowOffset,
+                blurRadius: 0,
               ),
-              const SizedBox(height: 4),
-              Text(
-                widget.book.title,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: mutedInk,
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 16),
-
-              // Quick increment chips
-              Text(
-                'QUICK INCREMENT',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
-                  color: inkColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: quickChips.map((amt) {
-                  return GestureDetector(
-                    onTap: () => _increment(amt.toDouble()),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: inputBg,
-                        border: Border.all(
-                          color: borderColor,
-                          width: 1.5,
-                        ),
-                      ),
+            ],
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
                       child: Text(
-                        '+$amt $unitLabel',
+                        'LOG PROGRESS'.toUpperCase(),
                         style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
                           color: inkColor,
                         ),
                       ),
                     ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
-
-              // Exact Progress Input
-              Text(
-                'CURRENT PROGRESS ($unitLabel)'.toUpperCase(),
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
-                  color: inkColor,
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: Icon(Icons.close_rounded, size: 20, color: inkColor),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                decoration: BoxDecoration(
-                  color: inputBg,
-                  border: Border.all(
-                    color: borderColor,
-                    width: 1.5,
-                  ),
-                ),
-                child: TextField(
-                  controller: _progressController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                const SizedBox(height: 4),
+                Text(
+                  widget.book.title,
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: inkColor,
-                  ),
-                  onChanged: (val) {
-                    final numVal = double.tryParse(val);
-                    if (numVal != null) _currentProgress = numVal;
-                  },
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    border: InputBorder.none,
-                    hintStyle: TextStyle(color: mutedInk),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-
-              // Session Notes Input
-              Text(
-                'SESSION NOTE (OPTIONAL)',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
-                  color: inkColor,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                decoration: BoxDecoration(
-                  color: inputBg,
-                  border: Border.all(
-                    color: borderColor,
-                    width: 1.5,
-                  ),
-                ),
-                child: TextField(
-                  controller: _noteController,
-                  maxLines: 2,
-                  style: TextStyle(
-                    fontSize: 13,
+                    color: mutedInk,
                     fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 16),
+
+                // Quick increment chips
+                Text(
+                  'QUICK INCREMENT',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
                     color: inkColor,
                   ),
-                  decoration: InputDecoration(
-                    hintText: 'e.g. Read during commute...',
-                    hintStyle: TextStyle(fontSize: 12, color: mutedInk),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    border: InputBorder.none,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: quickChips.map((amt) {
+                    return GestureDetector(
+                      onTap: () => _increment(amt.toDouble()),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: inputBg,
+                          border: Border.all(
+                            color: borderColor,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Text(
+                          '+$amt $unitLabel',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: inkColor,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16),
+
+                // Exact Progress Input
+                Text(
+                  'CURRENT PROGRESS ($unitLabel)'.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                    color: inkColor,
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
+                const SizedBox(height: 6),
+                Container(
+                  decoration: BoxDecoration(
+                    color: inputBg,
+                    border: Border.all(
+                      color: borderColor,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: TextField(
+                    controller: _progressController,
+                    autofocus: true,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: inkColor,
+                    ),
+                    onChanged: (val) {
+                      final numVal = double.tryParse(val);
+                      if (numVal != null) _currentProgress = numVal;
+                    },
+                    onSubmitted: (_) => _save(),
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: InputBorder.none,
+                      hintStyle: TextStyle(color: mutedInk),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
 
-              // Save Action Button
-              BrutalistButton(
-                isFullWidth: true,
-                onPressed: () {
-                  final note = _noteController.text.trim().isEmpty ? null : _noteController.text.trim();
-                  widget.onSave(_currentProgress, note);
-                  Navigator.pop(context);
-                },
-                child: const Text('SAVE PROGRESS', style: TextStyle(color: Colors.white, fontSize: 13)),
-              ),
-            ],
+                // Session Notes Input
+                Text(
+                  'SESSION NOTE (OPTIONAL)',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                    color: inkColor,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  decoration: BoxDecoration(
+                    color: inputBg,
+                    border: Border.all(
+                      color: borderColor,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: TextField(
+                    controller: _noteController,
+                    maxLines: 2,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: inkColor,
+                    ),
+                    onSubmitted: (_) => _save(),
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Read during commute...',
+                      hintStyle: TextStyle(fontSize: 12, color: mutedInk),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Save Action Button
+                BrutalistButton(
+                  isFullWidth: true,
+                  onPressed: _save,
+                  child: const Text('SAVE PROGRESS', style: TextStyle(color: Colors.white, fontSize: 13)),
+                ),
+              ],
+            ),
           ),
         ),
       ),

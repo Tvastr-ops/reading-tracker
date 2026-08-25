@@ -14,6 +14,7 @@ class BookCard extends StatelessWidget {
   final Function(double) onQuickIncrement;
   final VoidCallback? onToggleFavorite;
   final void Function(TapDownDetails details)? onContextMenu;
+  final VoidCallback? onLongPress;
   final bool isSelected;
 
   const BookCard({
@@ -25,6 +26,7 @@ class BookCard extends StatelessWidget {
     required this.onQuickIncrement,
     this.onToggleFavorite,
     this.onContextMenu,
+    this.onLongPress,
     this.isSelected = false,
   });
 
@@ -44,6 +46,7 @@ class BookCard extends StatelessWidget {
       padding: cardPadding,
       onTap: onEdit,
       onSecondaryTapDown: onContextMenu != null ? (d) => onContextMenu!(d) : null,
+      onLongPress: onLongPress,
       borderColor: isSelected ? accentColor : null,
       borderWidth: isSelected ? 2.5 : AppTheme.borderLight,
       shadowOffset: isSelected ? const Offset(4.0, 4.0) : null,
@@ -113,6 +116,18 @@ class BookCard extends StatelessWidget {
                       runSpacing: 3,
                       children: [
                         BrutalistBadge(label: book.type),
+                        if (book.seriesName != null && book.seriesName!.isNotEmpty)
+                          BrutalistBadge(
+                            label: '${book.seriesName!.toUpperCase()}${book.seriesOrder != null ? " #${formatNum(book.seriesOrder!)}" : ""}',
+                            backgroundColor: accentColor.withValues(alpha: 0.15),
+                            textColor: accentColor,
+                          ),
+                        if (book.rereadCount > 0)
+                          const BrutalistBadge(
+                            label: 'RE-READ',
+                            backgroundColor: AppColors.electricCobalt,
+                            textColor: Colors.white,
+                          ),
                         if (book.isOngoing == true)
                           const BrutalistBadge(
                             label: 'ONGOING',
@@ -125,6 +140,13 @@ class BookCard extends StatelessWidget {
                             backgroundColor: const Color(0xFFFFB800),
                             textColor: AppColors.inkBlack,
                           ),
+                        ...book.shelvesList.take(2).map(
+                              (s) => BrutalistBadge(
+                                label: '🔖 $s',
+                                backgroundColor: isDark ? Colors.white12 : AppColors.paperSurfaceHighest,
+                                textColor: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                              ),
+                            ),
                         if (book.dateStarted != null || book.dateFinished != null) ...[
                           BrutalistBadge(
                             label: book.dateFinished != null

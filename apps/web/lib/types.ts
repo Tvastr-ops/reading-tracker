@@ -45,6 +45,10 @@ export interface Book {
   date_finished: string | null;
   notes: string | null;
   is_favorite?: boolean | null;
+  series_name?: string | null;
+  series_order?: number | null;
+  shelf_names?: string | null;
+  reread_count?: number | null;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;

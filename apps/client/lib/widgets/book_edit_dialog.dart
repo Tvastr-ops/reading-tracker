@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../models/book.dart';
 import '../services/database_helper.dart';
@@ -28,6 +30,9 @@ class _BookEditDialogState extends State<BookEditDialog> {
 
   late TextEditingController _titleController;
   late TextEditingController _authorController;
+  late TextEditingController _seriesNameController;
+  late TextEditingController _seriesOrderController;
+  late TextEditingController _shelfInputController;
   late TextEditingController _progressController;
   late TextEditingController _totalUnitsController;
   late TextEditingController _parentProgressController;
@@ -37,6 +42,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
   late TextEditingController _genreTagsController;
   late TextEditingController _sourceLinkController;
   late TextEditingController _notesController;
+  late FocusNode _dialogFocusNode;
 
   late String _type;
   late String _status;
@@ -47,6 +53,9 @@ class _BookEditDialogState extends State<BookEditDialog> {
   String? _dateFinished;
   bool _isSearchingCover = false;
   List<String> _availableGenres = [];
+  List<String> _shelves = [];
+  List<String> _availableShelves = [];
+  int _rereadCount = 0;
 
   @override
   void initState() {
@@ -54,6 +63,9 @@ class _BookEditDialogState extends State<BookEditDialog> {
     final b = widget.book;
     _titleController = TextEditingController(text: b?.title ?? '');
     _authorController = TextEditingController(text: b?.author ?? '');
+    _seriesNameController = TextEditingController(text: b?.seriesName ?? '');
+    _seriesOrderController = TextEditingController(text: b?.seriesOrder != null ? formatNum(b!.seriesOrder!) : '');
+    _shelfInputController = TextEditingController();
     _progressController = TextEditingController(text: b != null ? (b.progress % 1 == 0 ? b.progress.toInt().toString() : b.progress.toString()) : '0');
     _totalUnitsController = TextEditingController(text: b?.totalUnits != null ? (b!.totalUnits! % 1 == 0 ? b.totalUnits!.toInt().toString() : b.totalUnits.toString()) : '');
     _parentProgressController = TextEditingController(text: b?.parentProgress?.toString() ?? '');
@@ -63,6 +75,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
     _genreTagsController = TextEditingController(text: b?.genreTags ?? '');
     _sourceLinkController = TextEditingController(text: b?.sourceLink ?? '');
     _notesController = TextEditingController(text: b?.notes ?? '');
+    _dialogFocusNode = FocusNode();
 
     _type = b?.type ?? 'Novel';
     _status = b?.status ?? BookStatus.planToRead;
@@ -71,8 +84,11 @@ class _BookEditDialogState extends State<BookEditDialog> {
     _rating = b?.rating;
     _dateStarted = b?.dateStarted;
     _dateFinished = b?.dateFinished;
+    _shelves = List.from(b?.shelvesList ?? []);
+    _rereadCount = b?.rereadCount ?? 0;
 
     _loadGenreTags();
+    _loadShelves();
   }
 
   Future<void> _loadGenreTags() async {
@@ -88,10 +104,48 @@ class _BookEditDialogState extends State<BookEditDialog> {
     }
   }
 
+  Future<void> _loadShelves() async {
+    final allBooks = await DatabaseHelper.instance.getBooks();
+    final distinct = allBooks.expand((b) => b.shelvesList).toSet().toList()..sort();
+    if (mounted) {
+      setState(() => _availableShelves = distinct);
+    }
+  }
+
+  void _addShelf(String raw) {
+    final clean = raw.trim();
+    if (clean.isEmpty) return;
+    if (!_shelves.any((s) => s.toLowerCase() == clean.toLowerCase())) {
+      setState(() {
+        _shelves.add(clean);
+        _shelfInputController.clear();
+      });
+    } else {
+      _shelfInputController.clear();
+    }
+  }
+
+  void _removeShelf(String name) {
+    setState(() {
+      _shelves.removeWhere((s) => s.toLowerCase() == name.toLowerCase());
+    });
+  }
+
+  void _toggleShelf(String name) {
+    if (_shelves.any((s) => s.toLowerCase() == name.toLowerCase())) {
+      _removeShelf(name);
+    } else {
+      _addShelf(name);
+    }
+  }
+
   @override
   void dispose() {
     _titleController.dispose();
     _authorController.dispose();
+    _seriesNameController.dispose();
+    _seriesOrderController.dispose();
+    _shelfInputController.dispose();
     _progressController.dispose();
     _totalUnitsController.dispose();
     _parentProgressController.dispose();
@@ -101,6 +155,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
     _genreTagsController.dispose();
     _sourceLinkController.dispose();
     _notesController.dispose();
+    _dialogFocusNode.dispose();
     super.dispose();
   }
 
@@ -177,6 +232,8 @@ class _BookEditDialogState extends State<BookEditDialog> {
     final parentProgVal = num.tryParse(_parentProgressController.text);
     final parentTotalVal = num.tryParse(_parentTotalController.text);
     final latestVal = num.tryParse(_latestUnitsController.text);
+    final seriesOrderVal = double.tryParse(_seriesOrderController.text);
+    final shelfNamesJson = _shelves.isEmpty ? null : jsonEncode(_shelves);
 
     final updatedBook = Book(
       id: widget.book?.id ?? generateUuidV4(),
@@ -198,6 +255,10 @@ class _BookEditDialogState extends State<BookEditDialog> {
       genreTags: _genreTagsController.text.trim().isEmpty ? null : _genreTagsController.text.trim(),
       sourceLink: _sourceLinkController.text.trim().isEmpty ? null : _sourceLinkController.text.trim(),
       notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      seriesName: _seriesNameController.text.trim().isEmpty ? null : _seriesNameController.text.trim(),
+      seriesOrder: seriesOrderVal,
+      shelfNames: shelfNamesJson,
+      rereadCount: _rereadCount,
       createdAt: widget.book?.createdAt ?? now,
       updatedAt: now,
       syncStatus: widget.book == null ? 'pending_create' : 'pending_update',
@@ -215,135 +276,363 @@ class _BookEditDialogState extends State<BookEditDialog> {
     final dialogBg = details?.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg);
     final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
     final isEditing = widget.book != null;
-
     final screenHeight = MediaQuery.of(context).size.height;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: 580,
-          maxHeight: screenHeight * 0.88,
-        ),
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: dialogBg,
-          border: Border.all(
-            color: borderColor,
-            width: AppTheme.borderHeavy,
+    return KeyboardListener(
+      focusNode: _dialogFocusNode,
+      autofocus: true,
+      onKeyEvent: (event) {
+        if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
+          Navigator.pop(context);
+        }
+      },
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: EdgeInsets.fromLTRB(16, 24, 16, 24 + bottomInset),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: 580,
+            maxHeight: screenHeight * 0.88,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: isDark ? Colors.black.withValues(alpha: 0.7) : borderColor,
-              offset: isDark ? const Offset(3, 3) : (details?.shadowOffset ?? AppTheme.shadowOffset),
-              blurRadius: isDark ? 4 : 0,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: dialogBg,
+            border: Border.all(
+              color: borderColor,
+              width: AppTheme.borderHeavy,
             ),
-          ],
-        ),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // 1. Fixed Header (Prevents scrollbar overlapping the close button)
-              Container(
-                padding: const EdgeInsets.fromLTRB(20, 16, 16, 14),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: borderColor.withValues(alpha: 0.25),
-                      width: 1.5,
+            boxShadow: [
+              BoxShadow(
+                color: isDark ? Colors.black.withValues(alpha: 0.7) : borderColor,
+                offset: isDark ? const Offset(3, 3) : (details?.shadowOffset ?? AppTheme.shadowOffset),
+                blurRadius: isDark ? 4 : 0,
+              ),
+            ],
+          ),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 1. Fixed Header (Prevents scrollbar overlapping the close button)
+                Container(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 16, 14),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: borderColor.withValues(alpha: 0.25),
+                        width: 1.5,
+                      ),
                     ),
                   ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      isEditing ? 'EDIT BOOK' : 'ADD NEW BOOK',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 16,
-                        letterSpacing: -0.2,
-                        color: inkColor,
-                      ),
-                    ),
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      icon: Icon(Icons.close_rounded, size: 20, color: inkColor),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-
-              // 2. Scrollable Form Content
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildFormSectionHeader('1. BASIC INFORMATION', details, inkColor, borderColor),
-                      const SizedBox(height: 8),
-
-                // Title Input
-                _buildFieldLabel('TITLE *', inkColor),
-                _buildTextInput(_titleController, 'e.g. Dune', isRequired: true, details: details, borderColor: borderColor, inkColor: inkColor),
-                const SizedBox(height: 12),
-
-                // Author Input
-                _buildFieldLabel('AUTHOR', inkColor),
-                _buildTextInput(_authorController, 'e.g. Frank Herbert', details: details, borderColor: borderColor, inkColor: inkColor),
-                const SizedBox(height: 12),
-
-                // Type & Status Row
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildFieldLabel('PUBLICATION TYPE', inkColor),
-                          _buildDropdown(
-                            value: _type,
-                            items: PublicationTypes.all,
-                            details: details,
-                            borderColor: borderColor,
-                            inkColor: inkColor,
-                            onChanged: (val) => setState(() => _type = val!),
-                          ),
-                        ],
+                      Text(
+                        isEditing ? 'EDIT BOOK' : 'ADD NEW BOOK',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                          letterSpacing: -0.2,
+                          color: inkColor,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildFieldLabel('STATUS', inkColor),
-                          _buildDropdown(
-                            value: _status,
-                            items: BookStatus.all,
-                            details: details,
-                            borderColor: borderColor,
-                            inkColor: inkColor,
-                            onChanged: (val) => setState(() => _status = val!),
-                          ),
-                        ],
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: Icon(Icons.close_rounded, size: 20, color: inkColor),
+                        onPressed: () => Navigator.pop(context),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 18),
 
-                _buildFormSectionHeader('2. PROGRESSION & STRUCTURE', details, inkColor, borderColor),
-                const SizedBox(height: 8),
+                // 2. Scrollable Form Content
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildFormSectionHeader('1. BASIC INFORMATION', details, inkColor, borderColor),
+                        const SizedBox(height: 8),
+
+                        // Title Input (Autofocused if adding new)
+                        _buildFieldLabel('TITLE *', inkColor),
+                        _buildTextInput(
+                          _titleController,
+                          'e.g. Dune',
+                          isRequired: true,
+                          autofocus: !isEditing,
+                          details: details,
+                          borderColor: borderColor,
+                          inkColor: inkColor,
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Author Input
+                        _buildFieldLabel('AUTHOR', inkColor),
+                        _buildTextInput(
+                          _authorController,
+                          'e.g. Frank Herbert',
+                          details: details,
+                          borderColor: borderColor,
+                          inkColor: inkColor,
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Series & Sagas Row
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildFieldLabel('SERIES NAME (OPTIONAL)', inkColor),
+                                  _buildTextInput(
+                                    _seriesNameController,
+                                    'e.g. Dune Saga',
+                                    details: details,
+                                    borderColor: borderColor,
+                                    inkColor: inkColor,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              flex: 2,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildFieldLabel('SERIES ORDER', inkColor),
+                                  _buildTextInput(
+                                    _seriesOrderController,
+                                    'e.g. 1 or 2.5',
+                                    isNumber: true,
+                                    details: details,
+                                    borderColor: borderColor,
+                                    inkColor: inkColor,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Custom Shelves (Inline Tag Editor)
+                        _buildFieldLabel('CUSTOM SHELVES', inkColor),
+                        if (_shelves.isNotEmpty) ...[
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: _shelves.map((s) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: details?.accentColor ?? Theme.of(context).colorScheme.primary,
+                                  border: Border.all(color: borderColor, width: 1.5),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      '🔖 $s',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    GestureDetector(
+                                      onTap: () => _removeShelf(s),
+                                      child: const Icon(Icons.close_rounded, size: 14, color: Colors.white),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildTextInput(
+                                _shelfInputController,
+                                'Type shelf name and press Enter...',
+                                onFieldSubmitted: _addShelf,
+                                details: details,
+                                borderColor: borderColor,
+                                inkColor: inkColor,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            BrutalistButton(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              backgroundColor: borderColor,
+                              textColor: isDark ? Colors.black : Colors.white,
+                              onPressed: () => _addShelf(_shelfInputController.text),
+                              child: const Text('ADD', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
+                            ),
+                          ],
+                        ),
+                        if (_availableShelves.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            'QUICK ADD FROM LIBRARY:',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                              color: details?.inkMutedColor ?? (isDark ? Colors.white60 : AppColors.inkMuted),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: _availableShelves.map((sh) {
+                              final isAdded = _shelves.any((s) => s.toLowerCase() == sh.toLowerCase());
+                              return GestureDetector(
+                                onTap: () => _toggleShelf(sh),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: isAdded
+                                        ? (details?.accentColor ?? Theme.of(context).colorScheme.primary)
+                                        : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                                    border: Border.all(
+                                      color: isAdded ? borderColor : borderColor.withValues(alpha: 0.35),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    isAdded ? '✓ $sh' : '+ $sh',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: isAdded ? FontWeight.w900 : FontWeight.w700,
+                                      color: isAdded
+                                          ? Colors.white
+                                          : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+
+                        // Type & Status Row
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildFieldLabel('PUBLICATION TYPE', inkColor),
+                                  _buildDropdown(
+                                    value: _type,
+                                    items: PublicationTypes.all,
+                                    details: details,
+                                    borderColor: borderColor,
+                                    inkColor: inkColor,
+                                    onChanged: (val) => setState(() => _type = val!),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildFieldLabel('STATUS', inkColor),
+                                  _buildDropdown(
+                                    value: _status,
+                                    items: BookStatus.all,
+                                    details: details,
+                                    borderColor: borderColor,
+                                    inkColor: inkColor,
+                                    onChanged: (val) => setState(() => _status = val!),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+
+                        _buildFormSectionHeader('2. PROGRESSION & STRUCTURE', details, inkColor, borderColor),
+                        const SizedBox(height: 8),
+
+                        // Re-reading info (only if previously completed or actively in a re-read)
+                        if (_rereadCount > 0 || _status == BookStatus.completed) ...[
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: AppColors.electricCobalt.withValues(alpha: 0.1),
+                              border: Border.all(color: borderColor, width: 1.5),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _status == BookStatus.reading && _rereadCount > 0
+                                          ? 'ACTIVE RE-READ #$_rereadCount'
+                                          : 'RE-READING TRACKING',
+                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: inkColor),
+                                    ),
+                                    Text(
+                                      _rereadCount > 0
+                                          ? 'Read and finished $_rereadCount time${_rereadCount == 1 ? "" : "s"} previously'
+                                          : 'Marked as completed — ready for a fresh re-read',
+                                      style: TextStyle(
+                                        fontSize: 10.5,
+                                        color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (_status == BookStatus.completed)
+                                  BrutalistButton(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    backgroundColor: AppColors.electricCobalt,
+                                    textColor: Colors.white,
+                                    onPressed: () {
+                                      setState(() {
+                                        _progressController.text = '0';
+                                        _status = BookStatus.reading;
+                                        _rereadCount += 1;
+                                        _dateStarted = DateFormat('yyyy-MM-dd').format(DateTime.now());
+                                        _dateFinished = null;
+                                      });
+                                    },
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.replay_rounded, size: 14, color: Colors.white),
+                                        SizedBox(width: 4),
+                                        Text('START RE-READ', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900)),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
 
                 // Multi-Tier Progress Structure
                 _buildFieldLabel('PROGRESS STRUCTURE', inkColor),
@@ -741,6 +1030,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
           ),
         ),
       ),
+    ),
     );
   }
 
@@ -789,8 +1079,10 @@ class _BookEditDialogState extends State<BookEditDialog> {
     String hint, {
     bool isNumber = false,
     bool isRequired = false,
+    bool autofocus = false,
     int maxLines = 1,
     ValueChanged<String>? onChanged,
+    ValueChanged<String>? onFieldSubmitted,
     required AppThemeDetails? details,
     required Color borderColor,
     required Color inkColor,
@@ -805,8 +1097,10 @@ class _BookEditDialogState extends State<BookEditDialog> {
       ),
       child: TextFormField(
         controller: controller,
+        autofocus: autofocus,
         maxLines: maxLines,
         onChanged: onChanged,
+        onFieldSubmitted: onFieldSubmitted,
         keyboardType: isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
         validator: isRequired ? (val) => val == null || val.trim().isEmpty ? 'Required' : null : null,
         style: TextStyle(

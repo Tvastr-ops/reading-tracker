@@ -21,6 +21,9 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useLibraryData } from '@/contexts/LibraryDataContext';
@@ -38,6 +41,10 @@ export function LibraryToolbar() {
     toggleViewMode,
     statusFilter,
     setStatusFilter,
+    shelfFilter,
+    setShelfFilter,
+    allShelves,
+    shelfCounts,
     ratingFilter,
     setRatingFilter,
     sortField,
@@ -266,7 +273,12 @@ export function LibraryToolbar() {
             <DropdownMenuContent align="start">
               <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setStatusFilter('All')}>
+              <DropdownMenuItem
+                onClick={() => {
+                  setStatusFilter('All');
+                  setShelfFilter(null);
+                }}
+              >
                 All Statuses
               </DropdownMenuItem>
               {STATUSES.map((s) => (
@@ -274,8 +286,53 @@ export function LibraryToolbar() {
                   {s}
                 </DropdownMenuItem>
               ))}
+
+              {allShelves.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger className="cursor-pointer">
+                      <span className="mr-2">🔖</span>
+                      <span>Custom Shelves</span>
+                      {shelfFilter && (
+                        <span className="ml-auto pr-2 text-accent-color text-xs font-semibold">
+                          ({shelfFilter})
+                        </span>
+                      )}
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuItem onClick={() => setShelfFilter(null)}>
+                        All Shelves
+                      </DropdownMenuItem>
+                      {allShelves.map((sh) => (
+                        <DropdownMenuItem key={sh} onClick={() => setShelfFilter(sh)}>
+                          <span className="mr-1.5">🔖</span>
+                          <span className="flex-1 font-medium">{sh}</span>
+                          <span className="ml-2 text-text-muted text-xs">
+                            ({shelfCounts[sh] ?? 0})
+                          </span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Active Shelf Filter Chip */}
+          {shelfFilter && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="h-7 shrink-0 gap-1 bg-accent-color/15 px-2 font-semibold text-accent-color text-xs hover:bg-accent-color/25 sm:px-2.5"
+              onClick={() => setShelfFilter(null)}
+              title="Clear shelf filter"
+            >
+              <span>🔖 {shelfFilter.toUpperCase()}</span>
+              <X className="h-3 w-3" />
+            </Button>
+          )}
 
           {/* Rating Filter */}
           <DropdownMenu>

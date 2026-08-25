@@ -272,6 +272,21 @@ function BookGrid({
                     {b.author && (
                       <p className="mt-0.5 line-clamp-1 text-[11px] text-text-muted">{b.author}</p>
                     )}
+                    {(b.series_name || (b.reread_count ?? 0) > 0) && (
+                      <div className="mt-1 flex flex-wrap items-center gap-1">
+                        {b.series_name && (
+                          <span className="inline-block max-w-full truncate rounded bg-accent-color/10 px-1 py-0.2 text-[9.5px] font-bold text-accent-color">
+                            [{b.series_name.toUpperCase()}
+                            {b.series_order != null ? ` #${b.series_order}` : ''}]
+                          </span>
+                        )}
+                        {(b.reread_count ?? 0) > 0 && (
+                          <span className="inline-block rounded bg-blue-500/20 px-1 py-0.2 text-[9px] font-bold text-blue-500">
+                            RE-READ
+                          </span>
+                        )}
+                      </div>
+                    )}
                     {(b.date_finished || b.date_started) && (
                       <div className="mt-1 flex items-center gap-1 text-[10px] text-text-muted/80">
                         <Clock className="h-2.5 w-2.5 shrink-0 text-amber-500/80" />

@@ -229,12 +229,31 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                                 backgroundColor: isDark ? Colors.white10 : AppColors.paperSurfaceHighest,
                                 textColor: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
                               ),
+                              if (b.seriesName != null && b.seriesName!.isNotEmpty)
+                                BrutalistBadge(
+                                  label: '[${b.seriesName!.toUpperCase()}${b.seriesOrder != null ? " #${formatNum(b.seriesOrder!)}" : ""}]',
+                                  backgroundColor: accentColor.withValues(alpha: 0.15),
+                                  textColor: accentColor,
+                                ),
+                              if (b.rereadCount > 0)
+                                const BrutalistBadge(
+                                  label: 'RE-READ',
+                                  backgroundColor: AppColors.electricCobalt,
+                                  textColor: Colors.white,
+                                ),
                               if (b.rating != null && b.rating! > 0)
                                 BrutalistBadge(
                                   label: '${formatNum(b.rating!)} ★',
                                   backgroundColor: const Color(0xFFFFB800),
                                   textColor: AppColors.inkBlack,
                                 ),
+                              ...b.shelvesList.map(
+                                (shelf) => BrutalistBadge(
+                                  label: '🔖 $shelf',
+                                  backgroundColor: isDark ? Colors.white12 : AppColors.paperSurfaceHighest,
+                                  textColor: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                ),
+                              ),
                               if (b.genreTags != null && b.genreTags!.trim().isNotEmpty)
                                 ...b.genreTags!
                                     .split(',')

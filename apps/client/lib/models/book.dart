@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class BookStatus {
   static const String reading = 'Reading';
   static const String planToRead = 'Plan to Read';
@@ -53,6 +55,10 @@ class Book {
   final String? dateFinished;
   final String? notes;
   final bool? isFavorite;
+  final String? seriesName;
+  final double? seriesOrder;
+  final String? shelfNames;
+  final int rereadCount;
   final String? deletedAt;
   final String createdAt;
   final String updatedAt;
@@ -81,6 +87,10 @@ class Book {
     this.dateFinished,
     this.notes,
     this.isFavorite,
+    this.seriesName,
+    this.seriesOrder,
+    this.shelfNames,
+    this.rereadCount = 0,
     this.deletedAt,
     required this.createdAt,
     required this.updatedAt,
@@ -94,6 +104,34 @@ class Book {
     if (effectiveTotal == null || effectiveTotal <= 0) return 0.0;
     final pct = (progress / effectiveTotal) * 100;
     return pct.clamp(0.0, 100.0);
+  }
+
+  /// Parses custom shelf names from JSON array format (e.g. `["Favorites","Sci-Fi"]`)
+  /// with automatic fallback for comma-separated legacy strings.
+  List<String> get shelvesList {
+    if (shelfNames == null || shelfNames!.trim().isEmpty) return const [];
+    final raw = shelfNames!.trim();
+    if (raw.startsWith('[') && raw.endsWith(']')) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          return decoded.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
+        }
+      } catch (_) {}
+    }
+    return raw
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+  }
+
+  /// Returns a copy of the book with the specified shelves stored as a JSON array string.
+  Book withShelves(List<String> shelves) {
+    final cleaned = shelves.map((s) => s.trim()).where((s) => s.isNotEmpty).toSet().toList();
+    return copyWith(
+      shelfNames: cleaned.isEmpty ? '' : jsonEncode(cleaned),
+    );
   }
 
   Book copyWith({
@@ -126,6 +164,13 @@ class Book {
     String? notes,
     bool clearNotes = false,
     bool? isFavorite,
+    String? seriesName,
+    bool clearSeriesName = false,
+    double? seriesOrder,
+    bool clearSeriesOrder = false,
+    String? shelfNames,
+    bool clearShelfNames = false,
+    int? rereadCount,
     String? deletedAt,
     bool clearDeletedAt = false,
     String? createdAt,
@@ -155,6 +200,10 @@ class Book {
       dateFinished: clearDateFinished ? null : (dateFinished ?? this.dateFinished),
       notes: clearNotes ? null : (notes ?? this.notes),
       isFavorite: isFavorite ?? this.isFavorite,
+      seriesName: clearSeriesName ? null : (seriesName ?? this.seriesName),
+      seriesOrder: clearSeriesOrder ? null : (seriesOrder ?? this.seriesOrder),
+      shelfNames: clearShelfNames ? null : (shelfNames ?? this.shelfNames),
+      rereadCount: rereadCount ?? this.rereadCount,
       deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -186,6 +235,10 @@ class Book {
       'date_finished': dateFinished,
       'notes': notes,
       'is_favorite': isFavorite == null ? null : (isFavorite! ? 1 : 0),
+      'series_name': seriesName,
+      'series_order': seriesOrder,
+      'shelf_names': shelfNames,
+      'reread_count': rereadCount,
       'deleted_at': deletedAt,
       'created_at': createdAt,
       'updated_at': updatedAt,
@@ -218,6 +271,10 @@ class Book {
       'date_finished': dateFinished,
       'notes': notes,
       'is_favorite': isFavorite ?? false,
+      'series_name': seriesName,
+      'series_order': seriesOrder,
+      'shelf_names': shelfNames,
+      'reread_count': rereadCount,
       'deleted_at': deletedAt,
       'created_at': createdAt,
       'updated_at': updatedAt,
@@ -248,6 +305,10 @@ class Book {
       dateFinished: map['date_finished']?.toString(),
       notes: map['notes']?.toString(),
       isFavorite: map['is_favorite'] == null ? null : (map['is_favorite'] == 1 || map['is_favorite'] == true),
+      seriesName: map['series_name']?.toString(),
+      seriesOrder: map['series_order'] != null ? (map['series_order'] as num).toDouble() : null,
+      shelfNames: map['shelf_names']?.toString(),
+      rereadCount: map['reread_count'] != null ? (map['reread_count'] as num).toInt() : 0,
       deletedAt: map['deleted_at']?.toString(),
       createdAt: map['created_at']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
       updatedAt: map['updated_at']?.toString() ?? DateTime.now().toUtc().toIso8601String(),

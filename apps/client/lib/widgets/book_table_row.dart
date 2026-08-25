@@ -12,6 +12,7 @@ class BookTableRow extends StatelessWidget {
   final Function(double) onQuickIncrement;
   final VoidCallback? onToggleFavorite;
   final void Function(TapDownDetails details)? onContextMenu;
+  final VoidCallback? onLongPress;
   final bool isSelected;
 
   const BookTableRow({
@@ -22,6 +23,7 @@ class BookTableRow extends StatelessWidget {
     required this.onQuickIncrement,
     this.onToggleFavorite,
     this.onContextMenu,
+    this.onLongPress,
     this.isSelected = false,
   });
 
@@ -49,6 +51,7 @@ class BookTableRow extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onEdit,
         onSecondaryTapDown: onContextMenu != null ? (d) => onContextMenu!(d) : null,
+        onLongPress: onLongPress,
         child: Container(
           margin: rowMargin,
           padding: rowPadding,
@@ -141,6 +144,12 @@ class BookTableRow extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               BrutalistBadge(label: book.type),
+              if (book.seriesName != null && book.seriesName!.isNotEmpty)
+                BrutalistBadge(
+                  label: '${book.seriesName!.toUpperCase()}${book.seriesOrder != null ? " #${formatNum(book.seriesOrder!)}" : ""}',
+                  backgroundColor: accentColor.withValues(alpha: 0.15),
+                  textColor: accentColor,
+                ),
               if (book.isOngoing == true)
                 const BrutalistBadge(
                   label: 'ONGOING',
@@ -317,6 +326,14 @@ class BookTableRow extends StatelessWidget {
               Row(
                 children: [
                   BrutalistBadge(label: book.type),
+                  if (book.seriesName != null && book.seriesName!.isNotEmpty) ...[
+                    const SizedBox(width: 4),
+                    BrutalistBadge(
+                      label: '${book.seriesName!.toUpperCase()}${book.seriesOrder != null ? " #${formatNum(book.seriesOrder!)}" : ""}',
+                      backgroundColor: accentColor.withValues(alpha: 0.15),
+                      textColor: accentColor,
+                    ),
+                  ],
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
