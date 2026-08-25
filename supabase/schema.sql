@@ -23,6 +23,10 @@ create table if not exists books (
   date_finished date,
   notes text,
   is_favorite boolean not null default false,
+  series_name text,
+  series_order numeric,
+  shelf_names text,
+  reread_count integer not null default 0,
   deleted_at timestamptz,             -- soft delete; null = active
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

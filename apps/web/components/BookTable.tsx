@@ -238,8 +238,24 @@ function BookTable({
                     </div>
 
                     {/* Metadata Subtitle Row (Author · Type · Date · Duration) */}
-                    {(b.author || b.type || b.date_finished || b.date_started) && (
+                    {(b.author ||
+                      b.type ||
+                      b.series_name ||
+                      (b.reread_count ?? 0) > 0 ||
+                      b.date_finished ||
+                      b.date_started) && (
                       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-medium text-[10px] text-text-muted leading-none">
+                        {b.series_name && (
+                          <span className="inline-block rounded bg-accent-color/10 px-1 py-0.2 font-bold text-[9px] text-accent-color">
+                            [{b.series_name.toUpperCase()}
+                            {b.series_order != null ? ` #${b.series_order}` : ''}]
+                          </span>
+                        )}
+                        {(b.reread_count ?? 0) > 0 && (
+                          <span className="inline-block rounded bg-blue-500/20 px-1 py-0.2 font-bold text-[8.5px] text-blue-500">
+                            RE-READ
+                          </span>
+                        )}
                         {b.author && <span className="text-text-muted">{b.author}</span>}
                         {b.author && b.type && <span>·</span>}
                         {b.type && <span className="text-text-muted/80">{b.type}</span>}
@@ -417,6 +433,17 @@ function BookTable({
                           </div>
 
                           <div className="flex items-center gap-1.5 text-[11px] text-text-muted">
+                            {b.series_name && (
+                              <span className="inline-block shrink-0 rounded bg-accent-color/10 px-1 py-0.2 font-bold text-[9.5px] text-accent-color">
+                                [{b.series_name.toUpperCase()}
+                                {b.series_order != null ? ` #${b.series_order}` : ''}]
+                              </span>
+                            )}
+                            {(b.reread_count ?? 0) > 0 && (
+                              <span className="inline-block shrink-0 rounded bg-blue-500/20 px-1 py-0.2 font-bold text-[8.5px] text-blue-500">
+                                RE-READ
+                              </span>
+                            )}
                             {b.author && <span className="truncate">{b.author}</span>}
                             {b.author && b.type && <span>·</span>}
                             {b.type && (

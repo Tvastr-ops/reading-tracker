@@ -11,6 +11,7 @@ import '../widgets/book_cover_card.dart';
 import '../widgets/book_detail_panel.dart';
 import '../widgets/book_edit_dialog.dart';
 import '../widgets/book_table_row.dart';
+import '../widgets/brutalist_context_menu.dart';
 import '../widgets/brutalist_widgets.dart';
 import '../widgets/quick_log_dialog.dart';
 import '../widgets/reading_carousel.dart';
@@ -40,6 +41,7 @@ class LibraryScreenState extends State<LibraryScreen> {
   Book? _selectedBookForDetail;
   bool _isLoading = true;
   String _selectedStatus = 'All';
+  String? _selectedShelf;
   String _searchQuery = '';
   bool _isSearchExpanded = false;
   String _sortBy = 'updated_at'; // 'updated_at', 'title', 'progress', 'rating'
@@ -263,89 +265,46 @@ class LibraryScreenState extends State<LibraryScreen> {
     }
   }
 
-  void _showBookContextMenu(BuildContext context, TapDownDetails details, Book book, bool isWideScreen) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Future<void> _showBookContextMenu(BuildContext context, TapDownDetails details, Book book, bool isWideScreen) async {
     final themeDetails = Theme.of(context).extension<AppThemeDetails>();
-    final borderColor = themeDetails?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
-    final menuBg = themeDetails?.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg);
-    final inkColor = themeDetails?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
-    final accentColor = themeDetails?.accentColor ?? Theme.of(context).colorScheme.primary;
 
-    final position = RelativeRect.fromRect(
-      details.globalPosition & const Size(40, 40),
-      Offset.zero & MediaQuery.of(context).size,
+    final action = await BrutalistContextMenu.show(
+      context: context,
+      tapPosition: details.globalPosition,
+      book: book,
+      details: themeDetails,
     );
 
-    showMenu<String>(
-      context: context,
-      position: position,
-      color: menuBg,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: borderColor, width: AppTheme.borderLight),
-        borderRadius: BorderRadius.zero,
-      ),
-      elevation: 4,
-      items: [
-        PopupMenuItem<String>(
-          value: 'edit',
-          child: Row(
-            children: [
-              Icon(Icons.edit_outlined, size: 16, color: inkColor),
-              const SizedBox(width: 10),
-              Text('Edit Details', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: inkColor)),
-            ],
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'log',
-          child: Row(
-            children: [
-              Icon(Icons.edit_calendar_rounded, size: 16, color: accentColor),
-              const SizedBox(width: 10),
-              Text('Quick Log Progress', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: inkColor)),
-            ],
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'favorite',
-          child: Row(
-            children: [
-              Icon(
-                book.isFavorite == true ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                size: 16,
-                color: AppColors.primaryRed,
-              ),
-              const SizedBox(width: 10),
-              Text(
-                book.isFavorite == true ? 'Unmark Favorite' : 'Mark Favorite',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: inkColor),
-              ),
-            ],
-          ),
-        ),
-        const PopupMenuDivider(height: 1),
-        const PopupMenuItem<String>(
-          value: 'delete',
-          child: Row(
-            children: [
-              Icon(Icons.delete_outline_rounded, size: 16, color: AppColors.primaryRed),
-              SizedBox(width: 10),
-              Text('Move to Trash', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: AppColors.primaryRed)),
-            ],
-          ),
-        ),
-      ],
-    ).then((value) {
-      if (value == 'edit') {
+    if (action == null) return;
+
+    switch (action) {
+      case ContextMenuAction.edit:
         _onBookClick(book, isWideScreen);
-      } else if (value == 'log') {
+        break;
+      case ContextMenuAction.quickLog:
         _openQuickLog(book);
-      } else if (value == 'favorite') {
+        break;
+      case ContextMenuAction.toggleFavorite:
         _toggleFavorite(book);
-      } else if (value == 'delete') {
+        break;
+      case ContextMenuAction.markCompleted:
+        final updated = await _mutationService.changeStatus(book: book, newStatus: BookStatus.completed);
+        if (_selectedBookForDetail?.id == book.id) {
+          setState(() => _selectedBookForDetail = updated);
+        }
+        await _loadBooks();
+        break;
+      case ContextMenuAction.startReread:
+        final updated = await _mutationService.startReread(book: book);
+        if (_selectedBookForDetail?.id == book.id) {
+          setState(() => _selectedBookForDetail = updated);
+        }
+        await _loadBooks();
+        break;
+      case ContextMenuAction.delete:
         _deleteBook(book);
-      }
-    });
+        break;
+    }
   }
 
   void _openQuickLog(Book book) {
@@ -605,6 +564,72 @@ class LibraryScreenState extends State<LibraryScreen> {
                         _buildRatingFilterChip('Unrated', 'unrated', setSheetState),
                       ],
                     ),
+                    if (_books.any((b) => b.shelvesList.isNotEmpty)) ...[
+                      const SizedBox(height: 16),
+                      Text('CUSTOM SHELVES', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5, color: inkColor)),
+                      const SizedBox(height: 8),
+                      Builder(
+                        builder: (context) {
+                          final distinctShelves = _books.expand((b) => b.shelvesList).toSet().toList()..sort();
+                          return Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  setSheetState(() => _selectedShelf = null);
+                                  setState(() => _selectedShelf = null);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: _selectedShelf == null ? accentColor : (details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white)),
+                                    border: Border.all(color: borderColor, width: 1.5),
+                                  ),
+                                  child: Text(
+                                    'ALL SHELVES',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      color: _selectedShelf == null ? Colors.white : inkColor,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              ...distinctShelves.map((sh) {
+                                final isSelected = _selectedShelf == sh;
+                                final count = _books
+                                    .where(_matchesNonStatusFilters)
+                                    .where((b) => b.shelvesList.any((s) => s.toLowerCase() == sh.toLowerCase()))
+                                    .length;
+                                return GestureDetector(
+                                  onTap: () {
+                                    final newVal = isSelected ? null : sh;
+                                    setSheetState(() => _selectedShelf = newVal);
+                                    setState(() => _selectedShelf = newVal);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? accentColor : (details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white)),
+                                      border: Border.all(color: borderColor, width: 1.5),
+                                    ),
+                                    child: Text(
+                                      '🔖 ${sh.toUpperCase()} ($count)',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        color: isSelected ? Colors.white : inkColor,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
                     const SizedBox(height: 20),
 
                     Row(
@@ -619,12 +644,14 @@ class LibraryScreenState extends State<LibraryScreen> {
                                 _sortAscending = false;
                                 _ratingFilter = 'All';
                                 _typeFilter = 'All';
+                                _selectedShelf = null;
                               });
                               setState(() {
                                 _sortBy = 'updated_at';
                                 _sortAscending = false;
                                 _ratingFilter = 'All';
                                 _typeFilter = 'All';
+                                _selectedShelf = null;
                               });
                             },
                             child: const Text('RESET', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900)),
@@ -923,6 +950,11 @@ class LibraryScreenState extends State<LibraryScreen> {
                 onQuickIncrement: (amt) => _quickIncrement(book, amt),
                 onToggleFavorite: () => _toggleFavorite(book),
                 onContextMenu: (d) => _showBookContextMenu(context, d, book, isWideScreen),
+                onLongPress: () {
+                  final media = MediaQuery.of(context);
+                  final center = Offset(media.size.width / 2, media.size.height / 2);
+                  _showBookContextMenu(context, TapDownDetails(globalPosition: center), book, isWideScreen);
+                },
               );
             },
             childCount: filtered.length,
@@ -1025,6 +1057,11 @@ class LibraryScreenState extends State<LibraryScreen> {
                     onQuickIncrement: (amt) => _quickIncrement(book, amt),
                     onToggleFavorite: () => _toggleFavorite(book),
                     onContextMenu: (d) => _showBookContextMenu(context, d, book, isWideScreen),
+                    onLongPress: () {
+                      final media = MediaQuery.of(context);
+                      final center = Offset(media.size.width / 2, media.size.height / 2);
+                      _showBookContextMenu(context, TapDownDetails(globalPosition: center), book, isWideScreen);
+                    },
                   );
                 },
                 childCount: filtered.length,
@@ -1062,6 +1099,11 @@ class LibraryScreenState extends State<LibraryScreen> {
                 onQuickIncrement: (amt) => _quickIncrement(book, amt),
                 onToggleFavorite: () => _toggleFavorite(book),
                 onContextMenu: (d) => _showBookContextMenu(context, d, book, isWideScreen),
+                onLongPress: () {
+                  final media = MediaQuery.of(context);
+                  final center = Offset(media.size.width / 2, media.size.height / 2);
+                  _showBookContextMenu(context, TapDownDetails(globalPosition: center), book, isWideScreen);
+                },
               );
             },
             childCount: filtered.length,
@@ -1091,6 +1133,11 @@ class LibraryScreenState extends State<LibraryScreen> {
                 onQuickIncrement: (amt) => _quickIncrement(book, amt),
                 onToggleFavorite: () => _toggleFavorite(book),
                 onContextMenu: (d) => _showBookContextMenu(context, d, book, isWideScreen),
+                onLongPress: () {
+                  final media = MediaQuery.of(context);
+                  final center = Offset(media.size.width / 2, media.size.height / 2);
+                  _showBookContextMenu(context, TapDownDetails(globalPosition: center), book, isWideScreen);
+                },
               ),
             );
           },
@@ -1100,6 +1147,49 @@ class LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
+
+  bool _matchesNonStatusFilters(Book b) {
+    final q = _searchQuery.toLowerCase();
+    bool matchesSearch = false;
+    if (_searchQuery.isEmpty) {
+      matchesSearch = true;
+    } else if (q.startsWith('series:')) {
+      final seriesQuery = q.substring(7).trim();
+      matchesSearch = seriesQuery.isEmpty ||
+          (b.seriesName != null && b.seriesName!.toLowerCase().contains(seriesQuery));
+    } else if (q.startsWith('shelf:')) {
+      final shelfQuery = q.substring(6).trim();
+      matchesSearch = shelfQuery.isEmpty ||
+          b.shelvesList.any((s) => s.toLowerCase().contains(shelfQuery));
+    } else if (q.startsWith('#') || q.startsWith('tag:')) {
+      final tagQuery = (q.startsWith('#') ? q.substring(1) : q.substring(4)).trim();
+      matchesSearch = tagQuery.isEmpty ||
+          (b.genreTags != null && b.genreTags!.toLowerCase().contains(tagQuery));
+    } else {
+      matchesSearch = b.title.toLowerCase().contains(q) ||
+          (b.author != null && b.author!.toLowerCase().contains(q)) ||
+          (b.seriesName != null && b.seriesName!.toLowerCase().contains(q)) ||
+          (b.genreTags != null && b.genreTags!.toLowerCase().contains(q)) ||
+          b.shelvesList.any((s) => s.toLowerCase().contains(q)) ||
+          b.type.toLowerCase().contains(q);
+    }
+
+    bool matchesRating = true;
+    if (_ratingFilter == '5') {
+      matchesRating = b.rating != null && b.rating! >= 5.0;
+    } else if (_ratingFilter == '4') {
+      matchesRating = b.rating != null && b.rating! >= 4.0;
+    } else if (_ratingFilter == 'unrated') {
+      matchesRating = b.rating == null || b.rating == 0;
+    }
+
+    bool matchesType = true;
+    if (_typeFilter != 'All') {
+      matchesType = b.type.toLowerCase() == _typeFilter.toLowerCase();
+    }
+
+    return matchesSearch && matchesRating && matchesType;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1111,36 +1201,10 @@ class LibraryScreenState extends State<LibraryScreen> {
     // Filter books
     var filtered = _books.where((b) {
       final matchesStatus = _selectedStatus == 'All' || b.status == _selectedStatus;
-      final q = _searchQuery.toLowerCase();
-      bool matchesSearch = false;
-      if (_searchQuery.isEmpty) {
-        matchesSearch = true;
-      } else if (q.startsWith('#') || q.startsWith('tag:')) {
-        final tagQuery = (q.startsWith('#') ? q.substring(1) : q.substring(4)).trim();
-        matchesSearch = tagQuery.isEmpty ||
-            (b.genreTags != null && b.genreTags!.toLowerCase().contains(tagQuery));
-      } else {
-        matchesSearch = b.title.toLowerCase().contains(q) ||
-            (b.author != null && b.author!.toLowerCase().contains(q)) ||
-            (b.genreTags != null && b.genreTags!.toLowerCase().contains(q)) ||
-            b.type.toLowerCase().contains(q);
-      }
+      final matchesShelf = _selectedShelf == null ||
+          b.shelvesList.any((s) => s.toLowerCase() == _selectedShelf!.toLowerCase());
 
-      bool matchesRating = true;
-      if (_ratingFilter == '5') {
-        matchesRating = b.rating != null && b.rating! >= 5.0;
-      } else if (_ratingFilter == '4') {
-        matchesRating = b.rating != null && b.rating! >= 4.0;
-      } else if (_ratingFilter == 'unrated') {
-        matchesRating = b.rating == null || b.rating == 0;
-      }
-
-      bool matchesType = true;
-      if (_typeFilter != 'All') {
-        matchesType = b.type.toLowerCase() == _typeFilter.toLowerCase();
-      }
-
-      return matchesStatus && matchesSearch && matchesRating && matchesType;
+      return matchesStatus && matchesShelf && _matchesNonStatusFilters(b);
     }).toList();
 
     // Sort books
@@ -1292,7 +1356,7 @@ class LibraryScreenState extends State<LibraryScreen> {
                     ),
                   ),
 
-                // Sliver 1: Animated Paper Scroll Search & Filter Toolbar
+                // Sliver 1: Main Header and Action Bar
                 SliverToBoxAdapter(
                   child: _buildSearchAndToolbar(
                     isDark: isDark,
@@ -1302,23 +1366,26 @@ class LibraryScreenState extends State<LibraryScreen> {
                   ),
                 ),
 
-                // Sliver 2: Currently Reading Carousel (Smoothly scrolls away with page!)
+                // Sliver 2: Active Reading Carousel (Dismissible via preferences)
                 if (showCarousel)
                   SliverToBoxAdapter(
-                    child: ReadingCarousel(
-                      readingBooks: activeReadingBooks,
-                      onLogProgress: _openQuickLog,
-                      onEdit: (b) => _onBookClick(b, isWideScreen),
-                      onQuickIncrement: _quickIncrement,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: ReadingCarousel(
+                        readingBooks: activeReadingBooks,
+                        onLogProgress: _openQuickLog,
+                        onEdit: (b) => _onBookClick(b, isWideScreen),
+                        onQuickIncrement: _quickIncrement,
+                      ),
                     ),
                   ),
 
-                // Sliver 3: Paper Tabs with Live Status Counts
+                // Sliver 3: Horizontal Status Tabs Filter Bar
                 ThemeService.instance.stickyStatusFilter
                     ? SliverPersistentHeader(
                         pinned: true,
                         delegate: _StickyStatusFilterDelegate(
-                          backgroundColor: details?.canvasColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg),
+                          backgroundColor: details?.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg),
                           child: _buildStatusFilterTabs(accentColor, borderColor, isDark),
                         ),
                       )
@@ -1425,7 +1492,7 @@ class LibraryScreenState extends State<LibraryScreen> {
                         ),
                         borderRadius: BorderRadius.zero,
                       ),
-                      elevation: 0,
+                      elevation: 4,
                       onPressed: () => _openEditDialog(),
                       child: const Icon(Icons.add, size: 28),
                     )
@@ -1434,6 +1501,249 @@ class LibraryScreenState extends State<LibraryScreen> {
           },
         ),
       ),
+    );
+  }
+  Widget _buildStatusFilterTabs(Color accentColor, Color borderColor, bool isDark) {
+    final alwaysShowAll = ThemeService.instance.alwaysShowAllShelves;
+    final allShelves = _books.expand((b) => b.shelvesList).toSet().toList()..sort();
+
+    // Context-aware base books matching all other filters (search query, rating, format/type)
+    final baseFiltered = _books.where(_matchesNonStatusFilters).toList();
+
+    final List<Widget> tabs = [];
+
+    // Mode A: Active Docked Shelf at FAR LEFT
+    if (!alwaysShowAll && _selectedShelf != null) {
+      final shelfCount = baseFiltered
+          .where((b) => b.shelvesList.any((s) => s.toLowerCase() == _selectedShelf!.toLowerCase()))
+          .length;
+      tabs.add(
+        Padding(
+          padding: const EdgeInsets.only(right: 6),
+          child: GestureDetector(
+            onTap: () => setState(() => _selectedShelf = null),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: accentColor,
+                border: Border.all(color: borderColor, width: 1.5),
+              ),
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '🔖 ${_selectedShelf!.toUpperCase()}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.25),
+                      border: Border.all(color: Colors.white60, width: 1),
+                    ),
+                    child: Text(
+                      '$shelfCount',
+                      style: const TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.close_rounded, size: 14, color: Colors.white),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      // Subtle divider between docked shelf and default statuses
+      tabs.add(
+        Padding(
+          padding: const EdgeInsets.only(right: 6),
+          child: Center(
+            child: Container(
+              width: 1.5,
+              height: 20,
+              color: borderColor.withValues(alpha: 0.35),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Default Status Filters
+    for (final status in _statusFilters) {
+      final isSelected = _selectedStatus == status && (alwaysShowAll ? _selectedShelf == null : true);
+      final count = status == 'All'
+          ? (_selectedShelf != null && !alwaysShowAll
+              ? baseFiltered.where((b) => b.shelvesList.any((s) => s.toLowerCase() == _selectedShelf!.toLowerCase())).length
+              : baseFiltered.length)
+          : (_selectedShelf != null && !alwaysShowAll
+              ? baseFiltered.where((b) => b.status == status && b.shelvesList.any((s) => s.toLowerCase() == _selectedShelf!.toLowerCase())).length
+              : baseFiltered.where((b) => b.status == status).length);
+
+      tabs.add(
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: GestureDetector(
+            onTap: () => setState(() {
+              _selectedStatus = status;
+              if (alwaysShowAll) _selectedShelf = null;
+            }),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? accentColor
+                    : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                border: Border.all(
+                  color: borderColor,
+                  width: 1.5,
+                ),
+              ),
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    status.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: isSelected
+                          ? Colors.white
+                          : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? Colors.white.withValues(alpha: 0.25)
+                          : (isDark ? Colors.white10 : AppColors.paperSurfaceHighest),
+                      border: Border.all(
+                        color: isSelected ? Colors.white60 : borderColor.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      '$count',
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w900,
+                        color: isSelected
+                            ? Colors.white
+                            : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Mode B: Append all custom shelves after divider
+    if (alwaysShowAll && allShelves.isNotEmpty) {
+      tabs.add(
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: Center(
+            child: Container(
+              width: 1.5,
+              height: 20,
+              color: borderColor.withValues(alpha: 0.35),
+            ),
+          ),
+        ),
+      );
+
+      for (final shelf in allShelves) {
+        final isSelected = _selectedShelf == shelf;
+        final count = baseFiltered
+            .where((b) => b.shelvesList.any((s) => s.toLowerCase() == shelf.toLowerCase()))
+            .length;
+
+        tabs.add(
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () => setState(() {
+                _selectedShelf = isSelected ? null : shelf;
+                _selectedStatus = 'All';
+              }),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? accentColor
+                      : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                  border: Border.all(
+                    color: borderColor,
+                    width: 1.5,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '🔖 ${shelf.toUpperCase()}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: isSelected
+                            ? Colors.white
+                            : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? Colors.white.withValues(alpha: 0.25)
+                            : (isDark ? Colors.white10 : AppColors.paperSurfaceHighest),
+                        border: Border.all(
+                          color: isSelected ? Colors.white60 : borderColor.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        '$count',
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w900,
+                          color: isSelected
+                              ? Colors.white
+                              : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(children: tabs),
     );
   }
 
@@ -1655,82 +1965,6 @@ class LibraryScreenState extends State<LibraryScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildStatusFilterTabs(Color accentColor, Color borderColor, bool isDark) {
-    return SizedBox(
-      height: 38,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _statusFilters.length,
-        itemBuilder: (context, idx) {
-          final status = _statusFilters[idx];
-          final isSelected = _selectedStatus == status;
-          final count = status == 'All'
-              ? _books.length
-              : _books.where((b) => b.status == status).length;
-
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onTap: () => setState(() => _selectedStatus = status),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? accentColor
-                      : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
-                  border: Border.all(
-                    color: borderColor,
-                    width: 1.5,
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      status.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: isSelected
-                            ? Colors.white
-                            : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? Colors.white.withValues(alpha: 0.25)
-                            : (isDark ? Colors.white10 : AppColors.paperSurfaceHighest),
-                        border: Border.all(
-                          color: isSelected ? Colors.white60 : borderColor.withValues(alpha: 0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        '$count',
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w900,
-                          color: isSelected
-                              ? Colors.white
-                              : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
       ),
     );
   }

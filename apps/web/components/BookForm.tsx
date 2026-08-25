@@ -7,8 +7,10 @@ import {
   Clock,
   Image as ImageIcon,
   Loader2,
+  RotateCcw,
   Search,
   Settings2,
+  X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -106,7 +108,13 @@ export default function BookForm({
     date_started: initial?.date_started || '',
     date_finished: initial?.date_finished || '',
     notes: initial?.notes || '',
+    series_name: initial?.series_name || '',
+    series_order: initial?.series_order ?? null,
+    shelf_names: initial?.shelf_names || '',
+    reread_count: initial?.reread_count ?? 0,
   });
+
+  const [shelfInput, setShelfInput] = useState('');
 
   const [activeTab, setActiveTab] = useState<'general' | 'metadata' | 'log'>('general');
   const [showAdvanced, setShowAdvanced] = useState<boolean>(() => {
@@ -330,6 +338,70 @@ export default function BookForm({
                       placeholder="Author name..."
                     />
                   </div>
+
+                  <div className="col-span-full grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div className="sm:col-span-2">
+                      <label className={labelClass}>Series Name (Optional)</label>
+                      <input
+                        className={inputClass}
+                        value={form.series_name || ''}
+                        onChange={(e) => set('series_name', e.target.value)}
+                        placeholder="e.g. The Lord of the Rings"
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Series #</label>
+                      <input
+                        className={inputClass}
+                        type="number"
+                        step="0.1"
+                        min={0}
+                        value={form.series_order ?? ''}
+                        onChange={(e) =>
+                          set(
+                            'series_order',
+                            e.target.value === '' ? null : parseFloat(e.target.value),
+                          )
+                        }
+                        placeholder="e.g. 1"
+                      />
+                    </div>
+                  </div>
+
+                  {(initial?.status === 'Completed' || (form.reread_count ?? 0) > 0) && (
+                    <div className="col-span-full flex items-center justify-between rounded-lg border border-blue-500/30 bg-blue-500/10 p-2.5">
+                      <div>
+                        <p className="font-bold text-xs text-text">
+                          {form.status === 'Reading' && (form.reread_count ?? 0) > 0
+                            ? `Active Re-read #${form.reread_count}`
+                            : 'Re-reading Tracking'}
+                        </p>
+                        <p className="text-[11px] text-text-muted">
+                          {(form.reread_count ?? 0) > 0
+                            ? `Read and finished ${form.reread_count} time${(form.reread_count ?? 0) === 1 ? '' : 's'} previously`
+                            : 'Marked as completed — ready for a fresh re-read'}
+                        </p>
+                      </div>
+                      {form.status === 'Completed' && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          className="h-7 gap-1 text-blue-600 text-xs font-bold dark:text-blue-400"
+                          onClick={() => {
+                            set('status', 'Reading');
+                            set('progress', 0);
+                            set('reread_count', (form.reread_count ?? 0) + 1);
+                            set('date_started', getLocalDateString());
+                            set('date_finished', null);
+                          }}
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                          <span>Start Re-read</span>
+                        </Button>
+                      )}
+                    </div>
+                  )}
 
                   <div>
                     <label className={labelClass}>Rating</label>
@@ -619,6 +691,71 @@ export default function BookForm({
                         </AnimatePresence>
                       </div>
                     )}
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Custom Shelves</label>
+                    <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-card-bg p-2 min-h-[38px]">
+                      {(() => {
+                        let shelves: string[] = [];
+                        try {
+                          const parsed = JSON.parse(form.shelf_names || '[]');
+                          if (Array.isArray(parsed)) shelves = parsed;
+                        } catch {
+                          if (form.shelf_names)
+                            shelves = form.shelf_names
+                              .split(',')
+                              .map((s) => s.trim())
+                              .filter(Boolean);
+                        }
+                        return (
+                          <>
+                            {shelves.map((sh) => (
+                              <span
+                                key={sh}
+                                className="inline-flex items-center gap-1 rounded bg-accent-color/15 px-2 py-0.5 font-semibold text-accent-color text-xs"
+                              >
+                                <span>🔖 {sh}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = shelves.filter((s) => s !== sh);
+                                    set('shelf_names', JSON.stringify(updated));
+                                  }}
+                                  className="text-accent-color hover:text-text"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </span>
+                            ))}
+                            <input
+                              className="min-w-[120px] flex-1 bg-transparent text-sm text-text outline-none placeholder:text-text-muted/60"
+                              value={shelfInput}
+                              onChange={(e) => setShelfInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ',') {
+                                  e.preventDefault();
+                                  const val = shelfInput.trim();
+                                  if (
+                                    val &&
+                                    !shelves.some((s) => s.toLowerCase() === val.toLowerCase())
+                                  ) {
+                                    const updated = [...shelves, val];
+                                    set('shelf_names', JSON.stringify(updated));
+                                  }
+                                  setShelfInput('');
+                                }
+                              }}
+                              placeholder={
+                                shelves.length === 0
+                                  ? 'Type shelf & press Enter (e.g. Sci-Fi, Favorites)...'
+                                  : 'Add shelf...'
+                              }
+                            />
+                          </>
+                        );
+                      })()}
+                    </div>
                   </div>
 
                   <div>

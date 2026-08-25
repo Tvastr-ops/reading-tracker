@@ -91,4 +91,23 @@ class ReadingMutationService {
     _syncManager.syncNow();
     return updatedBook;
   }
+
+  /// Initiates a conflict-free re-read: resets progress to 0, increments rereadCount, sets status to Reading.
+  Future<Book> startReread({required Book book}) async {
+    final now = DateTime.now().toUtc().toIso8601String();
+    final updatedBook = book.copyWith(
+      progress: 0.0,
+      parentProgress: book.progressStructure != 'single' ? 1 : null,
+      status: BookStatus.reading,
+      rereadCount: book.rereadCount + 1,
+      dateStarted: now,
+      clearDateFinished: true,
+      updatedAt: now,
+      syncStatus: 'pending_update',
+    );
+
+    await _dbHelper.updateBook(updatedBook);
+    _syncManager.syncNow();
+    return updatedBook;
+  }
 }

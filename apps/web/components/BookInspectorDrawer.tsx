@@ -215,6 +215,49 @@ export default function BookInspectorDrawer({
                 {draft.title}
               </h3>
 
+              {(draft.series_name || (draft.reread_count ?? 0) > 0) && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                  {draft.series_name && (
+                    <span className="inline-block rounded bg-accent-color/10 px-1.5 py-0.5 text-[10px] font-bold text-accent-color">
+                      [{draft.series_name.toUpperCase()}
+                      {draft.series_order != null ? ` #${draft.series_order}` : ''}]
+                    </span>
+                  )}
+                  {(draft.reread_count ?? 0) > 0 && (
+                    <span className="inline-block rounded bg-blue-500/20 px-1.5 py-0.5 text-[9.5px] font-bold text-blue-500">
+                      RE-READ ({draft.reread_count})
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {(() => {
+                let shelves: string[] = [];
+                try {
+                  const parsed = JSON.parse(draft.shelf_names || '[]');
+                  if (Array.isArray(parsed)) shelves = parsed;
+                } catch {
+                  if (draft.shelf_names)
+                    shelves = draft.shelf_names
+                      .split(',')
+                      .map((s) => s.trim())
+                      .filter(Boolean);
+                }
+                if (shelves.length === 0) return null;
+                return (
+                  <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                    {shelves.map((sh) => (
+                      <span
+                        key={sh}
+                        className="inline-flex items-center rounded border border-border bg-surface px-1.5 py-0.2 font-medium text-[10px] text-text-muted"
+                      >
+                        🔖 {sh}
+                      </span>
+                    ))}
+                  </div>
+                );
+              })()}
+
               <p className="text-xs text-text-muted">
                 {draft.author || 'Unknown Author'} {draft.type ? `· ${draft.type}` : ''}
               </p>

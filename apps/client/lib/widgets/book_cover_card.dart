@@ -12,6 +12,7 @@ class BookCoverCard extends StatelessWidget {
   final Function(double) onQuickIncrement;
   final VoidCallback? onToggleFavorite;
   final void Function(TapDownDetails details)? onContextMenu;
+  final VoidCallback? onLongPress;
   final bool isSelected;
 
   const BookCoverCard({
@@ -22,6 +23,7 @@ class BookCoverCard extends StatelessWidget {
     required this.onQuickIncrement,
     this.onToggleFavorite,
     this.onContextMenu,
+    this.onLongPress,
     this.isSelected = false,
   });
 
@@ -43,6 +45,7 @@ class BookCoverCard extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onEdit,
         onSecondaryTapDown: onContextMenu != null ? (d) => onContextMenu!(d) : null,
+        onLongPress: onLongPress,
         child: Container(
           decoration: BoxDecoration(
             color: details?.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white),
