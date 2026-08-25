@@ -179,6 +179,25 @@ export default function BookForm({
 
     let payload = { ...form };
 
+    // Flush any pending shelfInput text into shelf_names
+    if (shelfInput.trim()) {
+      const val = shelfInput.trim();
+      const currentShelves: string[] = (() => {
+        try {
+          const parsed = JSON.parse(payload.shelf_names || '[]');
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return (payload.shelf_names || '')
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean);
+        }
+      })();
+      if (!currentShelves.some((s) => s.toLowerCase() === val.toLowerCase())) {
+        payload.shelf_names = JSON.stringify([...currentShelves, val]);
+      }
+    }
+
     // Sanitization rule 1: If structure is single, clear parent progress/total
     if (payload.progress_structure === 'single') {
       payload.parent_progress = null;
