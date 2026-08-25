@@ -121,7 +121,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
                 Container(
                   width: 210,
                   decoration: BoxDecoration(
-                    color: canvasBg,
+                    color: canvasBg.withValues(alpha: 0.85),
                     border: Border(
                       right: BorderSide(
                         color: borderColor,
@@ -322,7 +322,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
           ),
           bottomNavigationBar: Container(
             decoration: BoxDecoration(
-              color: canvasBg,
+              color: canvasBg.withValues(alpha: 0.90),
               border: Border(
                 top: BorderSide(
                   color: borderColor,

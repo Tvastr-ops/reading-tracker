@@ -50,9 +50,9 @@ class _DailyBookMilestone {
   });
 
   double get totalDelta => sessions.fold(0.0, (sum, s) => sum + s.delta);
-  double get earliestFrom => sessions.first.fromProgress;
-  double get latestTo => sessions.last.toProgress;
-  String get latestLoggedAt => sessions.last.loggedAt;
+  double get earliestFrom => sessions.isNotEmpty ? sessions.first.fromProgress : 0.0;
+  double get latestTo => sessions.isNotEmpty ? sessions.last.toProgress : 0.0;
+  String get latestLoggedAt => sessions.isNotEmpty ? sessions.last.loggedAt : '';
   bool get isCompleted =>
       bookStatus == 'completed' ||
       (bookTotalUnits != null && bookTotalUnits! > 0 && latestTo >= bookTotalUnits!);
@@ -115,7 +115,8 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
+    if (_scrollController.hasClients &&
+        _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
         !_isLoading &&
         !_isLoadingMore &&
         _hasMore) {
@@ -129,15 +130,27 @@ class _TimelineScreenState extends State<TimelineScreen> {
       _hasMore = true;
     });
 
-    final logs = await _dbHelper.getAllReadingLogsWithBookInfo(limit: _pageSize, offset: 0);
+    try {
+      final logs = await _dbHelper.getAllReadingLogsWithBookInfo(limit: _pageSize, offset: 0);
 
-    if (mounted) {
-      setState(() {
-        _rawLogs = logs;
-        _dayGroups = _processLogsIntoDayGroups(logs);
-        _isLoading = false;
-        _hasMore = logs.length >= _pageSize;
-      });
+      if (mounted) {
+        setState(() {
+          _rawLogs = logs;
+          _dayGroups = _processLogsIntoDayGroups(logs);
+          _isLoading = false;
+          _hasMore = logs.length >= _pageSize;
+        });
+      }
+    } catch (e, stack) {
+      debugPrint('Error loading logs in TimelineScreen: $e\n$stack');
+      if (mounted) {
+        setState(() {
+          _rawLogs = [];
+          _dayGroups = [];
+          _isLoading = false;
+          _hasMore = false;
+        });
+      }
     }
   }
 
@@ -145,18 +158,27 @@ class _TimelineScreenState extends State<TimelineScreen> {
     if (_isLoadingMore || !_hasMore) return;
     setState(() => _isLoadingMore = true);
 
-    final nextLogs = await _dbHelper.getAllReadingLogsWithBookInfo(
-      limit: _pageSize,
-      offset: _rawLogs.length,
-    );
+    try {
+      final nextLogs = await _dbHelper.getAllReadingLogsWithBookInfo(
+        limit: _pageSize,
+        offset: _rawLogs.length,
+      );
 
-    if (mounted) {
-      setState(() {
-        _rawLogs.addAll(nextLogs);
-        _dayGroups = _processLogsIntoDayGroups(_rawLogs);
-        _isLoadingMore = false;
-        _hasMore = nextLogs.length >= _pageSize;
-      });
+      if (mounted) {
+        setState(() {
+          _rawLogs.addAll(nextLogs);
+          _dayGroups = _processLogsIntoDayGroups(_rawLogs);
+          _isLoadingMore = false;
+          _hasMore = nextLogs.length >= _pageSize;
+        });
+      }
+    } catch (e, stack) {
+      debugPrint('Error loading more logs in TimelineScreen: $e\n$stack');
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = false;
+        });
+      }
     }
   }
 

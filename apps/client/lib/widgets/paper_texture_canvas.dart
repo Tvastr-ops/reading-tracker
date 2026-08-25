@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 enum PaperPatternType {
@@ -53,6 +54,8 @@ class PaperTextureCanvas extends StatelessWidget {
         Positioned.fill(
           child: RepaintBoundary(
             child: CustomPaint(
+              isComplex: true,
+              willChange: false,
               painter: _PaperPatternPainter(
                 patternType: patternType,
                 inkColor: inkColor,
@@ -74,6 +77,9 @@ class _PaperPatternPainter extends CustomPainter {
   final Color inkColor;
   final bool isDark;
 
+  ui.Picture? _cachedPicture;
+  Size? _cachedSize;
+
   _PaperPatternPainter({
     required this.patternType,
     required this.inkColor,
@@ -82,6 +88,22 @@ class _PaperPatternPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (patternType == PaperPatternType.none || size.isEmpty) return;
+
+    if (_cachedPicture == null || _cachedSize != size) {
+      _cachedSize = size;
+      _cachedPicture?.dispose();
+
+      final recorder = ui.PictureRecorder();
+      final recordCanvas = Canvas(recorder, Rect.fromLTWH(0, 0, size.width, size.height));
+      _drawPattern(recordCanvas, size);
+      _cachedPicture = recorder.endRecording();
+    }
+
+    canvas.drawPicture(_cachedPicture!);
+  }
+
+  void _drawPattern(Canvas canvas, Size size) {
     final isDesktop = size.width >= 800;
 
     switch (patternType) {
@@ -119,29 +141,29 @@ class _PaperPatternPainter extends CustomPainter {
   // ---------------------------------------------------------------------------
   void _drawDeckleGrain(Canvas canvas, Size size, bool isDesktop) {
     final grainPaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.055 : 0.045)
+      ..color = inkColor.withValues(alpha: isDark ? 0.12 : 0.11)
       ..style = PaintingStyle.fill;
 
     final fiberPaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.065 : 0.050)
-      ..strokeWidth = 0.8
+      ..color = inkColor.withValues(alpha: isDark ? 0.14 : 0.13)
+      ..strokeWidth = 1.0
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 
-    final blockSize = isDesktop ? 70.0 : 55.0;
+    final blockSize = isDesktop ? 95.0 : 80.0;
     for (double bx = 0; bx < size.width; bx += blockSize) {
       for (double by = 0; by < size.height; by += blockSize) {
         final seed = ((bx * 47 + by * 23) % 1000).toInt();
         final rand = math.Random(seed);
 
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 4; i++) {
           final gx = bx + rand.nextDouble() * blockSize;
           final gy = by + rand.nextDouble() * blockSize;
-          canvas.drawCircle(Offset(gx, gy), 0.75 + rand.nextDouble() * 0.5, grainPaint);
+          canvas.drawCircle(Offset(gx, gy), 0.9 + rand.nextDouble() * 0.6, grainPaint);
         }
 
         // Fibrous flecks
-        if (rand.nextDouble() > 0.4) {
+        if (rand.nextDouble() > 0.45) {
           final fx = bx + rand.nextDouble() * blockSize;
           final fy = by + rand.nextDouble() * blockSize;
           final len = 4.0 + rand.nextDouble() * 6.0;
@@ -160,24 +182,24 @@ class _PaperPatternPainter extends CustomPainter {
   // 2. Manga Inkpaper & Manga Noir: Tankobon Screentone & Stipple Halftone
   // ---------------------------------------------------------------------------
   void _drawScreentoneHalftone(Canvas canvas, Size size, bool isDesktop) {
-    final spacing = isDesktop ? 18.0 : 15.0;
+    final spacing = isDesktop ? 26.0 : 22.0;
     final dotPaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.060 : 0.050)
+      ..color = inkColor.withValues(alpha: isDark ? 0.12 : 0.10)
       ..style = PaintingStyle.fill;
 
     final stipplePaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.075 : 0.060)
-      ..strokeWidth = 0.75
+      ..color = inkColor.withValues(alpha: isDark ? 0.15 : 0.13)
+      ..strokeWidth = 0.85
       ..style = PaintingStyle.stroke;
 
     bool stagger = false;
     for (double y = spacing; y < size.height; y += spacing) {
       final offsetX = stagger ? spacing / 2 : 0.0;
       for (double x = spacing + offsetX; x < size.width; x += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.0, dotPaint);
+        canvas.drawCircle(Offset(x, y), 1.1, dotPaint);
 
-        // Subtle diagonal cross-hatch stipples every 5th dot
-        if (((x / spacing).toInt() + (y / spacing).toInt()) % 5 == 0) {
+        // Subtle diagonal cross-hatch stipples every 6th dot
+        if (((x / spacing).toInt() + (y / spacing).toInt()) % 6 == 0) {
           canvas.drawLine(
             Offset(x - 2.5, y - 2.5),
             Offset(x + 2.5, y + 2.5),
@@ -194,16 +216,16 @@ class _PaperPatternPainter extends CustomPainter {
   // ---------------------------------------------------------------------------
   void _drawWashiBotanical(Canvas canvas, Size size, bool isDesktop) {
     final fiberPaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.070 : 0.055)
-      ..strokeWidth = 0.95
+      ..color = inkColor.withValues(alpha: isDark ? 0.14 : 0.12)
+      ..strokeWidth = 1.1
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 
     final leafFleckPaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.080 : 0.065)
+      ..color = inkColor.withValues(alpha: isDark ? 0.16 : 0.14)
       ..style = PaintingStyle.fill;
 
-    final cellSize = isDesktop ? 80.0 : 65.0;
+    final cellSize = isDesktop ? 105.0 : 90.0;
     for (double cx = 0; cx < size.width; cx += cellSize) {
       for (double cy = 0; cy < size.height; cy += cellSize) {
         final seed = ((cx * 31 + cy * 17) % 1000).toInt();
@@ -223,14 +245,14 @@ class _PaperPatternPainter extends CustomPainter {
         canvas.drawPath(path, fiberPaint);
 
         // Botanical tea-leaf elliptical flecks
-        if (rand.nextDouble() > 0.35) {
+        if (rand.nextDouble() > 0.4) {
           final lx = cx + rand.nextDouble() * cellSize;
           final ly = cy + rand.nextDouble() * cellSize;
           canvas.save();
           canvas.translate(lx, ly);
           canvas.rotate(rand.nextDouble() * math.pi);
           canvas.drawOval(
-            Rect.fromCenter(center: Offset.zero, width: 2.2, height: 1.1),
+            Rect.fromCenter(center: Offset.zero, width: 2.6, height: 1.3),
             leafFleckPaint,
           );
           canvas.restore();
@@ -244,37 +266,37 @@ class _PaperPatternPainter extends CustomPainter {
   // ---------------------------------------------------------------------------
   void _drawPulpRosette(Canvas canvas, Size size, bool isDesktop) {
     final rosettePaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.055 : 0.045)
+      ..color = inkColor.withValues(alpha: isDark ? 0.12 : 0.10)
       ..style = PaintingStyle.fill;
 
     final patinaPaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.040 : 0.035)
+      ..color = inkColor.withValues(alpha: isDark ? 0.09 : 0.08)
       ..style = PaintingStyle.fill;
 
-    final clusterSpacing = isDesktop ? 36.0 : 30.0;
+    final clusterSpacing = isDesktop ? 48.0 : 40.0;
     for (double y = clusterSpacing; y < size.height; y += clusterSpacing) {
       for (double x = clusterSpacing; x < size.width; x += clusterSpacing) {
         // 4-dot CMYK rosette cluster
         const r = 2.8;
-        canvas.drawCircle(Offset(x - r, y), 0.75, rosettePaint);
-        canvas.drawCircle(Offset(x + r, y), 0.75, rosettePaint);
-        canvas.drawCircle(Offset(x, y - r), 0.75, rosettePaint);
-        canvas.drawCircle(Offset(x, y + r), 0.75, rosettePaint);
+        canvas.drawCircle(Offset(x - r, y), 0.85, rosettePaint);
+        canvas.drawCircle(Offset(x + r, y), 0.85, rosettePaint);
+        canvas.drawCircle(Offset(x, y - r), 0.85, rosettePaint);
+        canvas.drawCircle(Offset(x, y + r), 0.85, rosettePaint);
 
         // Micro center dot
-        canvas.drawCircle(Offset(x, y), 0.5, rosettePaint);
+        canvas.drawCircle(Offset(x, y), 0.6, rosettePaint);
       }
     }
 
     // Weathered pulp patina flecks
-    const blockSize = 60.0;
+    const blockSize = 85.0;
     for (double bx = 0; bx < size.width; bx += blockSize) {
       for (double by = 0; by < size.height; by += blockSize) {
         final seed = ((bx * 13 + by * 37) % 1000).toInt();
         final rand = math.Random(seed);
         final px = bx + rand.nextDouble() * blockSize;
         final py = by + rand.nextDouble() * blockSize;
-        canvas.drawCircle(Offset(px, py), 1.2 + rand.nextDouble() * 0.8, patinaPaint);
+        canvas.drawCircle(Offset(px, py), 1.3 + rand.nextDouble() * 0.9, patinaPaint);
       }
     }
   }
@@ -284,10 +306,10 @@ class _PaperPatternPainter extends CustomPainter {
   // ---------------------------------------------------------------------------
   void _drawSakuraPetals(Canvas canvas, Size size, bool isDesktop) {
     // 1. Subtle Genko-yoshi manuscript lattice grid
-    final gridSpacing = isDesktop ? 28.0 : 24.0;
+    final gridSpacing = isDesktop ? 36.0 : 30.0;
     final gridPaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.035 : 0.025)
-      ..strokeWidth = 0.6
+      ..color = inkColor.withValues(alpha: isDark ? 0.08 : 0.07)
+      ..strokeWidth = 0.7
       ..style = PaintingStyle.stroke;
 
     for (double x = gridSpacing; x < size.width; x += gridSpacing) {
@@ -299,15 +321,15 @@ class _PaperPatternPainter extends CustomPainter {
 
     // 2. Floating Sakura Petals & 5-Petal Floral Watermarks
     final petalPaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.065 : 0.055)
+      ..color = inkColor.withValues(alpha: isDark ? 0.14 : 0.13)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.85;
+      ..strokeWidth = 0.95;
 
     final petalFill = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.025 : 0.020)
+      ..color = inkColor.withValues(alpha: isDark ? 0.07 : 0.06)
       ..style = PaintingStyle.fill;
 
-    final cellDist = isDesktop ? 90.0 : 75.0;
+    final cellDist = isDesktop ? 120.0 : 100.0;
     for (double cx = 0; cx < size.width; cx += cellDist) {
       for (double cy = 0; cy < size.height; cy += cellDist) {
         final seed = ((cx * 19 + cy * 53) % 1000).toInt();
@@ -324,28 +346,28 @@ class _PaperPatternPainter extends CustomPainter {
 
         if (isFivePetalFlower) {
           // Full 5-petal cherry blossom flower watermark
-          const flowerRadius = 7.0;
+          const flowerRadius = 7.5;
           for (int p = 0; p < 5; p++) {
             final angle = (p * 2 * math.pi / 5) - (math.pi / 2);
             final petX = math.cos(angle) * flowerRadius;
             final petY = math.sin(angle) * flowerRadius;
             canvas.drawOval(
-              Rect.fromCenter(center: Offset(petX, petY), width: 3.5, height: 2.2),
+              Rect.fromCenter(center: Offset(petX, petY), width: 3.8, height: 2.4),
               petalFill,
             );
             canvas.drawOval(
-              Rect.fromCenter(center: Offset(petX, petY), width: 3.5, height: 2.2),
+              Rect.fromCenter(center: Offset(petX, petY), width: 3.8, height: 2.4),
               petalPaint,
             );
           }
-          canvas.drawCircle(Offset.zero, 1.2, petalPaint);
+          canvas.drawCircle(Offset.zero, 1.3, petalPaint);
         } else {
           // Single floating sakura petal silhouette with notched tip
           final path = Path();
-          path.moveTo(0, -6);
-          path.quadraticBezierTo(4, -3, 3, 3);
-          path.quadraticBezierTo(0, 5, -3, 3);
-          path.quadraticBezierTo(-4, -3, 0, -6);
+          path.moveTo(0, -7);
+          path.quadraticBezierTo(4.5, -3.5, 3.5, 3.5);
+          path.quadraticBezierTo(0, 5.5, -3.5, 3.5);
+          path.quadraticBezierTo(-4.5, -3.5, 0, -7);
           path.close();
           canvas.drawPath(path, petalFill);
           canvas.drawPath(path, petalPaint);
@@ -361,15 +383,15 @@ class _PaperPatternPainter extends CustomPainter {
   // ---------------------------------------------------------------------------
   void _drawNordicConstellation(Canvas canvas, Size size, bool isDesktop) {
     final linePaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.045 : 0.035)
-      ..strokeWidth = 0.7
+      ..color = inkColor.withValues(alpha: isDark ? 0.09 : 0.08)
+      ..strokeWidth = 0.75
       ..style = PaintingStyle.stroke;
 
     final starPaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.075 : 0.060)
+      ..color = inkColor.withValues(alpha: isDark ? 0.15 : 0.13)
       ..style = PaintingStyle.fill;
 
-    final spacing = isDesktop ? 44.0 : 36.0;
+    final spacing = isDesktop ? 60.0 : 48.0;
 
     for (double y = spacing; y < size.height; y += spacing) {
       for (double x = spacing; x < size.width; x += spacing) {
@@ -380,7 +402,7 @@ class _PaperPatternPainter extends CustomPainter {
         canvas.drawLine(Offset(x, y + spacing / 2), Offset(x - spacing / 2, y), linePaint);
 
         // Constellation starlight node
-        canvas.drawCircle(Offset(x, y), 1.1, starPaint);
+        canvas.drawCircle(Offset(x, y), 1.2, starPaint);
       }
     }
   }
@@ -389,22 +411,22 @@ class _PaperPatternPainter extends CustomPainter {
   // 7. Drafting Vellum & Cyanotype Blueprint: Architectural Drafting Grid
   // ---------------------------------------------------------------------------
   void _drawBlueprintDrafting(Canvas canvas, Size size, bool isDesktop) {
-    final minorSpacing = isDesktop ? 20.0 : 16.0;
+    final minorSpacing = isDesktop ? 28.0 : 22.0;
     final majorSpacing = minorSpacing * 4;
 
     final minorPaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.040 : 0.030)
-      ..strokeWidth = 0.55
+      ..color = inkColor.withValues(alpha: isDark ? 0.09 : 0.08)
+      ..strokeWidth = 0.65
       ..style = PaintingStyle.stroke;
 
     final majorPaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.080 : 0.065)
-      ..strokeWidth = 0.95
+      ..color = inkColor.withValues(alpha: isDark ? 0.16 : 0.14)
+      ..strokeWidth = 1.05
       ..style = PaintingStyle.stroke;
 
     final crossPaint = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.110 : 0.090)
-      ..strokeWidth = 1.1
+      ..color = inkColor.withValues(alpha: isDark ? 0.22 : 0.18)
+      ..strokeWidth = 1.2
       ..style = PaintingStyle.stroke;
 
     // Minor divisions
@@ -438,18 +460,18 @@ class _PaperPatternPainter extends CustomPainter {
   // ---------------------------------------------------------------------------
   void _drawCrumpledCreases(Canvas canvas, Size size, bool isDesktop) {
     final creaseLight = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.065 : 0.050)
-      ..strokeWidth = 0.85
+      ..color = inkColor.withValues(alpha: isDark ? 0.14 : 0.12)
+      ..strokeWidth = 0.95
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 
     final creaseShadow = Paint()
-      ..color = inkColor.withValues(alpha: isDark ? 0.035 : 0.025)
-      ..strokeWidth = 1.5
+      ..color = inkColor.withValues(alpha: isDark ? 0.09 : 0.08)
+      ..strokeWidth = 1.6
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 
-    final cellSize = isDesktop ? 95.0 : 80.0;
+    final cellSize = isDesktop ? 130.0 : 110.0;
     for (double cx = 0; cx < size.width; cx += cellSize) {
       for (double cy = 0; cy < size.height; cy += cellSize) {
         final seed = ((cx * 29 + cy * 43) % 1000).toInt();
@@ -470,7 +492,7 @@ class _PaperPatternPainter extends CustomPainter {
         canvas.drawLine(Offset(midX, midY), Offset(endX, endY), creaseLight);
 
         // Branching micro-wrinkle fold
-        if (rand.nextDouble() > 0.4) {
+        if (rand.nextDouble() > 0.45) {
           final branchLen = 8.0 + rand.nextDouble() * 12.0;
           final branchAngle = rand.nextDouble() * math.pi * 2;
           canvas.drawLine(
