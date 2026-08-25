@@ -48,7 +48,7 @@ class BookCoverCard extends StatelessWidget {
         onLongPress: onLongPress,
         child: Container(
           decoration: BoxDecoration(
-            color: details?.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white),
+            color: (details?.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white)).withValues(alpha: 0.94),
             border: Border.all(color: borderColor, width: isSelected ? 2.5 : AppTheme.borderLight),
             boxShadow: [
               BoxShadow(

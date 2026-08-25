@@ -1486,7 +1486,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildDisplayAndLayoutPreferences(bool isDark) {
-    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+    final details = Theme.of(context).extension<AppThemeDetails>();
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
     final defaultMode = _themeService.defaultViewMode;
     final isCompact = _themeService.compactMode;
     final showCarousel = _themeService.showReadingCarousel;
@@ -1747,6 +1749,106 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ),
+
+          // 7. Pattern Intensity Presets & Slider
+          if (enableTexture) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                border: Border.all(color: borderColor, width: 1.5),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'PATTERN INTENSITY',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: accentColor,
+                          border: Border.all(color: borderColor, width: 1.2),
+                        ),
+                        child: Text(
+                          '${(_themeService.patternIntensity * 100).round()}%',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildLayoutOption(
+                          'SUBTLE',
+                          Icons.opacity_rounded,
+                          (_themeService.patternIntensity - 0.6).abs() < 0.05,
+                          () => _themeService.setPatternIntensity(0.6),
+                          isDark,
+                          borderColor,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: _buildLayoutOption(
+                          'BALANCED',
+                          Icons.contrast_rounded,
+                          (_themeService.patternIntensity - 1.0).abs() < 0.05,
+                          () => _themeService.setPatternIntensity(1.0),
+                          isDark,
+                          borderColor,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: _buildLayoutOption(
+                          'BOLD',
+                          Icons.brightness_medium_rounded,
+                          (_themeService.patternIntensity - 1.5).abs() < 0.05,
+                          () => _themeService.setPatternIntensity(1.5),
+                          isDark,
+                          borderColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      activeTrackColor: accentColor,
+                      inactiveTrackColor: borderColor.withValues(alpha: 0.2),
+                      thumbColor: accentColor,
+                      overlayColor: accentColor.withValues(alpha: 0.15),
+                      trackHeight: 3.5,
+                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                    ),
+                    child: Slider(
+                      value: _themeService.patternIntensity,
+                      min: 0.3,
+                      max: 1.8,
+                      divisions: 15,
+                      onChanged: (val) => _themeService.setPatternIntensity(val),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

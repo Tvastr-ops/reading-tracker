@@ -296,7 +296,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
     Color mutedInk, {
     bool isVertical = false,
   }) {
-    final cardBg = details?.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white);
+    final cardBg = (details?.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white)).withValues(alpha: 0.94);
     final cardHigh = details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHighest);
 
     final todayGroup = _dayGroups.where((g) => g.dateHeaderKey == 'TODAY').firstOrNull;

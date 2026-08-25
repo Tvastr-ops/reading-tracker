@@ -31,7 +31,8 @@ class BrutalistCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final details = Theme.of(context).extension<AppThemeDetails>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = backgroundColor ?? details?.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white);
+    final rawBg = backgroundColor ?? details?.cardColor ?? (isDark ? AppColors.darkSurface : Colors.white);
+    final bg = rawBg.withValues(alpha: 0.94);
     final border = borderColor ?? details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
     final offset = shadowOffset ?? details?.shadowOffset ?? AppTheme.shadowOffset;
 

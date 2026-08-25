@@ -22,6 +22,7 @@ class ThemeService extends ChangeNotifier {
   static const String _keyCompactMode = 'app_compact_mode';
   static const String _keyHighRefreshRate = 'app_high_refresh_rate';
   static const String _keyEnablePaperTexture = 'app_enable_paper_texture';
+  static const String _keyPatternIntensity = 'app_pattern_intensity';
   static const String _keyPromptNoteOnQuickLog = 'app_prompt_note_on_quick_log';
   static const String _keyAlwaysShowAllShelves = 'app_always_show_all_shelves';
 
@@ -35,6 +36,7 @@ class ThemeService extends ChangeNotifier {
   bool _compactMode = false;
   bool _highRefreshRate = true;
   bool _enablePaperTexture = true;
+  double _patternIntensity = 1.0;
   bool _promptNoteOnQuickLog = false;
   bool _alwaysShowAllShelves = false;
   bool _isFullscreen = false;
@@ -54,6 +56,7 @@ class ThemeService extends ChangeNotifier {
   bool get compactMode => _compactMode;
   bool get highRefreshRate => _highRefreshRate;
   bool get enablePaperTexture => _enablePaperTexture;
+  double get patternIntensity => _patternIntensity;
   bool get promptNoteOnQuickLog => _promptNoteOnQuickLog;
   bool get alwaysShowAllShelves => _alwaysShowAllShelves;
   bool get isFullscreen => _isFullscreen;
@@ -115,6 +118,7 @@ class ThemeService extends ChangeNotifier {
     _compactMode = prefs.getBool(_keyCompactMode) ?? false;
     _highRefreshRate = prefs.getBool(_keyHighRefreshRate) ?? true;
     _enablePaperTexture = prefs.getBool(_keyEnablePaperTexture) ?? true;
+    _patternIntensity = prefs.getDouble(_keyPatternIntensity) ?? 1.0;
     _promptNoteOnQuickLog = prefs.getBool(_keyPromptNoteOnQuickLog) ?? false;
     _alwaysShowAllShelves = prefs.getBool(_keyAlwaysShowAllShelves) ?? false;
 
@@ -269,6 +273,16 @@ class ThemeService extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyEnablePaperTexture, val);
+  }
+
+  Future<void> setPatternIntensity(double val) async {
+    final clamped = val.clamp(0.2, 2.0);
+    if ((_patternIntensity - clamped).abs() < 0.01) return;
+    _patternIntensity = clamped;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_keyPatternIntensity, clamped);
   }
 
   Future<void> setPromptNoteOnQuickLog(bool val) async {

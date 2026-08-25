@@ -1287,7 +1287,7 @@ class LibraryScreenState extends State<LibraryScreen> {
                       margin: const EdgeInsets.fromLTRB(16, 14, 16, 4),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkSurface : Colors.white,
+                        color: (isDark ? AppColors.darkSurface : Colors.white).withValues(alpha: 0.94),
                         border: Border.all(color: borderColor, width: 1.5),
                         boxShadow: [
                           BoxShadow(
