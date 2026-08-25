@@ -196,9 +196,7 @@ class SyncManager extends ChangeNotifier {
       // books if the server returns nothing due to a transient error or quota issue.
 
       // 2b. Fetch remote reading logs and recalculate pace for affected books
-      final localLogCount = await _dbHelper.getReadingLogsCount();
-      final sinceParam = (localLogCount == 0) ? null : _lastSyncedAt;
-      final remoteLogs = await _activeProvider!.fetchRemoteReadingLogs(since: sinceParam);
+      final remoteLogs = await _activeProvider!.fetchRemoteReadingLogs();
       if (remoteLogs.isNotEmpty) {
         final affectedBookIds = <String>{};
         for (final log in remoteLogs) {

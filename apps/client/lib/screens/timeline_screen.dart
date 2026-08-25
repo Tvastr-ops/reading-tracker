@@ -7,7 +7,7 @@ import '../utils/formatters.dart';
 import '../widgets/brutalist_widgets.dart';
 
 class _TimelineSubSession {
-  final int logId;
+  final String logId;
   final double fromProgress;
   final double toProgress;
   final double delta;
@@ -240,7 +240,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
           final toProg = (item['to_progress'] as num?)?.toDouble() ?? 0.0;
           final delta = (toProg - fromProg).clamp(0.0, 99999.0);
           return _TimelineSubSession(
-            logId: (item['log_id'] as num?)?.toInt() ?? 0,
+            logId: item['log_id']?.toString() ?? '',
             fromProgress: fromProg,
             toProgress: toProg,
             delta: delta,
