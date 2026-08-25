@@ -26,6 +26,10 @@ const KNOWN_COLUMNS = [
   'date_finished',
   'notes',
   'is_favorite',
+  'series_name',
+  'series_order',
+  'shelf_names',
+  'reread_count',
 ];
 
 const VALID_STATUSES = ['Plan to Read', 'Reading', 'On Hold', 'Completed', 'Dropped'];

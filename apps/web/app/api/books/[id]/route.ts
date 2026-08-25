@@ -29,6 +29,10 @@ const ALLOWED_FIELDS = [
   'date_finished',
   'notes',
   'is_favorite',
+  'series_name',
+  'series_order',
+  'shelf_names',
+  'reread_count',
 ];
 
 type RouteContext = { params: Promise<{ id: string }> };

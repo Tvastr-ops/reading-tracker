@@ -16,7 +16,7 @@ export const GET = withAuth(async (req: NextRequest) => {
   let query = supabase
     .from('books')
     .select(
-      'id, title, type, unit_type, progress_structure, parent_progress, parent_total, latest_units, is_ongoing, author, status, rating, progress, total_units, genre_tags, source_link, cover_url, reading_pace, date_started, date_finished, notes, is_favorite, deleted_at, created_at, updated_at',
+      'id, title, type, unit_type, progress_structure, parent_progress, parent_total, latest_units, is_ongoing, author, status, rating, progress, total_units, genre_tags, source_link, cover_url, reading_pace, date_started, date_finished, notes, is_favorite, series_name, series_order, shelf_names, reread_count, deleted_at, created_at, updated_at',
     );
   if (!includeAll) {
     query = showTrash ? query.not('deleted_at', 'is', null) : query.is('deleted_at', null);
@@ -59,6 +59,10 @@ function sanitize(input: Partial<BookInput> & { id?: string }) {
     date_finished,
     notes,
     is_favorite,
+    series_name,
+    series_order,
+    shelf_names,
+    reread_count,
   } = input;
 
   if (!title || typeof title !== 'string' || !title.trim()) {
@@ -80,6 +84,10 @@ function sanitize(input: Partial<BookInput> & { id?: string }) {
     parent_total != null && !Number.isNaN(Number(parent_total)) ? Number(parent_total) : null;
   const cleanLatest =
     latest_units != null && !Number.isNaN(Number(latest_units)) ? Number(latest_units) : null;
+  const cleanSeriesOrder =
+    series_order != null && !Number.isNaN(Number(series_order)) ? Number(series_order) : null;
+  const cleanRereadCount =
+    reread_count != null && !Number.isNaN(Number(reread_count)) ? Number(reread_count) : 0;
 
   const validUuid =
     typeof id === 'string' &&
@@ -109,6 +117,10 @@ function sanitize(input: Partial<BookInput> & { id?: string }) {
     date_finished: date_finished || null,
     notes: notes || null,
     is_favorite: Boolean(is_favorite),
+    series_name: series_name?.trim() || null,
+    series_order: cleanSeriesOrder,
+    shelf_names: shelf_names || null,
+    reread_count: cleanRereadCount,
   };
 }
 

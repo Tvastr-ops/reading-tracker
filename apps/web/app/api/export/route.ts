@@ -28,6 +28,10 @@ const COLUMNS = [
   'latest_units',
   'is_ongoing',
   'is_favorite',
+  'series_name',
+  'series_order',
+  'shelf_names',
+  'reread_count',
 ];
 
 function csvEscape(val: unknown): string {
