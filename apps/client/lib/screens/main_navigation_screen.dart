@@ -90,11 +90,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
     final activeVariant = isDark ? ThemeService.instance.darkVariant : ThemeService.instance.lightVariant;
     final patternType = activeVariant.defaultPattern;
     final enableTexture = ThemeService.instance.enablePaperTexture;
+    final intensity = ThemeService.instance.patternIntensity;
 
     return PaperTextureCanvas(
       patternType: patternType,
       isDark: isDark,
       enabled: enableTexture,
+      intensity: intensity,
       baseCanvasColor: canvasBg,
       child: CallbackShortcuts(
         bindings: {
