@@ -14,7 +14,7 @@
     "test:web": "pnpm --filter web test"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.8"
+    "@biomejs/biome": "^2.5.10"
   },
   "overrides": {
     "nanoid": "^3.3.18"

@@ -532,6 +532,10 @@ class DatabaseHelper {
         b.title as book_title,
         b.author as book_author,
         b.type as book_type,
+        b.unit_type as book_unit_type,
+        b.total_units as book_total_units,
+        b.reread_count as book_reread_count,
+        b.status as book_status,
         b.cover_url as book_cover_url
       FROM reading_log l
       LEFT JOIN books b ON l.book_id = b.id

@@ -399,109 +399,113 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildWideLayout(bool isDark, String themeBadge, String layoutBadge) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Column 1: Appearance & UI Preferences
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildCollapsibleSectionHeader(
-                  'APPEARANCE & THEMES',
-                  _isAppearanceExpanded,
-                  () => _toggleSection(_keyPrefAppearance, _isAppearanceExpanded, (v) => _isAppearanceExpanded = v),
-                  badgeLabel: themeBadge,
-                ),
-                const SizedBox(height: 6),
-                if (_isAppearanceExpanded) ...[
-                  _buildThemeSelector(isDark),
-                  const SizedBox(height: 16),
-                ],
-                const SizedBox(height: 12),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1140),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Column 1: Appearance & Library Navigation (~620px)
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCollapsibleSectionHeader(
+                      'APPEARANCE & THEMES',
+                      _isAppearanceExpanded,
+                      () => _toggleSection(_keyPrefAppearance, _isAppearanceExpanded, (v) => _isAppearanceExpanded = v),
+                      badgeLabel: themeBadge,
+                    ),
+                    const SizedBox(height: 6),
+                    if (_isAppearanceExpanded) ...[
+                      _buildThemeSelector(isDark),
+                      const SizedBox(height: 16),
+                    ],
+                    const SizedBox(height: 12),
 
-                _buildCollapsibleSectionHeader(
-                  'DISPLAY & LAYOUT',
-                  _isDisplayExpanded,
-                  () => _toggleSection(_keyPrefDisplay, _isDisplayExpanded, (v) => _isDisplayExpanded = v),
-                  badgeLabel: layoutBadge,
+                    _buildCollapsibleSectionHeader(
+                      'LIBRARY PREFERENCES',
+                      _isLibraryNavExpanded,
+                      () => _toggleSection(_keyPrefLibraryNav, _isLibraryNavExpanded, (v) => _isLibraryNavExpanded = v),
+                      badgeLabel: _themeService.stickyStatusFilter ? 'Pinned Tabs' : 'Scroll Tabs',
+                    ),
+                    const SizedBox(height: 6),
+                    if (_isLibraryNavExpanded) ...[
+                      _buildLibraryNavPreferences(isDark),
+                      const SizedBox(height: 16),
+                    ],
+                  ],
                 ),
-                const SizedBox(height: 6),
-                if (_isDisplayExpanded) ...[
-                  _buildDisplayAndLayoutPreferences(isDark),
-                  const SizedBox(height: 16),
-                ],
-                const SizedBox(height: 12),
+              ),
+              const SizedBox(width: 20),
 
-                _buildCollapsibleSectionHeader(
-                  'LIBRARY PREFERENCES',
-                  _isLibraryNavExpanded,
-                  () => _toggleSection(_keyPrefLibraryNav, _isLibraryNavExpanded, (v) => _isLibraryNavExpanded = v),
-                  badgeLabel: _themeService.stickyStatusFilter ? 'Pinned Tabs' : 'Scroll Tabs',
+              // Column 2: Display, Network, Data & System (~650px)
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCollapsibleSectionHeader(
+                      'DISPLAY & LAYOUT',
+                      _isDisplayExpanded,
+                      () => _toggleSection(_keyPrefDisplay, _isDisplayExpanded, (v) => _isDisplayExpanded = v),
+                      badgeLabel: layoutBadge,
+                    ),
+                    const SizedBox(height: 6),
+                    if (_isDisplayExpanded) ...[
+                      _buildDisplayAndLayoutPreferences(isDark),
+                      const SizedBox(height: 16),
+                    ],
+                    const SizedBox(height: 12),
+
+                    _buildCollapsibleSectionHeader(
+                      'NETWORK & SYNC',
+                      _isNetworkExpanded,
+                      () => _toggleSection(_keyPrefNetwork, _isNetworkExpanded, (v) => _isNetworkExpanded = v),
+                      badgeLabel: _offlineMode ? 'Offline' : 'Online',
+                    ),
+                    const SizedBox(height: 6),
+                    if (_isNetworkExpanded) ...[
+                      _buildNetworkPreferences(isDark),
+                      const SizedBox(height: 10),
+                      _buildBackendConfigCard(isDark),
+                      const SizedBox(height: 16),
+                    ],
+                    const SizedBox(height: 12),
+
+                    _buildCollapsibleSectionHeader(
+                      'DATA MANAGEMENT',
+                      _isDataExpanded,
+                      () => _toggleSection(_keyPrefData, _isDataExpanded, (v) => _isDataExpanded = v),
+                    ),
+                    const SizedBox(height: 6),
+                    if (_isDataExpanded) ...[
+                      _buildDataManagementCard(isDark),
+                      const SizedBox(height: 16),
+                    ],
+                    const SizedBox(height: 12),
+
+                    _buildManualSyncButton(),
+                    const SizedBox(height: 16),
+
+                    _buildCollapsibleSectionHeader(
+                      'ABOUT PAPERBACK',
+                      _isAboutExpanded,
+                      () => _toggleSection(_keyPrefAbout, _isAboutExpanded, (v) => _isAboutExpanded = v),
+                      badgeLabel: _appVersion,
+                    ),
+                    const SizedBox(height: 6),
+                    if (_isAboutExpanded) ...[
+                      _buildAboutCard(isDark),
+                      const SizedBox(height: 16),
+                    ],
+                  ],
                 ),
-                const SizedBox(height: 6),
-                if (_isLibraryNavExpanded) ...[
-                  _buildLibraryNavPreferences(isDark),
-                  const SizedBox(height: 16),
-                ],
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(width: 20),
-
-
-          // Column 2: Backend, Sync & Data
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildCollapsibleSectionHeader(
-                  'NETWORK & SYNC',
-                  _isNetworkExpanded,
-                  () => _toggleSection(_keyPrefNetwork, _isNetworkExpanded, (v) => _isNetworkExpanded = v),
-                  badgeLabel: _offlineMode ? 'Offline' : 'Online',
-                ),
-                const SizedBox(height: 6),
-                if (_isNetworkExpanded) ...[
-                  _buildNetworkPreferences(isDark),
-                  const SizedBox(height: 10),
-                  _buildBackendConfigCard(isDark),
-                  const SizedBox(height: 16),
-                ],
-                const SizedBox(height: 12),
-
-                _buildCollapsibleSectionHeader(
-                  'DATA MANAGEMENT',
-                  _isDataExpanded,
-                  () => _toggleSection(_keyPrefData, _isDataExpanded, (v) => _isDataExpanded = v),
-                ),
-                const SizedBox(height: 6),
-                if (_isDataExpanded) ...[
-                  _buildDataManagementCard(isDark),
-                  const SizedBox(height: 16),
-                ],
-                const SizedBox(height: 12),
-
-                _buildManualSyncButton(),
-                const SizedBox(height: 16),
-
-                _buildCollapsibleSectionHeader(
-                  'ABOUT PAPERBACK',
-                  _isAboutExpanded,
-                  () => _toggleSection(_keyPrefAbout, _isAboutExpanded, (v) => _isAboutExpanded = v),
-                  badgeLabel: _appVersion,
-                ),
-                const SizedBox(height: 6),
-                if (_isAboutExpanded) ...[
-                  _buildAboutCard(isDark),
-                  const SizedBox(height: 16),
-                ],
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

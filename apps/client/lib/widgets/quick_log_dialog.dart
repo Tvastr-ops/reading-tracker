@@ -73,7 +73,6 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
     final mutedInk = details?.inkMutedColor ?? (isDark ? Colors.white60 : AppColors.inkMuted);
     final unitLabel = getUnitLabel(widget.book.type, widget.book.unitType);
     final quickChips = getQuickChipOptions(widget.book.type);
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return KeyboardListener(
       focusNode: _dialogFocusNode,
@@ -85,9 +84,12 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
       child: Dialog(
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         backgroundColor: dialogBg,
-        insetPadding: EdgeInsets.fromLTRB(16, 24, 16, 24 + bottomInset),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 440),
+          constraints: BoxConstraints(
+            maxWidth: 440,
+            maxHeight: (MediaQuery.of(context).size.height - MediaQuery.of(context).viewInsets.bottom - 48).clamp(280.0, 560.0),
+          ),
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: dialogBg,
