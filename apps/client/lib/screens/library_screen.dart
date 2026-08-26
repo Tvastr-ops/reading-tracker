@@ -62,12 +62,14 @@ class LibraryScreenState extends State<LibraryScreen> {
   ];
 
   void _recomputeFilteredBooks() {
+    final parsedQuery = _ParsedSearchQuery.parse(_searchQuery);
+
     var list = _books.where((b) {
       final matchesStatus = _selectedStatus == 'All' || b.status == _selectedStatus;
       final matchesShelf = _selectedShelf == null ||
           b.shelvesList.any((s) => s.toLowerCase() == _selectedShelf!.toLowerCase());
 
-      return matchesStatus && matchesShelf && _matchesNonStatusFilters(b);
+      return matchesStatus && matchesShelf && _matchesNonStatusFilters(b, parsedQuery);
     }).toList();
 
     list.sort((a, b) {
@@ -1315,131 +1317,11 @@ class LibraryScreenState extends State<LibraryScreen> {
   }
 
 
-  bool _matchesNonStatusFilters(Book b) {
-    final rawQuery = _searchQuery.trim();
-    bool matchesSearch = true;
+  bool _matchesNonStatusFilters(Book b, [_ParsedSearchQuery? preParsed]) {
+    final parsed = preParsed ?? _ParsedSearchQuery.parse(_searchQuery);
+    if (!parsed.matches(b)) return false;
 
-    if (rawQuery.isNotEmpty) {
-      final q = rawQuery.toLowerCase();
-      // 1. Check for single prefix shortcuts (series: and shelf:)
-      if (q.startsWith('series:')) {
-        final seriesQuery = q.substring(7).trim();
-        matchesSearch = seriesQuery.isEmpty ||
-            (b.seriesName != null && b.seriesName!.toLowerCase().contains(seriesQuery));
-      } else if (q.startsWith('shelf:')) {
-        final shelfQuery = q.substring(6).trim();
-        matchesSearch = shelfQuery.isEmpty ||
-            b.shelvesList.any((s) => s.toLowerCase().contains(shelfQuery));
-      } else {
-        // 2. Advanced Multi-Clause Search supporting OR ('OR' or '|'), AND, and NOT ('-' or '!')
-        // e.g.:
-        //  - AND: "Sanderson #fantasy #epic"
-        //  - OR:  "#fantasy OR #scifi" or "#fantasy | #scifi"
-        //  - NOT: "#fantasy -#romance" or "tag:fantasy !tag:harem" or "Sanderson -Mistborn"
-        final orClauses = rawQuery.split(RegExp(r'\s+(?:OR|or|\|)\s+|\s*\|\s*')).where((c) => c.trim().isNotEmpty).toList();
-
-        matchesSearch = orClauses.any((clause) {
-          final tokens = clause.trim().split(RegExp(r'[\s,]+')).where((t) => t.isNotEmpty).toList();
-          final requiredTags = <String>[];
-          final excludedTags = <String>[];
-          final requiredShelves = <String>[];
-          final excludedShelves = <String>[];
-          final textKeywords = <String>[];
-          final excludedKeywords = <String>[];
-
-          for (final token in tokens) {
-            final low = token.toLowerCase();
-            final isNegated = low.startsWith('-') || low.startsWith('!');
-            final cleanToken = isNegated ? low.substring(1) : low;
-
-            if (cleanToken.isEmpty) continue;
-
-            if (cleanToken.startsWith('#') && cleanToken.length > 1) {
-              final tag = cleanToken.substring(1);
-              if (isNegated) {
-                excludedTags.add(tag);
-              } else {
-                requiredTags.add(tag);
-              }
-            } else if (cleanToken.startsWith('tag:') && cleanToken.length > 4) {
-              final tag = cleanToken.substring(4);
-              if (isNegated) {
-                excludedTags.add(tag);
-              } else {
-                requiredTags.add(tag);
-              }
-            } else if (cleanToken.startsWith('shelf:') && cleanToken.length > 6) {
-              final shelf = cleanToken.substring(6);
-              if (isNegated) {
-                excludedShelves.add(shelf);
-              } else {
-                requiredShelves.add(shelf);
-              }
-            } else {
-              if (isNegated) {
-                excludedKeywords.add(cleanToken);
-              } else {
-                textKeywords.add(cleanToken);
-              }
-            }
-          }
-
-          // 1. Exclude if book contains any excluded tag
-          for (final exTag in excludedTags) {
-            final hasTag = b.tagsList.any((t) => t.toLowerCase().contains(exTag)) ||
-                (b.genreTags != null && b.genreTags!.toLowerCase().contains(exTag));
-            if (hasTag) return false;
-          }
-
-          // 2. Exclude if book is on any excluded shelf
-          for (final exShelf in excludedShelves) {
-            final hasShelf = b.shelvesList.any((s) => s.toLowerCase().contains(exShelf));
-            if (hasShelf) return false;
-          }
-
-          // 3. Exclude if book matches any excluded keyword
-          for (final exKw in excludedKeywords) {
-            final matchesEx = b.title.toLowerCase().contains(exKw) ||
-                (b.author != null && b.author!.toLowerCase().contains(exKw)) ||
-                (b.seriesName != null && b.seriesName!.toLowerCase().contains(exKw)) ||
-                (b.genreTags != null && b.genreTags!.toLowerCase().contains(exKw)) ||
-                b.shelvesList.any((s) => s.toLowerCase().contains(exKw)) ||
-                b.type.toLowerCase().contains(exKw);
-            if (matchesEx) return false;
-          }
-
-          // 4. Must match all required tags in this clause
-          for (final tag in requiredTags) {
-            final hasTag = b.tagsList.any((t) => t.toLowerCase().contains(tag)) ||
-                (b.genreTags != null && b.genreTags!.toLowerCase().contains(tag));
-            if (!hasTag) return false;
-          }
-
-          // 5. Must match all required shelves in this clause
-          for (final shelf in requiredShelves) {
-            final hasShelf = b.shelvesList.any((s) => s.toLowerCase().contains(shelf));
-            if (!hasShelf) return false;
-          }
-
-          // 6. Must match all required keywords in this clause
-          for (final kw in textKeywords) {
-            final matchesKw = b.title.toLowerCase().contains(kw) ||
-                (b.author != null && b.author!.toLowerCase().contains(kw)) ||
-                (b.seriesName != null && b.seriesName!.toLowerCase().contains(kw)) ||
-                (b.genreTags != null && b.genreTags!.toLowerCase().contains(kw)) ||
-                b.shelvesList.any((s) => s.toLowerCase().contains(kw)) ||
-                b.type.toLowerCase().contains(kw);
-            if (!matchesKw) return false;
-          }
-
-          return true;
-        });
-      }
-    }
-
-    if (!matchesSearch) return false;
-
-    // 3. Match active modal selected tags (AND logic across all selected chips)
+    // Match active modal selected tags (AND logic across all selected chips)
     if (_selectedTags.isNotEmpty) {
       final bookTags = b.tagsList.map((t) => t.toLowerCase()).toSet();
       for (final reqTag in _selectedTags) {
@@ -2264,5 +2146,186 @@ class _StickyStatusFilterDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(covariant _StickyStatusFilterDelegate oldDelegate) {
     return oldDelegate.child != child || oldDelegate.backgroundColor != backgroundColor;
+  }
+}
+
+/// Pre-tokenized, compiled representation of a search query for high-performance linear evaluation.
+class _ParsedSearchQuery {
+  final bool isEmpty;
+  final String? singleSeriesPrefix;
+  final String? singleShelfPrefix;
+  final List<_SearchClause> orClauses;
+
+  const _ParsedSearchQuery._({
+    required this.isEmpty,
+    required this.singleSeriesPrefix,
+    required this.singleShelfPrefix,
+    required this.orClauses,
+  });
+
+  factory _ParsedSearchQuery.parse(String rawInput) {
+    final raw = rawInput.trim();
+    if (raw.isEmpty) {
+      return const _ParsedSearchQuery._(
+        isEmpty: true,
+        singleSeriesPrefix: null,
+        singleShelfPrefix: null,
+        orClauses: [],
+      );
+    }
+
+    final low = raw.toLowerCase();
+    if (low.startsWith('series:')) {
+      return _ParsedSearchQuery._(
+        isEmpty: false,
+        singleSeriesPrefix: low.substring(7).trim(),
+        singleShelfPrefix: null,
+        orClauses: [],
+      );
+    }
+
+    if (low.startsWith('shelf:')) {
+      return _ParsedSearchQuery._(
+        isEmpty: false,
+        singleSeriesPrefix: null,
+        singleShelfPrefix: low.substring(6).trim(),
+        orClauses: [],
+      );
+    }
+
+    final rawClauses = raw.split(RegExp(r'\s+(?:OR|or|\|)\s+|\s*\|\s*')).where((c) => c.trim().isNotEmpty);
+    final clauses = <_SearchClause>[];
+
+    for (final rc in rawClauses) {
+      final tokens = rc.trim().split(RegExp(r'[\s,]+')).where((t) => t.isNotEmpty);
+      final reqTags = <String>[];
+      final exTags = <String>[];
+      final reqShelves = <String>[];
+      final exShelves = <String>[];
+      final reqKw = <String>[];
+      final exKw = <String>[];
+
+      for (final tok in tokens) {
+        final tLow = tok.toLowerCase();
+        final isNegated = tLow.startsWith('-') || tLow.startsWith('!');
+        final clean = isNegated ? tLow.substring(1) : tLow;
+        if (clean.isEmpty) continue;
+
+        if (clean.startsWith('#') && clean.length > 1) {
+          final tag = clean.substring(1);
+          if (isNegated) exTags.add(tag); else reqTags.add(tag);
+        } else if (clean.startsWith('tag:') && clean.length > 4) {
+          final tag = clean.substring(4);
+          if (isNegated) exTags.add(tag); else reqTags.add(tag);
+        } else if (clean.startsWith('shelf:') && clean.length > 6) {
+          final shelf = clean.substring(6);
+          if (isNegated) exShelves.add(shelf); else reqShelves.add(shelf);
+        } else {
+          if (isNegated) exKw.add(clean); else reqKw.add(clean);
+        }
+      }
+
+      clauses.add(_SearchClause(
+        requiredTags: reqTags,
+        excludedTags: exTags,
+        requiredShelves: reqShelves,
+        excludedShelves: exShelves,
+        textKeywords: reqKw,
+        excludedKeywords: exKw,
+      ));
+    }
+
+    return _ParsedSearchQuery._(
+      isEmpty: false,
+      singleSeriesPrefix: null,
+      singleShelfPrefix: null,
+      orClauses: clauses,
+    );
+  }
+
+  bool matches(Book b) {
+    if (isEmpty) return true;
+
+    if (singleSeriesPrefix != null) {
+      return singleSeriesPrefix!.isEmpty ||
+          (b.seriesName != null && b.seriesName!.toLowerCase().contains(singleSeriesPrefix!));
+    }
+
+    if (singleShelfPrefix != null) {
+      return singleShelfPrefix!.isEmpty ||
+          b.shelvesList.any((s) => s.toLowerCase().contains(singleShelfPrefix!));
+    }
+
+    return orClauses.any((c) => c.matches(b));
+  }
+}
+
+class _SearchClause {
+  final List<String> requiredTags;
+  final List<String> excludedTags;
+  final List<String> requiredShelves;
+  final List<String> excludedShelves;
+  final List<String> textKeywords;
+  final List<String> excludedKeywords;
+
+  const _SearchClause({
+    required this.requiredTags,
+    required this.excludedTags,
+    required this.requiredShelves,
+    required this.excludedShelves,
+    required this.textKeywords,
+    required this.excludedKeywords,
+  });
+
+  bool matches(Book b) {
+    // 1. Exclude if book matches any excluded tag
+    for (final exTag in excludedTags) {
+      final hasTag = b.tagsList.any((t) => t.toLowerCase().contains(exTag)) ||
+          (b.genreTags != null && b.genreTags!.toLowerCase().contains(exTag));
+      if (hasTag) return false;
+    }
+
+    // 2. Exclude if book is on any excluded shelf
+    for (final exShelf in excludedShelves) {
+      final hasShelf = b.shelvesList.any((s) => s.toLowerCase().contains(exShelf));
+      if (hasShelf) return false;
+    }
+
+    // 3. Exclude if book matches any excluded keyword
+    for (final exKw in excludedKeywords) {
+      final matchesEx = b.title.toLowerCase().contains(exKw) ||
+          (b.author != null && b.author!.toLowerCase().contains(exKw)) ||
+          (b.seriesName != null && b.seriesName!.toLowerCase().contains(exKw)) ||
+          (b.genreTags != null && b.genreTags!.toLowerCase().contains(exKw)) ||
+          b.shelvesList.any((s) => s.toLowerCase().contains(exKw)) ||
+          b.type.toLowerCase().contains(exKw);
+      if (matchesEx) return false;
+    }
+
+    // 4. Must match all required tags in this clause
+    for (final tag in requiredTags) {
+      final hasTag = b.tagsList.any((t) => t.toLowerCase().contains(tag)) ||
+          (b.genreTags != null && b.genreTags!.toLowerCase().contains(tag));
+      if (!hasTag) return false;
+    }
+
+    // 5. Must match all required shelves in this clause
+    for (final shelf in requiredShelves) {
+      final hasShelf = b.shelvesList.any((s) => s.toLowerCase().contains(shelf));
+      if (!hasShelf) return false;
+    }
+
+    // 6. Must match all required keywords in this clause
+    for (final kw in textKeywords) {
+      final matchesKw = b.title.toLowerCase().contains(kw) ||
+          (b.author != null && b.author!.toLowerCase().contains(kw)) ||
+          (b.seriesName != null && b.seriesName!.toLowerCase().contains(kw)) ||
+          (b.genreTags != null && b.genreTags!.toLowerCase().contains(kw)) ||
+          b.shelvesList.any((s) => s.toLowerCase().contains(kw)) ||
+          b.type.toLowerCase().contains(kw);
+      if (!matchesKw) return false;
+    }
+
+    return true;
   }
 }
