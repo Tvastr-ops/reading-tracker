@@ -32,7 +32,8 @@ modules:
       - type: file
         path: org.readingtracker.PaperbackReader.metainfo.xml
       - type: file
-        path: ../../apps/client/assets/icon.png
+        path: ../../apps/web/public/icon-512.png
+        dest-filename: icon.png
       - type: script
         dest-filename: run.sh
         commands:
