@@ -11,6 +11,8 @@ and this project adheres to the [Project Release Versioning Specification](.gemi
 - **Reading Velocity Matrix (Lifetime & Yearly)**:
   - **Lifetime Velocity (2x3 Grid)**: Displays `BOOKS / YEAR`, `DAILY VELOCITY` (fixed rate calculations), `PEAK RECORD YEAR`, `AVG FINISH TIME`, `LONGEST STREAK`, and `READING CADENCE` (adaptive weeks/days).
   - **Yearly Velocity (2x2 Grid)**: Displays `MONTHLY PACE`, `WEEKLY CADENCE`, `DAILY VELOCITY`, and `PEAK MONTH`.
+- **Atomic Quick Log Note Sync**:
+  - Fixed sync race condition where prompt notes on quick increment were omitted or overwritten by remote reconciliation. Notes are now recorded atomically with progress and pushed immediately to remote sync providers.
 - **True Transparent Status Bar & Edge-to-Edge System UI**:
   - Eliminated gray/tinted status bar overlay on Android with `statusBarColor: Colors.transparent` and adaptive light/dark status bar icon brightness matching the active paper theme.
 - **Standalone Linux Flatpak Packaging**:

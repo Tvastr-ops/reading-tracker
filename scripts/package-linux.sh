@@ -199,28 +199,22 @@ rm -rf "$APPDIR"
 # 4. Package Flatpak Bundle (.flatpak) if flatpak-builder is available
 if command -v flatpak-builder >/dev/null 2>&1; then
   echo "Packaging standalone Flatpak bundle..."
-  FLATPAK_BUILD_DIR="flatpak-build"
-  FLATPAK_REPO="flatpak-repo"
-  rm -rf "$FLATPAK_BUILD_DIR" "$FLATPAK_REPO"
-  
-  # Stage sources for flatpak-builder
-  mkdir -p packaging/flatpak/bundle-src
-  cp -rL "$BUNDLE_DIR"/* packaging/flatpak/bundle-src/
-  [ -f apps/client/assets/icon.png ] && cp apps/client/assets/icon.png packaging/flatpak/icon.png
+  ABS_RELEASE_DIR="$(cd "$RELEASE_ASSETS_DIR" && pwd)"
+  (
+    cd packaging/flatpak
+    rm -rf flatpak-build flatpak-repo
+    echo "Running flatpak-builder in packaging/flatpak..."
+    flatpak-builder --force-clean --repo=flatpak-repo flatpak-build org.readingtracker.PaperbackReader.yml || true
 
-  echo "Running flatpak-builder..."
-  flatpak-builder --force-clean --repo="$FLATPAK_REPO" "$FLATPAK_BUILD_DIR" packaging/flatpak/org.readingtracker.PaperbackReader.yml || \
-  flatpak-builder --user --force-clean --repo="$FLATPAK_REPO" "$FLATPAK_BUILD_DIR" packaging/flatpak/org.readingtracker.PaperbackReader.yml || true
-
-  if [ -d "$FLATPAK_REPO" ]; then
-    echo "Creating Flatpak standalone bundle (.flatpak)..."
-    flatpak build-bundle "$FLATPAK_REPO" "$RELEASE_ASSETS_DIR/paperback-v${VERSION_CLEAN}-linux-x86_64.flatpak" org.readingtracker.PaperbackReader || \
-    flatpak build-bundle --user "$FLATPAK_REPO" "$RELEASE_ASSETS_DIR/paperback-v${VERSION_CLEAN}-linux-x86_64.flatpak" org.readingtracker.PaperbackReader || true
-    if [ -f "$RELEASE_ASSETS_DIR/paperback-v${VERSION_CLEAN}-linux-x86_64.flatpak" ]; then
-      echo "Flatpak bundle created successfully at $RELEASE_ASSETS_DIR/paperback-v${VERSION_CLEAN}-linux-x86_64.flatpak"
+    if [ -d "flatpak-repo" ]; then
+      echo "Creating Flatpak standalone bundle (.flatpak)..."
+      flatpak build-bundle flatpak-repo "$ABS_RELEASE_DIR/paperback-v${VERSION_CLEAN}-linux-x86_64.flatpak" org.readingtracker.PaperbackReader || true
+      if [ -f "$ABS_RELEASE_DIR/paperback-v${VERSION_CLEAN}-linux-x86_64.flatpak" ]; then
+        echo "Flatpak bundle created successfully at $ABS_RELEASE_DIR/paperback-v${VERSION_CLEAN}-linux-x86_64.flatpak"
+      fi
     fi
-  fi
-  rm -rf "$FLATPAK_BUILD_DIR" "$FLATPAK_REPO" packaging/flatpak/bundle-src packaging/flatpak/icon.png
+    rm -rf flatpak-build flatpak-repo
+  )
 fi
 
 echo "Linux packages created successfully in $RELEASE_ASSETS_DIR:"
