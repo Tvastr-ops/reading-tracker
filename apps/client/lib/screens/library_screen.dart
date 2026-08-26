@@ -176,11 +176,11 @@ class LibraryScreenState extends State<LibraryScreen> {
     // Tactile micro-haptic on mobile if enabled
     _themeService.triggerHapticImpact();
 
-    final updated = await _mutationService.advanceProgress(book: book, delta: amount);
-    _updateBookInPlace(updated);
-
     if (_themeService.promptNoteOnQuickLog && mounted) {
       _promptQuickNoteDialog(book, amount);
+    } else {
+      final updated = await _mutationService.advanceProgress(book: book, delta: amount);
+      _updateBookInPlace(updated);
     }
   }
 
@@ -233,7 +233,11 @@ class LibraryScreenState extends State<LibraryScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final updated = await _mutationService.advanceProgress(book: book, delta: delta);
+              _updateBookInPlace(updated);
+            },
             child: Text('SKIP', style: TextStyle(color: mutedInk, fontWeight: FontWeight.w800)),
           ),
           ElevatedButton(
@@ -245,14 +249,12 @@ class LibraryScreenState extends State<LibraryScreen> {
             onPressed: () async {
               final note = controller.text.trim();
               Navigator.pop(ctx);
-              if (note.isNotEmpty) {
-                // Attach note to the most recent reading log for this book
-                final logs = await _dbHelper.getReadingLogs(book.id);
-                if (logs.isNotEmpty) {
-                  final latestLog = logs.first;
-                  await _dbHelper.updateReadingLog(latestLog.copyWith(note: note));
-                }
-              }
+              final updated = await _mutationService.advanceProgress(
+                book: book,
+                delta: delta,
+                note: note.isNotEmpty ? note : null,
+              );
+              _updateBookInPlace(updated);
             },
             child: const Text('SAVE NOTE'),
           ),

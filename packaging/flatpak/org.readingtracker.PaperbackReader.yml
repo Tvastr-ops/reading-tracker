@@ -26,13 +26,13 @@ modules:
       - install -D -m 644 icon.png /app/share/icons/hicolor/512x512/apps/org.readingtracker.PaperbackReader.png
     sources:
       - type: dir
-        path: bundle-src
+        path: ../../apps/client/build/linux/x64/release/bundle
       - type: file
         path: org.readingtracker.PaperbackReader.desktop
       - type: file
         path: org.readingtracker.PaperbackReader.metainfo.xml
       - type: file
-        path: icon.png
+        path: ../../apps/client/assets/icon.png
       - type: script
         dest-filename: run.sh
         commands:
