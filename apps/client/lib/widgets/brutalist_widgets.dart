@@ -471,7 +471,6 @@ class BrutalistExpandToggleChip extends StatelessWidget {
         borderWidth = 1.5;
         break;
       case BrutalistToggleSize.regular:
-      default:
         padding = const EdgeInsets.symmetric(horizontal: 10, vertical: 6);
         fontSize = 11.0;
         iconSize = 13;
