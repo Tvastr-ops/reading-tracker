@@ -199,7 +199,9 @@ export const POST = withAuth(async (req: NextRequest) => {
       series_name: get('series_name') || null,
       series_order: toNullableNumber(get('series_order')),
       shelf_names: get('shelf_names') || null,
-      reread_count: toNullableNumber(get('reread_count')) ? Math.floor(toNullableNumber(get('reread_count'))!) : 0,
+      reread_count: toNullableNumber(get('reread_count'))
+        ? Math.floor(toNullableNumber(get('reread_count'))!)
+        : 0,
     };
 
     const progError = validateProgressionFields(rowObj as any);
