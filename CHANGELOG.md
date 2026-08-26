@@ -5,6 +5,14 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.3.0b] - 2026-08-26
+
+### Added & Improved
+- **Flatpak Runtime Upgrade to 24.08**:
+  - Upgraded `org.freedesktop.Platform` and `org.freedesktop.Sdk` from deprecated `23.08` to fully supported, actively maintained `24.08` runtime, resolving all EOL warnings and ensuring up-to-date graphics/system libraries.
+
+---
+
 ## [2.3.0a] - 2026-08-26
 
 ### Added & Improved

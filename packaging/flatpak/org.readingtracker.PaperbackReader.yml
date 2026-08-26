@@ -1,6 +1,6 @@
 app-id: org.readingtracker.PaperbackReader
 runtime: org.freedesktop.Platform
-runtime-version: '23.08'
+runtime-version: '24.08'
 sdk: org.freedesktop.Sdk
 command: paperback-reader
 
@@ -32,7 +32,7 @@ modules:
       - type: file
         path: org.readingtracker.PaperbackReader.metainfo.xml
       - type: file
-        path: ../../apps/web/public/icon-512.png
+        path: icon-512.png
         dest-filename: icon.png
       - type: script
         dest-filename: run.sh
