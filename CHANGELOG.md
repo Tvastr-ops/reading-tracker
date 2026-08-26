@@ -11,7 +11,11 @@ and this project adheres to the [Project Release Versioning Specification](.gemi
 - **Multi-Tag & Genre Filtering**: Added dedicated `GENRES / TAGS` section in Library Sort & Filter modal supporting multi-selection (AND intersection matching) with dynamic matching book counts.
 - **Top-5 Frequent Tag Display & Collapse**: Displays the top 5 most frequently used genre tags by default with expandable `+MORE` / `-LESS` chips (`BrutalistExpandToggleChip`) to preserve vertical space.
 - **Interactive Micro-Chip Clear Button**: Added responsive, styled `CLEAR (N)` micro-badge in modal headers for rapid one-tap tag filter resets.
-- **Unified Multi-Tag & Keyword Search Combo**: Search bar now parses multi-tag syntax (`#fantasy #adventure`, `tag:fantasy,magic`, `tag:scifi tag:cyberpunk`), custom shelves (`shelf:favorites`), and free-text queries seamlessly in combination.
+- **Unified Multi-Tag & Keyword Search Combo with Boolean Logic**: Search bar supports full Boolean algebra:
+  - **AND (Default)**: `#fantasy #adventure` or `tag:fantasy tag:magic` (requires all tokens).
+  - **OR (`OR` / `|`)**: `#scifi OR #fantasy` or `#cyberpunk | #military` (matches either token).
+  - **NOT / Exclusion (`-` / `!`)**: `#fantasy -#romance` or `Sanderson -Mistborn` (excludes matching tags/terms).
+  - **Shelf & Keyword Hybrid**: `shelf:favorites #scifi -#horror`.
 - **Hardware Vibration Support**: Added `android.permission.VIBRATE` to Android Manifest to enable hardware haptic feedback on physical devices.
 - **Linux Flatpak Packaging**: Added complete Flatpak manifest (`org.readingtracker.PaperbackReader.yml`), AppStream metainfo (`org.readingtracker.PaperbackReader.metainfo.xml`), desktop spec, and build script integration for Flathub and standalone `.flatpak` bundle creation.
 

@@ -208,7 +208,7 @@ if command -v flatpak-builder >/dev/null 2>&1; then
   cp -rL "$BUNDLE_DIR"/* packaging/flatpak/bundle-src/
   [ -f apps/client/assets/icon.png ] && cp apps/client/assets/icon.png packaging/flatpak/icon.png
 
-  flatpak-builder --force-clean --repo="$FLATPAK_REPO" "$FLATPAK_BUILD_DIR" packaging/flatpak/org.readingtracker.PaperbackReader.yml || true
+  flatpak-builder --user --force-clean --repo="$FLATPAK_REPO" "$FLATPAK_BUILD_DIR" packaging/flatpak/org.readingtracker.PaperbackReader.yml || true
   if [ -d "$FLATPAK_REPO" ]; then
     flatpak build-bundle "$FLATPAK_REPO" "$RELEASE_ASSETS_DIR/paperback-v${VERSION_CLEAN}-linux-x86_64.flatpak" org.readingtracker.PaperbackReader || true
     echo "Flatpak bundle created successfully!"

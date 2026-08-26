@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/theme_service.dart';
 import '../theme/app_theme.dart';
 
 class BrutalistCard extends StatelessWidget {
@@ -111,7 +112,10 @@ class _BrutalistButtonState extends State<BrutalistButton> {
         : Colors.white;
 
     Widget btn = GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapDown: (_) {
+        ThemeService.instance.triggerHapticClick();
+        setState(() => _isPressed = true);
+      },
       onTapUp: (_) => setState(() => _isPressed = false),
       onTapCancel: () => setState(() => _isPressed = false),
       onTap: widget.onPressed,
@@ -260,7 +264,12 @@ class BrutalistSwitch extends StatelessWidget {
     return MouseRegion(
       cursor: onChanged != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
       child: GestureDetector(
-        onTap: onChanged != null ? () => onChanged!(!value) : null,
+        onTap: onChanged != null
+            ? () {
+                ThemeService.instance.triggerHapticClick();
+                onChanged!(!value);
+              }
+            : null,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           width: width,

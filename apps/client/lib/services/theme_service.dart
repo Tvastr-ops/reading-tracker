@@ -230,22 +230,21 @@ class ThemeService extends ChangeNotifier {
   }
 
   /// Triggers a lightweight tactile haptic feedback click if enabled in settings.
-  /// Strictly runs on mobile platforms (iOS/Android) and skips PC/Desktop to avoid overhead.
+  /// Uses lightImpact on mobile so modern Android OEM motors (Realme, Samsung, Pixel) physically vibrate.
   void triggerHapticClick() {
     if (!_hapticFeedback || kIsWeb) return;
     if (defaultTargetPlatform != TargetPlatform.android && defaultTargetPlatform != TargetPlatform.iOS) return;
     try {
-      HapticFeedback.selectionClick();
+      HapticFeedback.lightImpact();
     } catch (_) {}
   }
 
-  /// Triggers a medium tactile impact on save/completion events.
-  /// Strictly runs on mobile platforms (iOS/Android) and skips PC/Desktop to avoid overhead.
+  /// Triggers a distinct solid tactile impact on progress mutations, saves, and toggle events.
   void triggerHapticImpact() {
     if (!_hapticFeedback || kIsWeb) return;
     if (defaultTargetPlatform != TargetPlatform.android && defaultTargetPlatform != TargetPlatform.iOS) return;
     try {
-      HapticFeedback.lightImpact();
+      HapticFeedback.mediumImpact();
     } catch (_) {}
   }
 
