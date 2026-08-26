@@ -5,6 +5,17 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.2.0b] - 2026-08-26
+
+### Added & Improved
+- **Boolean Search Operators**: Full support for `OR` / `|` (e.g. `#fantasy OR #scifi`) and exclusion `NOT` (`-` or `!`, e.g. `#fantasy -#romance`, `Sanderson -Mistborn`) in the library search bar.
+- **Pre-Compiled Query AST Optimization (`_ParsedSearchQuery`)**: Tokenizes and compiles search expressions once per filter pass into an abstract syntax tree, delivering zero-allocation \(O(N)\) filtering for large libraries.
+- **Tactile Physical Motor Haptics**: Upgraded haptics from soft keyboard ticks to `lightImpact` and `mediumImpact` ensuring crisp physical motor feedback on Realme UI, Samsung OneUI, and Pixel devices.
+- **Universal Button & Switch Haptic Integration**: Connected `BrutalistButton` and `BrutalistSwitch` directly to guarded tactile feedback on tap.
+- **Flatpak CI Packaging**: Added `flatpak-builder` and Flathub runtime dependencies to the GitHub release action to produce downloadable `.flatpak` release bundles.
+
+---
+
 ## [2.2.0a] - 2026-08-26
 
 ### Added
