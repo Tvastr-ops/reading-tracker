@@ -311,6 +311,7 @@ class _StatsScreenState extends State<StatsScreen> {
     final reading = _books.where((b) => b.status == BookStatus.reading).length;
 
     final monthlyCounts = List<int>.filled(12, 0);
+    final yearlyCounts = <int, int>{};
     int completedInSelectedYear = 0;
 
     for (final b in _books) {
@@ -320,10 +321,15 @@ class _StatsScreenState extends State<StatsScreen> {
         dt = DateTime.tryParse(b.dateFinished!);
       }
       dt ??= DateTime.tryParse(b.updatedAt);
-      if (dt != null && (isLifetime || dt.year == _selectedYear)) {
-        completedInSelectedYear++;
-        if (dt.month >= 1 && dt.month <= 12 && !isLifetime) {
-          monthlyCounts[dt.month - 1]++;
+      if (dt != null) {
+        if (isLifetime || dt.year == _selectedYear) {
+          completedInSelectedYear++;
+          if (dt.month >= 1 && dt.month <= 12 && !isLifetime) {
+            monthlyCounts[dt.month - 1]++;
+          }
+        }
+        if (dt.year >= 1947 && dt.year <= currentCalendarYear + 1) {
+          yearlyCounts[dt.year] = (yearlyCounts[dt.year] ?? 0) + 1;
         }
       }
     }
@@ -712,108 +718,221 @@ class _StatsScreenState extends State<StatsScreen> {
 
                   final streakHeatmapCard = _buildStreakHeatmapCard(isDark, borderColor, primaryColor);
 
-                  final maxMonthly = monthlyCounts.isEmpty ? 0 : monthlyCounts.reduce((a, b) => a > b ? a : b);
-                  final monthlyChartCard = BrutalistCard(
-                    margin: EdgeInsets.zero,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.bar_chart_rounded, size: 16, color: primaryColor),
-                                const SizedBox(width: 6),
-                                Text(
-                                  isLifetime ? 'ALL-TIME COMPLETED ACTIVITY' : '$_selectedYear MONTHLY ACTIVITY',
-                                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
-                                ),
-                              ],
-                            ),
-                            if (_selectedMonthIndex != null && !isLifetime)
+                  final Widget activityChartCard;
+                  if (isLifetime) {
+                    // Extract active historical years (at least recent 5 years up to current)
+                    final activeYears = yearlyCounts.keys.toList()..sort();
+                    final int startYear = activeYears.isEmpty ? currentCalendarYear : activeYears.first;
+                    final int displayCount = (currentCalendarYear - startYear + 1).clamp(3, 8);
+                    final yearsToDisplay = List.generate(displayCount, (i) => currentCalendarYear - displayCount + 1 + i);
+                    final maxYearly = yearsToDisplay.map((y) => yearlyCounts[y] ?? 0).fold(0, (a, b) => a > b ? a : b);
+
+                    activityChartCard = BrutalistCard(
+                      margin: EdgeInsets.zero,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.auto_graph_rounded, size: 16, color: primaryColor),
+                                  const SizedBox(width: 6),
+                                  const Text(
+                                    'HISTORICAL YEARLY COMPLETIONS',
+                                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                                  ),
+                                ],
+                              ),
                               BrutalistBadge(
-                                label: '${_monthNames[_selectedMonthIndex!]}: ${monthlyCounts[_selectedMonthIndex!]}',
+                                label: '${yearlyCounts.values.fold(0, (a, b) => a + b)} TOTAL',
                                 backgroundColor: primaryColor,
                                 textColor: Colors.white,
                               ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        SizedBox(
-                          height: 100,
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: List.generate(12, (index) {
-                              final count = monthlyCounts[index];
-                              final isCurrentMonth = isCurrentYearSelected && (index + 1 == currentCalendarMonth);
-                              final isSelected = _selectedMonthIndex == index;
-                              final double barHeight = maxMonthly > 0 ? (count / maxMonthly) * 64.0 : 0.0;
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          SizedBox(
+                            height: 100,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: yearsToDisplay.map((year) {
+                                final count = yearlyCounts[year] ?? 0;
+                                final isCurrent = year == currentCalendarYear;
+                                final double barHeight = maxYearly > 0 ? (count / maxYearly) * 64.0 : 0.0;
 
-                              return Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedMonthIndex = _selectedMonthIndex == index ? null : index;
-                                    });
-                                  },
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        count > 0 ? '$count' : '',
-                                        style: TextStyle(
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.w800,
-                                          color: isSelected
-                                              ? primaryColor
-                                              : (isDark ? Colors.white60 : AppColors.inkMuted),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 3),
-                                      AnimatedContainer(
-                                        duration: const Duration(milliseconds: 250),
-                                        height: count > 0 ? barHeight : 4.0,
-                                        width: 14,
-                                        decoration: BoxDecoration(
-                                          color: count == 0
-                                              ? (isDark ? Colors.white10 : Colors.black12)
-                                              : (isSelected
-                                                  ? primaryColor
-                                                  : (isCurrentMonth
-                                                      ? primaryColor.withValues(alpha: 0.85)
-                                                      : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack))),
-                                          border: Border.all(
-                                            color: isSelected
+                                return Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedYear = year;
+                                        _selectedMonthIndex = null;
+                                      });
+                                      _loadStats();
+                                    },
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          count > 0 ? '$count' : '',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w800,
+                                            color: isCurrent
                                                 ? primaryColor
-                                                : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-                                            width: isSelected ? 2.0 : 1.0,
+                                                : (isDark ? Colors.white60 : AppColors.inkMuted),
                                           ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        _monthLabels[index],
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: isCurrentMonth || isSelected ? FontWeight.w900 : FontWeight.w700,
-                                          color: isSelected
-                                              ? primaryColor
-                                              : (isCurrentMonth
+                                        const SizedBox(height: 3),
+                                        AnimatedContainer(
+                                          duration: const Duration(milliseconds: 250),
+                                          height: count > 0 ? barHeight : 4.0,
+                                          width: 20,
+                                          decoration: BoxDecoration(
+                                            color: count == 0
+                                                ? (isDark ? Colors.white10 : Colors.black12)
+                                                : (isCurrent
+                                                    ? primaryColor
+                                                    : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack)),
+                                            border: Border.all(
+                                              color: isCurrent
                                                   ? primaryColor
-                                                  : (isDark ? Colors.white60 : AppColors.inkMuted)),
+                                                  : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                                              width: isCurrent ? 2.0 : 1.0,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          '$year',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: isCurrent ? FontWeight.w900 : FontWeight.w700,
+                                            color: isCurrent
+                                                ? primaryColor
+                                                : (isDark ? Colors.white60 : AppColors.inkMuted),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              );
-                            }),
+                                );
+                              }).toList(),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  );
+                        ],
+                      ),
+                    );
+                  } else {
+                    final maxMonthly = monthlyCounts.isEmpty ? 0 : monthlyCounts.reduce((a, b) => a > b ? a : b);
+                    activityChartCard = BrutalistCard(
+                      margin: EdgeInsets.zero,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.bar_chart_rounded, size: 16, color: primaryColor),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '$_selectedYear MONTHLY ACTIVITY',
+                                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                                  ),
+                                ],
+                              ),
+                              if (_selectedMonthIndex != null)
+                                BrutalistBadge(
+                                  label: '${_monthNames[_selectedMonthIndex!]}: ${monthlyCounts[_selectedMonthIndex!]}',
+                                  backgroundColor: primaryColor,
+                                  textColor: Colors.white,
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          SizedBox(
+                            height: 100,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: List.generate(12, (index) {
+                                final count = monthlyCounts[index];
+                                final isCurrentMonth = isCurrentYearSelected && (index + 1 == currentCalendarMonth);
+                                final isSelected = _selectedMonthIndex == index;
+                                final double barHeight = maxMonthly > 0 ? (count / maxMonthly) * 64.0 : 0.0;
+
+                                return Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedMonthIndex = _selectedMonthIndex == index ? null : index;
+                                      });
+                                    },
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          count > 0 ? '$count' : '',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w800,
+                                            color: isSelected
+                                                ? primaryColor
+                                                : (isDark ? Colors.white60 : AppColors.inkMuted),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 3),
+                                        AnimatedContainer(
+                                          duration: const Duration(milliseconds: 250),
+                                          height: count > 0 ? barHeight : 4.0,
+                                          width: 14,
+                                          decoration: BoxDecoration(
+                                            color: count == 0
+                                                ? (isDark ? Colors.white10 : Colors.black12)
+                                                : (isSelected
+                                                    ? primaryColor
+                                                    : (isCurrentMonth
+                                                        ? primaryColor.withValues(alpha: 0.85)
+                                                        : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack))),
+                                            border: Border.all(
+                                              color: isSelected
+                                                  ? primaryColor
+                                                  : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                                              width: isSelected ? 2.0 : 1.0,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          _monthLabels[index],
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: isCurrentMonth || isSelected ? FontWeight.w900 : FontWeight.w700,
+                                            color: isSelected
+                                                ? primaryColor
+                                                : (isCurrentMonth
+                                                    ? primaryColor
+                                                    : (isDark ? Colors.white60 : AppColors.inkMuted)),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  final totalYearsActive = yearlyCounts.isNotEmpty ? yearlyCounts.length : 1;
+                  final totalActiveDays = (_streakStats['total_active_days'] as num?)?.toInt() ?? 0;
+                  final completionRate = _books.isNotEmpty ? ((completedInSelectedYear / _books.length) * 100).round() : 0;
+                  final unitsPerActiveDay = totalActiveDays > 0 ? (_lifetimeUnitsLogged / totalActiveDays).round() : 0;
 
                   final velocityCard = BrutalistCard(
                     margin: EdgeInsets.zero,
@@ -829,10 +948,10 @@ class _StatsScreenState extends State<StatsScreen> {
                                 children: [
                                   Icon(Icons.speed_rounded, size: 16, color: primaryColor),
                                   const SizedBox(width: 6),
-                                  const Flexible(
+                                  Flexible(
                                     child: Text(
-                                      'READING VELOCITY',
-                                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                                      isLifetime ? 'LIFETIME READING VELOCITY' : 'READING VELOCITY',
+                                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
@@ -858,7 +977,9 @@ class _StatsScreenState extends State<StatsScreen> {
                                   ],
                                 ),
                                 child: Text(
-                                  '~${((completedInSelectedYear / elapsedMonths) * 12).round()} YR EST.',
+                                  isLifetime
+                                      ? '$completionRate% COMPLETION'
+                                      : '~${((completedInSelectedYear / elapsedMonths) * 12).round()} YR EST.',
                                   style: TextStyle(
                                     fontSize: 9.5,
                                     fontWeight: FontWeight.w900,
@@ -888,7 +1009,7 @@ class _StatsScreenState extends State<StatsScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'MONTHLY RATE',
+                                      isLifetime ? 'ANNUAL AVERAGE' : 'MONTHLY RATE',
                                       style: TextStyle(
                                         fontSize: 9,
                                         fontWeight: FontWeight.w800,
@@ -898,9 +1019,11 @@ class _StatsScreenState extends State<StatsScreen> {
                                     ),
                                     const SizedBox(height: 3),
                                     Text(
-                                      completedInSelectedYear > 0
-                                          ? '${(completedInSelectedYear / elapsedMonths).toStringAsFixed(1)} books/mo'
-                                          : '0.0 books/mo',
+                                      isLifetime
+                                          ? '${(completedInSelectedYear / totalYearsActive).toStringAsFixed(1)} books/yr'
+                                          : (completedInSelectedYear > 0
+                                              ? '${(completedInSelectedYear / elapsedMonths).toStringAsFixed(1)} books/mo'
+                                              : '0.0 books/mo'),
                                       style: TextStyle(
                                         fontSize: 12.5,
                                         fontWeight: FontWeight.w900,
@@ -928,7 +1051,7 @@ class _StatsScreenState extends State<StatsScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'WEEKLY PACE',
+                                      isLifetime ? 'UNITS / ACTIVE DAY' : 'WEEKLY PACE',
                                       style: TextStyle(
                                         fontSize: 9,
                                         fontWeight: FontWeight.w800,
@@ -938,9 +1061,11 @@ class _StatsScreenState extends State<StatsScreen> {
                                     ),
                                     const SizedBox(height: 3),
                                     Text(
-                                      completedInSelectedYear > 0
-                                          ? '~${((completedInSelectedYear / elapsedMonths) / 4.33).toStringAsFixed(1)} books/wk'
-                                          : 'No active pace',
+                                      isLifetime
+                                          ? (unitsPerActiveDay > 0 ? '~$unitsPerActiveDay units/day' : 'N/A')
+                                          : (completedInSelectedYear > 0
+                                              ? '~${((completedInSelectedYear / elapsedMonths) / 4.33).toStringAsFixed(1)} books/wk'
+                                              : 'No active pace'),
                                       style: TextStyle(
                                         fontSize: 12.5,
                                         fontWeight: FontWeight.w900,
@@ -1242,7 +1367,7 @@ class _StatsScreenState extends State<StatsScreen> {
                                     children: [
                                       yearlyGoalCard,
                                       const SizedBox(height: 16),
-                                      monthlyChartCard,
+                                      activityChartCard,
                                       const SizedBox(height: 16),
                                       velocityCard,
                                     ],
@@ -1255,8 +1380,10 @@ class _StatsScreenState extends State<StatsScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       metricsGrid,
-                                      const SizedBox(height: 16),
-                                      streakHeatmapCard,
+                                      if (!isLifetime) ...[
+                                        const SizedBox(height: 16),
+                                        streakHeatmapCard,
+                                      ],
                                       if (unitVolumeCard != null) ...[
                                         const SizedBox(height: 16),
                                         unitVolumeCard,
@@ -1283,14 +1410,16 @@ class _StatsScreenState extends State<StatsScreen> {
                       yearlyGoalCard,
                       const SizedBox(height: 16),
                       metricsGrid,
-                      const SizedBox(height: 16),
-                      streakHeatmapCard,
+                      if (!isLifetime) ...[
+                        const SizedBox(height: 16),
+                        streakHeatmapCard,
+                      ],
                       if (unitVolumeCard != null) ...[
                         const SizedBox(height: 16),
                         unitVolumeCard,
                       ],
                       const SizedBox(height: 16),
-                      monthlyChartCard,
+                      activityChartCard,
                       const SizedBox(height: 16),
                       velocityCard,
                       const SizedBox(height: 20),

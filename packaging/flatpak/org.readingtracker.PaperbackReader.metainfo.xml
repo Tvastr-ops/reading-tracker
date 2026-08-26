@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.readingtracker.PaperbackReader</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Paperback Reader</name>
+  <summary>A tactile, offline-first reading ledger for novels, light novels, and web serials</summary>
+  
+  <description>
+    <p>
+      Paperback Reader is a tactile, offline-first reading tracker and ledger designed for book lovers, light novel readers, and web serial enthusiasts.
+    </p>
+    <p>Features include:</p>
+    <ul>
+      <li>Tactile Neo-Brutalist design with paper grain textures</li>
+      <li>First-class tracking for volume/chapter progress, series, custom multi-membership shelves, and re-reading journeys</li>
+      <li>Instant offline-first local SQLite caching with background Supabase / REST cloud synchronization</li>
+      <li>Rich statistics, reading pace estimation, lifetime analytics, and goal progress tracking</li>
+      <li>Keyboard-first workflow with global shortcuts and quick increment steppers</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">org.readingtracker.PaperbackReader.desktop</launchable>
+
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/Tvastr-ops/reading-tracker/main/.github/assets/screenshot.png</image>
+      <caption>Paperback Reader Library &amp; Reading Log</caption>
+    </screenshot>
+  </screenshots>
+
+  <url type="homepage">https://github.com/Tvastr-ops/reading-tracker</url>
+  <url type="bugtracker">https://github.com/Tvastr-ops/reading-tracker/issues</url>
+  <url type="vcs-browser">https://github.com/Tvastr-ops/reading-tracker</url>
+
+  <provides>
+    <binary>paperback-reader</binary>
+  </provides>
+
+  <releases>
+    <release version="2.2.0a" date="2026-08-26">
+      <description>
+        <p>Added multi-tag filtering with top 5 frequency collapse, combo search syntax, mobile hardware vibration, and modal button contrast fixes.</p>
+      </description>
+    </release>
+    <release version="2.2.0" date="2026-08-26">
+      <description>
+        <p>Added Lifetime Stats dashboard, expandable genre suggestions, and performance audit optimizations.</p>
+      </description>
+    </release>
+  </releases>
+
+  <content_rating type="oars-1.1" />
+</component>

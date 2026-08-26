@@ -1043,10 +1043,10 @@ class _BookEditDialogState extends State<BookEditDialog> {
                     ],
                     const Spacer(),
                     BrutalistButton(
-                      backgroundColor: Colors.transparent,
+                      backgroundColor: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh,
                       textColor: inkColor,
                       borderWidth: 1.5,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       onPressed: () => Navigator.pop(context),
                       child: Text(
                         'CANCEL',

@@ -103,7 +103,7 @@ jobs:
           retention-days: 14
 
   build-linux:
-    name: Build Linux Desktop (DEB & Tarball)
+    name: Build Linux Desktop (DEB, AppImage & Tarball)
     runs-on: ubuntu-latest
 
     steps:
@@ -133,11 +133,11 @@ jobs:
           cd apps/client
           VERSION_NAME="${GITHUB_REF_NAME#v}"
           if [ -z "$VERSION_NAME" ] || [ "$VERSION_NAME" = "main" ] || [ "$VERSION_NAME" = "dev" ]; then
-            VERSION_NAME="2.1.0"
+            VERSION_NAME="2.2.0a"
           fi
           flutter build linux --release --build-name="$VERSION_NAME"
 
-      - name: Package Portable Tarball & Debian (.deb)
+      - name: Package Linux Artifacts
         run: |
           chmod +x scripts/package-linux.sh
           ./scripts/package-linux.sh

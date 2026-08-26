@@ -397,7 +397,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () => setState(() => _currentIndex = index),
+        onTap: () {
+          if (_currentIndex != index) {
+            ThemeService.instance.triggerHapticClick();
+            setState(() => _currentIndex = index);
+          }
+        },
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
@@ -448,7 +453,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
     final isSelected = _currentIndex == index;
 
     return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () {
+        if (_currentIndex != index) {
+          ThemeService.instance.triggerHapticClick();
+          setState(() => _currentIndex = index);
+        }
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(

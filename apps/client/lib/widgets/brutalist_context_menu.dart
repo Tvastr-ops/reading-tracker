@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/book.dart';
+import '../services/theme_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 
@@ -83,7 +84,7 @@ class BrutalistContextMenu {
     final media = MediaQuery.of(context);
     final isMobile = media.size.width < 600;
 
-    HapticFeedback.selectionClick();
+    ThemeService.instance.triggerHapticClick();
 
     if (isMobile) {
       return showModalBottomSheet<ContextMenuAction>(
@@ -151,12 +152,12 @@ class _BrutalistDesktopMenuContentState extends State<_BrutalistDesktopMenuConte
       setState(() {
         _focusedIndex = (_focusedIndex + 1) % _actions.length;
       });
-      HapticFeedback.selectionClick();
+      ThemeService.instance.triggerHapticClick();
     } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
       setState(() {
         _focusedIndex = (_focusedIndex - 1 + _actions.length) % _actions.length;
       });
-      HapticFeedback.selectionClick();
+      ThemeService.instance.triggerHapticClick();
     } else if (event.logicalKey == LogicalKeyboardKey.enter || event.logicalKey == LogicalKeyboardKey.space) {
       Navigator.of(context).pop(_actions[_focusedIndex].action);
     } else if (event.logicalKey == LogicalKeyboardKey.escape) {
@@ -278,7 +279,7 @@ class _BrutalistDesktopMenuContentState extends State<_BrutalistDesktopMenuConte
 
                       return InkWell(
                         onTap: () {
-                          HapticFeedback.selectionClick();
+                          ThemeService.instance.triggerHapticClick();
                           Navigator.of(context).pop(item.action);
                         },
                         onHover: (hovered) {
@@ -436,7 +437,7 @@ class _BrutalistBottomSheetContent extends StatelessWidget {
 
                 return InkWell(
                   onTap: () {
-                    HapticFeedback.selectionClick();
+                    ThemeService.instance.triggerHapticClick();
                     Navigator.of(context).pop(item.action);
                   },
                   child: Container(

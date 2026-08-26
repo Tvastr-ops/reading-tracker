@@ -49,6 +49,7 @@ class LibraryScreenState extends State<LibraryScreen> {
   bool _sortAscending = false;
   String _ratingFilter = 'All'; // 'All', '5', '4', 'unrated'
   String _typeFilter = 'All'; // 'All', 'Web Novel', 'Light Novel', 'Novel', etc.
+  final Set<String> _selectedTags = {};
   LibraryViewMode _viewMode = LibraryViewMode.cards;
 
   final List<String> _statusFilters = [
@@ -171,9 +172,7 @@ class LibraryScreenState extends State<LibraryScreen> {
     }
 
     // Tactile micro-haptic on mobile if enabled
-    if (_themeService.hapticFeedback) {
-      HapticFeedback.lightImpact();
-    }
+    _themeService.triggerHapticImpact();
 
     final updated = await _mutationService.advanceProgress(book: book, delta: amount);
     _updateBookInPlace(updated);
@@ -417,6 +416,7 @@ class LibraryScreenState extends State<LibraryScreen> {
     final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
     bool showAllFormats = ['Novella', 'Novelette', 'Short Story', 'Anthology', 'Essay', 'Other'].contains(_typeFilter);
     bool showAllRatings = ['3', '2', '1'].contains(_ratingFilter);
+    bool showAllTags = false;
 
     const primaryFormats = [
       'Novel',
@@ -563,12 +563,12 @@ class LibraryScreenState extends State<LibraryScreen> {
                         _buildRatingFilterChip('All', 'All', setSheetState),
                         _buildRatingFilterChip('5 ★ Only', '5', setSheetState),
                         _buildRatingFilterChip('4 ★ & Above', '4', setSheetState),
-                        _buildRatingFilterChip('Unrated', 'unrated', setSheetState),
                         if (showAllRatings) ...[
                           _buildRatingFilterChip('3 ★ & Above', '3', setSheetState),
                           _buildRatingFilterChip('2 ★ & Above', '2', setSheetState),
                           _buildRatingFilterChip('1 ★ & Above', '1', setSheetState),
                         ],
+                        _buildRatingFilterChip('Unrated', 'unrated', setSheetState),
                         BrutalistExpandToggleChip(
                           isExpanded: showAllRatings,
                           onTap: () => setSheetState(() => showAllRatings = !showAllRatings),
@@ -589,6 +589,7 @@ class LibraryScreenState extends State<LibraryScreen> {
                             children: [
                               GestureDetector(
                                 onTap: () {
+                                  _themeService.triggerHapticClick();
                                   setSheetState(() => _selectedShelf = null);
                                   setState(() => _selectedShelf = null);
                                 },
@@ -616,6 +617,7 @@ class LibraryScreenState extends State<LibraryScreen> {
                                     .length;
                                 return GestureDetector(
                                   onTap: () {
+                                    _themeService.triggerHapticClick();
                                     final newVal = isSelected ? null : sh;
                                     setSheetState(() => _selectedShelf = newVal);
                                     setState(() => _selectedShelf = newVal);
@@ -642,6 +644,153 @@ class LibraryScreenState extends State<LibraryScreen> {
                         },
                       ),
                     ],
+                    if (_books.any((b) => b.tagsList.isNotEmpty)) ...[
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('GENRES / TAGS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5, color: inkColor)),
+                          if (_selectedTags.isNotEmpty)
+                            MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: GestureDetector(
+                                onTap: () {
+                                  _themeService.triggerHapticClick();
+                                  setSheetState(() => _selectedTags.clear());
+                                  setState(() => _selectedTags.clear());
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: accentColor.withValues(alpha: 0.14),
+                                    border: Border.all(color: accentColor, width: 1.0),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.close_rounded, size: 11, color: accentColor),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        'CLEAR (${_selectedTags.length})',
+                                        style: TextStyle(
+                                          fontSize: 9.0,
+                                          fontWeight: FontWeight.w900,
+                                          color: accentColor,
+                                          letterSpacing: 0.4,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Builder(
+                        builder: (context) {
+                          // Frequency count across all books
+                          final tagCounts = <String, int>{};
+                          for (final b in _books) {
+                            for (final t in b.tagsList) {
+                              tagCounts[t] = (tagCounts[t] ?? 0) + 1;
+                            }
+                          }
+                          final sortedTags = tagCounts.keys.toList()
+                            ..sort((a, b) => tagCounts[b]!.compareTo(tagCounts[a]!));
+
+                          final primaryTags = sortedTags.take(5).toList();
+                          final remainingTags = sortedTags.skip(5).toList();
+
+                          return Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              ...primaryTags.map((tag) {
+                                final isSelected = _selectedTags.contains(tag);
+                                final matchingCount = _books
+                                    .where(_matchesNonStatusFilters)
+                                    .where((b) => b.tagsList.any((t) => t.toLowerCase() == tag.toLowerCase()))
+                                    .length;
+                                return GestureDetector(
+                                  onTap: () {
+                                    _themeService.triggerHapticClick();
+                                    setSheetState(() {
+                                      if (isSelected) {
+                                        _selectedTags.remove(tag);
+                                      } else {
+                                        _selectedTags.add(tag);
+                                      }
+                                    });
+                                    setState(() {});
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? accentColor : (details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white)),
+                                      border: Border.all(color: borderColor, width: 1.5),
+                                    ),
+                                    child: Text(
+                                      '#${tag.toUpperCase()} ($matchingCount)',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        color: isSelected ? Colors.white : inkColor,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
+                              if (showAllTags)
+                                ...remainingTags.map((tag) {
+                                  final isSelected = _selectedTags.contains(tag);
+                                  final matchingCount = _books
+                                      .where(_matchesNonStatusFilters)
+                                      .where((b) => b.tagsList.any((t) => t.toLowerCase() == tag.toLowerCase()))
+                                      .length;
+                                  return GestureDetector(
+                                    onTap: () {
+                                      _themeService.triggerHapticClick();
+                                      setSheetState(() {
+                                        if (isSelected) {
+                                          _selectedTags.remove(tag);
+                                        } else {
+                                          _selectedTags.add(tag);
+                                        }
+                                      });
+                                      setState(() {});
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: isSelected ? accentColor : (details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white)),
+                                        border: Border.all(color: borderColor, width: 1.5),
+                                      ),
+                                      child: Text(
+                                        '#${tag.toUpperCase()} ($matchingCount)',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                          color: isSelected ? Colors.white : inkColor,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              if (remainingTags.isNotEmpty)
+                                BrutalistExpandToggleChip(
+                                  isExpanded: showAllTags,
+                                  onTap: () {
+                                    _themeService.triggerHapticClick();
+                                    setSheetState(() => showAllTags = !showAllTags);
+                                  },
+                                  size: BrutalistToggleSize.regular,
+                                ),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
                     const SizedBox(height: 20),
 
                     Row(
@@ -651,12 +800,14 @@ class LibraryScreenState extends State<LibraryScreen> {
                             backgroundColor: details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white),
                             textColor: inkColor,
                             onPressed: () {
+                              _themeService.triggerHapticClick();
                               setSheetState(() {
                                 _sortBy = 'updated_at';
                                 _sortAscending = false;
                                 _ratingFilter = 'All';
                                 _typeFilter = 'All';
                                 _selectedShelf = null;
+                                _selectedTags.clear();
                               });
                               setState(() {
                                 _sortBy = 'updated_at';
@@ -664,6 +815,7 @@ class LibraryScreenState extends State<LibraryScreen> {
                                 _ratingFilter = 'All';
                                 _typeFilter = 'All';
                                 _selectedShelf = null;
+                                _selectedTags.clear();
                               });
                             },
                             child: const Text('RESET', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900)),
@@ -920,11 +1072,14 @@ class LibraryScreenState extends State<LibraryScreen> {
                       const SizedBox(height: 16),
                       TextButton(
                         onPressed: () {
+                          _themeService.triggerHapticClick();
                           _searchController.clear();
                           setState(() {
                             _selectedStatus = 'All';
                             _ratingFilter = 'All';
                             _typeFilter = 'All';
+                            _selectedTags.clear();
+                            _selectedShelf = null;
                             _searchQuery = '';
                           });
                         },
@@ -1161,31 +1316,93 @@ class LibraryScreenState extends State<LibraryScreen> {
 
 
   bool _matchesNonStatusFilters(Book b) {
-    final q = _searchQuery.toLowerCase();
-    bool matchesSearch = false;
-    if (_searchQuery.isEmpty) {
-      matchesSearch = true;
-    } else if (q.startsWith('series:')) {
-      final seriesQuery = q.substring(7).trim();
-      matchesSearch = seriesQuery.isEmpty ||
-          (b.seriesName != null && b.seriesName!.toLowerCase().contains(seriesQuery));
-    } else if (q.startsWith('shelf:')) {
-      final shelfQuery = q.substring(6).trim();
-      matchesSearch = shelfQuery.isEmpty ||
-          b.shelvesList.any((s) => s.toLowerCase().contains(shelfQuery));
-    } else if (q.startsWith('#') || q.startsWith('tag:')) {
-      final tagQuery = (q.startsWith('#') ? q.substring(1) : q.substring(4)).trim();
-      matchesSearch = tagQuery.isEmpty ||
-          (b.genreTags != null && b.genreTags!.toLowerCase().contains(tagQuery));
-    } else {
-      matchesSearch = b.title.toLowerCase().contains(q) ||
-          (b.author != null && b.author!.toLowerCase().contains(q)) ||
-          (b.seriesName != null && b.seriesName!.toLowerCase().contains(q)) ||
-          (b.genreTags != null && b.genreTags!.toLowerCase().contains(q)) ||
-          b.shelvesList.any((s) => s.toLowerCase().contains(q)) ||
-          b.type.toLowerCase().contains(q);
+    final rawQuery = _searchQuery.trim();
+    bool matchesSearch = true;
+
+    if (rawQuery.isNotEmpty) {
+      final q = rawQuery.toLowerCase();
+      // 1. Check for single prefix shortcuts (series: and shelf:)
+      if (q.startsWith('series:')) {
+        final seriesQuery = q.substring(7).trim();
+        matchesSearch = seriesQuery.isEmpty ||
+            (b.seriesName != null && b.seriesName!.toLowerCase().contains(seriesQuery));
+      } else if (q.startsWith('shelf:')) {
+        final shelfQuery = q.substring(6).trim();
+        matchesSearch = shelfQuery.isEmpty ||
+            b.shelvesList.any((s) => s.toLowerCase().contains(shelfQuery));
+      } else {
+        // 2. Multi-token combo search (supports mixing #tag1, tag:tag2, shelf:shelfName, and text keywords)
+        // e.g. "Sanderson #fantasy #epic" or "#fantasy, #adventure" or "tag:fantasy,romance"
+        final tokens = rawQuery.split(RegExp(r'[\s,]+')).where((t) => t.isNotEmpty).toList();
+        final requiredTags = <String>[];
+        final requiredShelves = <String>[];
+        final textKeywords = <String>[];
+
+        for (final token in tokens) {
+          final low = token.toLowerCase();
+          if (low.startsWith('#') && low.length > 1) {
+            requiredTags.add(low.substring(1));
+          } else if (low.startsWith('tag:') && low.length > 4) {
+            requiredTags.add(low.substring(4));
+          } else if (low.startsWith('shelf:') && low.length > 6) {
+            requiredShelves.add(low.substring(6));
+          } else {
+            textKeywords.add(low);
+          }
+        }
+
+        // Match all required tags from search tokens
+        for (final tag in requiredTags) {
+          final hasTag = b.tagsList.any((t) => t.toLowerCase().contains(tag)) ||
+              (b.genreTags != null && b.genreTags!.toLowerCase().contains(tag));
+          if (!hasTag) {
+            matchesSearch = false;
+            break;
+          }
+        }
+
+        // Match all required shelves from search tokens
+        if (matchesSearch) {
+          for (final shelf in requiredShelves) {
+            final hasShelf = b.shelvesList.any((s) => s.toLowerCase().contains(shelf));
+            if (!hasShelf) {
+              matchesSearch = false;
+              break;
+            }
+          }
+        }
+
+        // Match free-text keywords across title, author, series, genre, shelf, or type
+        if (matchesSearch && textKeywords.isNotEmpty) {
+          for (final kw in textKeywords) {
+            final matchesKw = b.title.toLowerCase().contains(kw) ||
+                (b.author != null && b.author!.toLowerCase().contains(kw)) ||
+                (b.seriesName != null && b.seriesName!.toLowerCase().contains(kw)) ||
+                (b.genreTags != null && b.genreTags!.toLowerCase().contains(kw)) ||
+                b.shelvesList.any((s) => s.toLowerCase().contains(kw)) ||
+                b.type.toLowerCase().contains(kw);
+            if (!matchesKw) {
+              matchesSearch = false;
+              break;
+            }
+          }
+        }
+      }
     }
 
+    if (!matchesSearch) return false;
+
+    // 3. Match active modal selected tags (AND logic across all selected chips)
+    if (_selectedTags.isNotEmpty) {
+      final bookTags = b.tagsList.map((t) => t.toLowerCase()).toSet();
+      for (final reqTag in _selectedTags) {
+        final matchesThisTag = bookTags.contains(reqTag.toLowerCase()) ||
+            (b.genreTags != null && b.genreTags!.toLowerCase().contains(reqTag.toLowerCase()));
+        if (!matchesThisTag) return false;
+      }
+    }
+
+    // 4. Match rating filter
     bool matchesRating = true;
     if (_ratingFilter == '5') {
       matchesRating = b.rating != null && b.rating! >= 5.0;
@@ -1201,12 +1418,15 @@ class LibraryScreenState extends State<LibraryScreen> {
       matchesRating = b.rating == null || b.rating == 0;
     }
 
+    if (!matchesRating) return false;
+
+    // 5. Match format/type filter
     bool matchesType = true;
     if (_typeFilter != 'All') {
       matchesType = b.type.toLowerCase() == _typeFilter.toLowerCase();
     }
 
-    return matchesSearch && matchesRating && matchesType;
+    return matchesType;
   }
 
   @override
@@ -1219,7 +1439,12 @@ class LibraryScreenState extends State<LibraryScreen> {
     _recomputeFilteredBooks();
     final filtered = _filteredBooks;
 
-    final isCustomFilterActive = _sortBy != 'updated_at' || _ratingFilter != 'All' || _typeFilter != 'All' || _sortAscending;
+    final isCustomFilterActive = _sortBy != 'updated_at' ||
+        _ratingFilter != 'All' ||
+        _typeFilter != 'All' ||
+        _sortAscending ||
+        _selectedTags.isNotEmpty ||
+        _selectedShelf != null;
     final activeReadingBooks = _books.where((b) => b.status == BookStatus.reading).toList();
     final showCarousel = ThemeService.instance.showReadingCarousel &&
         _searchQuery.isEmpty &&
@@ -1583,10 +1808,13 @@ class LibraryScreenState extends State<LibraryScreen> {
         Padding(
           padding: const EdgeInsets.only(right: 8),
           child: GestureDetector(
-            onTap: () => setState(() {
-              _selectedStatus = status;
-              if (alwaysShowAll) _selectedShelf = null;
-            }),
+            onTap: () {
+              _themeService.triggerHapticClick();
+              setState(() {
+                _selectedStatus = status;
+                if (alwaysShowAll) _selectedShelf = null;
+              });
+            },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
@@ -1668,10 +1896,13 @@ class LibraryScreenState extends State<LibraryScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: GestureDetector(
-              onTap: () => setState(() {
-                _selectedShelf = isSelected ? null : shelf;
-                _selectedStatus = 'All';
-              }),
+              onTap: () {
+                _themeService.triggerHapticClick();
+                setState(() {
+                  _selectedShelf = isSelected ? null : shelf;
+                  _selectedStatus = 'All';
+                });
+              },
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
