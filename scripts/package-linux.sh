@@ -202,18 +202,18 @@ if command -v flatpak-builder >/dev/null 2>&1; then
   ABS_RELEASE_DIR="$(cd "$RELEASE_ASSETS_DIR" && pwd)"
   (
     cd packaging/flatpak
-    rm -rf flatpak-build flatpak-repo
-    echo "Running flatpak-builder in packaging/flatpak..."
-    flatpak-builder --force-clean --repo=flatpak-repo flatpak-build org.readingtracker.PaperbackReader.yml || true
+    rm -rf .flatpak-build .flatpak-repo
+    echo "Running flatpak-builder..."
+    flatpak-builder --force-clean --repo=.flatpak-repo .flatpak-build org.readingtracker.PaperbackReader.yml
 
-    if [ -d "flatpak-repo" ]; then
+    if [ -d ".flatpak-repo" ]; then
       echo "Creating Flatpak standalone bundle (.flatpak)..."
-      flatpak build-bundle flatpak-repo "$ABS_RELEASE_DIR/paperback-v${VERSION_CLEAN}-linux-x86_64.flatpak" org.readingtracker.PaperbackReader || true
+      flatpak build-bundle .flatpak-repo "$ABS_RELEASE_DIR/paperback-v${VERSION_CLEAN}-linux-x86_64.flatpak" org.readingtracker.PaperbackReader
       if [ -f "$ABS_RELEASE_DIR/paperback-v${VERSION_CLEAN}-linux-x86_64.flatpak" ]; then
         echo "Flatpak bundle created successfully at $ABS_RELEASE_DIR/paperback-v${VERSION_CLEAN}-linux-x86_64.flatpak"
       fi
     fi
-    rm -rf flatpak-build flatpak-repo
+    rm -rf .flatpak-build .flatpak-repo
   )
 fi
 
