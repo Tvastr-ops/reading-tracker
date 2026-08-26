@@ -5,6 +5,14 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.2.0c] - 2026-08-26
+
+### Added & Improved
+- **Local Backup & Restore (JSON / CSV)**: Added complete offline export & restore in Settings. Export your full library + reading logs to JSON or web-compatible CSV, and restore/import instantly from backup files or clipboard text.
+- **CI Linter Polish**: Fixed flow control brace style in `_ParsedSearchQuery` to pass strict GitHub Actions release checks.
+
+---
+
 ## [2.2.0b] - 2026-08-26
 
 ### Added & Improved
