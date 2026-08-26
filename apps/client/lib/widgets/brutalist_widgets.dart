@@ -106,6 +106,10 @@ class _BrutalistButtonState extends State<BrutalistButton> {
     final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
     final offset = details?.shadowOffsetSm ?? AppTheme.shadowOffsetSm;
 
+    final Color defaultText = (widget.backgroundColor == Colors.transparent)
+        ? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack)
+        : Colors.white;
+
     Widget btn = GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) => setState(() => _isPressed = false),
@@ -132,7 +136,7 @@ class _BrutalistButtonState extends State<BrutalistButton> {
           alignment: widget.isFullWidth ? Alignment.center : null,
           child: DefaultTextStyle(
             style: TextStyle(
-              color: widget.textColor ?? Colors.white,
+              color: widget.textColor ?? defaultText,
               fontWeight: FontWeight.w800,
               fontSize: 13,
               letterSpacing: 0.5,

@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Paperback Reader
+GenericName=Reading Tracker & Ledger
+Comment=A tactile, offline-first reading ledger for novels, light novels, and web serials
+Exec=paperback-reader %u
+Icon=org.readingtracker.PaperbackReader
+Terminal=false
+Type=Application
+Categories=Utility;Office;Literature;
+StartupWMClass=com.readingtracker.app
+Keywords=reading;books;tracker;novels;light novels;web novels;library;
+MimeType=x-scheme-handler/paperback;

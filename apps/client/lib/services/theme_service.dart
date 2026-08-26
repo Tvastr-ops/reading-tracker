@@ -1,5 +1,5 @@
 import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
@@ -227,6 +227,26 @@ class ThemeService extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyHapticFeedback, val);
+  }
+
+  /// Triggers a lightweight tactile haptic feedback click if enabled in settings.
+  /// Strictly runs on mobile platforms (iOS/Android) and skips PC/Desktop to avoid overhead.
+  void triggerHapticClick() {
+    if (!_hapticFeedback || kIsWeb) return;
+    if (defaultTargetPlatform != TargetPlatform.android && defaultTargetPlatform != TargetPlatform.iOS) return;
+    try {
+      HapticFeedback.selectionClick();
+    } catch (_) {}
+  }
+
+  /// Triggers a medium tactile impact on save/completion events.
+  /// Strictly runs on mobile platforms (iOS/Android) and skips PC/Desktop to avoid overhead.
+  void triggerHapticImpact() {
+    if (!_hapticFeedback || kIsWeb) return;
+    if (defaultTargetPlatform != TargetPlatform.android && defaultTargetPlatform != TargetPlatform.iOS) return;
+    try {
+      HapticFeedback.lightImpact();
+    } catch (_) {}
   }
 
   Future<void> setUseDynamicColor(bool val) async {

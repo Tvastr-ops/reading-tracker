@@ -1,0 +1,43 @@
+app-id: org.readingtracker.PaperbackReader
+runtime: org.freedesktop.Platform
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+command: paperback-reader
+
+finish-args:
+  - --share=ipc
+  - --socket=x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --share=network
+  - --device=dri
+  - --filesystem=xdg-download
+  - --filesystem=xdg-documents
+
+modules:
+  - name: paperback-reader
+    buildsystem: simple
+    build-commands:
+      - install -d /app/bin /app/lib /app/share/applications /app/share/metainfo /app/share/icons/hicolor/512x512/apps
+      - cp -r * /app/lib/
+      - install -D -m 755 run.sh /app/bin/paperback-reader
+      - install -D -m 644 org.readingtracker.PaperbackReader.desktop /app/share/applications/org.readingtracker.PaperbackReader.desktop
+      - install -D -m 644 org.readingtracker.PaperbackReader.metainfo.xml /app/share/metainfo/org.readingtracker.PaperbackReader.metainfo.xml
+      - install -D -m 644 icon.png /app/share/icons/hicolor/512x512/apps/org.readingtracker.PaperbackReader.png
+    sources:
+      - type: dir
+        path: bundle-src
+      - type: file
+        path: org.readingtracker.PaperbackReader.desktop
+      - type: file
+        path: org.readingtracker.PaperbackReader.metainfo.xml
+      - type: file
+        path: icon.png
+      - type: script
+        dest-filename: run.sh
+        commands:
+          - export LD_LIBRARY_PATH="/app/lib/lib:${LD_LIBRARY_PATH}"
+          - export FLUTTER_ENGINE_SWITCHES="${FLUTTER_ENGINE_SWITCHES:-1}"
+          - export FLUTTER_ENGINE_SWITCH_1="${FLUTTER_ENGINE_SWITCH_1:-enable-impeller=false}"
+          - cd /app/lib
+          - exec /app/lib/paperback_reader "$@"

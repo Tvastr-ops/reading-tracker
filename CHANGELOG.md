@@ -5,6 +5,23 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.2.0a] - 2026-08-26
+
+### Added
+- **Multi-Tag & Genre Filtering**: Added dedicated `GENRES / TAGS` section in Library Sort & Filter modal supporting multi-selection (AND intersection matching) with dynamic matching book counts.
+- **Top-5 Frequent Tag Display & Collapse**: Displays the top 5 most frequently used genre tags by default with expandable `+MORE` / `-LESS` chips (`BrutalistExpandToggleChip`) to preserve vertical space.
+- **Interactive Micro-Chip Clear Button**: Added responsive, styled `CLEAR (N)` micro-badge in modal headers for rapid one-tap tag filter resets.
+- **Unified Multi-Tag & Keyword Search Combo**: Search bar now parses multi-tag syntax (`#fantasy #adventure`, `tag:fantasy,magic`, `tag:scifi tag:cyberpunk`), custom shelves (`shelf:favorites`), and free-text queries seamlessly in combination.
+- **Hardware Vibration Support**: Added `android.permission.VIBRATE` to Android Manifest to enable hardware haptic feedback on physical devices.
+- **Linux Flatpak Packaging**: Added complete Flatpak manifest (`org.readingtracker.PaperbackReader.yml`), AppStream metainfo (`org.readingtracker.PaperbackReader.metainfo.xml`), desktop spec, and build script integration for Flathub and standalone `.flatpak` bundle creation.
+
+### Fixed & Refined
+- **Guarded Platform Haptics**: Added platform checks (`triggerHapticClick()` / `triggerHapticImpact()`) preventing synchronous lag on Web and Desktop while delivering instant physical haptic ticks on mobile.
+- **Modal Button Contrast**: Fixed visual regression where `CANCEL` and action buttons rendered as empty/invisible rectangles in `BookEditDialog` and `QuickLogDialog`.
+- **Lifetime Stats Layout**: Refined lifetime reading metrics view to focus exclusively on all-time statistics without redundant 52-week annual grids.
+
+---
+
 ## [2.2.0] - 2026-08-26
 
 ### Added

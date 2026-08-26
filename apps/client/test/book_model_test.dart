@@ -337,5 +337,126 @@ void main() {
       expect(shelfRes.length, 1);
       expect(shelfRes.first.title, 'The Way of Kings');
     });
+
+    test('tagsList parses JSON and comma-separated tags accurately', () {
+      const book1 = Book(
+        id: '10',
+        title: 'Fantasy Tale',
+        genreTags: '["High Fantasy","Adventure","Magic"]',
+        createdAt: '',
+        updatedAt: '',
+      );
+      expect(book1.tagsList, ['High Fantasy', 'Adventure', 'Magic']);
+
+      const book2 = Book(
+        id: '11',
+        title: 'SciFi Tale',
+        genreTags: 'Cyberpunk, Space Opera, Hard Sci-Fi',
+        createdAt: '',
+        updatedAt: '',
+      );
+      expect(book2.tagsList, ['Cyberpunk', 'Space Opera', 'Hard Sci-Fi']);
+    });
+
+    test('multi-tag and keyword combo search queries', () {
+      const book1 = Book(
+        id: '1',
+        title: 'Mistborn: The Final Empire',
+        author: 'Brandon Sanderson',
+        genreTags: 'Fantasy, High Fantasy, Heist',
+        seriesName: 'Mistborn',
+        shelfNames: '["Favorites","Cosmere"]',
+        createdAt: '',
+        updatedAt: '',
+      );
+
+      const book2 = Book(
+        id: '2',
+        title: 'The Way of Kings',
+        author: 'Brandon Sanderson',
+        genreTags: 'Epic Fantasy, High Fantasy, Military',
+        seriesName: 'The Stormlight Archive',
+        shelfNames: '["Favorites","Cosmere"]',
+        createdAt: '',
+        updatedAt: '',
+      );
+
+      const book3 = Book(
+        id: '3',
+        title: 'Neuromancer',
+        author: 'William Gibson',
+        genreTags: 'Sci-Fi, Cyberpunk, Heist',
+        seriesName: 'Sprawl',
+        shelfNames: '["Sci-Fi Classics"]',
+        createdAt: '',
+        updatedAt: '',
+      );
+
+      final books = [book1, book2, book3];
+
+      List<Book> search(String query) {
+        final rawQuery = query.trim();
+        if (rawQuery.isEmpty) return books;
+        final tokens = rawQuery.split(RegExp(r'[\s,]+')).where((t) => t.isNotEmpty).toList();
+        final requiredTags = <String>[];
+        final requiredShelves = <String>[];
+        final textKeywords = <String>[];
+
+        for (final token in tokens) {
+          final low = token.toLowerCase();
+          if (low.startsWith('#') && low.length > 1) {
+            requiredTags.add(low.substring(1));
+          } else if (low.startsWith('tag:') && low.length > 4) {
+            requiredTags.add(low.substring(4));
+          } else if (low.startsWith('shelf:') && low.length > 6) {
+            requiredShelves.add(low.substring(6));
+          } else {
+            textKeywords.add(low);
+          }
+        }
+
+        return books.where((b) {
+          for (final tag in requiredTags) {
+            final hasTag = b.tagsList.any((t) => t.toLowerCase().contains(tag)) ||
+                (b.genreTags != null && b.genreTags!.toLowerCase().contains(tag));
+            if (!hasTag) return false;
+          }
+          for (final shelf in requiredShelves) {
+            final hasShelf = b.shelvesList.any((s) => s.toLowerCase().contains(shelf));
+            if (!hasShelf) return false;
+          }
+          for (final kw in textKeywords) {
+            final matchesKw = b.title.toLowerCase().contains(kw) ||
+                (b.author != null && b.author!.toLowerCase().contains(kw)) ||
+                (b.seriesName != null && b.seriesName!.toLowerCase().contains(kw)) ||
+                (b.genreTags != null && b.genreTags!.toLowerCase().contains(kw)) ||
+                b.shelvesList.any((s) => s.toLowerCase().contains(kw)) ||
+                b.type.toLowerCase().contains(kw);
+            if (!matchesKw) return false;
+          }
+          return true;
+        }).toList();
+      }
+
+      // Combo 1: Two hashtags #fantasy #heist -> only Mistborn
+      final res1 = search('#fantasy #heist');
+      expect(res1.length, 1);
+      expect(res1.first.title, 'Mistborn: The Final Empire');
+
+      // Combo 2: Two hashtags #heist #cyberpunk -> only Neuromancer
+      final res2 = search('#heist #cyberpunk');
+      expect(res2.length, 1);
+      expect(res2.first.title, 'Neuromancer');
+
+      // Combo 3: Keyword + hashtag "Sanderson #military" -> only The Way of Kings
+      final res3 = search('Sanderson #military');
+      expect(res3.length, 1);
+      expect(res3.first.title, 'The Way of Kings');
+
+      // Combo 4: Shelf + tag "shelf:cosmere #heist" -> only Mistborn
+      final res4 = search('shelf:cosmere #heist');
+      expect(res4.length, 1);
+      expect(res4.first.title, 'Mistborn: The Final Empire');
+    });
   });
 }

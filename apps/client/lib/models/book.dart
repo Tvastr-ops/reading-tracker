@@ -126,6 +126,25 @@ class Book {
         .toList();
   }
 
+  /// Parses genre tags from comma-separated or JSON list strings into a clean trimmed list.
+  List<String> get tagsList {
+    if (genreTags == null || genreTags!.trim().isEmpty) return const [];
+    final raw = genreTags!.trim();
+    if (raw.startsWith('[') && raw.endsWith(']')) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          return decoded.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
+        }
+      } catch (_) {}
+    }
+    return raw
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+  }
+
   /// Returns a copy of the book with the specified shelves stored as a JSON array string.
   Book withShelves(List<String> shelves) {
     final cleaned = shelves.map((s) => s.trim()).where((s) => s.isNotEmpty).toSet().toList();
