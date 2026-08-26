@@ -208,10 +208,17 @@ if command -v flatpak-builder >/dev/null 2>&1; then
   cp -rL "$BUNDLE_DIR"/* packaging/flatpak/bundle-src/
   [ -f apps/client/assets/icon.png ] && cp apps/client/assets/icon.png packaging/flatpak/icon.png
 
+  echo "Running flatpak-builder..."
+  flatpak-builder --force-clean --repo="$FLATPAK_REPO" "$FLATPAK_BUILD_DIR" packaging/flatpak/org.readingtracker.PaperbackReader.yml || \
   flatpak-builder --user --force-clean --repo="$FLATPAK_REPO" "$FLATPAK_BUILD_DIR" packaging/flatpak/org.readingtracker.PaperbackReader.yml || true
+
   if [ -d "$FLATPAK_REPO" ]; then
-    flatpak build-bundle "$FLATPAK_REPO" "$RELEASE_ASSETS_DIR/paperback-v${VERSION_CLEAN}-linux-x86_64.flatpak" org.readingtracker.PaperbackReader || true
-    echo "Flatpak bundle created successfully!"
+    echo "Creating Flatpak standalone bundle (.flatpak)..."
+    flatpak build-bundle "$FLATPAK_REPO" "$RELEASE_ASSETS_DIR/paperback-v${VERSION_CLEAN}-linux-x86_64.flatpak" org.readingtracker.PaperbackReader || \
+    flatpak build-bundle --user "$FLATPAK_REPO" "$RELEASE_ASSETS_DIR/paperback-v${VERSION_CLEAN}-linux-x86_64.flatpak" org.readingtracker.PaperbackReader || true
+    if [ -f "$RELEASE_ASSETS_DIR/paperback-v${VERSION_CLEAN}-linux-x86_64.flatpak" ]; then
+      echo "Flatpak bundle created successfully at $RELEASE_ASSETS_DIR/paperback-v${VERSION_CLEAN}-linux-x86_64.flatpak"
+    fi
   fi
   rm -rf "$FLATPAK_BUILD_DIR" "$FLATPAK_REPO" packaging/flatpak/bundle-src packaging/flatpak/icon.png
 fi

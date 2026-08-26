@@ -735,16 +735,23 @@ class _StatsScreenState extends State<StatsScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.auto_graph_rounded, size: 16, color: primaryColor),
-                                  const SizedBox(width: 6),
-                                  const Text(
-                                    'HISTORICAL YEARLY COMPLETIONS',
-                                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
-                                  ),
-                                ],
+                              Flexible(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.auto_graph_rounded, size: 16, color: primaryColor),
+                                    const SizedBox(width: 6),
+                                    const Flexible(
+                                      child: Text(
+                                        'YEARLY COMPLETIONS',
+                                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
+                              const SizedBox(width: 8),
                               BrutalistBadge(
                                 label: '${yearlyCounts.values.fold(0, (a, b) => a + b)} TOTAL',
                                 backgroundColor: primaryColor,
@@ -930,9 +937,35 @@ class _StatsScreenState extends State<StatsScreen> {
                   }
 
                   final totalYearsActive = yearlyCounts.isNotEmpty ? yearlyCounts.length : 1;
-                  final totalActiveDays = (_streakStats['total_active_days'] as num?)?.toInt() ?? 0;
+                  final totalActiveDays = (_streakStats['totalDays'] as num?)?.toInt() ?? 0;
                   final completionRate = _books.isNotEmpty ? ((completedInSelectedYear / _books.length) * 100).round() : 0;
                   final unitsPerActiveDay = totalActiveDays > 0 ? (_lifetimeUnitsLogged / totalActiveDays).round() : 0;
+
+                  // Find best year (most completions)
+                  int bestYear = currentCalendarYear;
+                  int maxCompletionsInBestYear = 0;
+                  for (final entry in yearlyCounts.entries) {
+                    if (entry.value > maxCompletionsInBestYear) {
+                      maxCompletionsInBestYear = entry.value;
+                      bestYear = entry.key;
+                    }
+                  }
+
+                  // Average days to finish a book across completed items with valid start/finish dates
+                  double totalFinishDays = 0;
+                  int booksWithDuration = 0;
+                  for (final b in _books) {
+                    if (b.status == BookStatus.completed && b.dateStarted != null && b.dateFinished != null) {
+                      final s = DateTime.tryParse(b.dateStarted!);
+                      final f = DateTime.tryParse(b.dateFinished!);
+                      if (s != null && f != null && !f.isBefore(s)) {
+                        final diff = f.difference(s).inDays;
+                        totalFinishDays += (diff == 0 ? 1 : diff);
+                        booksWithDuration++;
+                      }
+                    }
+                  }
+                  final avgDaysPerBook = booksWithDuration > 0 ? (totalFinishDays / booksWithDuration) : 0.0;
 
                   final velocityCard = BrutalistCard(
                     margin: EdgeInsets.zero,
@@ -948,10 +981,10 @@ class _StatsScreenState extends State<StatsScreen> {
                                 children: [
                                   Icon(Icons.speed_rounded, size: 16, color: primaryColor),
                                   const SizedBox(width: 6),
-                                  Flexible(
+                                  const Flexible(
                                     child: Text(
-                                      isLifetime ? 'LIFETIME READING VELOCITY' : 'READING VELOCITY',
-                                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                                      'READING VELOCITY',
+                                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
@@ -991,93 +1024,170 @@ class _StatsScreenState extends State<StatsScreen> {
                           ],
                         ),
                         const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh,
-                                  border: Border.all(
-                                    color: isDark
-                                        ? AppColors.darkInkWhite.withValues(alpha: 0.3)
-                                        : AppColors.inkBlack.withValues(alpha: 0.2),
-                                    width: 1.0,
-                                  ),
+                        if (isLifetime) ...[
+                          // Row 1: Books/Year & Units/Day
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildVelocityCell(
+                                  'BOOKS / YEAR',
+                                  (completedInSelectedYear / totalYearsActive).toStringAsFixed(1),
+                                  isDark: isDark,
+                                  inkColor: inkColor,
+                                  mutedInk: mutedInk,
                                 ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildVelocityCell(
+                                  'DAILY VELOCITY',
+                                  unitsPerActiveDay > 0
+                                      ? '~$unitsPerActiveDay units/day'
+                                      : (_lifetimeUnitsLogged > 0 ? '${_lifetimeUnitsLogged.toInt()} total' : '0'),
+                                  isDark: isDark,
+                                  inkColor: inkColor,
+                                  mutedInk: mutedInk,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          // Row 2: Best Record Year & Average Finish Duration
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildVelocityCell(
+                                  'PEAK RECORD YEAR',
+                                  maxCompletionsInBestYear > 0 ? '$bestYear ($maxCompletionsInBestYear books)' : 'N/A',
+                                  isDark: isDark,
+                                  inkColor: primaryColor,
+                                  mutedInk: mutedInk,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildVelocityCell(
+                                  'AVG FINISH TIME',
+                                  avgDaysPerBook > 0 ? '~${avgDaysPerBook.toStringAsFixed(1)} days/book' : 'N/A',
+                                  isDark: isDark,
+                                  inkColor: inkColor,
+                                  mutedInk: mutedInk,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          // Row 3: Longest Streak & Reading Cadence
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildVelocityCell(
+                                  'LONGEST STREAK',
+                                  '${_streakStats['longestStreak'] ?? 0} days in a row',
+                                  isDark: isDark,
+                                  inkColor: inkColor,
+                                  mutedInk: mutedInk,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildVelocityCell(
+                                  'READING CADENCE',
+                                  (completedInSelectedYear > 0 && totalYearsActive > 0)
+                                      ? () {
+                                          final annualRate = completedInSelectedYear / totalYearsActive;
+                                          final weeksPerBook = 52.0 / annualRate;
+                                          if (weeksPerBook < 1.0) {
+                                            final daysPerBook = weeksPerBook * 7.0;
+                                            return '1 bk / ${daysPerBook.toStringAsFixed(1)} days';
+                                          }
+                                          return '1 bk / ${weeksPerBook.toStringAsFixed(1)} wks';
+                                        }()
+                                      : 'No active cadence',
+                                  isDark: isDark,
+                                  inkColor: inkColor,
+                                  mutedInk: mutedInk,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ] else ...[
+                          // Year-specific 2x2 rich velocity grid
+                          () {
+                            final activeDaysInYear = _dailyActivity.length;
+                            final yearUnits = _totalUnitsLogged;
+                            final dailyRateYear = activeDaysInYear > 0 ? (yearUnits / activeDaysInYear).round() : 0;
+
+                            // Find peak reading month in selected year
+                            int peakMonthIdx = -1;
+                            int maxMonthCount = 0;
+                            for (int m = 0; m < 12; m++) {
+                              if (monthlyCounts[m] > maxMonthCount) {
+                                maxMonthCount = monthlyCounts[m];
+                                peakMonthIdx = m;
+                              }
+                            }
+                            final peakMonthName = peakMonthIdx >= 0 ? _monthNames[peakMonthIdx] : 'N/A';
+
+                            return Column(
+                              children: [
+                                Row(
                                   children: [
-                                    Text(
-                                      isLifetime ? 'ANNUAL AVERAGE' : 'MONTHLY RATE',
-                                      style: TextStyle(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w800,
-                                        color: mutedInk,
-                                        letterSpacing: 0.3,
+                                    Expanded(
+                                      child: _buildVelocityCell(
+                                        'MONTHLY PACE',
+                                        completedInSelectedYear > 0
+                                            ? '${(completedInSelectedYear / elapsedMonths).toStringAsFixed(1)} books/mo'
+                                            : '0.0 books/mo',
+                                        isDark: isDark,
+                                        inkColor: inkColor,
+                                        mutedInk: mutedInk,
                                       ),
                                     ),
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      isLifetime
-                                          ? '${(completedInSelectedYear / totalYearsActive).toStringAsFixed(1)} books/yr'
-                                          : (completedInSelectedYear > 0
-                                              ? '${(completedInSelectedYear / elapsedMonths).toStringAsFixed(1)} books/mo'
-                                              : '0.0 books/mo'),
-                                      style: TextStyle(
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w900,
-                                        color: inkColor,
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: _buildVelocityCell(
+                                        'WEEKLY CADENCE',
+                                        completedInSelectedYear > 0
+                                            ? '~${((completedInSelectedYear / elapsedMonths) / 4.33).toStringAsFixed(1)} books/wk'
+                                            : 'No active pace',
+                                        isDark: isDark,
+                                        inkColor: inkColor,
+                                        mutedInk: mutedInk,
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh,
-                                  border: Border.all(
-                                    color: isDark
-                                        ? AppColors.darkInkWhite.withValues(alpha: 0.3)
-                                        : AppColors.inkBlack.withValues(alpha: 0.2),
-                                    width: 1.0,
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                const SizedBox(height: 8),
+                                Row(
                                   children: [
-                                    Text(
-                                      isLifetime ? 'UNITS / ACTIVE DAY' : 'WEEKLY PACE',
-                                      style: TextStyle(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w800,
-                                        color: mutedInk,
-                                        letterSpacing: 0.3,
+                                    Expanded(
+                                      child: _buildVelocityCell(
+                                        'DAILY VELOCITY',
+                                        dailyRateYear > 0
+                                            ? '~$dailyRateYear units/day'
+                                            : (yearUnits > 0 ? '${yearUnits.toInt()} total' : '0 units/day'),
+                                        isDark: isDark,
+                                        inkColor: inkColor,
+                                        mutedInk: mutedInk,
                                       ),
                                     ),
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      isLifetime
-                                          ? (unitsPerActiveDay > 0 ? '~$unitsPerActiveDay units/day' : 'N/A')
-                                          : (completedInSelectedYear > 0
-                                              ? '~${((completedInSelectedYear / elapsedMonths) / 4.33).toStringAsFixed(1)} books/wk'
-                                              : 'No active pace'),
-                                      style: TextStyle(
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w900,
-                                        color: inkColor,
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: _buildVelocityCell(
+                                        'PEAK MONTH',
+                                        maxMonthCount > 0 ? '$peakMonthName ($maxMonthCount)' : 'N/A',
+                                        isDark: isDark,
+                                        inkColor: primaryColor,
+                                        mutedInk: mutedInk,
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ),
-                          ],
-                        ),
+                              ],
+                            );
+                          }(),
+                        ],
                       ],
                     ),
                   );
@@ -1121,7 +1231,7 @@ class _StatsScreenState extends State<StatsScreen> {
                               Icon(Icons.collections_bookmark_rounded, size: 16, color: primaryColor),
                               const SizedBox(width: 6),
                               Text(
-                                'READING VOLUME BY UNIT ($_selectedYear)',
+                                isLifetime ? 'READING VOLUME BY UNIT' : 'READING VOLUME BY UNIT ($_selectedYear)',
                                 style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
                               ),
                             ],
@@ -1521,6 +1631,52 @@ class _StatsScreenState extends State<StatsScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildVelocityCell(
+    String label,
+    String value, {
+    required bool isDark,
+    required Color inkColor,
+    required Color mutedInk,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh,
+        border: Border.all(
+          color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.3) : AppColors.inkBlack.withValues(alpha: 0.2),
+          width: 1.0,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 8.5,
+              fontWeight: FontWeight.w800,
+              color: mutedInk,
+              letterSpacing: 0.2,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              color: inkColor,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }

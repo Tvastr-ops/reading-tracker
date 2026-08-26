@@ -92,12 +92,23 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
     final enableTexture = ThemeService.instance.enablePaperTexture;
     final intensity = ThemeService.instance.patternIntensity;
 
-    return PaperTextureCanvas(
-      patternType: patternType,
-      isDark: isDark,
-      enabled: enableTexture,
-      intensity: intensity,
-      baseCanvasColor: canvasBg,
+    final overlayStyle = SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+      systemNavigationBarColor: canvasBg,
+      systemNavigationBarDividerColor: Colors.transparent,
+      systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+    );
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: overlayStyle,
+      child: PaperTextureCanvas(
+        patternType: patternType,
+        isDark: isDark,
+        enabled: enableTexture,
+        intensity: intensity,
+        baseCanvasColor: canvasBg,
       child: CallbackShortcuts(
         bindings: {
           const SingleActivator(LogicalKeyboardKey.f11): () => ThemeService.instance.toggleFullscreen(),
@@ -380,7 +391,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
     ),
   ),
 ),
-);
+      ),
+    );
   }
 
   Widget _buildRailNavItem({
