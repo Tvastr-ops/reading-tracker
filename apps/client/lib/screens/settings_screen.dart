@@ -626,6 +626,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
         ),
+        const SizedBox(height: 8),
+        BrutalistCard(
+          margin: EdgeInsets.zero,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Haptic Feedback',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      _themeService.hapticFeedback
+                          ? 'Subtle tactile micro-vibrations on progress clicks and chip selections.'
+                          : 'Vibrations disabled completely.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              BrutalistSwitch(
+                value: _themeService.hapticFeedback,
+                onChanged: (val) {
+                  _themeService.setHapticFeedback(val);
+                  setState(() {});
+                },
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -764,7 +801,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ? null
           : () async {
               await _saveConfig();
-              final books = await _syncManager.syncNow();
+              final books = await _syncManager.syncNow(forceFullReconciliation: true);
               if (!mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(

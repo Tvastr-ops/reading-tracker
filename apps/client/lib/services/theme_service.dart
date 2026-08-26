@@ -25,6 +25,7 @@ class ThemeService extends ChangeNotifier {
   static const String _keyPatternIntensity = 'app_pattern_intensity';
   static const String _keyPromptNoteOnQuickLog = 'app_prompt_note_on_quick_log';
   static const String _keyAlwaysShowAllShelves = 'app_always_show_all_shelves';
+  static const String _keyHapticFeedback = 'app_haptic_feedback';
 
   ThemeMode _themeMode = ThemeMode.system;
   AppThemeVariant _lightVariant = AppThemeVariant.classicPaperback;
@@ -39,6 +40,7 @@ class ThemeService extends ChangeNotifier {
   double _patternIntensity = 1.0;
   bool _promptNoteOnQuickLog = false;
   bool _alwaysShowAllShelves = false;
+  bool _hapticFeedback = true;
   bool _isFullscreen = false;
 
   ColorScheme? _lightDynamic;
@@ -59,6 +61,7 @@ class ThemeService extends ChangeNotifier {
   double get patternIntensity => _patternIntensity;
   bool get promptNoteOnQuickLog => _promptNoteOnQuickLog;
   bool get alwaysShowAllShelves => _alwaysShowAllShelves;
+  bool get hapticFeedback => _hapticFeedback;
   bool get isFullscreen => _isFullscreen;
 
   ThemeData get currentLightTheme {
@@ -121,6 +124,7 @@ class ThemeService extends ChangeNotifier {
     _patternIntensity = prefs.getDouble(_keyPatternIntensity) ?? 1.0;
     _promptNoteOnQuickLog = prefs.getBool(_keyPromptNoteOnQuickLog) ?? false;
     _alwaysShowAllShelves = prefs.getBool(_keyAlwaysShowAllShelves) ?? false;
+    _hapticFeedback = prefs.getBool(_keyHapticFeedback) ?? true;
 
     // Apply native edge-to-edge transparent system UI
     if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
@@ -214,6 +218,15 @@ class ThemeService extends ChangeNotifier {
         } catch (_) {}
       }
     }
+  }
+
+  Future<void> setHapticFeedback(bool val) async {
+    if (_hapticFeedback == val) return;
+    _hapticFeedback = val;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyHapticFeedback, val);
   }
 
   Future<void> setUseDynamicColor(bool val) async {

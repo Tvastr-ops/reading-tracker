@@ -38,6 +38,7 @@ class LibraryScreenState extends State<LibraryScreen> {
   void openAddBookDialog() => _openEditDialog();
 
   List<Book> _books = [];
+  List<Book> _filteredBooks = [];
   Book? _selectedBookForDetail;
   bool _isLoading = true;
   String _selectedStatus = 'All';
@@ -58,6 +59,38 @@ class LibraryScreenState extends State<LibraryScreen> {
     BookStatus.onHold,
     BookStatus.dropped,
   ];
+
+  void _recomputeFilteredBooks() {
+    var list = _books.where((b) {
+      final matchesStatus = _selectedStatus == 'All' || b.status == _selectedStatus;
+      final matchesShelf = _selectedShelf == null ||
+          b.shelvesList.any((s) => s.toLowerCase() == _selectedShelf!.toLowerCase());
+
+      return matchesStatus && matchesShelf && _matchesNonStatusFilters(b);
+    }).toList();
+
+    list.sort((a, b) {
+      if (_sortBy == 'title') {
+        return a.title.toLowerCase().compareTo(b.title.toLowerCase());
+      } else if (_sortBy == 'progress') {
+        return b.completionPercentage.compareTo(a.completionPercentage);
+      } else if (_sortBy == 'rating') {
+        final rA = a.rating ?? 0.0;
+        final rB = b.rating ?? 0.0;
+        return rB.compareTo(rA);
+      } else {
+        final dtA = DateTime.tryParse(a.updatedAt) ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final dtB = DateTime.tryParse(b.updatedAt) ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return dtB.compareTo(dtA);
+      }
+    });
+
+    if (_sortAscending) {
+      list = list.reversed.toList();
+    }
+
+    _filteredBooks = list;
+  }
 
   @override
   void initState() {
@@ -111,6 +144,20 @@ class LibraryScreenState extends State<LibraryScreen> {
     });
   }
 
+  void _updateBookInPlace(Book updated) {
+    final idx = _books.indexWhere((b) => b.id == updated.id);
+    if (idx != -1) {
+      setState(() {
+        _books[idx] = updated;
+        if (_selectedBookForDetail?.id == updated.id) {
+          _selectedBookForDetail = updated;
+        }
+      });
+    } else {
+      _loadBooks();
+    }
+  }
+
   Future<void> _quickIncrement(Book book, double amount) async {
     final total = book.totalUnits;
     if (book.status == BookStatus.completed && total != null && book.progress >= total) {
@@ -123,14 +170,13 @@ class LibraryScreenState extends State<LibraryScreen> {
       return;
     }
 
-    // Tactile micro-haptic on mobile
-    HapticFeedback.lightImpact();
+    // Tactile micro-haptic on mobile if enabled
+    if (_themeService.hapticFeedback) {
+      HapticFeedback.lightImpact();
+    }
 
     final updated = await _mutationService.advanceProgress(book: book, delta: amount);
-    if (_selectedBookForDetail?.id == book.id) {
-      setState(() => _selectedBookForDetail = updated);
-    }
-    await _loadBooks();
+    _updateBookInPlace(updated);
 
     if (_themeService.promptNoteOnQuickLog && mounted) {
       _promptQuickNoteDialog(book, amount);
@@ -204,7 +250,6 @@ class LibraryScreenState extends State<LibraryScreen> {
                 if (logs.isNotEmpty) {
                   final latestLog = logs.first;
                   await _dbHelper.updateReadingLog(latestLog.copyWith(note: note));
-                  await _loadBooks();
                 }
               }
             },
@@ -235,26 +280,21 @@ class LibraryScreenState extends State<LibraryScreen> {
       chaptersDelta: chaptersDelta,
       volumesDelta: volumesDelta,
     );
-    setState(() {
-      _selectedBookForDetail = updated;
-    });
-    await _loadBooks();
+    _updateBookInPlace(updated);
   }
 
   Future<void> _toggleFavorite(Book book) async {
     final updated = await _mutationService.toggleFavorite(book: book);
-    if (_selectedBookForDetail?.id == book.id) {
-      setState(() => _selectedBookForDetail = updated);
-    }
-    await _loadBooks();
+    _updateBookInPlace(updated);
   }
 
   Future<void> _deleteBook(Book book) async {
     await _dbHelper.deleteBook(book.id);
     setState(() {
       _selectedBookForDetail = null;
+      _books.removeWhere((b) => b.id == book.id);
     });
-    await _loadBooks();
+    _syncManager.scheduleSyncSoon();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -289,17 +329,11 @@ class LibraryScreenState extends State<LibraryScreen> {
         break;
       case ContextMenuAction.markCompleted:
         final updated = await _mutationService.changeStatus(book: book, newStatus: BookStatus.completed);
-        if (_selectedBookForDetail?.id == book.id) {
-          setState(() => _selectedBookForDetail = updated);
-        }
-        await _loadBooks();
+        _updateBookInPlace(updated);
         break;
       case ContextMenuAction.startReread:
         final updated = await _mutationService.startReread(book: book);
-        if (_selectedBookForDetail?.id == book.id) {
-          setState(() => _selectedBookForDetail = updated);
-        }
-        await _loadBooks();
+        _updateBookInPlace(updated);
         break;
       case ContextMenuAction.delete:
         _deleteBook(book);
@@ -318,10 +352,7 @@ class LibraryScreenState extends State<LibraryScreen> {
             newProgress: newProgress,
             note: note,
           );
-          if (_selectedBookForDetail?.id == book.id) {
-            setState(() => _selectedBookForDetail = updated);
-          }
-          await _loadBooks();
+          _updateBookInPlace(updated);
         },
       ),
     );
@@ -343,26 +374,22 @@ class LibraryScreenState extends State<LibraryScreen> {
                 _typeFilter = 'All';
               });
             }
+            await _loadBooks();
           } else {
             await _dbHelper.updateBook(savedBook);
-            if (_selectedBookForDetail?.id == savedBook.id) {
-              setState(() {
-                _selectedBookForDetail = savedBook;
-              });
-            }
+            _updateBookInPlace(savedBook);
           }
-          await _loadBooks();
-          _syncManager.syncNow();
+          _syncManager.scheduleSyncSoon();
         },
         onDelete: (id) async {
           await _dbHelper.deleteBook(id);
-          if (_selectedBookForDetail?.id == id) {
-            setState(() {
+          setState(() {
+            if (_selectedBookForDetail?.id == id) {
               _selectedBookForDetail = null;
-            });
-          }
-          await _loadBooks();
-          _syncManager.syncNow();
+            }
+            _books.removeWhere((b) => b.id == id);
+          });
+          _syncManager.scheduleSyncSoon();
         },
       ),
     );
@@ -389,6 +416,7 @@ class LibraryScreenState extends State<LibraryScreen> {
     final sheetBg = details?.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg);
     final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
     bool showAllFormats = ['Novella', 'Novelette', 'Short Story', 'Anthology', 'Essay', 'Other'].contains(_typeFilter);
+    bool showAllRatings = ['3', '2', '1'].contains(_ratingFilter);
 
     const primaryFormats = [
       'Novel',
@@ -516,36 +544,10 @@ class LibraryScreenState extends State<LibraryScreen> {
                         ...primaryFormats.map((type) => _buildTypeFilterChip(type, type, setSheetState)),
                         if (showAllFormats)
                           ...moreFormats.map((type) => _buildTypeFilterChip(type, type, setSheetState)),
-                        GestureDetector(
-                          onTap: () {
-                            setSheetState(() => showAllFormats = !showAllFormats);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white),
-                              border: Border.all(color: borderColor, width: 1.5),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  showAllFormats ? Icons.remove_rounded : Icons.add_rounded,
-                                  size: 13,
-                                  color: accentColor,
-                                ),
-                                const SizedBox(width: 3),
-                                Text(
-                                  showAllFormats ? 'LESS' : 'MORE',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w900,
-                                    color: accentColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                        BrutalistExpandToggleChip(
+                          isExpanded: showAllFormats,
+                          onTap: () => setSheetState(() => showAllFormats = !showAllFormats),
+                          size: BrutalistToggleSize.regular,
                         ),
                       ],
                     ),
@@ -562,6 +564,16 @@ class LibraryScreenState extends State<LibraryScreen> {
                         _buildRatingFilterChip('5 ★ Only', '5', setSheetState),
                         _buildRatingFilterChip('4 ★ & Above', '4', setSheetState),
                         _buildRatingFilterChip('Unrated', 'unrated', setSheetState),
+                        if (showAllRatings) ...[
+                          _buildRatingFilterChip('3 ★ & Above', '3', setSheetState),
+                          _buildRatingFilterChip('2 ★ & Above', '2', setSheetState),
+                          _buildRatingFilterChip('1 ★ & Above', '1', setSheetState),
+                        ],
+                        BrutalistExpandToggleChip(
+                          isExpanded: showAllRatings,
+                          onTap: () => setSheetState(() => showAllRatings = !showAllRatings),
+                          size: BrutalistToggleSize.regular,
+                        ),
                       ],
                     ),
                     if (_books.any((b) => b.shelvesList.isNotEmpty)) ...[
@@ -1179,6 +1191,12 @@ class LibraryScreenState extends State<LibraryScreen> {
       matchesRating = b.rating != null && b.rating! >= 5.0;
     } else if (_ratingFilter == '4') {
       matchesRating = b.rating != null && b.rating! >= 4.0;
+    } else if (_ratingFilter == '3') {
+      matchesRating = b.rating != null && b.rating! >= 3.0;
+    } else if (_ratingFilter == '2') {
+      matchesRating = b.rating != null && b.rating! >= 2.0;
+    } else if (_ratingFilter == '1') {
+      matchesRating = b.rating != null && b.rating! >= 1.0;
     } else if (_ratingFilter == 'unrated') {
       matchesRating = b.rating == null || b.rating == 0;
     }
@@ -1198,36 +1216,8 @@ class LibraryScreenState extends State<LibraryScreen> {
     final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
     final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
 
-    // Filter books
-    var filtered = _books.where((b) {
-      final matchesStatus = _selectedStatus == 'All' || b.status == _selectedStatus;
-      final matchesShelf = _selectedShelf == null ||
-          b.shelvesList.any((s) => s.toLowerCase() == _selectedShelf!.toLowerCase());
-
-      return matchesStatus && matchesShelf && _matchesNonStatusFilters(b);
-    }).toList();
-
-    // Sort books
-    filtered.sort((a, b) {
-      if (_sortBy == 'title') {
-        return a.title.toLowerCase().compareTo(b.title.toLowerCase());
-      } else if (_sortBy == 'progress') {
-        return b.completionPercentage.compareTo(a.completionPercentage);
-      } else if (_sortBy == 'rating') {
-        final rA = a.rating ?? 0.0;
-        final rB = b.rating ?? 0.0;
-        return rB.compareTo(rA);
-      } else {
-        // default updated_at
-        final dtA = DateTime.tryParse(a.updatedAt) ?? DateTime.fromMillisecondsSinceEpoch(0);
-        final dtB = DateTime.tryParse(b.updatedAt) ?? DateTime.fromMillisecondsSinceEpoch(0);
-        return dtB.compareTo(dtA);
-      }
-    });
-
-    if (_sortAscending) {
-      filtered = filtered.reversed.toList();
-    }
+    _recomputeFilteredBooks();
+    final filtered = _filteredBooks;
 
     final isCustomFilterActive = _sortBy != 'updated_at' || _ratingFilter != 'All' || _typeFilter != 'All' || _sortAscending;
     final activeReadingBooks = _books.where((b) => b.status == BookStatus.reading).toList();
@@ -1248,7 +1238,7 @@ class LibraryScreenState extends State<LibraryScreen> {
         },
         const SingleActivator(LogicalKeyboardKey.keyN, control: true): () => _openEditDialog(),
         const SingleActivator(LogicalKeyboardKey.keyS, control: true): () async {
-          await _syncManager.syncNow();
+          await _syncManager.syncNow(forceFullReconciliation: true);
           await _loadBooks();
         },
         const SingleActivator(LogicalKeyboardKey.digit1, control: true): () => setState(() => _viewMode = LibraryViewMode.cards),
@@ -1450,7 +1440,7 @@ class LibraryScreenState extends State<LibraryScreen> {
                   : null,
               body: RefreshIndicator(
                 onRefresh: () async {
-                  await _syncManager.syncNow();
+                  await _syncManager.syncNow(forceFullReconciliation: true);
                   await _loadBooks();
                 },
                 child: isMasterDetailScreen && _selectedBookForDetail != null
@@ -1461,8 +1451,7 @@ class LibraryScreenState extends State<LibraryScreen> {
                             book: _selectedBookForDetail!,
                             onClose: () => setState(() => _selectedBookForDetail = null),
                             onUpdateBook: (b) async {
-                              await _loadBooks();
-                              setState(() => _selectedBookForDetail = b);
+                              _updateBookInPlace(b);
                             },
                             onOpenFullEdit: () => _openEditDialog(_selectedBookForDetail),
                             onOpenQuickLog: () => _openQuickLog(_selectedBookForDetail!),

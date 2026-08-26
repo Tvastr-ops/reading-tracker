@@ -52,7 +52,9 @@ class _BookEditDialogState extends State<BookEditDialog> {
   String? _dateStarted;
   String? _dateFinished;
   bool _isSearchingCover = false;
-  List<String> _availableGenres = [];
+  bool _showAllGenres = false;
+  bool _showAllShelves = false;
+  List<String> _availableGenres = defaultGenreSeeds;
   List<String> _shelves = [];
   List<String> _availableShelves = [];
   int _rereadCount = 0;
@@ -253,7 +255,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
       dateFinished: _dateFinished,
       coverUrl: _coverUrlController.text.trim().isEmpty ? null : _coverUrlController.text.trim(),
       genreTags: _genreTagsController.text.trim().isEmpty ? null : _genreTagsController.text.trim(),
-      sourceLink: _sourceLinkController.text.trim().isEmpty ? null : _sourceLinkController.text.trim(),
+      sourceLink: _sourceLinkController.text.trim().isEmpty ? null : sanitizeSourceLink(_sourceLinkController.text),
       notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
       seriesName: _seriesNameController.text.trim().isEmpty ? null : _seriesNameController.text.trim(),
       seriesOrder: seriesOrderVal,
@@ -284,8 +286,13 @@ class _BookEditDialogState extends State<BookEditDialog> {
       focusNode: _dialogFocusNode,
       autofocus: true,
       onKeyEvent: (event) {
-        if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
-          Navigator.pop(context);
+        if (event is KeyDownEvent) {
+          if (event.logicalKey == LogicalKeyboardKey.escape) {
+            Navigator.pop(context);
+          } else if (event.logicalKey == LogicalKeyboardKey.keyS &&
+              (HardwareKeyboard.instance.isControlPressed || HardwareKeyboard.instance.isMetaPressed)) {
+            _submit();
+          }
         }
       },
       child: Dialog(
@@ -494,37 +501,56 @@ class _BookEditDialogState extends State<BookEditDialog> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            children: _availableShelves.map((sh) {
-                              final isAdded = _shelves.any((s) => s.toLowerCase() == sh.toLowerCase());
-                              return GestureDetector(
-                                onTap: () => _toggleShelf(sh),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: isAdded
-                                        ? (details?.accentColor ?? Theme.of(context).colorScheme.primary)
-                                        : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
-                                    border: Border.all(
-                                      color: isAdded ? borderColor : borderColor.withValues(alpha: 0.35),
-                                      width: 1,
+                          Builder(
+                            builder: (context) {
+                              const maxShelves = 6;
+                              final hasShelfOverflow = _availableShelves.length > maxShelves;
+                              final visibleShelves = _showAllShelves || !hasShelfOverflow
+                                  ? _availableShelves
+                                  : _availableShelves.take(maxShelves).toList();
+
+                              return Wrap(
+                                spacing: 6,
+                                runSpacing: 4,
+                                children: [
+                                  ...visibleShelves.map((sh) {
+                                    final isAdded = _shelves.any((s) => s.toLowerCase() == sh.toLowerCase());
+                                    return GestureDetector(
+                                      onTap: () => _toggleShelf(sh),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: isAdded
+                                              ? (details?.accentColor ?? Theme.of(context).colorScheme.primary)
+                                              : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                                          border: Border.all(
+                                            color: isAdded ? borderColor : borderColor.withValues(alpha: 0.35),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          isAdded ? '✓ $sh' : '+ $sh',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: isAdded ? FontWeight.w900 : FontWeight.w700,
+                                            color: isAdded
+                                                ? Colors.white
+                                                : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                  if (hasShelfOverflow)
+                                    BrutalistExpandToggleChip(
+                                      isExpanded: _showAllShelves,
+                                      hiddenCount: _availableShelves.length - maxShelves,
+                                      onTap: () => setState(() => _showAllShelves = !_showAllShelves),
+                                      size: BrutalistToggleSize.small,
                                     ),
-                                  ),
-                                  child: Text(
-                                    isAdded ? '✓ $sh' : '+ $sh',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: isAdded ? FontWeight.w900 : FontWeight.w700,
-                                      color: isAdded
-                                          ? Colors.white
-                                          : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-                                    ),
-                                  ),
-                                ),
+                                ],
                               );
-                            }).toList(),
+                            },
                           ),
                         ],
                         const SizedBox(height: 12),
@@ -897,50 +923,65 @@ class _BookEditDialogState extends State<BookEditDialog> {
                         .where((t) => t.isNotEmpty)
                         .toSet();
 
+                    const maxVisible = 6;
+                    final hasOverflow = _availableGenres.length > maxVisible;
+                    final visibleGenres = _showAllGenres || !hasOverflow
+                        ? _availableGenres
+                        : _availableGenres.take(maxVisible).toList();
+
                     return Wrap(
                       spacing: 6,
                       runSpacing: 6,
-                      children: _availableGenres.map((genre) {
-                        final isSelected = currentTags.contains(genre.toLowerCase());
-                        return MouseRegion(
-                          cursor: SystemMouseCursors.click,
-                          child: GestureDetector(
-                            onTap: () => _toggleGenreTag(genre),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 120),
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? (details?.accentColor ?? Theme.of(context).colorScheme.primary)
-                                    : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
-                                border: Border.all(
-                                  color: isSelected ? borderColor : borderColor.withValues(alpha: 0.35),
-                                  width: isSelected ? 1.5 : 1.0,
-                                ),
-                                boxShadow: isSelected
-                                    ? [
-                                        BoxShadow(
-                                          color: borderColor,
-                                          offset: const Offset(1.5, 1.5),
-                                          blurRadius: 0,
-                                        ),
-                                      ]
-                                    : [],
-                              ),
-                              child: Text(
-                                isSelected ? '✓ $genre' : '+ $genre',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                      children: [
+                        ...visibleGenres.map((genre) {
+                          final isSelected = currentTags.contains(genre.toLowerCase());
+                          return MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: GestureDetector(
+                              onTap: () => _toggleGenreTag(genre),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 120),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
                                   color: isSelected
-                                      ? Colors.white
-                                      : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                                      ? (details?.accentColor ?? Theme.of(context).colorScheme.primary)
+                                      : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                                  border: Border.all(
+                                    color: isSelected ? borderColor : borderColor.withValues(alpha: 0.35),
+                                    width: isSelected ? 1.5 : 1.0,
+                                  ),
+                                  boxShadow: isSelected
+                                      ? [
+                                          BoxShadow(
+                                            color: borderColor,
+                                            offset: const Offset(1.5, 1.5),
+                                            blurRadius: 0,
+                                          ),
+                                        ]
+                                      : [],
+                                ),
+                                child: Text(
+                                  isSelected ? '✓ $genre' : '+ $genre',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                                  ),
                                 ),
                               ),
                             ),
+                          );
+                        }),
+                        if (hasOverflow)
+                          BrutalistExpandToggleChip(
+                            isExpanded: _showAllGenres,
+                            hiddenCount: _availableGenres.length - maxVisible,
+                            onTap: () => setState(() => _showAllGenres = !_showAllGenres),
+                            size: BrutalistToggleSize.medium,
                           ),
-                        );
-                      }).toList(),
+                      ],
                     );
                   },
                 ),
@@ -969,14 +1010,14 @@ class _BookEditDialogState extends State<BookEditDialog> {
                 ),
               ),
 
-              // 3. Fixed Footer Actions (Always visible & pinned)
+              // 3. Fixed Footer Actions (Seamless canvas with delicate border)
               Container(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
                 decoration: BoxDecoration(
-                  color: details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface),
+                  color: dialogBg,
                   border: Border(
                     top: BorderSide(
-                      color: borderColor.withValues(alpha: 0.25),
+                      color: borderColor.withValues(alpha: 0.20),
                       width: 1.5,
                     ),
                   ),
@@ -1002,7 +1043,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
                     ],
                     const Spacer(),
                     BrutalistButton(
-                      backgroundColor: details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface),
+                      backgroundColor: Colors.transparent,
                       textColor: inkColor,
                       borderWidth: 1.5,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1012,9 +1053,9 @@ class _BookEditDialogState extends State<BookEditDialog> {
                         style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: inkColor),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 8),
                     BrutalistButton(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       onPressed: _submit,
                       child: Text(
                         isEditing ? 'SAVE CHANGES' : 'CREATE BOOK',

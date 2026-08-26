@@ -19,13 +19,16 @@ class _StatsScreenState extends State<StatsScreen> {
   List<Book> _books = [];
   double _totalUnitsLogged = 0.0;
   int _totalLogsCount = 0;
+  int _activeBooksInYear = 0;
+  double _lifetimeUnitsLogged = 0.0;
+  int _lifetimeLogsCount = 0;
   Map<String, double> _unitBreakdown = {};
   Map<String, double> _dailyActivity = {};
   Map<String, int> _streakStats = {'currentStreak': 0, 'longestStreak': 0, 'totalDays': 0};
   bool _isLoading = true;
   int _distributionTabIndex = 0; // 0: Formats, 1: Genres, 2: Ratings
   int? _selectedMonthIndex;
-  int _selectedYear = DateTime.now().year;
+  int? _selectedYear = DateTime.now().year; // null = Lifetime archive, int = specific year
   String _selectedGoalMetric = 'books'; // 'books', 'pages', 'chapters', 'volumes'
 
   static const List<String> _monthLabels = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
@@ -57,6 +60,7 @@ class _StatsScreenState extends State<StatsScreen> {
     setState(() => _isLoading = true);
     final books = await _dbHelper.getBooks();
     final agg = await _dbHelper.getAggregatedReadingStats(year: _selectedYear);
+    final lifetimeAgg = await _dbHelper.getAggregatedReadingStats(); // All-time
     final unitBreakdown = await _dbHelper.getUnitBreakdownStats(year: _selectedYear);
     final dailyActivity = await _dbHelper.getDailyReadingActivityMap(year: _selectedYear);
     final streakStats = await _dbHelper.getReadingStreakStats();
@@ -66,6 +70,9 @@ class _StatsScreenState extends State<StatsScreen> {
         _books = books;
         _totalUnitsLogged = (agg['totalUnits'] as num?)?.toDouble() ?? 0.0;
         _totalLogsCount = (agg['totalLogs'] as num?)?.toInt() ?? 0;
+        _activeBooksInYear = (agg['activeBooks'] as num?)?.toInt() ?? 0;
+        _lifetimeUnitsLogged = (lifetimeAgg['totalUnits'] as num?)?.toDouble() ?? 0.0;
+        _lifetimeLogsCount = (lifetimeAgg['totalLogs'] as num?)?.toInt() ?? 0;
         _unitBreakdown = unitBreakdown;
         _dailyActivity = dailyActivity;
         _streakStats = streakStats;
@@ -91,51 +98,100 @@ class _StatsScreenState extends State<StatsScreen> {
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         backgroundColor: dialogBg,
         title: Text(
-          'SELECT YEAR ARCHIVE',
+          'SELECT TIMEFRAME ARCHIVE',
           style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: inkColor),
         ),
         content: SizedBox(
           width: 320,
           height: 380,
-          child: GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              childAspectRatio: 2.2,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-            ),
-            itemCount: years.length,
-            itemBuilder: (context, idx) {
-              final y = years[idx];
-              final isSelected = y == _selectedYear;
-              return GestureDetector(
+          child: Column(
+            children: [
+              // All-Time / Lifetime option button
+              GestureDetector(
                 onTap: () {
                   Navigator.pop(ctx);
                   setState(() {
-                    _selectedYear = y;
+                    _selectedYear = null;
                     _selectedMonthIndex = null;
                   });
                   _loadStats();
                 },
                 child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: isSelected
+                    color: _selectedYear == null
                         ? primaryColor
                         : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
                     border: Border.all(color: borderColor, width: 1.5),
                   ),
                   alignment: Alignment.center,
-                  child: Text(
-                    '$y',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w900,
-                      color: isSelected ? Colors.white : inkColor,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.military_tech_rounded,
+                        size: 16,
+                        color: _selectedYear == null ? Colors.white : primaryColor,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'ALL-TIME LIFETIME ARCHIVE',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                          color: _selectedYear == null ? Colors.white : inkColor,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              );
-            },
+              ),
+              Expanded(
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    childAspectRatio: 2.2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: years.length,
+                  itemBuilder: (context, idx) {
+                    final y = years[idx];
+                    final isSelected = y == _selectedYear;
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        setState(() {
+                          _selectedYear = y;
+                          _selectedMonthIndex = null;
+                        });
+                        _loadStats();
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? primaryColor
+                              : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                          border: Border.all(color: borderColor, width: 1.5),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '$y',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            color: isSelected ? Colors.white : inkColor,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
         actions: [
@@ -149,6 +205,7 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   void _openSetGoalDialog() {
+    final targetYear = _selectedYear ?? DateTime.now().year;
     final details = Theme.of(context).extension<AppThemeDetails>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dialogBg = details?.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg);
@@ -156,7 +213,7 @@ class _StatsScreenState extends State<StatsScreen> {
     final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
     final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
     final mutedInk = details?.inkMutedColor ?? (isDark ? Colors.white60 : AppColors.inkMuted);
-    final currentTarget = _syncManager.getGoalFor(year: _selectedYear, metric: _selectedGoalMetric);
+    final currentTarget = _syncManager.getGoalFor(year: targetYear, metric: _selectedGoalMetric);
     final controller = TextEditingController(text: currentTarget > 0 ? currentTarget.toString() : '');
 
     showDialog(
@@ -165,7 +222,7 @@ class _StatsScreenState extends State<StatsScreen> {
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         backgroundColor: dialogBg,
         title: Text(
-          'SET $_selectedYear ${_selectedGoalMetric.toUpperCase()} GOAL',
+          'SET $targetYear ${_selectedGoalMetric.toUpperCase()} GOAL',
           style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: inkColor),
         ),
         content: Column(
@@ -219,12 +276,12 @@ class _StatsScreenState extends State<StatsScreen> {
               final val = int.tryParse(controller.text.trim());
               if (val != null && val >= 0) {
                 Navigator.pop(ctx);
-                await _syncManager.setGoalFor(year: _selectedYear, metric: _selectedGoalMetric, target: val);
+                await _syncManager.setGoalFor(year: targetYear, metric: _selectedGoalMetric, target: val);
                 await _loadStats();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('$_selectedYear ${_selectedGoalMetric.toUpperCase()} goal updated to $val!'),
+                      content: Text('$targetYear ${_selectedGoalMetric.toUpperCase()} goal updated to $val!'),
                       duration: const Duration(seconds: 2),
                     ),
                   );
@@ -248,10 +305,10 @@ class _StatsScreenState extends State<StatsScreen> {
 
     final currentCalendarYear = DateTime.now().year;
     final currentCalendarMonth = DateTime.now().month;
+    final isLifetime = _selectedYear == null;
     final isCurrentYearSelected = _selectedYear == currentCalendarYear;
 
     final reading = _books.where((b) => b.status == BookStatus.reading).length;
-    final plan = _books.where((b) => b.status == BookStatus.planToRead).length;
 
     final monthlyCounts = List<int>.filled(12, 0);
     int completedInSelectedYear = 0;
@@ -263,9 +320,9 @@ class _StatsScreenState extends State<StatsScreen> {
         dt = DateTime.tryParse(b.dateFinished!);
       }
       dt ??= DateTime.tryParse(b.updatedAt);
-      if (dt != null && dt.year == _selectedYear) {
+      if (dt != null && (isLifetime || dt.year == _selectedYear)) {
         completedInSelectedYear++;
-        if (dt.month >= 1 && dt.month <= 12) {
+        if (dt.month >= 1 && dt.month <= 12 && !isLifetime) {
           monthlyCounts[dt.month - 1]++;
         }
       }
@@ -276,7 +333,7 @@ class _StatsScreenState extends State<StatsScreen> {
         ? 0.0
         : ratedBooks.map((b) => b.rating!).reduce((a, b) => a + b) / ratedBooks.length;
 
-    final metricGoalTarget = _syncManager.getGoalFor(year: _selectedYear, metric: _selectedGoalMetric);
+    final metricGoalTarget = isLifetime ? 0 : _syncManager.getGoalFor(year: _selectedYear!, metric: _selectedGoalMetric);
     final double metricProgressVal;
     if (_selectedGoalMetric == 'books') {
       metricProgressVal = completedInSelectedYear.toDouble();
@@ -287,9 +344,11 @@ class _StatsScreenState extends State<StatsScreen> {
     final goalProgress = metricGoalTarget > 0 ? (metricProgressVal / metricGoalTarget).clamp(0.0, 1.0) : 0.0;
     final isGoalAchieved = metricGoalTarget > 0 && metricProgressVal >= metricGoalTarget;
 
-    final double elapsedMonths = isCurrentYearSelected
-        ? currentCalendarMonth.toDouble()
-        : (_selectedYear < currentCalendarYear ? 12.0 : 1.0);
+    final double elapsedMonths = isLifetime
+        ? 12.0
+        : (isCurrentYearSelected
+            ? currentCalendarMonth.toDouble()
+            : (_selectedYear! < currentCalendarYear ? 12.0 : 1.0));
     final expectedByNow = metricGoalTarget > 0 ? (metricGoalTarget / 12.0) * elapsedMonths : 0.0;
     final paceDiff = (metricProgressVal - expectedByNow).round();
 
@@ -298,8 +357,8 @@ class _StatsScreenState extends State<StatsScreen> {
     final Color goalPaceColor;
 
     if (metricGoalTarget == 0) {
-      goalPaceStatus = 'NO GOAL SET';
-      goalPaceIcon = Icons.flag_outlined;
+      goalPaceStatus = isLifetime ? 'ALL-TIME' : 'NO GOAL SET';
+      goalPaceIcon = isLifetime ? Icons.military_tech_rounded : Icons.flag_outlined;
       goalPaceColor = isDark ? Colors.white60 : AppColors.inkMuted;
     } else if (isGoalAchieved) {
       goalPaceStatus = 'GOAL ACHIEVED!';
@@ -351,10 +410,10 @@ class _StatsScreenState extends State<StatsScreen> {
               IconButton(
                 icon: const Icon(Icons.chevron_left_rounded, size: 22),
                 tooltip: 'Previous Year',
-                onPressed: _selectedYear > 1947
+                onPressed: (!isLifetime && _selectedYear! > 1947)
                     ? () {
                         setState(() {
-                          _selectedYear--;
+                          _selectedYear = _selectedYear! - 1;
                           _selectedMonthIndex = null;
                         });
                         _loadStats();
@@ -379,13 +438,17 @@ class _StatsScreenState extends State<StatsScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      if (isLifetime) ...[
+                        Icon(Icons.military_tech_rounded, size: 14, color: primaryColor),
+                        const SizedBox(width: 4),
+                      ],
                       Text(
-                        '$_selectedYear',
+                        isLifetime ? 'LIFETIME' : '$_selectedYear',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.5,
-                          color: inkColor,
+                          color: isLifetime ? primaryColor : inkColor,
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -397,10 +460,10 @@ class _StatsScreenState extends State<StatsScreen> {
               IconButton(
                 icon: const Icon(Icons.chevron_right_rounded, size: 22),
                 tooltip: 'Next Year',
-                onPressed: _selectedYear < currentCalendarYear
+                onPressed: (!isLifetime && _selectedYear! < currentCalendarYear)
                     ? () {
                         setState(() {
-                          _selectedYear++;
+                          _selectedYear = _selectedYear! + 1;
                           _selectedMonthIndex = null;
                         });
                         _loadStats();
@@ -437,29 +500,31 @@ class _StatsScreenState extends State<StatsScreen> {
                                 children: [
                                   Flexible(
                                     child: Text(
-                                      '$_selectedYear ANNUAL GOAL',
+                                      isLifetime ? 'LIFETIME READING VOLUME' : '$_selectedYear ANNUAL GOAL',
                                       style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
-                                  GestureDetector(
-                                    onTap: _openSetGoalDialog,
-                                    child: Icon(Icons.edit_note_rounded, size: 18, color: primaryColor),
-                                  ),
+                                  if (!isLifetime) ...[
+                                    const SizedBox(width: 6),
+                                    GestureDetector(
+                                      onTap: _openSetGoalDialog,
+                                      child: Icon(Icons.edit_note_rounded, size: 18, color: primaryColor),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),
                             const SizedBox(width: 8),
-                            if (metricGoalTarget > 0)
+                            if (metricGoalTarget > 0 || isLifetime)
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                                 decoration: BoxDecoration(
-                                  color: isGoalAchieved
+                                  color: (isGoalAchieved || isLifetime)
                                       ? primaryColor
                                       : goalPaceColor.withValues(alpha: isDark ? 0.20 : 0.12),
                                   border: Border.all(
-                                    color: isGoalAchieved
+                                    color: (isGoalAchieved || isLifetime)
                                         ? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack)
                                         : goalPaceColor,
                                     width: 1.2,
@@ -468,7 +533,7 @@ class _StatsScreenState extends State<StatsScreen> {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(goalPaceIcon, size: 11, color: isGoalAchieved ? Colors.white : goalPaceColor),
+                                    Icon(goalPaceIcon, size: 11, color: (isGoalAchieved || isLifetime) ? Colors.white : goalPaceColor),
                                     const SizedBox(width: 4),
                                     Text(
                                       goalPaceStatus,
@@ -476,7 +541,7 @@ class _StatsScreenState extends State<StatsScreen> {
                                         fontSize: 9,
                                         fontWeight: FontWeight.w900,
                                         letterSpacing: 0.3,
-                                        color: isGoalAchieved ? Colors.white : (isDark ? Colors.white : AppColors.inkBlack),
+                                        color: (isGoalAchieved || isLifetime) ? Colors.white : (isDark ? Colors.white : AppColors.inkBlack),
                                       ),
                                     ),
                                   ],
@@ -551,7 +616,9 @@ class _StatsScreenState extends State<StatsScreen> {
                                   ),
                                 ),
                                 Text(
-                                  metricGoalTarget > 0 ? '$metricGoalTarget ${_selectedGoalMetric.toUpperCase()}' : 'NO TARGET',
+                                  isLifetime
+                                      ? 'LIFETIME ${_selectedGoalMetric.toUpperCase()}'
+                                      : (metricGoalTarget > 0 ? '$metricGoalTarget ${_selectedGoalMetric.toUpperCase()}' : 'NO TARGET'),
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w800,
@@ -573,7 +640,7 @@ class _StatsScreenState extends State<StatsScreen> {
                         ),
                         const SizedBox(height: 8),
                         BrutalistProgressBar(
-                          progress: goalProgress,
+                          progress: isLifetime ? 1.0 : goalProgress,
                           height: 14,
                           fillColor: primaryColor,
                         ),
@@ -591,21 +658,27 @@ class _StatsScreenState extends State<StatsScreen> {
                         children: [
                           Expanded(
                             child: _buildMetricTile(
-                              'IN PROGRESS',
-                              '$reading',
-                              Icons.auto_stories_rounded,
+                              isLifetime
+                                  ? 'ALL BOOKS'
+                                  : (isCurrentYearSelected ? 'IN PROGRESS' : 'ACTIVE IN $_selectedYear'),
+                              isLifetime
+                                  ? '${_books.length}'
+                                  : (isCurrentYearSelected ? '$reading' : '$_activeBooksInYear'),
+                              isLifetime ? Icons.library_books_rounded : Icons.auto_stories_rounded,
                               AppColors.skyBlue,
-                              'active reads',
+                              isLifetime
+                                  ? 'library total'
+                                  : (isCurrentYearSelected ? 'active reads' : 'books with logs'),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: _buildMetricTile(
-                              'FINISHED ($_selectedYear)',
+                              isLifetime ? 'COMPLETED' : 'FINISHED ($_selectedYear)',
                               '$completedInSelectedYear',
                               Icons.done_all_rounded,
                               AppColors.successGreen,
-                              'finished works',
+                              isLifetime ? 'finished works' : 'finished works',
                             ),
                           ),
                         ],
@@ -615,11 +688,11 @@ class _StatsScreenState extends State<StatsScreen> {
                         children: [
                           Expanded(
                             child: _buildMetricTile(
-                              'UNITS ($_selectedYear)',
-                              _totalUnitsLogged > 0 ? formattedUnits : '$plan',
-                              _totalUnitsLogged > 0 ? Icons.electric_bolt_rounded : Icons.bookmark_border_rounded,
-                              _totalUnitsLogged > 0 ? primaryColor : AppColors.amberWarning,
-                              _totalUnitsLogged > 0 ? '$_totalLogsCount logs' : 'plan to read',
+                              isLifetime ? 'TOTAL UNITS' : 'UNITS ($_selectedYear)',
+                              formattedUnits,
+                              Icons.electric_bolt_rounded,
+                              primaryColor,
+                              '$_totalLogsCount logs',
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -639,7 +712,7 @@ class _StatsScreenState extends State<StatsScreen> {
 
                   final streakHeatmapCard = _buildStreakHeatmapCard(isDark, borderColor, primaryColor);
 
-                  final maxMonthly = monthlyCounts.reduce((a, b) => a > b ? a : b);
+                  final maxMonthly = monthlyCounts.isEmpty ? 0 : monthlyCounts.reduce((a, b) => a > b ? a : b);
                   final monthlyChartCard = BrutalistCard(
                     margin: EdgeInsets.zero,
                     child: Column(
@@ -653,12 +726,12 @@ class _StatsScreenState extends State<StatsScreen> {
                                 Icon(Icons.bar_chart_rounded, size: 16, color: primaryColor),
                                 const SizedBox(width: 6),
                                 Text(
-                                  '$_selectedYear MONTHLY ACTIVITY',
+                                  isLifetime ? 'ALL-TIME COMPLETED ACTIVITY' : '$_selectedYear MONTHLY ACTIVITY',
                                   style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
                                 ),
                               ],
                             ),
-                            if (_selectedMonthIndex != null)
+                            if (_selectedMonthIndex != null && !isLifetime)
                               BrutalistBadge(
                                 label: '${_monthNames[_selectedMonthIndex!]}: ${monthlyCounts[_selectedMonthIndex!]}',
                                 backgroundColor: primaryColor,
@@ -1034,6 +1107,124 @@ class _StatsScreenState extends State<StatsScreen> {
                     ],
                   );
 
+                  final totalCompletedAllTime = _books.where((b) => b.status == BookStatus.completed).length;
+                  final formattedLifetimeUnits = _lifetimeUnitsLogged >= 1000
+                      ? '${(_lifetimeUnitsLogged / 1000).toStringAsFixed(1)}k'
+                      : _lifetimeUnitsLogged.toInt().toString();
+
+                  final lifetimePassportCard = GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        if (isLifetime) {
+                          _selectedYear = currentCalendarYear;
+                        } else {
+                          _selectedYear = null;
+                        }
+                        _selectedMonthIndex = null;
+                      });
+                      _loadStats();
+                    },
+                    child: BrutalistCard(
+                      margin: EdgeInsets.zero,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.military_tech_rounded, size: 16, color: primaryColor),
+                                  const SizedBox(width: 6),
+                                  const Text(
+                                    'LIFETIME ARCHIVE',
+                                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 0.5),
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: isLifetime
+                                      ? primaryColor
+                                      : (isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh),
+                                  border: Border.all(
+                                    color: isLifetime ? primaryColor : borderColor.withValues(alpha: 0.3),
+                                    width: 1.0,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      isLifetime ? 'SWITCH TO $currentCalendarYear ➔' : 'VIEW ALL-TIME STATS ➔',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.3,
+                                        color: isLifetime
+                                            ? Colors.white
+                                            : (isDark ? Colors.white70 : AppColors.inkBlack),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _buildPassportChip(
+                                '$totalCompletedAllTime',
+                                'FINISHED',
+                                Icons.done_all_rounded,
+                                AppColors.successGreen,
+                                isDark,
+                                borderColor,
+                              ),
+                              _buildPassportChip(
+                                formattedLifetimeUnits,
+                                'TOTAL UNITS',
+                                Icons.electric_bolt_rounded,
+                                primaryColor,
+                                isDark,
+                                borderColor,
+                              ),
+                              _buildPassportChip(
+                                '$_lifetimeLogsCount',
+                                'SESSIONS',
+                                Icons.history_edu_rounded,
+                                AppColors.skyBlue,
+                                isDark,
+                                borderColor,
+                              ),
+                              if (avgRating > 0)
+                                _buildPassportChip(
+                                  '${avgRating.toStringAsFixed(1)} ★',
+                                  'AVG RATING',
+                                  Icons.star_rounded,
+                                  Colors.amber,
+                                  isDark,
+                                  borderColor,
+                                ),
+                              _buildPassportChip(
+                                '${_books.length}',
+                                'IN LIBRARY',
+                                Icons.library_books_rounded,
+                                mutedInk,
+                                isDark,
+                                borderColor,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+
                   if (isWide) {
                     return Center(
                       child: ConstrainedBox(
@@ -1077,6 +1268,8 @@ class _StatsScreenState extends State<StatsScreen> {
                                 ),
                               ],
                             ),
+                            const SizedBox(height: 20),
+                            lifetimePassportCard,
                             const SizedBox(height: 40),
                           ],
                         ),
@@ -1102,12 +1295,61 @@ class _StatsScreenState extends State<StatsScreen> {
                       velocityCard,
                       const SizedBox(height: 20),
                       stackedDistributionCard,
+                      const SizedBox(height: 20),
+                      lifetimePassportCard,
                       const SizedBox(height: 40),
                     ],
                   );
                 },
               ),
             ),
+    );
+  }
+
+  Widget _buildPassportChip(
+    String value,
+    String label,
+    IconData icon,
+    Color accentColor,
+    bool isDark,
+    Color borderColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh,
+        border: Border.all(
+          color: isDark
+              ? AppColors.darkInkWhite.withValues(alpha: 0.25)
+              : AppColors.inkBlack.withValues(alpha: 0.2),
+          width: 1.0,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: accentColor),
+          const SizedBox(width: 6),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 8.5,
+              fontWeight: FontWeight.w800,
+              color: isDark ? Colors.white60 : AppColors.inkMuted,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1333,10 +1575,11 @@ class _StatsScreenState extends State<StatsScreen> {
     final totalDays = _streakStats['totalDays'] ?? 0;
     final inkColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
     final mutedInk = isDark ? Colors.white60 : AppColors.inkMuted;
+    final displayYear = _selectedYear ?? DateTime.now().year;
 
-    // Build 53-week calendar matrix for _selectedYear
-    final jan1 = DateTime(_selectedYear, 1, 1);
-    final isLeapYear = (_selectedYear % 4 == 0 && _selectedYear % 100 != 0) || (_selectedYear % 400 == 0);
+    // Build 53-week calendar matrix for displayYear
+    final jan1 = DateTime(displayYear, 1, 1);
+    final isLeapYear = (displayYear % 4 == 0 && displayYear % 100 != 0) || (displayYear % 400 == 0);
     final daysInYear = isLeapYear ? 366 : 365;
 
     // Weekday of Jan 1 (Monday = 1, Sunday = 7 in Dart DateTime)

@@ -81,8 +81,8 @@ class _PaperPatternPainter extends CustomPainter {
   final bool isDark;
   final double intensity;
 
-  ui.Picture? _cachedPicture;
-  Size? _cachedSize;
+  static final Map<String, ui.Picture> _globalPictureCache = {};
+  static const int _maxCachedPictures = 4;
 
   _PaperPatternPainter({
     required this.patternType,
@@ -94,21 +94,31 @@ class _PaperPatternPainter extends CustomPainter {
   Color _alphaColor(double baseAlpha) =>
       inkColor.withValues(alpha: (baseAlpha * intensity).clamp(0.0, 1.0));
 
+  String _cacheKey(Size size) =>
+      '${patternType.name}_${size.width.toInt()}x${size.height.toInt()}_${isDark ? "d" : "l"}_${intensity.toStringAsFixed(2)}';
+
   @override
   void paint(Canvas canvas, Size size) {
     if (patternType == PaperPatternType.none || size.isEmpty) return;
 
-    if (_cachedPicture == null || _cachedSize != size) {
-      _cachedSize = size;
-      _cachedPicture?.dispose();
+    final key = _cacheKey(size);
+    var picture = _globalPictureCache[key];
+
+    if (picture == null) {
+      // Evict oldest if cache gets too large (e.g. across window resizes)
+      if (_globalPictureCache.length >= _maxCachedPictures) {
+        final oldestKey = _globalPictureCache.keys.first;
+        _globalPictureCache.remove(oldestKey)?.dispose();
+      }
 
       final recorder = ui.PictureRecorder();
       final recordCanvas = Canvas(recorder, Rect.fromLTWH(0, 0, size.width, size.height));
       _drawPattern(recordCanvas, size);
-      _cachedPicture = recorder.endRecording();
+      picture = recorder.endRecording();
+      _globalPictureCache[key] = picture;
     }
 
-    canvas.drawPicture(_cachedPicture!);
+    canvas.drawPicture(picture);
   }
 
   void _drawPattern(Canvas canvas, Size size) {

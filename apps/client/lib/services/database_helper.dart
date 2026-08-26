@@ -49,7 +49,13 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
+      onConfigure: (db) async {
+        try {
+          await db.execute('PRAGMA journal_mode = WAL;');
+          await db.execute('PRAGMA synchronous = NORMAL;');
+        } catch (_) {}
+      },
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -94,6 +100,12 @@ class DatabaseHelper {
     await db.execute('''
       CREATE INDEX IF NOT EXISTS idx_books_series ON books (series_name, series_order)
     ''');
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_books_deleted_at ON books (deleted_at)
+    ''');
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_books_sync_status ON books (sync_status)
+    ''');
 
     await db.execute('''
       CREATE TABLE IF NOT EXISTS reading_log (
@@ -106,6 +118,13 @@ class DatabaseHelper {
         sync_status TEXT DEFAULT 'synced',
         FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE
       )
+    ''');
+
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_reading_log_book_logged ON reading_log (book_id, logged_at DESC)
+    ''');
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_reading_log_sync_status ON reading_log (sync_status)
     ''');
 
     await db.execute('''
@@ -139,6 +158,12 @@ class DatabaseHelper {
       await db.execute('ALTER TABLE books ADD COLUMN shelf_names TEXT');
       await db.execute('ALTER TABLE books ADD COLUMN reread_count INTEGER DEFAULT 0');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_books_series ON books (series_name, series_order)');
+    }
+    if (oldVersion < 4) {
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_books_deleted_at ON books (deleted_at)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_books_sync_status ON books (sync_status)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_reading_log_book_logged ON reading_log (book_id, logged_at DESC)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_reading_log_sync_status ON reading_log (sync_status)');
     }
   }
 
@@ -233,91 +258,87 @@ class DatabaseHelper {
     });
   }
 
-  Future<void> upsertRemoteBook(Book b) async {
+  Future<void> upsertRemoteBooks(List<Book> books) async {
+    if (books.isEmpty) return;
     final db = await instance.database;
-
-    // Proactively clean up any duplicate entries created locally with identical title
-    try {
-      final duplicates = await db.query(
-        'books',
-        where: "title = ? AND id != ?",
-        whereArgs: [b.title, b.id],
-      );
-      for (final dup in duplicates) {
-        final dupId = dup['id'] as String;
-        await db.delete('reading_log', where: 'book_id = ?', whereArgs: [dupId]);
-        await db.delete('books', where: 'id = ?', whereArgs: [dupId]);
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final b in books) {
+        batch.rawInsert('''
+          INSERT INTO books (
+            id, title, type, unit_type, progress_structure, parent_progress, parent_total,
+            latest_units, is_ongoing, author, status, rating, progress, total_units,
+            genre_tags, source_link, cover_url, reading_pace, date_started,
+            date_finished, notes, is_favorite, series_name, series_order, shelf_names, reread_count,
+            deleted_at, created_at, updated_at, sync_status
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')
+          ON CONFLICT(id) DO UPDATE SET
+            title = excluded.title,
+            type = excluded.type,
+            unit_type = excluded.unit_type,
+            progress_structure = excluded.progress_structure,
+            parent_progress = excluded.parent_progress,
+            parent_total = excluded.parent_total,
+            latest_units = excluded.latest_units,
+            is_ongoing = excluded.is_ongoing,
+            author = excluded.author,
+            status = excluded.status,
+            rating = excluded.rating,
+            progress = excluded.progress,
+            total_units = excluded.total_units,
+            genre_tags = excluded.genre_tags,
+            source_link = excluded.source_link,
+            cover_url = excluded.cover_url,
+            reading_pace = excluded.reading_pace,
+            date_started = excluded.date_started,
+            date_finished = excluded.date_finished,
+            notes = excluded.notes,
+            is_favorite = excluded.is_favorite,
+            series_name = excluded.series_name,
+            series_order = excluded.series_order,
+            shelf_names = excluded.shelf_names,
+            reread_count = excluded.reread_count,
+            deleted_at = excluded.deleted_at,
+            updated_at = excluded.updated_at,
+            sync_status = 'synced'
+        ''', [
+          b.id,
+          b.title,
+          b.type,
+          b.unitType,
+          b.progressStructure,
+          b.parentProgress,
+          b.parentTotal,
+          b.latestUnits,
+          (b.isOngoing == true) ? 1 : 0,
+          b.author,
+          b.status,
+          b.rating,
+          b.progress,
+          b.totalUnits,
+          b.genreTags,
+          b.sourceLink,
+          b.coverUrl,
+          b.readingPace,
+          b.dateStarted,
+          b.dateFinished,
+          b.notes,
+          (b.isFavorite == true) ? 1 : 0,
+          b.seriesName,
+          b.seriesOrder,
+          b.shelfNames,
+          b.rereadCount,
+          b.deletedAt,
+          b.createdAt,
+          b.updatedAt,
+        ]);
       }
-    } catch (_) {}
+      await batch.commit(noResult: true);
+    });
+  }
 
-    await db.rawInsert('''
-      INSERT INTO books (
-        id, title, type, unit_type, progress_structure, parent_progress, parent_total,
-        latest_units, is_ongoing, author, status, rating, progress, total_units,
-        genre_tags, source_link, cover_url, reading_pace, date_started,
-        date_finished, notes, is_favorite, series_name, series_order, shelf_names, reread_count,
-        deleted_at, created_at, updated_at, sync_status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')
-      ON CONFLICT(id) DO UPDATE SET
-        title = excluded.title,
-        type = excluded.type,
-        unit_type = excluded.unit_type,
-        progress_structure = excluded.progress_structure,
-        parent_progress = excluded.parent_progress,
-        parent_total = excluded.parent_total,
-        latest_units = excluded.latest_units,
-        is_ongoing = excluded.is_ongoing,
-        author = excluded.author,
-        status = excluded.status,
-        rating = excluded.rating,
-        progress = excluded.progress,
-        total_units = excluded.total_units,
-        genre_tags = excluded.genre_tags,
-        source_link = excluded.source_link,
-        cover_url = excluded.cover_url,
-        reading_pace = excluded.reading_pace,
-        date_started = excluded.date_started,
-        date_finished = excluded.date_finished,
-        notes = excluded.notes,
-        is_favorite = excluded.is_favorite,
-        series_name = excluded.series_name,
-        series_order = excluded.series_order,
-        shelf_names = excluded.shelf_names,
-        reread_count = excluded.reread_count,
-        deleted_at = excluded.deleted_at,
-        updated_at = excluded.updated_at,
-        sync_status = 'synced'
-    ''', [
-      b.id,
-      b.title,
-      b.type,
-      b.unitType,
-      b.progressStructure,
-      b.parentProgress,
-      b.parentTotal,
-      b.latestUnits,
-      (b.isOngoing == true) ? 1 : 0,
-      b.author,
-      b.status,
-      b.rating,
-      b.progress,
-      b.totalUnits,
-      b.genreTags,
-      b.sourceLink,
-      b.coverUrl,
-      b.readingPace,
-      b.dateStarted,
-      b.dateFinished,
-      b.notes,
-      (b.isFavorite == true) ? 1 : 0,
-      b.seriesName,
-      b.seriesOrder,
-      b.shelfNames,
-      b.rereadCount,
-      b.deletedAt,
-      b.createdAt,
-      b.updatedAt,
-    ]);
+  Future<void> upsertRemoteBook(Book b) async {
+    await upsertRemoteBooks([b]);
   }
 
   /// Removes local synced books that have been permanently deleted from the remote backend.
@@ -328,13 +349,23 @@ class DatabaseHelper {
       columns: ['id'],
       where: "sync_status = 'synced'",
     );
+    final toDelete = <String>[];
     for (final row in localSynced) {
       final localId = row['id'] as String;
       if (!remoteIds.contains(localId)) {
-        await db.delete('reading_log', where: 'book_id = ?', whereArgs: [localId]);
-        await db.delete('books', where: 'id = ?', whereArgs: [localId]);
+        toDelete.add(localId);
       }
     }
+    if (toDelete.isEmpty) return;
+
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final id in toDelete) {
+        batch.delete('reading_log', where: 'book_id = ?', whereArgs: [id]);
+        batch.delete('books', where: 'id = ?', whereArgs: [id]);
+      }
+      await batch.commit(noResult: true);
+    });
   }
 
   Future<List<Book>> getTrashBooks() async {
@@ -424,38 +455,26 @@ class DatabaseHelper {
     );
   }
 
-  /// Upserts a remote reading log entry, actively deduplicating any legacy local rows
-  /// that match the same progress transition within a close time window.
-  Future<int> upsertRemoteReadingLog(ReadingLogEntry entry) async {
+  Future<void> upsertRemoteReadingLogs(List<ReadingLogEntry> entries) async {
+    if (entries.isEmpty) return;
     final db = await instance.database;
-    try {
-      final duplicates = await db.query(
-        'reading_log',
-        where: 'book_id = ? AND from_progress = ? AND to_progress = ? AND id != ?',
-        whereArgs: [entry.bookId, entry.fromProgress, entry.toProgress, entry.id],
-      );
-      if (duplicates.isNotEmpty) {
-        final remoteTime = DateTime.tryParse(entry.loggedAt);
-        for (final row in duplicates) {
-          final localLoggedAt = row['logged_at']?.toString();
-          if (localLoggedAt != null && remoteTime != null) {
-            final localTime = DateTime.tryParse(localLoggedAt);
-            if (localTime != null) {
-              final diffSec = remoteTime.difference(localTime).inSeconds.abs();
-              if (diffSec <= 60) {
-                await db.delete('reading_log', where: 'id = ?', whereArgs: [row['id']]);
-              }
-            }
-          }
-        }
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final entry in entries) {
+        batch.insert(
+          'reading_log',
+          entry.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
       }
-    } catch (_) {}
+      await batch.commit(noResult: true);
+    });
+  }
 
-    return await db.insert(
-      'reading_log',
-      entry.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+  /// Upserts a single remote reading log entry.
+  Future<int> upsertRemoteReadingLog(ReadingLogEntry entry) async {
+    await upsertRemoteReadingLogs([entry]);
+    return 1;
   }
 
   /// Authoritative atomic operation for mutating reading progress in SQLite:
@@ -468,7 +487,18 @@ class DatabaseHelper {
     String? note,
   }) async {
     final db = await instance.database;
-    final existingLogs = await getReadingLogs(book.id);
+    // Query only the boundary logs (oldest and newest) needed for pace calculation instead of pulling full log history
+    final boundaryLogsRaw = await db.rawQuery('''
+      SELECT * FROM (
+        SELECT * FROM reading_log WHERE book_id = ? ORDER BY logged_at ASC LIMIT 1
+      )
+      UNION ALL
+      SELECT * FROM (
+        SELECT * FROM reading_log WHERE book_id = ? ORDER BY logged_at DESC LIMIT 1
+      )
+    ''', [book.id, book.id]);
+
+    final existingLogs = boundaryLogsRaw.map((json) => ReadingLogEntry.fromMap(json)).toList();
 
     final mutation = applyProgressIncrement(
       book,
@@ -559,7 +589,8 @@ class DatabaseHelper {
     final res = await db.rawQuery('''
       SELECT 
         COALESCE(SUM(CASE WHEN to_progress > from_progress THEN (to_progress - from_progress) ELSE 0 END), 0) as total_units,
-        COUNT(id) as total_logs
+        COUNT(id) as total_logs,
+        COUNT(DISTINCT book_id) as active_books
       FROM reading_log
       $yearFilter
     ''');
@@ -567,9 +598,10 @@ class DatabaseHelper {
       return {
         'totalUnits': ((res.first['total_units'] as num?) ?? 0).toDouble(),
         'totalLogs': ((res.first['total_logs'] as num?) ?? 0).toInt(),
+        'activeBooks': ((res.first['active_books'] as num?) ?? 0).toInt(),
       };
     }
-    return {'totalUnits': 0.0, 'totalLogs': 0};
+    return {'totalUnits': 0.0, 'totalLogs': 0, 'activeBooks': 0};
   }
 
   /// Calculates cumulative volume read broken down by unit_type (pages, chapters, volumes, words, etc.)

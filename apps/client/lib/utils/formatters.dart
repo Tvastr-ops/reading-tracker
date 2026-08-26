@@ -489,3 +489,16 @@ String normalizeGenreTag(String rawTag) {
     return word[0].toUpperCase() + (word.length > 1 ? word.substring(1).toLowerCase() : '');
   }).join(' ');
 }
+
+/// Sanitizes a source or web link, auto-prepending `https://` if a valid domain is entered
+/// without a protocol (e.g. `goodreads.com/book/...` -> `https://goodreads.com/book/...`).
+String sanitizeSourceLink(String? rawUrl) {
+  if (rawUrl == null) return '';
+  final trimmed = rawUrl.trim();
+  if (trimmed.isEmpty) return '';
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+  return 'https://$trimmed';
+}
+

@@ -48,10 +48,14 @@ class GenericRestSyncProvider implements RemoteSyncProvider {
   }
 
   @override
-  Future<List<Book>> fetchRemoteBooks() async {
+  Future<List<Book>> fetchRemoteBooks({DateTime? since}) async {
     if (serverUrl.isEmpty) return [];
     try {
-      final uri = Uri.parse(_cleanUrl('/api/books?all=1'));
+      var path = '/api/books?all=1';
+      if (since != null) {
+        path += '&since=${Uri.encodeComponent(since.toIso8601String())}';
+      }
+      final uri = Uri.parse(_cleanUrl(path));
       final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 8));
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final dynamic data = jsonDecode(res.body);
@@ -180,6 +184,26 @@ class GenericRestSyncProvider implements RemoteSyncProvider {
       debugPrint('GenericRestSyncProvider fetchYearlyGoal error: $e');
       return null;
     }
+  }
+
+  @override
+  Future<List<String>> pushBooks(List<Book> books) async {
+    final failed = <String>[];
+    for (final b in books) {
+      final ok = await pushBook(b);
+      if (!ok) failed.add(b.id);
+    }
+    return failed;
+  }
+
+  @override
+  Future<List<String>> pushReadingLogs(List<ReadingLogEntry> logs) async {
+    final failed = <String>[];
+    for (final l in logs) {
+      final ok = await pushReadingLog(l);
+      if (!ok) failed.add(l.id);
+    }
+    return failed;
   }
 
   @override

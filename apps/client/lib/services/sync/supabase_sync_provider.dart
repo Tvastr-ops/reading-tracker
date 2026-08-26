@@ -40,10 +40,14 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
   }
 
   @override
-  Future<List<Book>> fetchRemoteBooks() async {
+  Future<List<Book>> fetchRemoteBooks({DateTime? since}) async {
     if (supabaseUrl.isEmpty || anonKey.isEmpty) return [];
     try {
-      final uri = Uri.parse('$supabaseUrl/rest/v1/books?order=updated_at.desc');
+      var urlStr = '$supabaseUrl/rest/v1/books?order=updated_at.desc';
+      if (since != null) {
+        urlStr += '&updated_at=gt.${Uri.encodeComponent(since.toIso8601String())}';
+      }
+      final uri = Uri.parse(urlStr);
       final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 8));
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final List<dynamic> list = jsonDecode(res.body);
@@ -59,20 +63,28 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
 
   @override
   Future<bool> pushBook(Book book) async {
-    if (supabaseUrl.isEmpty || anonKey.isEmpty) return false;
+    final failed = await pushBooks([book]);
+    return failed.isEmpty;
+  }
+
+  @override
+  Future<List<String>> pushBooks(List<Book> books) async {
+    if (books.isEmpty) return [];
+    if (supabaseUrl.isEmpty || anonKey.isEmpty) return books.map((b) => b.id).toList();
     try {
       final uri = Uri.parse('$supabaseUrl/rest/v1/books?on_conflict=id');
+      final payload = books.map((b) => b.toRemoteMap()).toList();
       final res = await http
-          .post(uri, headers: _headers, body: jsonEncode([book.toRemoteMap()]))
-          .timeout(const Duration(seconds: 8));
+          .post(uri, headers: _headers, body: jsonEncode(payload))
+          .timeout(const Duration(seconds: 10));
       if (res.statusCode >= 200 && res.statusCode < 300) {
-        return true;
+        return [];
       }
-      debugPrint('SupabaseSyncProvider pushBook failed [${res.statusCode}]: ${res.body}');
-      return false;
+      debugPrint('SupabaseSyncProvider pushBooks batch failed [${res.statusCode}]: ${res.body}');
+      return books.map((b) => b.id).toList();
     } catch (e) {
-      debugPrint('SupabaseSyncProvider pushBook error: $e');
-      return false;
+      debugPrint('SupabaseSyncProvider pushBooks batch error: $e');
+      return books.map((b) => b.id).toList();
     }
   }
 
@@ -120,9 +132,17 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
 
   @override
   Future<bool> pushReadingLog(ReadingLogEntry entry) async {
-    if (supabaseUrl.isEmpty || anonKey.isEmpty) return false;
+    final failed = await pushReadingLogs([entry]);
+    return failed.isEmpty;
+  }
+
+  @override
+  Future<List<String>> pushReadingLogs(List<ReadingLogEntry> logs) async {
+    if (logs.isEmpty) return [];
+    if (supabaseUrl.isEmpty || anonKey.isEmpty) return logs.map((l) => l.id).toList();
     try {
       final uri = Uri.parse('$supabaseUrl/rest/v1/reading_log?on_conflict=id');
+      final payload = logs.map((l) => l.toRemoteMap()).toList();
       final res = await http
           .post(
             uri,
@@ -130,17 +150,17 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
               ..._headers,
               'Prefer': 'resolution=merge-duplicates',
             },
-            body: jsonEncode([entry.toRemoteMap()]),
+            body: jsonEncode(payload),
           )
-          .timeout(const Duration(seconds: 8));
+          .timeout(const Duration(seconds: 10));
       if (res.statusCode >= 200 && res.statusCode < 300) {
-        return true;
+        return [];
       }
-      debugPrint('SupabaseSyncProvider pushReadingLog failed [${res.statusCode}]: ${res.body}');
-      return false;
+      debugPrint('SupabaseSyncProvider pushReadingLogs batch failed [${res.statusCode}]: ${res.body}');
+      return logs.map((l) => l.id).toList();
     } catch (e) {
-      debugPrint('SupabaseSyncProvider pushReadingLog error: $e');
-      return false;
+      debugPrint('SupabaseSyncProvider pushReadingLogs batch error: $e');
+      return logs.map((l) => l.id).toList();
     }
   }
 

@@ -423,3 +423,102 @@ class _CoverPalette {
   final Color textColor;
   const _CoverPalette({required this.primary, required this.header, required this.textColor});
 }
+
+enum BrutalistToggleSize {
+  small,  // 6x2, font 9.5, icon 11 (micro tags)
+  medium, // 8x4, font 10,  icon 12 (suggestions)
+  regular // 10x6, font 11, icon 13 (filter sheets)
+}
+
+/// A standardized, reusable Neo-Brutalist expansion toggle chip (`+MORE` / `LESS`).
+class BrutalistExpandToggleChip extends StatelessWidget {
+  final bool isExpanded;
+  final int? hiddenCount;
+  final VoidCallback onTap;
+  final BrutalistToggleSize size;
+
+  const BrutalistExpandToggleChip({
+    super.key,
+    required this.isExpanded,
+    required this.onTap,
+    this.hiddenCount,
+    this.size = BrutalistToggleSize.regular,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final details = Theme.of(context).extension<AppThemeDetails>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+
+    final EdgeInsetsGeometry padding;
+    final double fontSize;
+    final double iconSize;
+    final double borderWidth;
+
+    switch (size) {
+      case BrutalistToggleSize.small:
+        padding = const EdgeInsets.symmetric(horizontal: 6, vertical: 2);
+        fontSize = 9.5;
+        iconSize = 11;
+        borderWidth = 1.0;
+        break;
+      case BrutalistToggleSize.medium:
+        padding = const EdgeInsets.symmetric(horizontal: 8, vertical: 4);
+        fontSize = 10.0;
+        iconSize = 12;
+        borderWidth = 1.5;
+        break;
+      case BrutalistToggleSize.regular:
+      default:
+        padding = const EdgeInsets.symmetric(horizontal: 10, vertical: 6);
+        fontSize = 11.0;
+        iconSize = 13;
+        borderWidth = 1.5;
+        break;
+    }
+
+    final String label;
+    if (isExpanded) {
+      label = 'LESS';
+    } else if (hiddenCount != null && hiddenCount! > 0) {
+      label = '+$hiddenCount MORE';
+    } else {
+      label = 'MORE';
+    }
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: padding,
+          decoration: BoxDecoration(
+            color: details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+            border: Border.all(color: borderColor, width: borderWidth),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isExpanded ? Icons.remove_rounded : Icons.add_rounded,
+                size: iconSize,
+                color: accentColor,
+              ),
+              const SizedBox(width: 3),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w900,
+                  color: accentColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

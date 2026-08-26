@@ -44,7 +44,7 @@ class ReadingMutationService {
       note: note ?? (volumesDelta > 0 ? 'Advanced to Vol $newVol, Ch $newCh' : null),
     );
 
-    _syncManager.syncNow();
+    _syncManager.scheduleSyncSoon();
     return updatedBook;
   }
 
@@ -63,7 +63,7 @@ class ReadingMutationService {
       note: note,
     );
 
-    _syncManager.syncNow();
+    _syncManager.scheduleSyncSoon();
     return updatedBook;
   }
 
@@ -74,7 +74,7 @@ class ReadingMutationService {
   }) async {
     final normalized = normalizeStatusTransition(book, newStatus);
     await _dbHelper.updateBook(normalized);
-    _syncManager.syncNow();
+    _syncManager.scheduleSyncSoon();
     return normalized;
   }
 
@@ -88,7 +88,7 @@ class ReadingMutationService {
     );
 
     await _dbHelper.updateBook(updatedBook);
-    _syncManager.syncNow();
+    _syncManager.scheduleSyncSoon();
     return updatedBook;
   }
 
@@ -107,7 +107,7 @@ class ReadingMutationService {
     );
 
     await _dbHelper.updateBook(updatedBook);
-    _syncManager.syncNow();
+    _syncManager.scheduleSyncSoon();
     return updatedBook;
   }
 }

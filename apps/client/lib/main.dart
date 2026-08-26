@@ -10,6 +10,11 @@ import 'services/theme_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Tune Flutter image cache to prevent unbounded memory usage on large book collections
+  PaintingBinding.instance.imageCache.maximumSize = 250; // max 250 decoded image entries
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 75 * 1024 * 1024; // 75 MB limit
+
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
     await windowManager.ensureInitialized();
   }
