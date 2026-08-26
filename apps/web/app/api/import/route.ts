@@ -196,6 +196,10 @@ export const POST = withAuth(async (req: NextRequest) => {
       is_favorite: Boolean(
         get('is_favorite')?.toLowerCase() === 'true' || get('is_favorite') === '1',
       ),
+      series_name: get('series_name') || null,
+      series_order: toNullableNumber(get('series_order')),
+      shelf_names: get('shelf_names') || null,
+      reread_count: toNullableNumber(get('reread_count')) ? Math.floor(toNullableNumber(get('reread_count'))!) : 0,
     };
 
     const progError = validateProgressionFields(rowObj as any);
