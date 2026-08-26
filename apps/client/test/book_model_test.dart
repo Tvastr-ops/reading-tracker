@@ -458,5 +458,135 @@ void main() {
       expect(res4.length, 1);
       expect(res4.first.title, 'Mistborn: The Final Empire');
     });
+
+    test('Boolean OR and NOT search operators', () {
+      const book1 = Book(
+        id: '1',
+        title: 'Mistborn: The Final Empire',
+        author: 'Brandon Sanderson',
+        genreTags: 'Fantasy, High Fantasy, Heist',
+        seriesName: 'Mistborn',
+        shelfNames: '["Favorites","Cosmere"]',
+        createdAt: '',
+        updatedAt: '',
+      );
+
+      const book2 = Book(
+        id: '2',
+        title: 'The Way of Kings',
+        author: 'Brandon Sanderson',
+        genreTags: 'Epic Fantasy, High Fantasy, Military',
+        seriesName: 'The Stormlight Archive',
+        shelfNames: '["Favorites","Cosmere"]',
+        createdAt: '',
+        updatedAt: '',
+      );
+
+      const book3 = Book(
+        id: '3',
+        title: 'Neuromancer',
+        author: 'William Gibson',
+        genreTags: 'Sci-Fi, Cyberpunk, Heist',
+        seriesName: 'Sprawl',
+        shelfNames: '["Sci-Fi Classics"]',
+        createdAt: '',
+        updatedAt: '',
+      );
+
+      final books = [book1, book2, book3];
+
+      List<Book> search(String query) {
+        final rawQuery = query.trim();
+        if (rawQuery.isEmpty) return books;
+        final orClauses = rawQuery.split(RegExp(r'\s+(?:OR|or|\|)\s+|\s*\|\s*')).where((c) => c.trim().isNotEmpty).toList();
+
+        return books.where((b) {
+          return orClauses.any((clause) {
+            final tokens = clause.trim().split(RegExp(r'[\s,]+')).where((t) => t.isNotEmpty).toList();
+            final requiredTags = <String>[];
+            final excludedTags = <String>[];
+            final textKeywords = <String>[];
+            final excludedKeywords = <String>[];
+
+            for (final token in tokens) {
+              final low = token.toLowerCase();
+              final isNegated = low.startsWith('-') || low.startsWith('!');
+              final cleanToken = isNegated ? low.substring(1) : low;
+
+              if (cleanToken.isEmpty) continue;
+
+              if (cleanToken.startsWith('#') && cleanToken.length > 1) {
+                final tag = cleanToken.substring(1);
+                if (isNegated) {
+                  excludedTags.add(tag);
+                } else {
+                  requiredTags.add(tag);
+                }
+              } else if (cleanToken.startsWith('tag:') && cleanToken.length > 4) {
+                final tag = cleanToken.substring(4);
+                if (isNegated) {
+                  excludedTags.add(tag);
+                } else {
+                  requiredTags.add(tag);
+                }
+              } else {
+                if (isNegated) {
+                  excludedKeywords.add(cleanToken);
+                } else {
+                  textKeywords.add(cleanToken);
+                }
+              }
+            }
+
+            for (final exTag in excludedTags) {
+              final hasTag = b.tagsList.any((t) => t.toLowerCase().contains(exTag)) ||
+                  (b.genreTags != null && b.genreTags!.toLowerCase().contains(exTag));
+              if (hasTag) return false;
+            }
+
+            for (final exKw in excludedKeywords) {
+              final matchesEx = b.title.toLowerCase().contains(exKw) ||
+                  (b.author != null && b.author!.toLowerCase().contains(exKw)) ||
+                  (b.genreTags != null && b.genreTags!.toLowerCase().contains(exKw));
+              if (matchesEx) return false;
+            }
+
+            for (final tag in requiredTags) {
+              final hasTag = b.tagsList.any((t) => t.toLowerCase().contains(tag)) ||
+                  (b.genreTags != null && b.genreTags!.toLowerCase().contains(tag));
+              if (!hasTag) return false;
+            }
+
+            for (final kw in textKeywords) {
+              final matchesKw = b.title.toLowerCase().contains(kw) ||
+                  (b.author != null && b.author!.toLowerCase().contains(kw)) ||
+                  (b.genreTags != null && b.genreTags!.toLowerCase().contains(kw));
+              if (!matchesKw) return false;
+            }
+
+            return true;
+          });
+        }).toList();
+      }
+
+      // OR: #cyberpunk OR #military -> Neuromancer & The Way of Kings
+      final orRes = search('#cyberpunk OR #military');
+      expect(orRes.length, 2);
+      expect(orRes.map((b) => b.title), containsAll(['Neuromancer', 'The Way of Kings']));
+
+      // Pipe OR: #cyberpunk | #military -> Neuromancer & The Way of Kings
+      final pipeRes = search('#cyberpunk | #military');
+      expect(pipeRes.length, 2);
+
+      // NOT tag: #fantasy -#heist -> only The Way of Kings (excludes Mistborn)
+      final notTagRes = search('#fantasy -#heist');
+      expect(notTagRes.length, 1);
+      expect(notTagRes.first.title, 'The Way of Kings');
+
+      // NOT keyword: Sanderson -Mistborn -> only The Way of Kings
+      final notKwRes = search('Sanderson -Mistborn');
+      expect(notKwRes.length, 1);
+      expect(notKwRes.first.title, 'The Way of Kings');
+    });
   });
 }
