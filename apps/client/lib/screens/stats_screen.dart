@@ -30,6 +30,7 @@ class _StatsScreenState extends State<StatsScreen> {
   int? _selectedMonthIndex;
   int? _selectedYear = DateTime.now().year; // null = Lifetime archive, int = specific year
   String _selectedGoalMetric = 'books'; // 'books', 'pages', 'chapters', 'volumes'
+  bool _showAllLifetimeYears = false;
 
   static const List<String> _monthLabels = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
   static const List<String> _monthNames = [
@@ -720,12 +721,14 @@ class _StatsScreenState extends State<StatsScreen> {
 
                   final Widget activityChartCard;
                   if (isLifetime) {
-                    // Extract active historical years (at least recent 5 years up to current)
-                    final activeYears = yearlyCounts.keys.toList()..sort();
-                    final int startYear = activeYears.isEmpty ? currentCalendarYear : activeYears.first;
-                    final int displayCount = (currentCalendarYear - startYear + 1).clamp(3, 8);
-                    final yearsToDisplay = List.generate(displayCount, (i) => currentCalendarYear - displayCount + 1 + i);
-                    final maxYearly = yearsToDisplay.map((y) => yearlyCounts[y] ?? 0).fold(0, (a, b) => a > b ? a : b);
+                    // Extract all active historical years sorted descending (most recent first)
+                    final activeYearsSet = yearlyCounts.keys.toSet();
+                    activeYearsSet.add(currentCalendarYear);
+                    final sortedYears = activeYearsSet.toList()..sort((a, b) => b.compareTo(a));
+
+                    final maxYearly = sortedYears.map((y) => yearlyCounts[y] ?? 0).fold(0, (a, b) => a > b ? a : b);
+                    final displayedYears = _showAllLifetimeYears ? sortedYears : sortedYears.take(5).toList();
+                    final hasMoreYears = sortedYears.length > 5;
 
                     activityChartCard = BrutalistCard(
                       margin: EdgeInsets.zero,
@@ -760,74 +763,156 @@ class _StatsScreenState extends State<StatsScreen> {
                             ],
                           ),
                           const SizedBox(height: 14),
-                          SizedBox(
-                            height: 100,
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: yearsToDisplay.map((year) {
-                                final count = yearlyCounts[year] ?? 0;
-                                final isCurrent = year == currentCalendarYear;
-                                final double barHeight = maxYearly > 0 ? (count / maxYearly) * 64.0 : 0.0;
+                          ...displayedYears.map((year) {
+                            final count = yearlyCounts[year] ?? 0;
+                            final isCurrent = year == currentCalendarYear;
+                            final isPeak = count > 0 && count == maxYearly;
+                            final double pct = maxYearly > 0 ? (count / maxYearly).clamp(0.0, 1.0) : 0.0;
 
-                                return Expanded(
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedYear = year;
-                                        _selectedMonthIndex = null;
-                                      });
-                                      _loadStats();
-                                    },
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          count > 0 ? '$count' : '',
-                                          style: TextStyle(
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.w800,
-                                            color: isCurrent
-                                                ? primaryColor
-                                                : (isDark ? Colors.white60 : AppColors.inkMuted),
+                            return MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedYear = year;
+                                    _selectedMonthIndex = null;
+                                  });
+                                  _loadStats();
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 5.5),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: isCurrent
+                                                      ? primaryColor.withValues(alpha: 0.15)
+                                                      : (isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh),
+                                                  border: Border.all(
+                                                    color: isCurrent ? primaryColor : borderColor.withValues(alpha: 0.35),
+                                                    width: 1.0,
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                  '$year',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w900,
+                                                    color: isCurrent ? primaryColor : inkColor,
+                                                    letterSpacing: 0.3,
+                                                  ),
+                                                ),
+                                              ),
+                                              if (isPeak && count > 0) ...[
+                                                const SizedBox(width: 6),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.amber.withValues(alpha: 0.18),
+                                                    border: Border.all(color: Colors.amber, width: 1.0),
+                                                  ),
+                                                  child: const Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(Icons.star_rounded, size: 10, color: Colors.amber),
+                                                      SizedBox(width: 2),
+                                                      Text(
+                                                        'PEAK',
+                                                        style: TextStyle(
+                                                          fontSize: 8.5,
+                                                          fontWeight: FontWeight.w900,
+                                                          color: Colors.amber,
+                                                          letterSpacing: 0.4,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
                                           ),
-                                        ),
-                                        const SizedBox(height: 3),
-                                        AnimatedContainer(
-                                          duration: const Duration(milliseconds: 250),
-                                          height: count > 0 ? barHeight : 4.0,
-                                          width: 20,
-                                          decoration: BoxDecoration(
-                                            color: count == 0
-                                                ? (isDark ? Colors.white10 : Colors.black12)
-                                                : (isCurrent
-                                                    ? primaryColor
-                                                    : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack)),
-                                            border: Border.all(
-                                              color: isCurrent
-                                                  ? primaryColor
-                                                  : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-                                              width: isCurrent ? 2.0 : 1.0,
-                                            ),
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                count == 1 ? '1 book' : '$count books',
+                                                style: TextStyle(
+                                                  fontSize: 11.5,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: count > 0
+                                                      ? (isCurrent ? primaryColor : inkColor)
+                                                      : mutedInk,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.chevron_right_rounded,
+                                                size: 14,
+                                                color: isDark ? Colors.white38 : Colors.black38,
+                                              ),
+                                            ],
                                           ),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          '$year',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: isCurrent ? FontWeight.w900 : FontWeight.w700,
-                                            color: isCurrent
-                                                ? primaryColor
-                                                : (isDark ? Colors.white60 : AppColors.inkMuted),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 5),
+                                      BrutalistProgressBar(
+                                        progress: pct,
+                                        height: 8,
+                                        fillColor: isCurrent
+                                            ? primaryColor
+                                            : (count > 0 ? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack) : Colors.transparent),
+                                      ),
+                                    ],
                                   ),
-                                );
-                              }).toList(),
+                                ),
+                              ),
+                            );
+                          }),
+                          if (hasMoreYears) ...[
+                            const SizedBox(height: 6),
+                            Center(
+                              child: GestureDetector(
+                                onTap: () => setState(() => _showAllLifetimeYears = !_showAllLifetimeYears),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh,
+                                    border: Border.all(color: borderColor.withValues(alpha: 0.4), width: 1.0),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        _showAllLifetimeYears
+                                            ? 'SHOW LESS'
+                                            : 'SHOW ALL ${sortedYears.length} YEARS (${sortedYears.length - 5} MORE)',
+                                        style: TextStyle(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.4,
+                                          color: primaryColor,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        _showAllLifetimeYears ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                                        size: 14,
+                                        color: primaryColor,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ],
                       ),
                     );

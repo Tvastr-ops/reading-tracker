@@ -5,7 +5,7 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
-## [2.3.0] - 2026-08-26
+## [2.3.0a] - 2026-08-26
 
 ### Added & Improved
 - **Reading Velocity Matrix (Lifetime & Yearly)**:
@@ -17,6 +17,8 @@ and this project adheres to the [Project Release Versioning Specification](.gemi
   - Eliminated gray/tinted status bar overlay on Android with `statusBarColor: Colors.transparent` and adaptive light/dark status bar icon brightness matching the active paper theme.
 - **Standalone Linux Flatpak Packaging**:
   - Configured system-wide Flatpak SDK and runtime installation in GitHub Actions release workflow for automated `.flatpak` bundle generation.
+- **Lifetime Yearly Completions Horizontal Bar Chart**:
+  - Transformed Lifetime Activity into a sleek horizontal bar chart displaying all historical years with proportional progress bars, interactive year navigation, and a `★ PEAK` badge for the record year.
 - **Header & Title Polish**:
   - Removed `(null)` from Reading Volume header on All-Time view.
   - Shortened Yearly Completions and standardized Reading Velocity card headers.
