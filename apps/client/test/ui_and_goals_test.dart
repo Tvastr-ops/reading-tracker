@@ -94,7 +94,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final moreFinder = find.text('+15 MORE');
       final altFinder = find.byWidgetPredicate((w) => w is Text && (w.data?.contains('MORE') ?? false));
 
       // With default seeds (22 items), MORE chip should be visible
