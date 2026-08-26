@@ -27,7 +27,7 @@ class UpdateService {
 
   static const String repoOwner = 'Tvastr-ops';
   static const String repoName = 'reading-tracker';
-  static const String currentReleaseVersion = 'v2.1.0c';
+  static const String currentReleaseVersion = 'v2.2.0';
 
   String? _cachedAppVersion;
 

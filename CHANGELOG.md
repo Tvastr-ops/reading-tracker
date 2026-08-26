@@ -5,6 +5,61 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.2.0] - 2026-08-26
+
+### Added
+- **Lifetime Stats Dashboard**: Comprehensive all-time reading metrics view accessible from the Stats Year switcher dialog, displaying total lifetime books, pages, chapters, volumes, active days, and completion rates.
+- **Dynamic Genre Suggestions & Library Shelves Overflow**: Smart capping for genre suggestion seeds and custom library shelves (6 visible by default) with standard `+N MORE` / `LESS` expansion toggles.
+- **Star Rating Filter Expansion (3 ★, 2 ★, 1 ★ & Above)**: Full star filter coverage in Library Sort & Filter sheet with expandable `MORE` / `LESS` toggle.
+- **Reusable Neo-Brutalist Expansion Component (`BrutalistExpandToggleChip`)**: Standardized expansion chip across library filters and dialogs supporting `small`, `medium`, and `regular` sizing.
+- **Optional Tactile Haptic Micro-Vibrations**: Added setting toggle in `Settings > Display Preferences` for subtle tactile micro-ticks on progress increments and chip taps.
+- **Desktop & Web Power Shortcuts**: Added `Ctrl+S` / `Cmd+S` to instantly save and dismiss `BookEditDialog` and `QuickLogDialog`.
+- **Automatic Source Link Sanitizer**: Auto-prepends `https://` on user-entered domain links (e.g. `royalroad.com` -> `https://royalroad.com`).
+
+### Performance & Architectural Refinements
+- **SQLite Write-Ahead Logging (WAL Mode)**: Enabled `PRAGMA journal_mode = WAL;` and `PRAGMA synchronous = NORMAL;` in `DatabaseHelper` for non-blocking concurrent database reads while background sync writes.
+- **Batched Remote Sync Payloads**: Bundled book and reading log sync pushes into unified JSON array HTTP payloads, eliminating serial HTTP roundtrips.
+- **Mutation Debouncing & Coalescing**: Debounced rapid-fire progress ticks and status changes to prevent redundant sync network bursts.
+- **Pre-Computed Library Cache (`_filteredBooks`)**: Decoupled \(O(N \log N)\) filtering and sorting from layout rebuilds, rendering cached books in \(O(1)\) time.
+- **Synchronous Seed Loading**: Genre suggestions initialize synchronously on frame 1, completely eliminating modal pop-in and layout shift.
+
+---
+
+## [2.1.0c] - 2026-08-25
+
+### Added
+- **Bespoke Tactile Paper Textures**: 6 distinct procedural paper canvas patterns (`Classic Kraft`, `Muted Ledger`, `Fine Archival Grid`, `Canvas Weave`, `Vintage Newsprint`, and `Technical Dots`) tied to active theme variants.
+- **Paper Pattern Intensity Slider**: Granular intensity control in `Settings > Display Preferences` with live real-time slider and translucent card backdrops.
+- **UUID Reading Log Synchronization**: Added full support for string UUID `log_id` mapping and full reading log history fetching across Supabase and Generic REST backends.
+
+---
+
+## [2.1.0b] - 2026-08-25
+
+### Performance & Polish
+- **GPU Layer Caching via `PictureRecorder`**: Cached paper texture drawing layers on the GPU, achieving silky 60/120 FPS scrolling with zero CPU rasterization overhead.
+- **Reading Journey Error Recovery**: Graceful error handling in Timeline/Journey view ensuring graceful fallbacks even on interrupted log streams.
+
+---
+
+## [2.1.0a] - 2026-08-25
+
+### Added
+- **Full Paper Canvas Underlay**: Seamless background paper grain textures layered beneath main application routes.
+- **Responsive Layout Symmetry**: Unified padding, inset scaling, and adaptive card dimensions across desktop, tablet, and mobile.
+
+---
+
+## [2.1.0] - 2026-08-24
+
+### Added
+- **Custom Multi-Membership Shelves**: Organise books into multiple custom user-defined shelves (e.g. `Favorites`, `Classics`, `TBR 2026`) with tag-style filtering and SQLite/remote JSON persistence.
+- **Series Engine & Order Tracking**: First-class tracking for book series names (`series_name`) and fractional/integer volume numbers (`series_order`).
+- **Re-Reading Counter & Lifecycle**: Dedicated re-read counter (`reread_count`) and repeat journey lifecycle tracking.
+- **Web App Parity**: Added full series, shelves, and re-reading support across Next.js web application types, form inputs, and Supabase server routes.
+
+---
+
 ## [2.0.0] - 2026-08-24
 
 ### Added
