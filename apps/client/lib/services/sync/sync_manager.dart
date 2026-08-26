@@ -13,12 +13,16 @@ class SyncManager extends ChangeNotifier {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
   RemoteSyncProvider? _activeProvider;
   Timer? _periodicTimer;
+  Timer? _debouncedSyncTimer;
 
   bool _isSyncing = false;
   bool _offlineMode = false;
   bool _autoSync = true;
   String _connectionStatus = 'Offline';
   DateTime? _lastSyncedAt;
+  DateTime? _lastBookSyncCursor;
+  DateTime? _lastLogSyncCursor;
+  int _syncCount = 0;
   int _yearlyGoal = 25;
 
   SyncBackendType _backendType = SyncBackendType.supabase;
@@ -49,6 +53,14 @@ class SyncManager extends ChangeNotifier {
     if (lastSyncedStr != null && lastSyncedStr.isNotEmpty) {
       _lastSyncedAt = DateTime.tryParse(lastSyncedStr);
     }
+    final lastBookCursorStr = prefs.getString('last_book_sync_cursor');
+    if (lastBookCursorStr != null && lastBookCursorStr.isNotEmpty) {
+      _lastBookSyncCursor = DateTime.tryParse(lastBookCursorStr);
+    }
+    final lastLogCursorStr = prefs.getString('last_log_sync_cursor');
+    if (lastLogCursorStr != null && lastLogCursorStr.isNotEmpty) {
+      _lastLogSyncCursor = DateTime.tryParse(lastLogCursorStr);
+    }
     final typeIdx = prefs.getInt('backend_type') ?? 0;
     _backendType = SyncBackendType.values[typeIdx.clamp(0, SyncBackendType.values.length - 1)];
 
@@ -67,6 +79,18 @@ class SyncManager extends ChangeNotifier {
         }
       });
     }
+  }
+
+  /// Schedules a coalesced background sync after a short delay (1200ms).
+  /// Subsequent calls reset the timer so rapid-fire mutations are aggregated into a single network cycle.
+  void scheduleSyncSoon({Duration delay = const Duration(milliseconds: 1200)}) {
+    if (_offlineMode || _activeProvider == null) return;
+    _debouncedSyncTimer?.cancel();
+    _debouncedSyncTimer = Timer(delay, () {
+      if (!_isSyncing) {
+        syncNow();
+      }
+    });
   }
 
   void _updateProvider() {
@@ -94,6 +118,8 @@ class SyncManager extends ChangeNotifier {
     _offlineMode = offlineMode;
     _autoSync = autoSync;
     _lastSyncedAt = null;
+    _lastBookSyncCursor = null;
+    _lastLogSyncCursor = null;
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('backend_type', type.index);
@@ -102,6 +128,8 @@ class SyncManager extends ChangeNotifier {
     await prefs.setBool('offline_mode', _offlineMode);
     await prefs.setBool('auto_sync', _autoSync);
     await prefs.remove('last_synced_at');
+    await prefs.remove('last_book_sync_cursor');
+    await prefs.remove('last_log_sync_cursor');
 
     _updateProvider();
     await checkConnection();
@@ -121,9 +149,12 @@ class SyncManager extends ChangeNotifier {
     return ok;
   }
 
-  Future<List<Book>> syncNow() async {
+  /// Executes synchronization. Set [forceFullReconciliation] to true for manual pull-to-refresh or settings refresh.
+  Future<List<Book>> syncNow({bool forceFullReconciliation = false}) async {
     if (_isSyncing) return await _dbHelper.getBooks();
+    _debouncedSyncTimer?.cancel();
     _isSyncing = true;
+    _syncCount++;
     notifyListeners();
 
     try {
@@ -132,6 +163,13 @@ class SyncManager extends ChangeNotifier {
         notifyListeners();
         return await _dbHelper.getBooks();
       }
+
+      final isFullReconciliation = forceFullReconciliation ||
+          _syncCount % 10 == 1 ||
+          _lastBookSyncCursor == null ||
+          _lastLogSyncCursor == null;
+
+      final syncStartTime = DateTime.now().toUtc();
 
       // 0. Push durable permanent delete tombstones
       final tombstones = await _dbHelper.getPendingTombstones();
@@ -143,68 +181,73 @@ class SyncManager extends ChangeNotifier {
         }
       }
 
-      // 1. Push pending local book mutations
+      // 1. Push pending local book mutations (batched where possible)
       final pending = await _dbHelper.getPendingSyncBooks();
       final failedPushIds = <String>{};
 
-      for (final book in pending) {
-        if (book.syncStatus == 'pending_delete') {
-          final ok = await _activeProvider!.deleteBook(book.id, permanent: false);
-          if (ok) {
-            await _dbHelper.markBookSynced(book.id);
-          } else {
-            failedPushIds.add(book.id);
-          }
+      final toDelete = <Book>[];
+      final toUpsert = <Book>[];
+      for (final b in pending) {
+        if (b.syncStatus == 'pending_delete') {
+          toDelete.add(b);
         } else {
-          final ok = await _activeProvider!.pushBook(book);
-          if (ok) {
-            await _dbHelper.markBookSynced(book.id);
-          } else {
-            failedPushIds.add(book.id);
-          }
+          toUpsert.add(b);
         }
       }
 
-      // 1b. Push pending local reading logs (only for non-failing books)
+      // 1a. Batch push upserted books
+      if (toUpsert.isNotEmpty) {
+        final failed = await _activeProvider!.pushBooks(toUpsert);
+        failedPushIds.addAll(failed);
+        final successful = toUpsert.where((b) => !failed.contains(b.id));
+        for (final b in successful) {
+          await _dbHelper.markBookSynced(b.id);
+        }
+      }
+
+      // 1b. Process soft-deletes individually (HTTP PATCH / DELETE)
+      for (final b in toDelete) {
+        final ok = await _activeProvider!.deleteBook(b.id, permanent: false);
+        if (ok) {
+          await _dbHelper.markBookSynced(b.id);
+        } else {
+          failedPushIds.add(b.id);
+        }
+      }
+
+      // 1c. Batch push pending reading logs (only for books that did not fail push)
       final pendingLogs = await _dbHelper.getPendingSyncReadingLogs();
-      for (final log in pendingLogs) {
-        if (!failedPushIds.contains(log.bookId)) {
-          final ok = await _activeProvider!.pushReadingLog(log);
-          if (ok) {
-            await _dbHelper.markReadingLogSynced(log.id);
-          }
+      final logsToPush = pendingLogs.where((l) => !failedPushIds.contains(l.bookId)).toList();
+      if (logsToPush.isNotEmpty) {
+        final failedLogs = await _activeProvider!.pushReadingLogs(logsToPush);
+        final successfulLogs = logsToPush.where((l) => !failedLogs.contains(l.id));
+        for (final l in successfulLogs) {
+          await _dbHelper.markReadingLogSynced(l.id);
         }
       }
 
-      // 2. Fetch remote updates (including soft-deleted/trash books)
-      final remote = await _activeProvider!.fetchRemoteBooks();
+      // 2. Fetch remote books (delta when not full reconciliation)
+      final bookFetchCursor = isFullReconciliation ? null : _lastBookSyncCursor;
+      final remote = await _activeProvider!.fetchRemoteBooks(since: bookFetchCursor);
+
       if (remote.isNotEmpty) {
-        final remoteIds = <String>{};
-        for (final b in remote) {
-          if (!failedPushIds.contains(b.id)) {
-            remoteIds.add(b.id);
-            await _dbHelper.upsertRemoteBook(b);
-          }
-        }
-        // Only cleanup missing remote books if we got a non-empty remote list
-        // This guards against accidental full wipe due to transient network errors
-        if (failedPushIds.isEmpty && remote.isNotEmpty) {
+        final remoteToUpsert = remote.where((b) => !failedPushIds.contains(b.id)).toList();
+        await _dbHelper.upsertRemoteBooks(remoteToUpsert);
+
+        // Only cleanup missing remote books during full reconciliation with no failed pushes
+        if (isFullReconciliation && failedPushIds.isEmpty) {
+          final remoteIds = remote.map((b) => b.id).toSet();
           await _dbHelper.cleanupMissingRemoteBooks(remoteIds);
         }
       }
-      // NOTE: intentionally no cleanup on empty remote — avoids wiping all local
-      // books if the server returns nothing due to a transient error or quota issue.
 
-      // 2b. Fetch remote reading logs and recalculate pace for affected books
-      final remoteLogs = await _activeProvider!.fetchRemoteReadingLogs();
+      // 2b. Fetch remote reading logs (delta when not full reconciliation)
+      final logFetchCursor = isFullReconciliation ? null : _lastLogSyncCursor;
+      final remoteLogs = await _activeProvider!.fetchRemoteReadingLogs(since: logFetchCursor);
+
       if (remoteLogs.isNotEmpty) {
-        final affectedBookIds = <String>{};
-        for (final log in remoteLogs) {
-          await _dbHelper.upsertRemoteReadingLog(log);
-          affectedBookIds.add(log.bookId);
-        }
-        // Recalculate reading pace for every book that received new remote logs,
-        // ensuring cross-device pace stays accurate without requiring a local progress entry.
+        await _dbHelper.upsertRemoteReadingLogs(remoteLogs);
+        final affectedBookIds = remoteLogs.map((l) => l.bookId).toSet();
         await _dbHelper.recalculatePaceForBooks(affectedBookIds);
       }
 
@@ -216,13 +259,18 @@ class SyncManager extends ChangeNotifier {
         await prefs.setInt('yearly_goal', _yearlyGoal);
       }
 
+      // Advance cursors only on successful run
       _lastSyncedAt = DateTime.now();
+      _lastBookSyncCursor = syncStartTime;
+      _lastLogSyncCursor = syncStartTime;
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('last_synced_at', _lastSyncedAt!.toIso8601String());
+      await prefs.setString('last_book_sync_cursor', _lastBookSyncCursor!.toIso8601String());
+      await prefs.setString('last_log_sync_cursor', _lastLogSyncCursor!.toIso8601String());
 
       _connectionStatus = failedPushIds.isEmpty ? 'Connected' : 'Sync Partially Succeeded';
     } catch (e, stack) {
-      // Log the real error for debuggability rather than silently swallowing it
       debugPrint('[SyncManager] syncNow error: $e\n$stack');
       _connectionStatus = 'Sync Interrupted';
     } finally {
