@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../services/backup_service.dart';
 import '../services/sync/generic_rest_sync_provider.dart';
 import '../services/sync/supabase_sync_provider.dart';
 import '../services/sync/sync_manager.dart';
@@ -746,50 +747,252 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildDataManagementCard(bool isDark) {
-    return BrutalistCard(
-      margin: EdgeInsets.zero,
-      child: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => TrashScreen(onDataChanged: () {})),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
+    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+    final mutedColor = isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted;
+
+    return Column(
+      children: [
+        BrutalistCard(
+          margin: EdgeInsets.zero,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
-                  border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1.5),
-                ),
-                child: Icon(Icons.delete_outline_rounded, size: 20, color: isDark ? Colors.white : AppColors.inkBlack),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Trash & Recovery',
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
+                      border: Border.all(color: borderColor, width: 1.5),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'View deleted books, restore them to your library, or permanently remove them.',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
+                    child: Icon(Icons.backup_table_rounded, size: 20, color: isDark ? Colors.white : AppColors.inkBlack),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Local Backup & Restore',
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Export your offline library to JSON / CSV or restore from a backup file.',
+                          style: TextStyle(fontSize: 11, color: mutedColor),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: BrutalistButton(
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                      backgroundColor: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                      textColor: isDark ? Colors.white : AppColors.inkBlack,
+                      onPressed: () => _exportBackupDialog(isDark),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.file_download_outlined, size: 16),
+                          SizedBox(width: 6),
+                          Text('EXPORT', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: BrutalistButton(
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                      backgroundColor: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                      textColor: isDark ? Colors.white : AppColors.inkBlack,
+                      onPressed: () => _importBackupDialog(isDark),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.file_upload_outlined, size: 16),
+                          SizedBox(width: 6),
+                          Text('IMPORT', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              Icon(Icons.chevron_right_rounded, color: isDark ? Colors.white : AppColors.inkBlack),
             ],
           ),
         ),
+        const SizedBox(height: 8),
+        BrutalistCard(
+          margin: EdgeInsets.zero,
+          child: InkWell(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => TrashScreen(onDataChanged: () {})),
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
+                      border: Border.all(color: borderColor, width: 1.5),
+                    ),
+                    child: Icon(Icons.delete_outline_rounded, size: 20, color: isDark ? Colors.white : AppColors.inkBlack),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Trash & Recovery',
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'View deleted books, restore them to your library, or permanently remove them.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: mutedColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right_rounded, color: isDark ? Colors.white : AppColors.inkBlack),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _exportBackupDialog(bool isDark) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        backgroundColor: isDark ? AppColors.darkSurface : AppColors.paperBg,
+        title: const Text('EXPORT BACKUP', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+        content: const Text(
+          'Choose the format to export your library:',
+          style: TextStyle(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('CANCEL', style: TextStyle(fontWeight: FontWeight.w800)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isDark ? AppColors.darkSurfaceHigh : Colors.grey[800],
+              foregroundColor: Colors.white,
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final res = await BackupService.instance.saveBackupToFile(isJson: false);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(res.message), duration: const Duration(seconds: 4)),
+              );
+            },
+            child: const Text('CSV (WEB COMPATIBLE)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final res = await BackupService.instance.saveBackupToFile(isJson: true);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(res.message), duration: const Duration(seconds: 4)),
+              );
+            },
+            child: const Text('JSON (FULL BACKUP)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _importBackupDialog(bool isDark) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        backgroundColor: isDark ? AppColors.darkSurface : AppColors.paperBg,
+        title: const Text('IMPORT BACKUP', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+        content: SizedBox(
+          width: 500,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Paste raw JSON or CSV backup content below to import into your library:',
+                style: TextStyle(fontSize: 12),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                  border: Border.all(color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack, width: 1.5),
+                ),
+                child: TextField(
+                  controller: controller,
+                  maxLines: 8,
+                  style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: isDark ? Colors.white : AppColors.inkBlack),
+                  decoration: const InputDecoration(
+                    contentPadding: EdgeInsets.all(10),
+                    border: InputBorder.none,
+                    hintText: 'Paste {"version":"2.0", ...} or title,type,author,...',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('CANCEL', style: TextStyle(fontWeight: FontWeight.w800)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            ),
+            onPressed: () async {
+              final raw = controller.text.trim();
+              if (raw.isEmpty) return;
+              Navigator.pop(ctx);
+              final res = await BackupService.instance.restoreFromBackupString(raw);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(res.message), duration: const Duration(seconds: 4)),
+              );
+            },
+            child: const Text('IMPORT INTO LIBRARY', style: TextStyle(fontWeight: FontWeight.w800)),
+          ),
+        ],
       ),
     );
   }

@@ -11,7 +11,7 @@ and this project adheres to the [Project Release Versioning Specification](.gemi
 - **Boolean Search Operators**: Full support for `OR` / `|` (e.g. `#fantasy OR #scifi`) and exclusion `NOT` (`-` or `!`, e.g. `#fantasy -#romance`, `Sanderson -Mistborn`) in the library search bar.
 - **Pre-Compiled Query AST Optimization (`_ParsedSearchQuery`)**: Tokenizes and compiles search expressions once per filter pass into an abstract syntax tree, delivering zero-allocation \(O(N)\) filtering for large libraries.
 - **Tactile Physical Motor Haptics**: Upgraded haptics from soft keyboard ticks to `lightImpact` and `mediumImpact` ensuring crisp physical motor feedback on Realme UI, Samsung OneUI, and Pixel devices.
-- **Universal Button & Switch Haptic Integration**: Connected `BrutalistButton` and `BrutalistSwitch` directly to guarded tactile feedback on tap.
+- **Local Backup & Restore (JSON / CSV)**: Added complete offline export & restore in Settings. Export your full library + reading logs to JSON or web-compatible CSV, and restore/import instantly from backup files or clipboard text.
 - **Flatpak CI Packaging**: Added `flatpak-builder` and Flathub runtime dependencies to the GitHub release action to produce downloadable `.flatpak` release bundles.
 
 ---

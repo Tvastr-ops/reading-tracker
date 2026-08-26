@@ -2213,15 +2213,31 @@ class _ParsedSearchQuery {
 
         if (clean.startsWith('#') && clean.length > 1) {
           final tag = clean.substring(1);
-          if (isNegated) exTags.add(tag); else reqTags.add(tag);
+          if (isNegated) {
+            exTags.add(tag);
+          } else {
+            reqTags.add(tag);
+          }
         } else if (clean.startsWith('tag:') && clean.length > 4) {
           final tag = clean.substring(4);
-          if (isNegated) exTags.add(tag); else reqTags.add(tag);
+          if (isNegated) {
+            exTags.add(tag);
+          } else {
+            reqTags.add(tag);
+          }
         } else if (clean.startsWith('shelf:') && clean.length > 6) {
           final shelf = clean.substring(6);
-          if (isNegated) exShelves.add(shelf); else reqShelves.add(shelf);
+          if (isNegated) {
+            exShelves.add(shelf);
+          } else {
+            reqShelves.add(shelf);
+          }
         } else {
-          if (isNegated) exKw.add(clean); else reqKw.add(clean);
+          if (isNegated) {
+            exKw.add(clean);
+          } else {
+            reqKw.add(clean);
+          }
         }
       }
 
