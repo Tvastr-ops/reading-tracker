@@ -22,6 +22,7 @@ dependencies:
   flutter_displaymode: ^0.7.0
   window_manager: ^0.5.2
   package_info_plus: ^10.2.1
+  path_provider: ^2.1.2
 
 dev_dependencies:
   flutter_test:
