@@ -1084,8 +1084,8 @@ class _StatsScreenState extends State<StatsScreen> {
                     final bJourneys = journeysByBook[b.id];
                     if (bJourneys != null && bJourneys.isNotEmpty) {
                       for (final j in bJourneys.where((j) => j.status == 'completed' || j.dateFinished != null)) {
-                        if (j.dateStarted != null && j.dateFinished != null) {
-                          final s = DateTime.tryParse(j.dateStarted!);
+                        if (j.dateFinished != null) {
+                          final s = DateTime.tryParse(j.dateStarted);
                           final f = DateTime.tryParse(j.dateFinished!);
                           if (s != null && f != null && !f.isBefore(s)) {
                             final diff = f.difference(s).inDays;
