@@ -51,6 +51,16 @@ class ReadingJourney {
     return '$days days';
   }
 
+  /// Formatted historical reading velocity if total units and duration are known.
+  String? formattedPace(double? totalUnits, {String unitType = 'pages'}) {
+    final dur = duration;
+    if (dur == null || totalUnits == null || totalUnits <= 0) return null;
+    final days = dur.inDays.clamp(1, 99999);
+    final perWeek = (totalUnits / days) * 7;
+    if (perWeek <= 0) return null;
+    return '~${perWeek.toStringAsFixed(1)} $unitType/wk';
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,

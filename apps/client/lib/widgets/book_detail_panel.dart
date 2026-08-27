@@ -621,6 +621,7 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                             final startStr = formatDisplayDate(j.dateStarted);
                             final finishStr = j.dateFinished != null ? formatDisplayDate(j.dateFinished!) : (isAct ? 'Active' : 'Finished');
                             final durationStr = j.formattedDuration;
+                            final paceStr = j.formattedPace(b.totalUnits, unitType: b.unitType ?? 'pages');
 
                             return Container(
                               margin: const EdgeInsets.only(bottom: 6),
@@ -660,7 +661,7 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        '$startStr → $finishStr${durationStr != null ? " • $durationStr" : ""}',
+                                        '$startStr → $finishStr${durationStr != null ? " • $durationStr" : ""}${paceStr != null ? " • $paceStr" : ""}',
                                         style: TextStyle(
                                           fontSize: 10,
                                           color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.6),
