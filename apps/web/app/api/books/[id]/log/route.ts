@@ -113,3 +113,24 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
 
   return NextResponse.json({ entry, pace: result.data.pace }, { status: 201 });
 });
+
+export const DELETE = withAuth(async (req: NextRequest, { params }: RouteContext) => {
+  const { id } = await params;
+  if (!UUID_RE.test(id)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
+
+  const logId = req.nextUrl.searchParams.get('log_id');
+  const supabase = supabaseServer();
+
+  if (logId) {
+    if (!UUID_RE.test(logId))
+      return NextResponse.json({ error: 'Invalid log_id' }, { status: 400 });
+    const { error } = await supabase.from('reading_log').delete().eq('id', logId).eq('book_id', id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true });
+  }
+
+  // Clear all logs for this book
+  const { error } = await supabase.from('reading_log').delete().eq('book_id', id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true });
+});

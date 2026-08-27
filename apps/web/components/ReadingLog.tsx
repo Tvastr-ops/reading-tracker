@@ -217,27 +217,58 @@ export default function ReadingLog({
           )}
         </div>
       ) : (
-        <div className="max-h-[160px] divide-y divide-border/60 overflow-y-auto rounded-xl border border-border bg-surface/50 text-xs">
-          {entries.map((e) => (
-            <div
-              key={e.id}
-              className="flex items-center justify-between p-2.5 transition-colors hover:bg-surface"
+        <div className="space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[11px] font-semibold text-text-muted">
+              {entries.length} {entries.length === 1 ? 'Entry' : 'Entries'}
+            </span>
+            <button
+              type="button"
+              onClick={async () => {
+                if (!confirm('Clear all reading log entries for this book?')) return;
+                await fetch(`/api/books/${bookId}/log`, { method: 'DELETE' });
+                load();
+              }}
+              className="text-[10px] font-medium text-rose-500 hover:underline"
             >
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-text">
-                  {e.from_progress != null ? `${e.from_progress} → ` : ''}
-                  {e.to_progress}
-                </span>
-                {e.note && (
-                  <span className="border-border border-l pl-2 text-text-muted">— {e.note}</span>
-                )}
+              Clear all logs
+            </button>
+          </div>
+          <div className="max-h-[160px] divide-y divide-border/60 overflow-y-auto rounded-xl border border-border bg-surface/50 text-xs">
+            {entries.map((e) => (
+              <div
+                key={e.id}
+                className="group flex items-center justify-between p-2.5 transition-colors hover:bg-surface"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-text">
+                    {e.from_progress != null ? `${e.from_progress} → ` : ''}
+                    {e.to_progress}
+                  </span>
+                  {e.note && (
+                    <span className="border-border border-l pl-2 text-text-muted">— {e.note}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="flex shrink-0 items-center gap-1 text-[11px] text-text-muted">
+                    <Calendar className="h-3 w-3" />
+                    {new Date(e.logged_at).toLocaleDateString()}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await fetch(`/api/books/${bookId}/log?log_id=${e.id}`, { method: 'DELETE' });
+                      load();
+                    }}
+                    className="opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"
+                    title="Delete entry"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
-              <span className="flex shrink-0 items-center gap-1 text-[11px] text-text-muted">
-                <Calendar className="h-3 w-3" />
-                {new Date(e.logged_at).toLocaleDateString()}
-              </span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>
