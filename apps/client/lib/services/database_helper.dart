@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
@@ -592,6 +593,32 @@ class DatabaseHelper {
     return result.map((json) => ReadingLogEntry.fromMap(json)).toList();
   }
 
+  Future<int> deleteReadingLog(String id) async {
+    final db = await instance.database;
+    await db.insert('sync_queue', {
+      'id': id,
+      'action': 'delete_log',
+      'payload': jsonEncode({'id': id}),
+      'created_at': DateTime.now().toUtc().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    return await db.delete('reading_log', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<int> clearReadingLogsForBook(String bookId) async {
+    final db = await instance.database;
+    final logs = await db.query('reading_log', where: 'book_id = ?', whereArgs: [bookId]);
+    for (final l in logs) {
+      final logId = l['id'] as String;
+      await db.insert('sync_queue', {
+        'id': logId,
+        'action': 'delete_log',
+        'payload': jsonEncode({'id': logId}),
+        'created_at': DateTime.now().toUtc().toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    return await db.delete('reading_log', where: 'book_id = ?', whereArgs: [bookId]);
+  }
+
   Future<int> markReadingLogSynced(String id) async {
     final db = await instance.database;
     return await db.update(
@@ -1040,11 +1067,6 @@ class DatabaseHelper {
       debugPrint('[DatabaseHelper] getReadingStreakStats error: $e');
       return {'currentStreak': 0, 'longestStreak': 0, 'totalDays': 0};
     }
-  }
-
-  Future<int> deleteReadingLog(String id) async {
-    final db = await instance.database;
-    return await db.delete('reading_log', where: 'id = ?', whereArgs: [id]);
   }
 
   /// Fix 3: Recalculates and persists reading pace for a set of book IDs after

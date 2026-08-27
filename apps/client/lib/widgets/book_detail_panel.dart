@@ -4,8 +4,10 @@ import '../models/book.dart';
 import '../models/reading_journey.dart';
 import '../services/database_helper.dart';
 import '../services/reading_mutation_service.dart';
+import '../services/sync/sync_manager.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
+import '../utils/progression_logic.dart';
 import 'brutalist_widgets.dart';
 
 class BookDetailPanel extends StatefulWidget {
@@ -69,6 +71,125 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
         _isLoadingLogs = false;
       });
     }
+  }
+
+  Future<void> _confirmDeleteLog(BuildContext context, ReadingLogEntry log) async {
+    final details = Theme.of(context).extension<AppThemeDetails>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBg = details?.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg);
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final mutedInk = details?.inkMutedColor ?? (isDark ? Colors.white60 : AppColors.inkMuted);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        backgroundColor: dialogBg,
+        title: Text('DELETE READING LOG', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: inkColor, letterSpacing: 0.5)),
+        content: Text(
+          'Are you sure you want to delete the log for ${formatDisplayDate(log.loggedAt)} (+${formatNum((log.toProgress - (log.fromProgress ?? 0)).abs())})? This action cannot be undone.',
+          style: TextStyle(fontSize: 12.5, color: mutedInk, height: 1.35),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('CANCEL', style: TextStyle(color: inkColor, fontWeight: FontWeight.w800, fontSize: 11)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryRed,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                side: BorderSide(color: borderColor, width: 1.5),
+                borderRadius: BorderRadius.zero,
+              ),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('DELETE LOG', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 0.5)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _dbHelper.deleteReadingLog(log.id);
+      SyncManager.instance.scheduleSyncSoon();
+      _loadData();
+    }
+  }
+
+  Future<void> _confirmClearAllLogs(BuildContext context) async {
+    final details = Theme.of(context).extension<AppThemeDetails>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBg = details?.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg);
+    final borderColor = details?.borderColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
+    final mutedInk = details?.inkMutedColor ?? (isDark ? Colors.white60 : AppColors.inkMuted);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        backgroundColor: dialogBg,
+        title: Text('CLEAR ALL READING LOGS', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: inkColor, letterSpacing: 0.5)),
+        content: Text(
+          'This will permanently remove all ${_logs.length} session logs for "${widget.book.title}". Your book details and journey history will remain intact.',
+          style: TextStyle(fontSize: 12.5, color: mutedInk, height: 1.35),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('CANCEL', style: TextStyle(color: inkColor, fontWeight: FontWeight.w800, fontSize: 11)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryRed,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                side: BorderSide(color: borderColor, width: 1.5),
+                borderRadius: BorderRadius.zero,
+              ),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('CLEAR ALL', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 0.5)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _dbHelper.clearReadingLogsForBook(widget.book.id);
+      SyncManager.instance.scheduleSyncSoon();
+      _loadData();
+    }
+  }
+
+  Future<void> _backfillSimulatedLogs() async {
+    final b = widget.book;
+    if (b.dateStarted == null || b.dateFinished == null || b.totalUnits == null || b.totalUnits! <= 0) return;
+
+    final startDt = DateTime.tryParse(b.dateStarted!) ?? DateTime.now();
+    final endDt = DateTime.tryParse(b.dateFinished!) ?? DateTime.now();
+
+    final activeJourney = await _dbHelper.getActiveJourney(b.id);
+    final journeyId = activeJourney?.id ?? (_journeys.isNotEmpty ? _journeys.first.id : generateUuidV4());
+
+    final generated = simulateReadingHistoryLogs(
+      bookId: b.id,
+      journeyId: journeyId,
+      totalUnits: b.totalUnits!,
+      startDate: startDt,
+      endDate: endDt,
+    );
+
+    for (final log in generated) {
+      await _dbHelper.insertReadingLog(log);
+    }
+    SyncManager.instance.scheduleSyncSoon();
+    _loadData();
   }
 
   Future<void> _changeStatus(String newStatus) async {
@@ -588,11 +709,36 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                 ],
 
                 // Reading Session Logs
-                _buildSectionLabel('RECENT LOGS', isDark),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildSectionLabel('RECENT LOGS${_logs.isNotEmpty ? " (${_logs.length})" : ""}', isDark),
+                    if (_logs.isNotEmpty)
+                      GestureDetector(
+                        onTap: () => _confirmClearAllLogs(context),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryRed.withValues(alpha: 0.1),
+                            border: Border.all(color: AppColors.primaryRed.withValues(alpha: 0.5), width: 1.0),
+                          ),
+                          child: const Text(
+                            'CLEAR ALL',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                              color: AppColors.primaryRed,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
                 const SizedBox(height: 6),
                 if (_isLoadingLogs)
                   const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator()))
-                else if (_logs.isEmpty)
+                else if (_logs.isEmpty) ...[
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
@@ -607,8 +753,66 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                         color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.5),
                       ),
                     ),
-                  )
-                else
+                  ),
+                  if (b.status == BookStatus.completed &&
+                      b.dateStarted != null &&
+                      b.dateFinished != null &&
+                      b.totalUnits != null &&
+                      b.totalUnits! > 0) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.electricCobalt.withValues(alpha: 0.08),
+                        border: Border.all(color: AppColors.electricCobalt, width: 1.5),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.auto_awesome_rounded, size: 15, color: AppColors.electricCobalt),
+                              const SizedBox(width: 6),
+                              Text(
+                                'SIMULATE READING SESSIONS',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                  color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Generate organic daily logs between ${formatDisplayDate(b.dateStarted)} and ${formatDisplayDate(b.dateFinished)} to populate your activity heatmaps.',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              height: 1.3,
+                              color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.7),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          BrutalistButton(
+                            onPressed: _backfillSimulatedLogs,
+                            backgroundColor: AppColors.electricCobalt,
+                            textColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.casino_rounded, size: 14, color: Colors.white),
+                                SizedBox(width: 6),
+                                Text('GENERATE REALISTIC LOGS', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ] else
                   Column(
                     children: _logs.take(5).map((log) {
                       final dateStr = formatDisplayDate(log.loggedAt);
@@ -624,32 +828,52 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '+${formatNum(delta)} ${getUnitLabel(b.type, b.unitType)} (to ${formatNum(log.toProgress)})',
+                                    style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800),
+                                  ),
+                                  if (log.note != null && log.note!.isNotEmpty)
+                                    Text(
+                                      log.note!,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 10.5,
+                                        color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.6),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  '+${formatNum(delta)} ${getUnitLabel(b.type, b.unitType)} (to ${formatNum(log.toProgress)})',
-                                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800),
+                                  dateStr,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.5),
+                                  ),
                                 ),
-                                if (log.note != null && log.note!.isNotEmpty)
-                                  Text(
-                                    log.note!,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 10.5,
-                                      color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.6),
+                                const SizedBox(width: 6),
+                                GestureDetector(
+                                  onTap: () => _confirmDeleteLog(context, log),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(2),
+                                    child: Icon(
+                                      Icons.close_rounded,
+                                      size: 14,
+                                      color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.4),
                                     ),
                                   ),
+                                ),
                               ],
-                            ),
-                            Text(
-                              dateStr,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.5),
-                              ),
                             ),
                           ],
                         ),
