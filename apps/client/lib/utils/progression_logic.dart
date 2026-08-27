@@ -181,3 +181,101 @@ ProgressionMutationResult applyProgressIncrement(
     logEntry: logEntry,
   );
 }
+
+/// Generates a realistic, organic reading session log distribution for a completed backlogged read cycle.
+///
+/// Guardrails & Guarantees:
+/// - Guarantees monotonically increasing reading progress ending exactly at [totalUnits].
+/// - Introduces natural organic variance (+/- 25-35% daily noise) so reading is not robotic/flat.
+/// - Sets realistic session timestamps in the evening hours (8:00 PM - 10:30 PM).
+/// - Attaches strictly to [journeyId] without mutating global state.
+List<ReadingLogEntry> simulateReadingHistoryLogs({
+  required String bookId,
+  required String journeyId,
+  required double totalUnits,
+  required DateTime startDate,
+  required DateTime endDate,
+}) {
+  if (totalUnits <= 0) return [];
+
+  // Normalize dates to start of day
+  final start = DateTime(startDate.year, startDate.month, startDate.day);
+  final end = DateTime(endDate.year, endDate.month, endDate.day);
+
+  // If end is before start, or single day read
+  final totalDays = max(1, end.difference(start).inDays + 1);
+
+  if (totalDays == 1) {
+    // Single session completion
+    final sessionTime = DateTime.utc(start.year, start.month, start.day, 21, 30);
+    return [
+      ReadingLogEntry(
+        id: generateUuidV4(),
+        bookId: bookId,
+        journeyId: journeyId,
+        fromProgress: 0,
+        toProgress: totalUnits,
+        note: 'Completed book',
+        loggedAt: sessionTime.toIso8601String(),
+        syncStatus: 'pending_create',
+      ),
+    ];
+  }
+
+  // Multi-day read cycle: distribute progress with organic noise
+  // Generate pseudo-random weights with deterministic seed from bookId + journeyId
+  final seed = (bookId.hashCode ^ journeyId.hashCode ^ totalUnits.toInt()).abs();
+  final rng = Random(seed);
+
+  final weights = <double>[];
+  double weightSum = 0;
+
+  for (int i = 0; i < totalDays; i++) {
+    // Base weight 1.0 with 0.65 to 1.35 organic variance
+    final variance = 0.65 + (rng.nextDouble() * 0.70);
+    weights.add(variance);
+    weightSum += variance;
+  }
+
+  final logs = <ReadingLogEntry>[];
+  double currentProgress = 0;
+
+  for (int i = 0; i < totalDays; i++) {
+    final dayDate = start.add(Duration(days: i));
+    // Evening hours between 8:00 PM and 10:30 PM (20:00 - 22:30)
+    final hour = 20 + rng.nextInt(2);
+    final minute = rng.nextInt(60);
+    final sessionTime = DateTime.utc(dayDate.year, dayDate.month, dayDate.day, hour, minute);
+
+    double nextProgress;
+    if (i == totalDays - 1) {
+      // Last day completes exactly
+      nextProgress = totalUnits;
+    } else {
+      final proportion = weights[i] / weightSum;
+      final rawIncrement = proportion * totalUnits;
+      // Round reasonably (e.g. integer or clean single decimal)
+      final roundedIncrement = max(1.0, (rawIncrement).roundToDouble());
+      nextProgress = min(totalUnits - (totalDays - 1 - i), currentProgress + roundedIncrement);
+    }
+
+    if (nextProgress > currentProgress) {
+      logs.add(
+        ReadingLogEntry(
+          id: generateUuidV4(),
+          bookId: bookId,
+          journeyId: journeyId,
+          fromProgress: currentProgress,
+          toProgress: nextProgress,
+          note: i == totalDays - 1 ? 'Completed book' : null,
+          loggedAt: sessionTime.toIso8601String(),
+          syncStatus: 'pending_create',
+        ),
+      );
+      currentProgress = nextProgress;
+    }
+  }
+
+  return logs;
+}
+

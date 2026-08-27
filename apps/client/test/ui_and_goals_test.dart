@@ -86,7 +86,7 @@ void main() {
           home: Scaffold(
             body: SingleChildScrollView(
               child: BookEditDialog(
-                onSave: (_) {},
+                onSave: (b, {simulatedLogs = const []}) {},
               ),
             ),
           ),

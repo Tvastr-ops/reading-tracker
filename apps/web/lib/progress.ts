@@ -293,3 +293,84 @@ export function getStatusAwareProgressText(book: Book): string {
 
   return formatProgressText(book);
 }
+
+export interface SimulatedLog {
+  from_progress: number;
+  to_progress: number;
+  note?: string;
+  logged_at: string;
+}
+
+/**
+ * Generates realistic, organic reading session log distribution for completed backlogged read cycles.
+ */
+export function simulateReadingHistoryLogs(params: {
+  totalUnits: number;
+  startDate: string;
+  endDate: string;
+}): SimulatedLog[] {
+  const { totalUnits, startDate, endDate } = params;
+  if (totalUnits <= 0) return [];
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  const diffTime = Math.abs(end.getTime() - start.getTime());
+  const totalDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1);
+
+  if (totalDays === 1) {
+    const sessionTime = new Date(start);
+    sessionTime.setUTCHours(21, 30, 0, 0);
+    return [
+      {
+        from_progress: 0,
+        to_progress: totalUnits,
+        note: 'Completed book',
+        logged_at: sessionTime.toISOString(),
+      },
+    ];
+  }
+
+  const weights: number[] = [];
+  let weightSum = 0;
+
+  for (let i = 0; i < totalDays; i++) {
+    // 0.65 to 1.35 organic variance
+    const variance = 0.65 + Math.random() * 0.7;
+    weights.push(variance);
+    weightSum += variance;
+  }
+
+  const logs: SimulatedLog[] = [];
+  let currentProgress = 0;
+
+  for (let i = 0; i < totalDays; i++) {
+    const dayDate = new Date(start);
+    dayDate.setUTCDate(dayDate.getUTCDate() + i);
+    const hour = 20 + Math.floor(Math.random() * 2);
+    const minute = Math.floor(Math.random() * 60);
+    dayDate.setUTCHours(hour, minute, 0, 0);
+
+    let nextProgress: number;
+    if (i === totalDays - 1) {
+      nextProgress = totalUnits;
+    } else {
+      const proportion = weights[i] / weightSum;
+      const rawIncrement = proportion * totalUnits;
+      const roundedIncrement = Math.max(1, Math.round(rawIncrement));
+      nextProgress = Math.min(totalUnits - (totalDays - 1 - i), currentProgress + roundedIncrement);
+    }
+
+    if (nextProgress > currentProgress) {
+      logs.push({
+        from_progress: currentProgress,
+        to_progress: nextProgress,
+        note: i === totalDays - 1 ? 'Completed book' : undefined,
+        logged_at: dayDate.toISOString(),
+      });
+      currentProgress = nextProgress;
+    }
+  }
+
+  return logs;
+}

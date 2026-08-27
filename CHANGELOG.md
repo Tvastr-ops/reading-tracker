@@ -8,6 +8,10 @@ and this project adheres to the [Project Release Versioning Specification](.gemi
 ## [2.3.0c] - 2026-08-27
 
 ### Added & Improved
+- **Natural Reading Simulation (Backlogged Read Cycles)**:
+  - Added opt-in **`🎲 Simulate Realistic Daily Reading Logs`** when adding past books directly as `Completed` with start and finish dates.
+  - Implemented organic non-uniform variance algorithm ($\pm 25\% - 35\%$ noise) generating realistic evening session entries (8:00 PM – 10:30 PM) that sum up exactly to total units.
+  - Full cross-platform parity on Flutter Client (SQLite DB v5) and Web App (Next.js/Supabase) committed atomically inside single-transaction pipelines.
 - **Smart Re-Read Architecture (Reading Journeys)**:
   - Transitioned the entire ecosystem to a 1-to-many **`ReadingJourney`** architecture across Flutter Client (SQLite DB v5), Web App (Next.js), and Supabase (PostgreSQL migration v13).
   - Preserves full multi-read history: starting a re-read preserves the original read cycle (with its exact finish date and rating) and initializes a clean, isolated read cycle.
