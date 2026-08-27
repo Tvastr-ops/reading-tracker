@@ -1,7 +1,7 @@
 name: reading_tracker_app
 description: "A minimal, beautiful, and tactile reading tracker."
 publish_to: 'none'
-version: 2.4.0-a+429
+version: 2.4.0-b+430
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
