@@ -24,7 +24,11 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import { getDefaultUnitType, normalizeStatusTransition, simulateReadingHistoryLogs } from '@/lib/progress';
+import {
+  getDefaultUnitType,
+  normalizeStatusTransition,
+  simulateReadingHistoryLogs,
+} from '@/lib/progress';
 import {
   type Book,
   type BookInput,

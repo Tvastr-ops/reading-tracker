@@ -149,7 +149,11 @@ export const POST = withAuth(async (req: NextRequest) => {
   const isCompleted = data.status === 'Completed';
   const isReading = data.status === 'Reading';
 
-  if (isCompleted || isReading || (Array.isArray(body.simulated_logs) && body.simulated_logs.length > 0)) {
+  if (
+    isCompleted ||
+    isReading ||
+    (Array.isArray(body.simulated_logs) && body.simulated_logs.length > 0)
+  ) {
     const { data: journeyData } = await supabase
       .from('reading_journeys')
       .insert({
@@ -157,7 +161,7 @@ export const POST = withAuth(async (req: NextRequest) => {
         journey_index: 1,
         status: isCompleted ? 'completed' : 'reading',
         date_started: data.date_started || data.created_at || new Date().toISOString(),
-        date_finished: isCompleted ? (data.date_finished || new Date().toISOString()) : null,
+        date_finished: isCompleted ? data.date_finished || new Date().toISOString() : null,
         rating: isCompleted ? data.rating : null,
       })
       .select()
