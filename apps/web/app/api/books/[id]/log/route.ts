@@ -36,6 +36,8 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
     );
   }
   const note = typeof body?.note === 'string' ? body.note.slice(0, 500) : null;
+  const journeyId =
+    typeof body?.journey_id === 'string' && UUID_RE.test(body.journey_id) ? body.journey_id : null;
   const clientLogId = typeof body?.id === 'string' && UUID_RE.test(body.id) ? body.id : null;
   const fromProgress = Number.isFinite(Number(body?.from_progress))
     ? Number(body.from_progress)
@@ -54,6 +56,7 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
         {
           id: clientLogId,
           book_id: id,
+          journey_id: journeyId,
           from_progress: fromProgress,
           to_progress: toProgress,
           note: note,

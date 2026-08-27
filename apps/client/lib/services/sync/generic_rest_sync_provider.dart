@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../models/book.dart';
+import '../../models/reading_journey.dart';
 import '../database_helper.dart';
 import 'sync_provider.dart';
 
@@ -123,6 +124,57 @@ class GenericRestSyncProvider implements RemoteSyncProvider {
     } catch (e) {
       debugPrint('GenericRestSyncProvider deleteBook error: $e');
       return false;
+    }
+  }
+
+  @override
+  Future<bool> pushReadingJourney(ReadingJourney journey) async {
+    if (serverUrl.isEmpty) return false;
+    try {
+      final uri = Uri.parse(_cleanUrl('/api/books/${journey.bookId}/journeys'));
+      final res = await http
+          .post(uri, headers: _headers, body: jsonEncode(journey.toRemoteMap()))
+          .timeout(const Duration(seconds: 8));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        return true;
+      }
+      debugPrint('GenericRestSyncProvider pushReadingJourney failed [${res.statusCode}]: ${res.body}');
+      return false;
+    } catch (e) {
+      debugPrint('GenericRestSyncProvider pushReadingJourney error: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<List<String>> pushReadingJourneys(List<ReadingJourney> journeys) async {
+    final failed = <String>[];
+    for (final j in journeys) {
+      final ok = await pushReadingJourney(j);
+      if (!ok) failed.add(j.id);
+    }
+    return failed;
+  }
+
+  @override
+  Future<List<ReadingJourney>> fetchRemoteReadingJourneys({DateTime? since}) async {
+    if (serverUrl.isEmpty) return [];
+    try {
+      var path = '/api/journeys';
+      if (since != null) {
+        path += '?since=${Uri.encodeComponent(since.toIso8601String())}';
+      }
+      final uri = Uri.parse(_cleanUrl(path));
+      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 8));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final dynamic data = jsonDecode(res.body);
+        final List<dynamic> list = data is Map && data['journeys'] != null ? data['journeys'] : (data is List ? data : []);
+        return list.map((item) => ReadingJourney.fromMap(item as Map<String, dynamic>)).toList();
+      }
+      return [];
+    } catch (e) {
+      debugPrint('GenericRestSyncProvider fetchRemoteReadingJourneys error: $e');
+      return [];
     }
   }
 

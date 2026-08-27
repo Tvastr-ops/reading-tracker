@@ -35,6 +35,25 @@ Primary book catalog records.
 
 ---
 
+### `public.reading_journeys`
+Chronological reading cycles and multi-read history (Migration v13).
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `uuid` | `PRIMARY KEY, DEFAULT gen_random_uuid()` | Journey entry UUID |
+| `user_id` | `uuid` | `REFERENCES auth.users(id) ON DELETE CASCADE`| Account owner |
+| `book_id` | `uuid` | `REFERENCES books(id) ON DELETE CASCADE`| Target book |
+| `journey_index` | `integer` | `NOT NULL, DEFAULT 1` | Read number (1 = original, 2 = re-read 1...) |
+| `status` | `text` | `NOT NULL, DEFAULT 'reading'` | `reading`, `completed`, `abandoned`, `on_hold` |
+| `date_started` | `timestamptz`| `NOT NULL` | Date read cycle started |
+| `date_finished` | `timestamptz`| | Date read cycle completed |
+| `rating` | `numeric` | `CHECK (rating >= 0 AND rating <= 5)` | Star rating for this specific read cycle |
+| `review` | `text` | | Optional written review |
+| `created_at` | `timestamptz`| `DEFAULT now()` | Record creation timestamp |
+| `updated_at` | `timestamptz`| `DEFAULT now()` | Last modified timestamp |
+
+---
+
 ### `public.reading_log`
 Historical reading session advancements.
 
@@ -42,6 +61,7 @@ Historical reading session advancements.
 | :--- | :--- | :--- | :--- |
 | `id` | `uuid` | `PRIMARY KEY, DEFAULT gen_random_uuid()` | Session entry UUID |
 | `book_id` | `uuid` | `REFERENCES books(id) ON DELETE CASCADE`| Target book |
+| `journey_id` | `uuid` | `REFERENCES reading_journeys(id) ON DELETE SET NULL`| Associated reading journey |
 | `from_progress` | `numeric` | `NOT NULL` | Unit position before session |
 | `to_progress` | `numeric` | `NOT NULL` | Unit position after session |
 | `note` | `text` | | Optional session note |

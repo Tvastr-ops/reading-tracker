@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/book.dart';
+import '../models/reading_journey.dart';
 import '../services/database_helper.dart';
 import '../services/reading_mutation_service.dart';
 import '../theme/app_theme.dart';
@@ -39,28 +40,32 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
   final ReadingMutationService _mutationService = ReadingMutationService.instance;
   List<ReadingLogEntry> _logs = [];
+  List<ReadingJourney> _journeys = [];
+  bool _showAllJourneys = false;
   bool _isLoadingLogs = false;
 
   @override
   void initState() {
     super.initState();
-    _loadLogs();
+    _loadData();
   }
 
   @override
   void didUpdateWidget(covariant BookDetailPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.book.id != widget.book.id) {
-      _loadLogs();
+      _loadData();
     }
   }
 
-  Future<void> _loadLogs() async {
+  Future<void> _loadData() async {
     setState(() => _isLoadingLogs = true);
     final logs = await _dbHelper.getReadingLogs(widget.book.id);
+    final journeys = await _dbHelper.getReadingJourneys(widget.book.id);
     if (mounted) {
       setState(() {
         _logs = logs;
+        _journeys = journeys;
         _isLoadingLogs = false;
       });
     }
@@ -446,6 +451,141 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Reading Journeys / History
+                if (_journeys.isNotEmpty || b.rereadCount > 0 || b.status == BookStatus.completed) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildSectionLabel('READING JOURNEYS (${_journeys.isNotEmpty ? _journeys.length : (b.rereadCount + 1)})', isDark),
+                      if (b.status == BookStatus.completed)
+                        GestureDetector(
+                          onTap: () async {
+                            final updated = await _mutationService.startReread(book: b);
+                            widget.onUpdateBook(updated);
+                            _loadData();
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.electricCobalt,
+                              border: Border.all(color: borderColor, width: 1.0),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.replay_rounded, size: 12, color: Colors.white),
+                                SizedBox(width: 3),
+                                Text('START RE-READ', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, color: Colors.white)),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (_journeys.isNotEmpty) ...[
+                    Builder(builder: (context) {
+                      final hasMany = _journeys.length > 3;
+                      final displayedJourneys = (hasMany && !_showAllJourneys)
+                          ? _journeys.take(2).toList()
+                          : _journeys;
+
+                      return Column(
+                        children: [
+                          ...displayedJourneys.map((j) {
+                            final isAct = j.status == 'reading';
+                            final startDt = DateTime.tryParse(j.dateStarted);
+                            final finishDt = j.dateFinished != null ? DateTime.tryParse(j.dateFinished!) : null;
+                            final startStr = startDt != null ? '${startDt.month}/${startDt.day}/${startDt.year}' : j.dateStarted;
+                            final finishStr = finishDt != null ? '${finishDt.month}/${finishDt.day}/${finishDt.year}' : (isAct ? 'Active' : 'Finished');
+                            final durationStr = j.formattedDuration;
+
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: isAct ? AppColors.electricCobalt.withValues(alpha: 0.08) : (isDark ? AppColors.darkSurface : AppColors.paperSurface),
+                                border: Border.all(color: isAct ? AppColors.electricCobalt : borderColor, width: isAct ? 1.5 : 1.0),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            j.journeyIndex == 1 ? 'Read #1 (Original)' : 'Read #${j.journeyIndex} (Re-read)',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w900,
+                                              color: isAct ? AppColors.electricCobalt : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                                            ),
+                                          ),
+                                          if (isAct) ...[
+                                            const SizedBox(width: 6),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.electricCobalt,
+                                                borderRadius: BorderRadius.circular(2),
+                                              ),
+                                              child: const Text('CURRENT', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: Colors.white)),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '$startStr → $finishStr${durationStr != null ? " • $durationStr" : ""}',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.6),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (j.rating != null && j.rating! > 0)
+                                    BrutalistBadge(
+                                      label: '${formatNum(j.rating!)} ★',
+                                      backgroundColor: const Color(0xFFFFB800),
+                                      textColor: AppColors.inkBlack,
+                                    ),
+                                ],
+                              ),
+                            );
+                          }),
+                          if (hasMany)
+                            GestureDetector(
+                              onTap: () => setState(() => _showAllJourneys = !_showAllJourneys),
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(vertical: 6),
+                                margin: const EdgeInsets.only(top: 2, bottom: 4),
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperBg,
+                                  border: Border.all(color: borderColor.withValues(alpha: 0.4), width: 1.0),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  _showAllJourneys ? '▴ SHOW FEWER READS' : '▾ SHOW ALL (${_journeys.length}) PAST READS',
+                                  style: const TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                    color: AppColors.electricCobalt,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    }),
+                  ],
                   const SizedBox(height: 16),
                 ],
 

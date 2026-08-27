@@ -117,6 +117,7 @@ ProgressionMutationResult applyProgressIncrement(
   double toProgress, {
   num? parentProgress,
   String? note,
+  String? journeyId,
   DateTime? date,
   List<ReadingLogEntry> existingLogs = const [],
 }) {
@@ -157,6 +158,7 @@ ProgressionMutationResult applyProgressIncrement(
     logEntry = ReadingLogEntry(
       id: generateUuidV4(),
       bookId: book.id,
+      journeyId: journeyId,
       fromProgress: prevProgress,
       toProgress: toProgress,
       note: (note != null && note.trim().isNotEmpty) ? note.trim() : null,

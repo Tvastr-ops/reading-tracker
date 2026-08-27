@@ -341,6 +341,7 @@ class Book {
 class ReadingLogEntry {
   final String id;
   final String bookId;
+  final String? journeyId;
   final double? fromProgress;
   final double toProgress;
   final String? note;
@@ -350,6 +351,7 @@ class ReadingLogEntry {
   const ReadingLogEntry({
     required this.id,
     required this.bookId,
+    this.journeyId,
     this.fromProgress,
     required this.toProgress,
     this.note,
@@ -361,6 +363,7 @@ class ReadingLogEntry {
     return {
       'id': id,
       'book_id': bookId,
+      'journey_id': journeyId,
       'from_progress': fromProgress,
       'to_progress': toProgress,
       'note': note,
@@ -374,6 +377,7 @@ class ReadingLogEntry {
     return {
       'id': id,
       'book_id': bookId,
+      'journey_id': journeyId,
       'from_progress': fromProgress,
       'to_progress': toProgress,
       'note': note,
@@ -387,6 +391,7 @@ class ReadingLogEntry {
     return ReadingLogEntry(
       id: map['id']?.toString() ?? '',
       bookId: map['book_id']?.toString() ?? '',
+      journeyId: map['journey_id']?.toString(),
       fromProgress: map['from_progress'] != null ? (map['from_progress'] as num).toDouble() : null,
       toProgress: (map['to_progress'] as num?)?.toDouble() ?? 0.0,
       note: map['note']?.toString(),
@@ -398,6 +403,8 @@ class ReadingLogEntry {
   ReadingLogEntry copyWith({
     String? id,
     String? bookId,
+    String? journeyId,
+    bool clearJourneyId = false,
     double? fromProgress,
     double? toProgress,
     String? note,
@@ -407,6 +414,7 @@ class ReadingLogEntry {
     return ReadingLogEntry(
       id: id ?? this.id,
       bookId: bookId ?? this.bookId,
+      journeyId: clearJourneyId ? null : (journeyId ?? this.journeyId),
       fromProgress: fromProgress ?? this.fromProgress,
       toProgress: toProgress ?? this.toProgress,
       note: note ?? this.note,

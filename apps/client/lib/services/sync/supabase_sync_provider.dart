@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../models/book.dart';
+import '../../models/reading_journey.dart';
 import 'sync_provider.dart';
 
 class SupabaseSyncProvider implements RemoteSyncProvider {
@@ -104,6 +105,16 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
           }).timeout(const Duration(seconds: 4));
         } catch (_) {}
 
+        // Delete child reading journeys in Supabase
+        try {
+          final journeyUri = Uri.parse('$supabaseUrl/rest/v1/reading_journeys?book_id=eq.$id');
+          await http.delete(journeyUri, headers: {
+            'apikey': anonKey,
+            'Authorization': 'Bearer $anonKey',
+            'Prefer': 'return=minimal',
+          }).timeout(const Duration(seconds: 4));
+        } catch (_) {}
+
         final res = await http.delete(uri, headers: {
           'apikey': anonKey,
           'Authorization': 'Bearer $anonKey',
@@ -127,6 +138,62 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
     } catch (e) {
       debugPrint('SupabaseSyncProvider deleteBook error: $e');
       return false;
+    }
+  }
+
+  @override
+  Future<bool> pushReadingJourney(ReadingJourney journey) async {
+    final failed = await pushReadingJourneys([journey]);
+    return failed.isEmpty;
+  }
+
+  @override
+  Future<List<String>> pushReadingJourneys(List<ReadingJourney> journeys) async {
+    if (journeys.isEmpty) return [];
+    if (supabaseUrl.isEmpty || anonKey.isEmpty) return journeys.map((j) => j.id).toList();
+    try {
+      final uri = Uri.parse('$supabaseUrl/rest/v1/reading_journeys?on_conflict=id');
+      final payload = journeys.map((j) => j.toRemoteMap()).toList();
+      final res = await http
+          .post(
+            uri,
+            headers: {
+              ..._headers,
+              'Prefer': 'resolution=merge-duplicates',
+            },
+            body: jsonEncode(payload),
+          )
+          .timeout(const Duration(seconds: 10));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        return [];
+      }
+      debugPrint('SupabaseSyncProvider pushReadingJourneys batch failed [${res.statusCode}]: ${res.body}');
+      return journeys.map((j) => j.id).toList();
+    } catch (e) {
+      debugPrint('SupabaseSyncProvider pushReadingJourneys batch error: $e');
+      return journeys.map((j) => j.id).toList();
+    }
+  }
+
+  @override
+  Future<List<ReadingJourney>> fetchRemoteReadingJourneys({DateTime? since}) async {
+    if (supabaseUrl.isEmpty || anonKey.isEmpty) return [];
+    try {
+      var urlStr = '$supabaseUrl/rest/v1/reading_journeys?select=*&order=updated_at.desc&limit=1000';
+      if (since != null) {
+        urlStr += '&updated_at=gt.${Uri.encodeComponent(since.toIso8601String())}';
+      }
+      final uri = Uri.parse(urlStr);
+      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 8));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final List<dynamic> list = jsonDecode(res.body);
+        return list.map((item) => ReadingJourney.fromMap(item as Map<String, dynamic>)).toList();
+      }
+      debugPrint('SupabaseSyncProvider fetchRemoteReadingJourneys failed with status: ${res.statusCode}');
+      return [];
+    } catch (e) {
+      debugPrint('SupabaseSyncProvider fetchRemoteReadingJourneys error: $e');
+      return [];
     }
   }
 

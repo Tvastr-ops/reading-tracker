@@ -86,9 +86,24 @@ export type SortField =
   | 'author';
 export type SortDir = 'asc' | 'desc';
 
+export interface ReadingJourney {
+  id: string;
+  user_id?: string;
+  book_id: string;
+  journey_index: number;
+  status: 'reading' | 'completed' | 'abandoned' | 'on_hold';
+  date_started: string;
+  date_finished?: string | null;
+  rating?: number | null;
+  review?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ReadingLogEntry {
   id: string;
   book_id: string;
+  journey_id?: string | null;
   from_progress: number | null;
   to_progress: number;
   note: string | null;

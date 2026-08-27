@@ -608,29 +608,34 @@ class _BookEditDialogState extends State<BookEditDialog> {
                               border: Border.all(color: borderColor, width: 1.5),
                             ),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _status == BookStatus.reading && _rereadCount > 0
-                                          ? 'ACTIVE RE-READ #$_rereadCount'
-                                          : 'RE-READING TRACKING',
-                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: inkColor),
-                                    ),
-                                    Text(
-                                      _rereadCount > 0
-                                          ? 'Read and finished $_rereadCount time${_rereadCount == 1 ? "" : "s"} previously'
-                                          : 'Marked as completed — ready for a fresh re-read',
-                                      style: TextStyle(
-                                        fontSize: 10.5,
-                                        color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        _status == BookStatus.reading && _rereadCount > 0
+                                            ? 'ACTIVE RE-READ #$_rereadCount'
+                                            : 'RE-READING TRACKING',
+                                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: inkColor),
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        _rereadCount > 0
+                                            ? 'Read and finished $_rereadCount time${_rereadCount == 1 ? "" : "s"} previously'
+                                            : 'Marked as completed — ready for a fresh re-read',
+                                        style: TextStyle(
+                                          fontSize: 10.5,
+                                          color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                if (_status == BookStatus.completed)
+                                if (_status == BookStatus.completed) ...[
+                                  const SizedBox(width: 8),
                                   BrutalistButton(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                     backgroundColor: AppColors.electricCobalt,
@@ -653,6 +658,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
                                       ],
                                     ),
                                   ),
+                                ],
                               ],
                             ),
                           ),

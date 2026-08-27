@@ -5,6 +5,26 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.3.0c] - 2026-08-27
+
+### Added & Improved
+- **Smart Re-Read Architecture (Reading Journeys)**:
+  - Transitioned the entire ecosystem to a 1-to-many **`ReadingJourney`** architecture across Flutter Client (SQLite DB v5), Web App (Next.js), and Supabase (PostgreSQL migration v13).
+  - Preserves full multi-read history: starting a re-read preserves the original read cycle (with its exact finish date and rating) and initializes a clean, isolated read cycle.
+  - Automatically backfills Journey #1 for all pre-existing completed or reading books on database migration.
+- **Reading Journeys Ledger & Collapsible Expander**:
+  - Added an interactive **Reading Journeys Ledger** to the Flutter Book Detail Panel and Web Inspector Drawer.
+  - Features smart collapsible expanders: shows the active and original read by default, expanding to the full historical ledger when $>3$ reads exist.
+- **Sort & Filter Modal Layout Optimization**:
+  - Optimized the Library Sort & Filter modal on mobile with a pinned, sticky bottom action bar (`RESET` and `APPLY FILTERS`) and a scrollable body, ensuring action buttons never get buried on compact screens.
+- **Cross-Platform Sync & Backup Parity**:
+  - Maintained strict parent-first sync dependency ordering ($\text{Tombstones} \to \text{Books} \to \text{Journeys} \to \text{Logs}$) to eliminate foreign key sync errors.
+  - Upgraded JSON backup & restore to format schema `3.0` with full reading journey serialization.
+- **Web API Endpoints**:
+  - Added `/api/books/[id]/journeys` with atomic GET (list) and POST (start re-read) route handlers.
+
+---
+
 ## [2.3.0b] - 2026-08-26
 
 ### Added & Improved

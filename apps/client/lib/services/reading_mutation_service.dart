@@ -1,4 +1,6 @@
 import '../models/book.dart';
+import '../models/reading_journey.dart';
+import '../utils/formatters.dart';
 import '../utils/progression_logic.dart';
 import 'database_helper.dart';
 import 'sync/sync_manager.dart';
@@ -15,12 +17,14 @@ class ReadingMutationService {
     required Book book,
     required double delta,
     String? note,
+    String? journeyId,
   }) async {
     final toProgress = book.progress + delta;
     return await setProgress(
       book: book,
       newProgress: toProgress,
       note: note,
+      journeyId: journeyId,
     );
   }
 
@@ -30,6 +34,7 @@ class ReadingMutationService {
     required int chaptersDelta,
     required int volumesDelta,
     String? note,
+    String? journeyId,
   }) async {
     final fromProgress = book.progress;
     final currentCh = fromProgress.toInt();
@@ -42,6 +47,7 @@ class ReadingMutationService {
       newCh.toDouble(),
       parentProgress: newVol > 0 ? newVol : null,
       note: note ?? (volumesDelta > 0 ? 'Advanced to Vol $newVol, Ch $newCh' : null),
+      journeyId: journeyId,
     );
 
     _syncManager.scheduleSyncSoon();
@@ -55,12 +61,14 @@ class ReadingMutationService {
     double? fromProgress,
     num? parentProgress,
     String? note,
+    String? journeyId,
   }) async {
     final updatedBook = await _dbHelper.recordBookProgress(
       book,
       newProgress,
       parentProgress: parentProgress,
       note: note,
+      journeyId: journeyId,
     );
 
     _syncManager.scheduleSyncSoon();
@@ -72,8 +80,33 @@ class ReadingMutationService {
     required Book book,
     required String newStatus,
   }) async {
+    final now = DateTime.now().toUtc();
+    final nowIso = now.toIso8601String();
     final normalized = normalizeStatusTransition(book, newStatus);
     await _dbHelper.updateBook(normalized);
+
+    // Synchronize active journey status
+    final activeJourney = await _dbHelper.getActiveJourney(book.id);
+    if (activeJourney != null) {
+      if (newStatus == BookStatus.completed) {
+        final updatedJourney = activeJourney.copyWith(
+          status: 'completed',
+          dateFinished: normalized.dateFinished ?? nowIso,
+          rating: normalized.rating,
+          updatedAt: nowIso,
+          syncStatus: 'pending_update',
+        );
+        await _dbHelper.updateReadingJourney(updatedJourney);
+      } else if (newStatus == BookStatus.dropped || newStatus == BookStatus.onHold) {
+        final updatedJourney = activeJourney.copyWith(
+          status: newStatus == BookStatus.dropped ? 'abandoned' : 'on_hold',
+          updatedAt: nowIso,
+          syncStatus: 'pending_update',
+        );
+        await _dbHelper.updateReadingJourney(updatedJourney);
+      }
+    }
+
     _syncManager.scheduleSyncSoon();
     return normalized;
   }
@@ -92,17 +125,49 @@ class ReadingMutationService {
     return updatedBook;
   }
 
-  /// Initiates a conflict-free re-read: resets progress to 0, increments rereadCount, sets status to Reading.
+  /// Initiates a conflict-free re-read: closes previous journey, spawns a new journey,
+  /// resets progress to 0, increments rereadCount, and sets status to Reading.
   Future<Book> startReread({required Book book}) async {
-    final now = DateTime.now().toUtc().toIso8601String();
+    final now = DateTime.now().toUtc();
+    final nowIso = now.toIso8601String();
+    final newRereadCount = book.rereadCount + 1;
+    final newJourneyIndex = newRereadCount + 1;
+
+    // 1. Finalize any currently open journey if one exists
+    final activeJourney = await _dbHelper.getActiveJourney(book.id);
+    if (activeJourney != null) {
+      final finalizedJourney = activeJourney.copyWith(
+        status: 'completed',
+        dateFinished: activeJourney.dateFinished ?? nowIso,
+        updatedAt: nowIso,
+        syncStatus: 'pending_update',
+      );
+      await _dbHelper.updateReadingJourney(finalizedJourney);
+    }
+
+    // 2. Create and insert new journey for this re-read
+    final newJourney = ReadingJourney(
+      id: generateUuidV4(),
+      bookId: book.id,
+      journeyIndex: newJourneyIndex,
+      status: 'reading',
+      dateStarted: nowIso,
+      dateFinished: null,
+      createdAt: nowIso,
+      updatedAt: nowIso,
+      syncStatus: 'pending_create',
+    );
+    await _dbHelper.insertReadingJourney(newJourney);
+
+    // 3. Update book state
     final updatedBook = book.copyWith(
       progress: 0.0,
       parentProgress: book.progressStructure != 'single' ? 1 : null,
       status: BookStatus.reading,
-      rereadCount: book.rereadCount + 1,
-      dateStarted: now,
+      rereadCount: newRereadCount,
+      dateStarted: nowIso,
       clearDateFinished: true,
-      updatedAt: now,
+      updatedAt: nowIso,
       syncStatus: 'pending_update',
     );
 

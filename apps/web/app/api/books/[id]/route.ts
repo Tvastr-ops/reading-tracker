@@ -170,8 +170,9 @@ export const DELETE = withAuth(async (req: NextRequest, { params }: RouteContext
   const supabase = supabaseServer();
 
   if (permanent) {
-    // Delete any dependent reading log rows first
+    // Delete any dependent reading log rows and reading journeys first
     await supabase.from('reading_log').delete().eq('book_id', id);
+    await supabase.from('reading_journeys').delete().eq('book_id', id);
     const { error } = await supabase.from('books').delete().eq('id', id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true });
