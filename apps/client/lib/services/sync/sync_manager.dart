@@ -265,8 +265,17 @@ class SyncManager extends ChangeNotifier {
         await _dbHelper.upsertRemoteReadingJourneys(remoteJourneys);
       }
 
-      final logFetchCursor = isFullReconciliation ? null : _lastLogSyncCursor;
-      final remoteLogs = await _activeProvider!.fetchRemoteReadingLogs(since: logFetchCursor);
+      final List<ReadingLogEntry> remoteLogs;
+      if (isFullReconciliation) {
+        remoteLogs = await _activeProvider!.fetchRemoteReadingLogs(since: null);
+      } else if (remote.isNotEmpty) {
+        // If books were modified/updated (e.g. progress changed or backfilled), fetch logs for those books
+        final updatedBookIds = remote.map((b) => b.id).toList();
+        remoteLogs = await _activeProvider!.fetchRemoteReadingLogs(bookIds: updatedBookIds);
+      } else {
+        // Otherwise, check if any modern logs were added directly since last sync cursor
+        remoteLogs = await _activeProvider!.fetchRemoteReadingLogs(since: _lastLogSyncCursor);
+      }
 
       if (remoteLogs.isNotEmpty) {
         await _dbHelper.upsertRemoteReadingLogs(remoteLogs);

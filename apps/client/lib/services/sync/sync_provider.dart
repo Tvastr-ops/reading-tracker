@@ -42,7 +42,7 @@ abstract class RemoteSyncProvider {
     }
     return failed;
   }
-  Future<List<ReadingLogEntry>> fetchRemoteReadingLogs({DateTime? since});
+  Future<List<ReadingLogEntry>> fetchRemoteReadingLogs({DateTime? since, List<String>? bookIds});
   Future<int?> fetchYearlyGoal();
   Future<bool> pushYearlyGoal(int goal);
 }

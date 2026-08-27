@@ -178,22 +178,32 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
   @override
   Future<List<ReadingJourney>> fetchRemoteReadingJourneys({DateTime? since}) async {
     if (supabaseUrl.isEmpty || anonKey.isEmpty) return [];
+    final List<ReadingJourney> allJourneys = [];
+    int offset = 0;
+    const int batchSize = 1000;
     try {
-      var urlStr = '$supabaseUrl/rest/v1/reading_journeys?select=*&order=updated_at.desc&limit=1000';
-      if (since != null) {
-        urlStr += '&updated_at=gt.${Uri.encodeComponent(since.toIso8601String())}';
+      while (true) {
+        var urlStr = '$supabaseUrl/rest/v1/reading_journeys?select=*&order=updated_at.desc&limit=$batchSize&offset=$offset';
+        if (since != null) {
+          urlStr += '&updated_at=gt.${Uri.encodeComponent(since.toIso8601String())}';
+        }
+        final uri = Uri.parse(urlStr);
+        final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 12));
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          final List<dynamic> list = jsonDecode(res.body);
+          if (list.isEmpty) break;
+          allJourneys.addAll(list.map((item) => ReadingJourney.fromMap(item as Map<String, dynamic>)));
+          if (list.length < batchSize) break;
+          offset += list.length;
+        } else {
+          debugPrint('SupabaseSyncProvider fetchRemoteReadingJourneys failed with status: ${res.statusCode}');
+          break;
+        }
       }
-      final uri = Uri.parse(urlStr);
-      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 8));
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        final List<dynamic> list = jsonDecode(res.body);
-        return list.map((item) => ReadingJourney.fromMap(item as Map<String, dynamic>)).toList();
-      }
-      debugPrint('SupabaseSyncProvider fetchRemoteReadingJourneys failed with status: ${res.statusCode}');
-      return [];
+      return allJourneys;
     } catch (e) {
       debugPrint('SupabaseSyncProvider fetchRemoteReadingJourneys error: $e');
-      return [];
+      return allJourneys;
     }
   }
 
@@ -232,24 +242,37 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
   }
 
   @override
-  Future<List<ReadingLogEntry>> fetchRemoteReadingLogs({DateTime? since}) async {
+  Future<List<ReadingLogEntry>> fetchRemoteReadingLogs({DateTime? since, List<String>? bookIds}) async {
     if (supabaseUrl.isEmpty || anonKey.isEmpty) return [];
+    final List<ReadingLogEntry> allLogs = [];
+    int offset = 0;
+    const int batchSize = 1000;
     try {
-      var urlStr = '$supabaseUrl/rest/v1/reading_log?select=*&order=logged_at.desc&limit=1000';
-      if (since != null) {
-        urlStr += '&logged_at=gt.${Uri.encodeComponent(since.toIso8601String())}';
+      while (true) {
+        var urlStr = '$supabaseUrl/rest/v1/reading_log?select=*&order=logged_at.desc&limit=$batchSize&offset=$offset';
+        if (bookIds != null && bookIds.isNotEmpty) {
+          final joined = bookIds.map((id) => '"$id"').join(',');
+          urlStr += '&book_id=in.($joined)';
+        } else if (since != null) {
+          urlStr += '&logged_at=gt.${Uri.encodeComponent(since.toIso8601String())}';
+        }
+        final uri = Uri.parse(urlStr);
+        final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 12));
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          final List<dynamic> list = jsonDecode(res.body);
+          if (list.isEmpty) break;
+          allLogs.addAll(list.map((item) => ReadingLogEntry.fromMap(item as Map<String, dynamic>)));
+          if (list.length < batchSize) break;
+          offset += list.length;
+        } else {
+          debugPrint('SupabaseSyncProvider fetchRemoteReadingLogs failed with status: ${res.statusCode}');
+          break;
+        }
       }
-      final uri = Uri.parse(urlStr);
-      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 8));
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        final List<dynamic> list = jsonDecode(res.body);
-        return list.map((item) => ReadingLogEntry.fromMap(item as Map<String, dynamic>)).toList();
-      }
-      debugPrint('SupabaseSyncProvider fetchRemoteReadingLogs failed with status: ${res.statusCode}');
-      return [];
+      return allLogs;
     } catch (e) {
       debugPrint('SupabaseSyncProvider fetchRemoteReadingLogs error: $e');
-      return [];
+      return allLogs;
     }
   }
 

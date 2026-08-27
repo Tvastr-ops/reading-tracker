@@ -5,6 +5,15 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.4.0e] - 2026-08-27
+
+### Fixed
+- **Exhaustive Cloud Sync Download (Supabase & REST)**:
+  - Added automatic pagination loop (`limit=1000&offset=...`) to `fetchRemoteReadingLogs` and `fetchRemoteReadingJourneys` in `SupabaseSyncProvider` and `GenericRestSyncProvider`, resolving an issue where libraries with $> 1000$ historical logs were truncated at 1,000 entries during initial sync.
+  - Increased query capacity on the `/api/logs` endpoint so full historical downloads cover the complete multi-year reading log ledger.
+
+---
+
 ## [2.4.0d] - 2026-08-27
 
 ### Fixed
