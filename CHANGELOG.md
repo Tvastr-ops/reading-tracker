@@ -5,6 +5,14 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.4.0f] - 2026-08-27
+
+### Fixed
+- **Android Auto Backup Isolation**:
+  - Disabled `android:allowBackup` and `android:fullBackupContent` in `AndroidManifest.xml` to prevent Android OS and Google Play Services from silently persisting and restoring stale cloud backups, preferences, or auth states upon app uninstallation and reinstallation.
+
+---
+
 ## [2.4.0e] - 2026-08-27
 
 ### Fixed
