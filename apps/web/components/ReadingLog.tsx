@@ -1,19 +1,26 @@
 'use client';
 
-import { Calendar, Clock, Loader2, Plus } from 'lucide-react';
+import { Calendar, Clock, Loader2, Plus, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { simulateReadingHistoryLogs } from '@/lib/progress';
 import type { ReadingLogEntry } from '@/lib/types';
 
 export default function ReadingLog({
   bookId,
   currentProgress,
   totalUnits,
+  startDate,
+  endDate,
+  status,
   onProgressUpdated,
 }: {
   bookId: string;
   currentProgress: number;
   totalUnits: number | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  status?: string;
   onProgressUpdated: (newProgress: number) => void;
 }) {
   const [entries, setEntries] = useState<ReadingLogEntry[]>([]);
@@ -21,6 +28,7 @@ export default function ReadingLog({
   const [toProgress, setToProgress] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
 
   useEffect(() => {
     load();
@@ -88,6 +96,40 @@ export default function ReadingLog({
     }
   }
 
+  async function backfillSimulatedLogs() {
+    if (!totalUnits || totalUnits <= 0 || !startDate || !endDate) return;
+    setBackfilling(true);
+    const simulated = simulateReadingHistoryLogs({
+      totalUnits,
+      startDate,
+      endDate,
+    });
+
+    for (const log of simulated) {
+      await fetch(`/api/books/${bookId}/log`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from_progress: log.from_progress,
+          to_progress: log.to_progress,
+          note: log.note || null,
+          logged_at: log.logged_at,
+        }),
+      });
+    }
+    setBackfilling(false);
+    onProgressUpdated(totalUnits);
+    load();
+  }
+
+  const canBackfill =
+    entries.length === 0 &&
+    status === 'Completed' &&
+    startDate &&
+    endDate &&
+    totalUnits != null &&
+    totalUnits > 0;
+
   const inputClass =
     'h-9 px-3 py-1.5 text-sm border border-border rounded-lg bg-card-bg text-text focus:outline-none focus:ring-2 focus:ring-accent-color transition-all';
 
@@ -141,7 +183,38 @@ export default function ReadingLog({
           Loading reading logs...
         </div>
       ) : entries.length === 0 ? (
-        <p className="py-1 text-text-muted text-xs italic">No reading log entries yet.</p>
+        <div className="space-y-2.5">
+          <p className="py-1 text-text-muted text-xs italic">No reading log entries yet.</p>
+          {canBackfill && (
+            <div className="rounded-xl border border-accent-color/40 bg-accent-color/10 p-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <span className="block font-bold text-xs text-text">
+                    🎲 Backfill Simulated Reading Logs
+                  </span>
+                  <span className="block text-[11px] text-text-muted">
+                    Generate natural reading sessions between {startDate} and {endDate}
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="default"
+                  disabled={backfilling}
+                  onClick={backfillSimulatedLogs}
+                  className="gap-1.5"
+                >
+                  {backfilling ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5" />
+                  )}
+                  <span>{backfilling ? 'Simulating...' : 'Generate Logs'}</span>
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       ) : (
         <div className="max-h-[160px] divide-y divide-border/60 overflow-y-auto rounded-xl border border-border bg-surface/50 text-xs">
           {entries.map((e) => (
