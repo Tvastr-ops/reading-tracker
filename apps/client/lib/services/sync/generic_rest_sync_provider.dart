@@ -198,12 +198,14 @@ class GenericRestSyncProvider implements RemoteSyncProvider {
   }
 
   @override
-  Future<List<ReadingLogEntry>> fetchRemoteReadingLogs({DateTime? since}) async {
+  Future<List<ReadingLogEntry>> fetchRemoteReadingLogs({DateTime? since, List<String>? bookIds}) async {
     if (serverUrl.isEmpty) return [];
     try {
-      var path = '/api/logs';
-      if (since != null) {
-        path += '?since=${Uri.encodeComponent(since.toIso8601String())}';
+      var path = '/api/logs?limit=10000';
+      if (bookIds != null && bookIds.isNotEmpty) {
+        path += '&book_ids=${Uri.encodeComponent(bookIds.join(','))}';
+      } else if (since != null) {
+        path += '&since=${Uri.encodeComponent(since.toIso8601String())}';
       }
       final uri = Uri.parse(_cleanUrl(path));
       final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 8));

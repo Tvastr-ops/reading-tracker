@@ -85,7 +85,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
   final SyncManager _syncManager = SyncManager.instance;
   final ScrollController _scrollController = ScrollController();
 
-  static const int _pageSize = 50;
+  static const int _pageSize = 100;
   int _dbOffset = 0;
   List<Map<String, dynamic>> _rawLogs = [];
   List<_TimelineDayGroup> _dayGroups = [];
@@ -891,11 +891,14 @@ class _TimelineScreenState extends State<TimelineScreen> {
             child: Center(
               child: _isLoadingMore
                   ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
                     )
-                  : const SizedBox.shrink(),
+                  : GestureDetector(
+                      onTap: _loadMoreLogs,
+                      child: const BrutalistBadge(label: '▼ LOAD OLDER READING LOGS'),
+                    ),
             ),
           );
         }
