@@ -1,10 +1,10 @@
 'use client';
 
-import { Calendar, Clock, Loader2, Plus, Sparkles } from 'lucide-react';
+import { Calendar, ChevronDown, ChevronRight, Clock, Loader2, Plus, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { simulateReadingHistoryLogs } from '@/lib/progress';
-import type { ReadingLogEntry } from '@/lib/types';
+import type { ReadingJourney, ReadingLogEntry } from '@/lib/types';
 
 export default function ReadingLog({
   bookId,
@@ -24,6 +24,8 @@ export default function ReadingLog({
   onProgressUpdated: (newProgress: number) => void;
 }) {
   const [entries, setEntries] = useState<ReadingLogEntry[]>([]);
+  const [journeys, setJourneys] = useState<ReadingJourney[]>([]);
+  const [expandedJourneys, setExpandedJourneys] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [toProgress, setToProgress] = useState('');
   const [note, setNote] = useState('');
@@ -36,12 +38,25 @@ export default function ReadingLog({
 
   async function load() {
     setLoading(true);
-    const res = await fetch(`/api/books/${bookId}/log`);
-    if (res.ok) {
-      const data = await res.json();
-      setEntries(data.entries || []);
+    try {
+      const [logsRes, journeysRes] = await Promise.all([
+        fetch(`/api/books/${bookId}/log`),
+        fetch(`/api/books/${bookId}/journeys`),
+      ]);
+
+      if (logsRes.ok) {
+        const data = await logsRes.json();
+        setEntries(data.entries || []);
+      }
+      if (journeysRes.ok) {
+        const jData = await journeysRes.json();
+        setJourneys(jData.journeys || []);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   async function addEntry(e?: React.FormEvent) {
@@ -73,28 +88,56 @@ export default function ReadingLog({
     }
   }
 
-  let paceInfo: string | null = null;
-  if (entries.length >= 2) {
-    const newest = entries[0];
-    const oldest = entries[entries.length - 1];
+  function toggleJourney(id: string) {
+    setExpandedJourneys((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
+
+  function calculatePaceForLogs(logList: ReadingLogEntry[], isCompleted: boolean): string | null {
+    if (logList.length < 2) return null;
+    const sorted = [...logList].sort(
+      (a, b) => new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime(),
+    );
+    const newest = sorted[0];
+    const oldest = sorted[sorted.length - 1];
     const deltaProgress = newest.to_progress - oldest.to_progress;
     const deltaDays = Math.max(
       1,
       (new Date(newest.logged_at).getTime() - new Date(oldest.logged_at).getTime()) / 86400000,
     );
     const perWeek = (deltaProgress / deltaDays) * 7;
-    if (perWeek > 0) {
-      const paceText = `~${perWeek.toFixed(1)} units/week`;
-      if (totalUnits && totalUnits > currentProgress) {
-        const remaining = totalUnits - currentProgress;
-        const weeksLeft = remaining / perWeek;
-        const eta = new Date(Date.now() + weeksLeft * 7 * 86400000);
-        paceInfo = `${paceText} · est. finish ${eta.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
-      } else {
-        paceInfo = paceText;
-      }
+    if (perWeek <= 0) return null;
+
+    const paceText = `~${perWeek.toFixed(1)} units/week`;
+    if (isCompleted || status === 'Completed') {
+      const days = Math.max(1, Math.round(deltaDays));
+      return `${paceText} · finished in ${days} day${days === 1 ? '' : 's'}`;
     }
+
+    if (totalUnits && totalUnits > currentProgress) {
+      const remaining = totalUnits - currentProgress;
+      const weeksLeft = remaining / perWeek;
+      const eta = new Date(Date.now() + weeksLeft * 7 * 86400000);
+      return `${paceText} · est. finish ${eta.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    }
+
+    return paceText;
   }
+
+  // Active Journey Detection & Journey-Aware Grouping
+  const activeJourney = journeys.find((j) => j.status === 'reading') || journeys[0];
+  const activeJourneyId = activeJourney?.id;
+
+  // Logs for the active journey specifically for main header pace calculation
+  const activeEntries = entries.filter((e) => {
+    if (activeJourneyId && e.journey_id) {
+      return e.journey_id === activeJourneyId;
+    }
+    return true;
+  });
+
+  const isBookCompleted =
+    status === 'Completed' && (!activeJourney || activeJourney.status === 'completed');
+  const paceInfo = calculatePaceForLogs(isBookCompleted ? entries : activeEntries, isBookCompleted);
 
   async function backfillSimulatedLogs() {
     if (!totalUnits || totalUnits <= 0 || !startDate || !endDate) return;
@@ -133,6 +176,50 @@ export default function ReadingLog({
 
   const inputClass =
     'h-9 px-3 py-1.5 text-sm border border-border rounded-lg bg-card-bg text-text focus:outline-none focus:ring-2 focus:ring-accent-color transition-all';
+
+  // Group logs into journeys if multiple journeys exist
+  const hasMultipleJourneys = journeys.length > 1;
+
+  function renderLogEntryRow(e: ReadingLogEntry) {
+    return (
+      <div
+        key={e.id}
+        className="group flex items-center justify-between p-2.5 transition-colors hover:bg-surface/80"
+      >
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-text">
+            {e.from_progress != null ? `${e.from_progress} → ` : ''}
+            {e.to_progress}
+          </span>
+          {e.note && (
+            <span className="border-border border-l pl-2 text-text-muted">— {e.note}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="flex shrink-0 items-center gap-1 text-[11px] text-text-muted">
+            <Calendar className="h-3 w-3" />
+            {new Date(e.logged_at).toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })}
+          </span>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!confirm('Delete this reading log entry?')) return;
+              await fetch(`/api/books/${bookId}/log?log_id=${e.id}`, { method: 'DELETE' });
+              load();
+            }}
+            className="opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"
+            title="Delete entry"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="col-span-full space-y-2">
@@ -217,10 +304,10 @@ export default function ReadingLog({
           )}
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
             <span className="text-[11px] font-semibold text-text-muted">
-              {entries.length} {entries.length === 1 ? 'Entry' : 'Entries'}
+              {entries.length} Total {entries.length === 1 ? 'Session' : 'Sessions'}
             </span>
             <button
               type="button"
@@ -234,45 +321,108 @@ export default function ReadingLog({
               Clear all logs
             </button>
           </div>
-          <div className="max-h-[160px] divide-y divide-border/60 overflow-y-auto rounded-xl border border-border bg-surface/50 text-xs">
-            {entries.map((e) => (
-              <div
-                key={e.id}
-                className="group flex items-center justify-between p-2.5 transition-colors hover:bg-surface"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-text">
-                    {e.from_progress != null ? `${e.from_progress} → ` : ''}
-                    {e.to_progress}
-                  </span>
-                  {e.note && (
-                    <span className="border-border border-l pl-2 text-text-muted">— {e.note}</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="flex shrink-0 items-center gap-1 text-[11px] text-text-muted">
-                    <Calendar className="h-3 w-3" />
-                    {new Date(e.logged_at).toLocaleDateString(undefined, {
+
+          {hasMultipleJourneys ? (
+            <div className="space-y-2.5">
+              {journeys.map((j) => {
+                const isCurrentActive = j.status === 'reading' || j.id === activeJourneyId;
+                const journeyEntries = entries.filter(
+                  (e) => e.journey_id === j.id || (!e.journey_id && isCurrentActive),
+                );
+                const isExpanded = expandedJourneys[j.id] ?? isCurrentActive;
+                const startDateStr = j.date_started
+                  ? new Date(j.date_started).toLocaleDateString(undefined, {
                       month: 'short',
                       day: 'numeric',
                       year: 'numeric',
-                    })}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await fetch(`/api/books/${bookId}/log?log_id=${e.id}`, { method: 'DELETE' });
-                      load();
-                    }}
-                    className="opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"
-                    title="Delete entry"
+                    })
+                  : null;
+                const finishDateStr = j.date_finished
+                  ? new Date(j.date_finished).toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })
+                  : null;
+
+                const jPace = calculatePaceForLogs(journeyEntries, !isCurrentActive);
+
+                return (
+                  <div
+                    key={j.id}
+                    className="overflow-hidden rounded-xl border border-border bg-surface/40"
                   >
-                    ×
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleJourney(j.id)}
+                      className="flex w-full items-center justify-between p-2.5 text-left transition-colors hover:bg-surface"
+                    >
+                      <div className="flex items-center gap-2">
+                        {isExpanded ? (
+                          <ChevronDown className="h-3.5 w-3.5 text-text-muted" />
+                        ) : (
+                          <ChevronRight className="h-3.5 w-3.5 text-text-muted" />
+                        )}
+                        <span className="font-bold text-text text-xs">
+                          {j.journey_index === 1
+                            ? 'Initial Read'
+                            : `Re-Read #${j.journey_index - 1}`}
+                        </span>
+                        <span
+                          className={`rounded px-1.5 py-0.5 font-bold text-[10px] uppercase ${
+                            isCurrentActive
+                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                              : 'bg-border/60 text-text-muted'
+                          }`}
+                        >
+                          {isCurrentActive ? 'Active' : 'Completed'}
+                        </span>
+                        {j.rating && (
+                          <span className="font-semibold text-[11px] text-amber-500">
+                            ★ {j.rating}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] text-text-muted">
+                        {jPace && (
+                          <span className="hidden sm:inline-block font-medium text-accent-color text-[11px]">
+                            {jPace}
+                          </span>
+                        )}
+                        {startDateStr && (
+                          <span>
+                            {startDateStr}
+                            {finishDateStr ? ` – ${finishDateStr}` : ' – Present'}
+                          </span>
+                        )}
+                        <span className="font-medium text-text-muted">
+                          ({journeyEntries.length})
+                        </span>
+                      </div>
+                    </button>
+
+                    {isExpanded && (
+                      <div className="divide-y divide-border/60 border-border border-t bg-card-bg/50 text-xs">
+                        {journeyEntries.length === 0 ? (
+                          <div className="p-2.5 text-center text-text-muted text-xs italic">
+                            No logs recorded in this journey yet.
+                          </div>
+                        ) : (
+                          <div className="max-h-[140px] divide-y divide-border/60 overflow-y-auto">
+                            {journeyEntries.map((e) => renderLogEntryRow(e))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="max-h-[160px] divide-y divide-border/60 overflow-y-auto rounded-xl border border-border bg-surface/50 text-xs">
+              {entries.map((e) => renderLogEntryRow(e))}
+            </div>
+          )}
         </div>
       )}
     </div>

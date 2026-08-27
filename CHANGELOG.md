@@ -5,6 +5,16 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.4.0c] - 2026-08-27
+
+### Added & Improved
+- **Multi-Journey Reading Log & Pace Isolation (Web & Mobile)**:
+  - Overhauled the Web App Reading Log tab with Journey-Aware grouping: active re-reads display prominently on top with live estimated completion dates, while historical reading journeys display as clean, collapsible ledgers.
+  - Isolated active reading pace calculations to strictly evaluate active journey logs, preventing historical reads from distorting live estimated finish dates.
+  - Added dedicated historical pace and duration metrics (`~X units/week • finished in Y days`) for completed reads and journeys across both Flutter Client and Web App.
+
+---
+
 ## [2.4.0b] - 2026-08-27
 
 ### Fixed & Improved
