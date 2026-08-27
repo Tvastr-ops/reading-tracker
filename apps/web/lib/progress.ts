@@ -312,15 +312,29 @@ export function simulateReadingHistoryLogs(params: {
   const { totalUnits, startDate, endDate } = params;
   if (totalUnits <= 0) return [];
 
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+  const parseYMD = (str: string) => {
+    const parts = str
+      .split('T')[0]
+      .split('-')
+      .map((p) => Number.parseInt(p, 10));
+    if (parts.length === 3 && !parts.some((n) => Number.isNaN(n))) {
+      return { year: parts[0], month: parts[1] - 1, day: parts[2] };
+    }
+    const d = new Date(str);
+    return { year: d.getFullYear(), month: d.getMonth(), day: d.getDate() };
+  };
 
-  const diffTime = Math.abs(end.getTime() - start.getTime());
-  const totalDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1);
+  const s = parseYMD(startDate);
+  const e = parseYMD(endDate);
+
+  const startUtc = Date.UTC(s.year, s.month, s.day);
+  const endUtc = Date.UTC(e.year, e.month, e.day);
+
+  const diffDays = Math.round((endUtc - startUtc) / (1000 * 60 * 60 * 24));
+  const totalDays = Math.max(1, diffDays + 1);
 
   if (totalDays === 1) {
-    const sessionTime = new Date(start);
-    sessionTime.setUTCHours(21, 30, 0, 0);
+    const sessionTime = new Date(Date.UTC(s.year, s.month, s.day, 21, 30, 0, 0));
     return [
       {
         from_progress: 0,
@@ -345,11 +359,20 @@ export function simulateReadingHistoryLogs(params: {
   let currentProgress = 0;
 
   for (let i = 0; i < totalDays; i++) {
-    const dayDate = new Date(start);
-    dayDate.setUTCDate(dayDate.getUTCDate() + i);
+    const baseDay = new Date(Date.UTC(s.year, s.month, s.day + i));
     const hour = 20 + Math.floor(Math.random() * 2);
     const minute = Math.floor(Math.random() * 60);
-    dayDate.setUTCHours(hour, minute, 0, 0);
+    const sessionTime = new Date(
+      Date.UTC(
+        baseDay.getUTCFullYear(),
+        baseDay.getUTCMonth(),
+        baseDay.getUTCDate(),
+        hour,
+        minute,
+        0,
+        0,
+      ),
+    );
 
     let nextProgress: number;
     if (i === totalDays - 1) {
@@ -366,7 +389,7 @@ export function simulateReadingHistoryLogs(params: {
         from_progress: currentProgress,
         to_progress: nextProgress,
         note: i === totalDays - 1 ? 'Completed book' : undefined,
-        logged_at: dayDate.toISOString(),
+        logged_at: sessionTime.toISOString(),
       });
       currentProgress = nextProgress;
     }

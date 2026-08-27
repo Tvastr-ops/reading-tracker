@@ -252,7 +252,11 @@ export default function ReadingLog({
                 <div className="flex items-center gap-2">
                   <span className="flex shrink-0 items-center gap-1 text-[11px] text-text-muted">
                     <Calendar className="h-3 w-3" />
-                    {new Date(e.logged_at).toLocaleDateString()}
+                    {new Date(e.logged_at).toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
                   </span>
                   <button
                     type="button"

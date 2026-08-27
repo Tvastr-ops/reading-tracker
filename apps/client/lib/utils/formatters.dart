@@ -41,6 +41,15 @@ String formatNum(num value) {
   return value.toString();
 }
 
+/// Formats date cleanly with 3-letter month (e.g. 'Jul 31, 2026').
+String formatDisplayDate(String? isoString) {
+  if (isoString == null || isoString.isEmpty) return '';
+  final dt = DateTime.tryParse(isoString);
+  if (dt == null) return isoString;
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+}
+
 /// Returns the standard unit label based on explicit unit_type or book publication type.
 String getUnitLabel(String bookType, [String? unitType]) {
   if (unitType != null && unitType.isNotEmpty) {

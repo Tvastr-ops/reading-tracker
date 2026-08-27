@@ -48,3 +48,11 @@ FROM books b
 WHERE b.deleted_at IS NULL
   AND (b.date_started IS NOT NULL OR b.date_finished IS NOT NULL OR b.status = 'Completed' OR b.status = 'Reading')
 ON CONFLICT (id) DO NOTHING;
+
+-- 6. Link all pre-existing reading logs to their book's Journey #1
+UPDATE reading_log rl
+SET journey_id = rj.id
+FROM reading_journeys rj
+WHERE rl.book_id = rj.book_id
+  AND rj.journey_index = 1
+  AND rl.journey_id IS NULL;
