@@ -144,6 +144,34 @@ export const PATCH = withAuth(async (req: NextRequest, { params }: RouteContext)
     const { error: updateError } = await supabase.from('books').update(update).eq('id', id);
 
     if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
+
+    // Keep the latest reading journey dates and rating in sync if modified
+    if (
+      'date_started' in update ||
+      'date_finished' in update ||
+      'rating' in update ||
+      'status' in update
+    ) {
+      const { data: latestJourneys } = await supabase
+        .from('reading_journeys')
+        .select('id')
+        .eq('book_id', id)
+        .order('journey_index', { ascending: false })
+        .limit(1);
+
+      if (latestJourneys && latestJourneys.length > 0) {
+        const jId = latestJourneys[0].id;
+        const jUpdate: Record<string, unknown> = {
+          updated_at: new Date().toISOString(),
+        };
+        if ('date_started' in update) jUpdate.date_started = update.date_started;
+        if ('date_finished' in update) jUpdate.date_finished = update.date_finished;
+        if ('rating' in update) jUpdate.rating = update.rating;
+        if (update.status === 'Completed') jUpdate.status = 'completed';
+
+        await supabase.from('reading_journeys').update(jUpdate).eq('id', jId);
+      }
+    }
   }
 
   // Fetch and return the fresh book row (with updated progress and reading_pace)

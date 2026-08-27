@@ -252,6 +252,12 @@ class DatabaseHelper {
             'updated_at': updatedAtStr,
             'sync_status': 'synced',
           }, conflictAlgorithm: ConflictAlgorithm.ignore);
+
+          // Link unassigned reading_log rows to Journey #1
+          await db.rawUpdate(
+            'UPDATE reading_log SET journey_id = ? WHERE book_id = ? AND journey_id IS NULL',
+            [journeyId, bookId],
+          );
         }
       } catch (e) {
         debugPrint('Database migration v5 backfill error: $e');
@@ -305,12 +311,45 @@ class DatabaseHelper {
 
   Future<int> updateBook(Book book) async {
     final db = await instance.database;
-    return await db.update(
-      'books',
-      book.toMap(),
-      where: 'id = ?',
-      whereArgs: [book.id],
-    );
+    return await db.transaction((txn) async {
+      final rows = await txn.update(
+        'books',
+        book.toMap(),
+        where: 'id = ?',
+        whereArgs: [book.id],
+      );
+
+      // Keep the most recent/active reading journey dates and rating in sync
+      if (book.dateStarted != null || book.dateFinished != null || book.rating != null) {
+        final nowIso = DateTime.now().toUtc().toIso8601String();
+        final latestJourneys = await txn.query(
+          'reading_journeys',
+          where: 'book_id = ?',
+          whereArgs: [book.id],
+          orderBy: 'journey_index DESC',
+          limit: 1,
+        );
+
+        if (latestJourneys.isNotEmpty) {
+          final jId = latestJourneys.first['id'] as String;
+          await txn.update(
+            'reading_journeys',
+            {
+              if (book.dateStarted != null) 'date_started': book.dateStarted,
+              if (book.dateFinished != null) 'date_finished': book.dateFinished,
+              if (book.rating != null) 'rating': book.rating,
+              if (book.status == BookStatus.completed) 'status': 'completed',
+              'updated_at': nowIso,
+              'sync_status': 'pending_update',
+            },
+            where: 'id = ?',
+            whereArgs: [jId],
+          );
+        }
+      }
+
+      return rows;
+    });
   }
 
   Future<int> deleteBook(String id) async {

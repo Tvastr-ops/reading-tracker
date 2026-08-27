@@ -497,10 +497,8 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                         children: [
                           ...displayedJourneys.map((j) {
                             final isAct = j.status == 'reading';
-                            final startDt = DateTime.tryParse(j.dateStarted);
-                            final finishDt = j.dateFinished != null ? DateTime.tryParse(j.dateFinished!) : null;
-                            final startStr = startDt != null ? '${startDt.month}/${startDt.day}/${startDt.year}' : j.dateStarted;
-                            final finishStr = finishDt != null ? '${finishDt.month}/${finishDt.day}/${finishDt.year}' : (isAct ? 'Active' : 'Finished');
+                            final startStr = formatDisplayDate(j.dateStarted);
+                            final finishStr = j.dateFinished != null ? formatDisplayDate(j.dateFinished!) : (isAct ? 'Active' : 'Finished');
                             final durationStr = j.formattedDuration;
 
                             return Container(
@@ -613,8 +611,7 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                 else
                   Column(
                     children: _logs.take(5).map((log) {
-                      final dt = DateTime.tryParse(log.loggedAt);
-                      final dateStr = dt != null ? '${dt.month}/${dt.day}/${dt.year}' : log.loggedAt;
+                      final dateStr = formatDisplayDate(log.loggedAt);
                       final delta = (log.toProgress - (log.fromProgress ?? 0)).abs();
 
                       return Container(

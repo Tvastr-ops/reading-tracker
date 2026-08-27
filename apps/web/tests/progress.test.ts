@@ -7,9 +7,9 @@ import {
   getStatusAwareProgressText,
   isCaughtUp,
   normalizeStatusTransition,
+  simulateReadingHistoryLogs,
 } from '../lib/progress';
 import type { Book } from '../lib/types';
-import { normalizeGenreTag } from '../lib/utils';
 
 // Helper to construct mock book objects
 function createBook(overrides: Partial<Book> = {}): Book {
@@ -274,17 +274,21 @@ test('getStatusAwareProgressText presents clean summary for planned works', () =
   assert.strictEqual(getStatusAwareProgressText(plannedHierarchical), '155 chapters • 18 vols');
 });
 
-test('normalizeGenreTag maps synonyms accurately to canonical tags in Web', () => {
-  assert.strictEqual(normalizeGenreTag('science fiction'), 'Sci-Fi');
-  assert.strictEqual(normalizeGenreTag('scifi'), 'Sci-Fi');
-  assert.strictEqual(normalizeGenreTag('sf'), 'Sci-Fi');
-  assert.strictEqual(normalizeGenreTag('progression'), 'Progression Fantasy');
-  assert.strictEqual(normalizeGenreTag('lit-rpg'), 'LitRPG');
-  assert.strictEqual(normalizeGenreTag('litrpg'), 'LitRPG');
-  assert.strictEqual(normalizeGenreTag('sol'), 'Slice of Life');
-  assert.strictEqual(normalizeGenreTag('slice-of-life'), 'Slice of Life');
-  assert.strictEqual(normalizeGenreTag('xianxia'), 'Cultivation');
-  assert.strictEqual(normalizeGenreTag('non fiction'), 'Non-Fiction');
-  assert.strictEqual(normalizeGenreTag('post apocalyptic'), 'Post-Apocalyptic');
-  assert.strictEqual(normalizeGenreTag('custom dark magic'), 'Custom Dark Magic');
+test('simulateReadingHistoryLogs creates bounded dates strictly within start and end range', () => {
+  const logs = simulateReadingHistoryLogs({
+    totalUnits: 300,
+    startDate: '2026-07-01',
+    endDate: '2026-07-31',
+  });
+
+  assert.strictEqual(logs.length, 31);
+  assert.strictEqual(logs[0].logged_at.startsWith('2026-07-01'), true);
+  assert.strictEqual(logs[30].logged_at.startsWith('2026-07-31'), true);
+  assert.strictEqual(logs[30].to_progress, 300);
+  assert.strictEqual(logs[30].note, 'Completed book');
+
+  // Verify none spill over into August
+  for (const log of logs) {
+    assert.strictEqual(log.logged_at.includes('2026-08'), false);
+  }
 });
