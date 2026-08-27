@@ -360,7 +360,8 @@ export function simulateReadingHistoryLogs(params: {
 
   for (let i = 0; i < totalDays; i++) {
     const baseDay = new Date(Date.UTC(s.year, s.month, s.day + i));
-    const hour = 20 + Math.floor(Math.random() * 2);
+    // Midday UTC (12:00 - 14:00) so when displayed in ANY timezone (-12 to +14) it NEVER rolls over midnight to the next day
+    const hour = 12 + Math.floor(Math.random() * 2);
     const minute = Math.floor(Math.random() * 60);
     const sessionTime = new Date(
       Date.UTC(

@@ -42,12 +42,26 @@ String formatNum(num value) {
 }
 
 /// Formats date cleanly with 3-letter month (e.g. 'Jul 31, 2026').
+/// Handles both raw calendar dates ('YYYY-MM-DD') and full ISO timestamps.
 String formatDisplayDate(String? isoString) {
   if (isoString == null || isoString.isEmpty) return '';
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  // Pure calendar date string (e.g. '2026-07-31')
+  if (isoString.length == 10 && RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(isoString)) {
+    final parts = isoString.split('-').map(int.tryParse).toList();
+    if (parts.length == 3 && parts[0] != null && parts[1] != null && parts[2] != null) {
+      final m = parts[1]!;
+      if (m >= 1 && m <= 12) {
+        return '${months[m - 1]} ${parts[2]}, ${parts[0]}';
+      }
+    }
+  }
+
   final dt = DateTime.tryParse(isoString);
   if (dt == null) return isoString;
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+  final local = dt.toLocal();
+  return '${months[local.month - 1]} ${local.day}, ${local.year}';
 }
 
 /// Returns the standard unit label based on explicit unit_type or book publication type.

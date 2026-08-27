@@ -242,8 +242,8 @@ List<ReadingLogEntry> simulateReadingHistoryLogs({
 
   for (int i = 0; i < totalDays; i++) {
     final dayDate = start.add(Duration(days: i));
-    // Evening hours between 8:00 PM and 10:30 PM (20:00 - 22:30)
-    final hour = 20 + rng.nextInt(2);
+    // Midday UTC (12:00 - 14:00) so local timezone shifts never roll over midnight into the next month
+    final hour = 12 + rng.nextInt(2);
     final minute = rng.nextInt(60);
     final sessionTime = DateTime.utc(dayDate.year, dayDate.month, dayDate.day, hour, minute);
 
