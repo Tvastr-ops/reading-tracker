@@ -165,11 +165,24 @@ class _TimelineScreenState extends State<TimelineScreen> {
       );
 
       if (mounted) {
+        if (nextLogs.isEmpty) {
+          setState(() {
+            _isLoadingMore = false;
+            _hasMore = false;
+          });
+          return;
+        }
+
+        // Deduplicate logs by log_id to prevent duplicates from shifting offsets
+        final existingIds = _rawLogs.map((l) => l['log_id']?.toString()).toSet();
+        final uniqueNextLogs = nextLogs.where((l) => !existingIds.contains(l['log_id']?.toString())).toList();
+
         setState(() {
-          _rawLogs.addAll(nextLogs);
+          _rawLogs.addAll(uniqueNextLogs);
           _dayGroups = _processLogsIntoDayGroups(_rawLogs);
           _isLoadingMore = false;
-          _hasMore = nextLogs.length >= _pageSize;
+          // Stop pagination if fewer than _pageSize logs or no new unique logs were returned
+          _hasMore = nextLogs.length >= _pageSize && uniqueNextLogs.isNotEmpty;
         });
       }
     } catch (e, stack) {
@@ -177,6 +190,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
       if (mounted) {
         setState(() {
           _isLoadingMore = false;
+          _hasMore = false;
         });
       }
     }

@@ -5,6 +5,17 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.4.0b] - 2026-08-27
+
+### Fixed & Improved
+- **Timeline Pagination & Infinite Scroll Reliability**:
+  - Added ID-based deduplication (`uniqueNextLogs`) on reading log pagination to prevent duplicate entries from shifting page offsets.
+  - Fixed infinite loading spinner on Android caused by elastic overscroll physics re-triggering query loops.
+  - Fixed premature pagination termination on desktop Windows, ensuring smooth chronological scrolling through older reading logs (July and earlier).
+  - Strengthened exception handling and state recovery in Timeline screen feed loader.
+
+---
+
 ## [2.4.0a] - 2026-08-27
 
 ### Added & Improved
