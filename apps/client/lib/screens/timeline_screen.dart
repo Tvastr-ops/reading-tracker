@@ -85,7 +85,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
   final SyncManager _syncManager = SyncManager.instance;
   final ScrollController _scrollController = ScrollController();
 
-  static const int _pageSize = 100;
+  static const int _pageSize = 500;
   int _dbOffset = 0;
   List<Map<String, dynamic>> _rawLogs = [];
   List<_TimelineDayGroup> _dayGroups = [];

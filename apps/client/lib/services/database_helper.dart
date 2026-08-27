@@ -850,7 +850,7 @@ class DatabaseHelper {
     );
   }
 
-  Future<List<Map<String, dynamic>>> getAllReadingLogsWithBookInfo({int limit = 30, int offset = 0}) async {
+  Future<List<Map<String, dynamic>>> getAllReadingLogsWithBookInfo({int limit = 500, int offset = 0}) async {
     final db = await instance.database;
     return await db.rawQuery('''
       SELECT 
@@ -871,8 +871,8 @@ class DatabaseHelper {
       FROM reading_log l
       LEFT JOIN books b ON l.book_id = b.id
       ORDER BY l.logged_at DESC, l.id DESC
-      LIMIT ? OFFSET ?
-    ''', [limit, offset]);
+      LIMIT $limit OFFSET $offset
+    ''');
   }
 
   Future<int> getReadingLogsCount() async {
