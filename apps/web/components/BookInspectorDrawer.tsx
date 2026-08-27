@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/select';
 import { calculateProgressPercentage, getStatusAwareProgressText } from '@/lib/progress';
 import { getStatusConfig } from '@/lib/status';
-import { type Book, STATUSES } from '@/lib/types';
+import { type Book, type ReadingJourney, STATUSES } from '@/lib/types';
 import { calculateReadingDuration, getLocalDateString } from '@/lib/utils';
 import CoverImage from './CoverImage';
 import { InteractiveStarRating } from './RatingInput';
@@ -48,10 +48,23 @@ export default function BookInspectorDrawer({
 }: BookInspectorDrawerProps) {
   const [draft, setDraft] = useState<Book | null>(book);
   const [saving, setSaving] = useState(false);
+  const [journeys, setJourneys] = useState<ReadingJourney[]>([]);
+  const [showAllJourneys, setShowAllJourneys] = useState(false);
+  const [_loadingJourneys, setLoadingJourneys] = useState(false);
 
-  // Sync draft when target book changes
+  // Sync draft & fetch journeys when target book changes
   useEffect(() => {
     setDraft(book);
+    if (book?.id) {
+      setLoadingJourneys(true);
+      fetch(`/api/books/${book.id}/journeys`)
+        .then((res) => (res.ok ? res.json() : { journeys: [] }))
+        .then((data) => setJourneys(data.journeys || []))
+        .catch(() => setJourneys([]))
+        .finally(() => setLoadingJourneys(false));
+    } else {
+      setJourneys([]);
+    }
   }, [book?.id, book?.updated_at]);
 
   if (!book || !draft) return null;
@@ -558,6 +571,111 @@ export default function BookInspectorDrawer({
                   </span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Reading Journeys / History */}
+          {(journeys.length > 0 ||
+            (draft.reread_count ?? 0) > 0 ||
+            draft.status === 'Completed') && (
+            <div className="space-y-2 rounded-xl border border-border bg-surface/40 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-text">
+                  Reading Journeys (
+                  {journeys.length > 0 ? journeys.length : (draft.reread_count ?? 0) + 1})
+                </span>
+                {draft.status === 'Completed' && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`/api/books/${draft.id}/journeys`, {
+                          method: 'POST',
+                        });
+                        if (res.ok) {
+                          const data = await res.json();
+                          if (data.book) {
+                            setDraft(data.book);
+                            await onSaveInspectorBook(data.book);
+                          }
+                          if (data.journey) {
+                            setJourneys((prev) => [data.journey, ...prev]);
+                          }
+                        }
+                      } catch (e) {
+                        console.error('Failed to start re-read:', e);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 rounded bg-blue-500/20 px-2 py-0.5 text-[10.5px] font-bold text-blue-500 hover:bg-blue-500/30 transition-colors"
+                  >
+                    <span>🔄</span>
+                    <span>Start Re-read</span>
+                  </button>
+                )}
+              </div>
+
+              {journeys.length > 0 && (
+                <div className="space-y-1.5 pt-1">
+                  {(journeys.length > 3 && !showAllJourneys ? journeys.slice(0, 2) : journeys).map(
+                    (j) => {
+                      const isAct = j.status === 'reading';
+                      const startStr = j.date_started
+                        ? new Date(j.date_started).toLocaleDateString()
+                        : 'N/A';
+                      const finishStr = j.date_finished
+                        ? new Date(j.date_finished).toLocaleDateString()
+                        : isAct
+                          ? 'Active'
+                          : 'Finished';
+
+                      return (
+                        <div
+                          key={j.id}
+                          className={`flex items-center justify-between rounded-lg border p-2 text-xs ${
+                            isAct
+                              ? 'border-blue-500/40 bg-blue-500/10'
+                              : 'border-border/60 bg-surface/60'
+                          }`}
+                        >
+                          <div>
+                            <div className="flex items-center gap-1.5 font-bold">
+                              <span className={isAct ? 'text-blue-500' : 'text-text'}>
+                                {j.journey_index === 1
+                                  ? 'Read #1 (Original)'
+                                  : `Read #${j.journey_index} (Re-read)`}
+                              </span>
+                              {isAct && (
+                                <span className="rounded bg-blue-500 px-1 py-0.2 text-[9px] font-bold text-white uppercase">
+                                  Current
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-text-muted pt-0.5">
+                              {startStr} → {finishStr}
+                            </div>
+                          </div>
+                          {j.rating != null && j.rating > 0 && (
+                            <span className="inline-flex items-center rounded bg-amber-500/20 px-1.5 py-0.5 text-[10.5px] font-bold text-amber-500">
+                              {j.rating} ★
+                            </span>
+                          )}
+                        </div>
+                      );
+                    },
+                  )}
+                  {journeys.length > 3 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllJourneys(!showAllJourneys)}
+                      className="w-full py-1 text-center text-[10.5px] font-bold text-blue-500 hover:text-blue-400 border border-border/40 rounded-md bg-surface/30 transition-colors"
+                    >
+                      {showAllJourneys
+                        ? '▴ Show Fewer Reads'
+                        : `▾ Show All (${journeys.length}) Past Reads`}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

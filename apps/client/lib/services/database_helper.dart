@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../models/book.dart';
+import '../models/reading_journey.dart';
 import '../utils/formatters.dart';
 import '../utils/progression_logic.dart';
 
@@ -49,7 +50,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onConfigure: (db) async {
         try {
           await db.execute('PRAGMA journal_mode = WAL;');
@@ -108,20 +109,49 @@ class DatabaseHelper {
     ''');
 
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS reading_log (
+      CREATE TABLE IF NOT EXISTS reading_journeys (
         id TEXT PRIMARY KEY,
         book_id TEXT NOT NULL,
-        from_progress REAL,
-        to_progress REAL NOT NULL,
-        note TEXT,
-        logged_at TEXT NOT NULL,
+        journey_index INTEGER NOT NULL DEFAULT 1,
+        status TEXT NOT NULL DEFAULT 'reading',
+        date_started TEXT NOT NULL,
+        date_finished TEXT,
+        rating REAL,
+        review TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
         sync_status TEXT DEFAULT 'synced',
         FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE
       )
     ''');
 
     await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_journeys_book ON reading_journeys (book_id, journey_index DESC)
+    ''');
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_journeys_sync_status ON reading_journeys (sync_status)
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS reading_log (
+        id TEXT PRIMARY KEY,
+        book_id TEXT NOT NULL,
+        journey_id TEXT,
+        from_progress REAL,
+        to_progress REAL NOT NULL,
+        note TEXT,
+        logged_at TEXT NOT NULL,
+        sync_status TEXT DEFAULT 'synced',
+        FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE,
+        FOREIGN KEY (journey_id) REFERENCES reading_journeys (id) ON DELETE SET NULL
+      )
+    ''');
+
+    await db.execute('''
       CREATE INDEX IF NOT EXISTS idx_reading_log_book_logged ON reading_log (book_id, logged_at DESC)
+    ''');
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_reading_log_journey ON reading_log (journey_id)
     ''');
     await db.execute('''
       CREATE INDEX IF NOT EXISTS idx_reading_log_sync_status ON reading_log (sync_status)
@@ -164,6 +194,68 @@ class DatabaseHelper {
       await db.execute('CREATE INDEX IF NOT EXISTS idx_books_sync_status ON books (sync_status)');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_reading_log_book_logged ON reading_log (book_id, logged_at DESC)');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_reading_log_sync_status ON reading_log (sync_status)');
+    }
+    if (oldVersion < 5) {
+      // 1. Create reading_journeys table
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS reading_journeys (
+          id TEXT PRIMARY KEY,
+          book_id TEXT NOT NULL,
+          journey_index INTEGER NOT NULL DEFAULT 1,
+          status TEXT NOT NULL DEFAULT 'reading',
+          date_started TEXT NOT NULL,
+          date_finished TEXT,
+          rating REAL,
+          review TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          sync_status TEXT DEFAULT 'synced',
+          FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_journeys_book ON reading_journeys (book_id, journey_index DESC)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_journeys_sync_status ON reading_journeys (sync_status)');
+
+      // 2. Add journey_id to reading_log
+      try {
+        await db.execute('ALTER TABLE reading_log ADD COLUMN journey_id TEXT');
+      } catch (_) {}
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_reading_log_journey ON reading_log (journey_id)');
+
+      // 3. Backfill Journey #1 for existing books with started/finished dates or completed status
+      try {
+        final existingBooks = await db.rawQuery(
+          "SELECT id, status, date_started, date_finished, rating, created_at, updated_at FROM books WHERE deleted_at IS NULL AND (date_started IS NOT NULL OR date_finished IS NOT NULL OR status = 'Completed' OR status = 'Reading')"
+        );
+
+        for (final b in existingBooks) {
+          final bookId = b['id'] as String;
+          final statusStr = b['status'] as String? ?? 'Reading';
+          final journeyStatus = statusStr == 'Completed' ? 'completed' : 'reading';
+          final started = b['date_started'] as String? ?? b['created_at'] as String? ?? DateTime.now().toUtc().toIso8601String();
+          final finished = b['date_finished'] as String?;
+          final ratingVal = b['rating'] as num?;
+          final createdAtStr = b['created_at'] as String? ?? DateTime.now().toUtc().toIso8601String();
+          final updatedAtStr = b['updated_at'] as String? ?? DateTime.now().toUtc().toIso8601String();
+          final journeyId = generateUuidV4();
+
+          await db.insert('reading_journeys', {
+            'id': journeyId,
+            'book_id': bookId,
+            'journey_index': 1,
+            'status': journeyStatus,
+            'date_started': started,
+            'date_finished': finished,
+            'rating': ratingVal?.toDouble(),
+            'review': null,
+            'created_at': createdAtStr,
+            'updated_at': updatedAtStr,
+            'sync_status': 'synced',
+          }, conflictAlgorithm: ConflictAlgorithm.ignore);
+        }
+      } catch (e) {
+        debugPrint('Database migration v5 backfill error: $e');
+      }
     }
   }
 
@@ -485,8 +577,16 @@ class DatabaseHelper {
     double toProgress, {
     num? parentProgress,
     String? note,
+    String? journeyId,
   }) async {
     final db = await instance.database;
+    // Auto-resolve active journey if not passed
+    var effectiveJourneyId = journeyId;
+    if (effectiveJourneyId == null) {
+      final activeJourney = await getActiveJourney(book.id);
+      effectiveJourneyId = activeJourney?.id;
+    }
+
     // Query only the boundary logs (oldest and newest) needed for pace calculation instead of pulling full log history
     final boundaryLogsRaw = await db.rawQuery('''
       SELECT * FROM (
@@ -505,6 +605,7 @@ class DatabaseHelper {
       toProgress,
       parentProgress: parentProgress,
       note: note,
+      journeyId: effectiveJourneyId,
       existingLogs: existingLogs,
     );
 
@@ -523,9 +624,127 @@ class DatabaseHelper {
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
       }
+
+      // If the book transitioned to completed, also complete the active journey
+      if (mutation.updatedBook.status == BookStatus.completed && effectiveJourneyId != null) {
+        final nowIso = DateTime.now().toUtc().toIso8601String();
+        await txn.update(
+          'reading_journeys',
+          {
+            'status': 'completed',
+            'date_finished': mutation.updatedBook.dateFinished ?? nowIso,
+            'rating': mutation.updatedBook.rating,
+            'updated_at': nowIso,
+            'sync_status': 'pending_update',
+          },
+          where: 'id = ?',
+          whereArgs: [effectiveJourneyId],
+        );
+      }
     });
 
     return mutation.updatedBook;
+  }
+
+  // ==========================================
+  // READING JOURNEYS CRUD & SYNC OPERATIONS
+  // ==========================================
+
+  Future<int> insertReadingJourney(ReadingJourney journey) async {
+    final db = await instance.database;
+    return await db.insert(
+      'reading_journeys',
+      journey.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<int> updateReadingJourney(ReadingJourney journey) async {
+    final db = await instance.database;
+    return await db.update(
+      'reading_journeys',
+      journey.toMap(),
+      where: 'id = ?',
+      whereArgs: [journey.id],
+    );
+  }
+
+  Future<List<ReadingJourney>> getReadingJourneys(String bookId) async {
+    final db = await instance.database;
+    final result = await db.query(
+      'reading_journeys',
+      where: 'book_id = ?',
+      whereArgs: [bookId],
+      orderBy: 'journey_index DESC, created_at DESC',
+    );
+    return result.map((json) => ReadingJourney.fromMap(json)).toList();
+  }
+
+  Future<ReadingJourney?> getActiveJourney(String bookId) async {
+    final db = await instance.database;
+    final result = await db.query(
+      'reading_journeys',
+      where: 'book_id = ? AND (status = ? OR date_finished IS NULL)',
+      whereArgs: [bookId, 'reading'],
+      orderBy: 'journey_index DESC',
+      limit: 1,
+    );
+    if (result.isEmpty) return null;
+    return ReadingJourney.fromMap(result.first);
+  }
+
+  Future<List<ReadingJourney>> getAllReadingJourneys() async {
+    final db = await instance.database;
+    final result = await db.query(
+      'reading_journeys',
+      orderBy: 'created_at DESC',
+    );
+    return result.map((json) => ReadingJourney.fromMap(json)).toList();
+  }
+
+  Future<List<ReadingJourney>> getPendingSyncReadingJourneys() async {
+    final db = await instance.database;
+    final result = await db.query(
+      'reading_journeys',
+      where: 'sync_status = ? OR sync_status = ?',
+      whereArgs: ['pending_create', 'pending_update'],
+    );
+    return result.map((json) => ReadingJourney.fromMap(json)).toList();
+  }
+
+  Future<int> markReadingJourneySynced(String id) async {
+    final db = await instance.database;
+    return await db.update(
+      'reading_journeys',
+      {'sync_status': 'synced'},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> upsertRemoteReadingJourneys(List<ReadingJourney> journeys) async {
+    if (journeys.isEmpty) return;
+    final db = await instance.database;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final journey in journeys) {
+        batch.insert(
+          'reading_journeys',
+          journey.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+
+  Future<int> deleteReadingJourneysForBook(String bookId) async {
+    final db = await instance.database;
+    return await db.delete(
+      'reading_journeys',
+      where: 'book_id = ?',
+      whereArgs: [bookId],
+    );
   }
 
   Future<List<ReadingLogEntry>> getReadingLogs(String bookId) async {

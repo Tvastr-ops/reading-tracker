@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/book.dart';
+import '../models/reading_journey.dart';
 import '../services/database_helper.dart';
 import '../services/sync/sync_manager.dart';
 import '../theme/app_theme.dart';
@@ -17,6 +18,7 @@ class _StatsScreenState extends State<StatsScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
   final SyncManager _syncManager = SyncManager.instance;
   List<Book> _books = [];
+  List<ReadingJourney> _allJourneys = [];
   double _totalUnitsLogged = 0.0;
   int _totalLogsCount = 0;
   int _activeBooksInYear = 0;
@@ -60,6 +62,7 @@ class _StatsScreenState extends State<StatsScreen> {
   Future<void> _loadStats() async {
     setState(() => _isLoading = true);
     final books = await _dbHelper.getBooks();
+    final allJourneys = await _dbHelper.getAllReadingJourneys();
     final agg = await _dbHelper.getAggregatedReadingStats(year: _selectedYear);
     final lifetimeAgg = await _dbHelper.getAggregatedReadingStats(); // All-time
     final unitBreakdown = await _dbHelper.getUnitBreakdownStats(year: _selectedYear);
@@ -69,6 +72,7 @@ class _StatsScreenState extends State<StatsScreen> {
     if (mounted) {
       setState(() {
         _books = books;
+        _allJourneys = allJourneys;
         _totalUnitsLogged = (agg['totalUnits'] as num?)?.toDouble() ?? 0.0;
         _totalLogsCount = (agg['totalLogs'] as num?)?.toInt() ?? 0;
         _activeBooksInYear = (agg['activeBooks'] as num?)?.toInt() ?? 0;
@@ -315,22 +319,46 @@ class _StatsScreenState extends State<StatsScreen> {
     final yearlyCounts = <int, int>{};
     int completedInSelectedYear = 0;
 
-    for (final b in _books) {
-      if (b.status != BookStatus.completed) continue;
-      DateTime? dt;
-      if (b.dateFinished != null && b.dateFinished!.isNotEmpty) {
-        dt = DateTime.tryParse(b.dateFinished!);
-      }
-      dt ??= DateTime.tryParse(b.updatedAt);
-      if (dt != null) {
-        if (isLifetime || dt.year == _selectedYear) {
-          completedInSelectedYear++;
-          if (dt.month >= 1 && dt.month <= 12 && !isLifetime) {
-            monthlyCounts[dt.month - 1]++;
+    // Use reading journeys if available for full multi-year re-read accuracy, fallback to books
+    final completedJourneys = _allJourneys.where((j) => j.status == 'completed' || j.dateFinished != null).toList();
+
+    if (completedJourneys.isNotEmpty) {
+      for (final j in completedJourneys) {
+        DateTime? dt;
+        if (j.dateFinished != null && j.dateFinished!.isNotEmpty) {
+          dt = DateTime.tryParse(j.dateFinished!);
+        }
+        dt ??= DateTime.tryParse(j.updatedAt);
+        if (dt != null) {
+          if (isLifetime || dt.year == _selectedYear) {
+            completedInSelectedYear++;
+            if (dt.month >= 1 && dt.month <= 12 && !isLifetime) {
+              monthlyCounts[dt.month - 1]++;
+            }
+          }
+          if (dt.year >= 1947 && dt.year <= currentCalendarYear + 1) {
+            yearlyCounts[dt.year] = (yearlyCounts[dt.year] ?? 0) + 1;
           }
         }
-        if (dt.year >= 1947 && dt.year <= currentCalendarYear + 1) {
-          yearlyCounts[dt.year] = (yearlyCounts[dt.year] ?? 0) + 1;
+      }
+    } else {
+      for (final b in _books) {
+        if (b.status != BookStatus.completed) continue;
+        DateTime? dt;
+        if (b.dateFinished != null && b.dateFinished!.isNotEmpty) {
+          dt = DateTime.tryParse(b.dateFinished!);
+        }
+        dt ??= DateTime.tryParse(b.updatedAt);
+        if (dt != null) {
+          if (isLifetime || dt.year == _selectedYear) {
+            completedInSelectedYear++;
+            if (dt.month >= 1 && dt.month <= 12 && !isLifetime) {
+              monthlyCounts[dt.month - 1]++;
+            }
+          }
+          if (dt.year >= 1947 && dt.year <= currentCalendarYear + 1) {
+            yearlyCounts[dt.year] = (yearlyCounts[dt.year] ?? 0) + 1;
+          }
         }
       }
     }

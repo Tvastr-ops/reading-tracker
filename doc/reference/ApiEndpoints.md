@@ -124,6 +124,50 @@ Records an atomic reading session update.
   }
   ```
 
+## Reading Journeys
+
+### `GET /api/books/[id]/journeys`
+Lists all reading journeys (past completed reads and active re-reads) for a book.
+
+* **Response**: `200 OK`
+  ```json
+  {
+    "journeys": [
+      {
+        "id": "uuid",
+        "book_id": "uuid",
+        "journey_index": 2,
+        "status": "reading",
+        "date_started": "2026-08-15T00:00:00Z",
+        "date_finished": null,
+        "rating": null
+      },
+      {
+        "id": "uuid",
+        "book_id": "uuid",
+        "journey_index": 1,
+        "status": "completed",
+        "date_started": "2026-05-01T00:00:00Z",
+        "date_finished": "2026-05-20T00:00:00Z",
+        "rating": 5.0
+      }
+    ]
+  }
+  ```
+
+---
+
+### `POST /api/books/[id]/journeys`
+Starts a re-read cycle. Closes any active journey, creates the new journey (`journey_index = reread_count + 1`), resets book progress to 0, and increments `reread_count`.
+
+* **Response**: `201 Created`
+  ```json
+  {
+    "journey": { "id": "uuid", "journey_index": 2, "status": "reading" },
+    "book": { "id": "uuid", "progress": 0, "status": "Reading", "reread_count": 1 }
+  }
+  ```
+
 ---
 
 ## Settings & Utilities

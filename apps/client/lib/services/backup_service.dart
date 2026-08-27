@@ -4,12 +4,14 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/book.dart';
+import '../models/reading_journey.dart';
 import 'database_helper.dart';
 
 class BackupResult {
   final bool success;
   final int importedBooks;
   final int importedLogs;
+  final int importedJourneys;
   final String message;
   final String? exportPath;
 
@@ -17,6 +19,7 @@ class BackupResult {
     required this.success,
     this.importedBooks = 0,
     this.importedLogs = 0,
+    this.importedJourneys = 0,
     required this.message,
     this.exportPath,
   });
@@ -28,9 +31,10 @@ class BackupService {
 
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
 
-  /// Exports entire library (books + reading logs) into a standardized JSON string.
+  /// Exports entire library (books + reading journeys + reading logs) into a standardized JSON string.
   Future<String> generateJsonBackup() async {
     final books = await _dbHelper.getBooks();
+    final allJourneys = await _dbHelper.getAllReadingJourneys();
     final allLogs = <Map<String, dynamic>>[];
 
     for (final book in books) {
@@ -41,12 +45,14 @@ class BackupService {
     }
 
     final backupPayload = {
-      'version': '2.0',
+      'version': '3.0',
       'exported_at': DateTime.now().toUtc().toIso8601String(),
       'app': 'Paperback Reader',
       'books_count': books.length,
+      'journeys_count': allJourneys.length,
       'logs_count': allLogs.length,
       'books': books.map((b) => b.toRemoteMap()).toList(),
+      'reading_journeys': allJourneys.map((j) => j.toRemoteMap()).toList(),
       'reading_logs': allLogs,
     };
 
@@ -164,6 +170,7 @@ class BackupService {
     try {
       final decoded = jsonDecode(jsonString);
       List<dynamic> booksList = [];
+      List<dynamic> journeysList = [];
       List<dynamic> logsList = [];
 
       if (decoded is List) {
@@ -172,12 +179,16 @@ class BackupService {
         if (decoded['books'] is List) {
           booksList = decoded['books'] as List;
         }
+        if (decoded['reading_journeys'] is List) {
+          journeysList = decoded['reading_journeys'] as List;
+        }
         if (decoded['reading_logs'] is List) {
           logsList = decoded['reading_logs'] as List;
         }
       }
 
       int importedBooks = 0;
+      int importedJourneys = 0;
       int importedLogs = 0;
 
       for (final rawBook in booksList) {
@@ -185,6 +196,13 @@ class BackupService {
         final book = Book.fromMap(rawBook);
         await _dbHelper.insertBook(book);
         importedBooks++;
+      }
+
+      for (final rawJourney in journeysList) {
+        if (rawJourney is! Map<String, dynamic>) continue;
+        final journey = ReadingJourney.fromMap(rawJourney);
+        await _dbHelper.insertReadingJourney(journey);
+        importedJourneys++;
       }
 
       for (final rawLog in logsList) {
@@ -197,8 +215,9 @@ class BackupService {
       return BackupResult(
         success: true,
         importedBooks: importedBooks,
+        importedJourneys: importedJourneys,
         importedLogs: importedLogs,
-        message: 'Restored $importedBooks books and $importedLogs reading logs successfully!',
+        message: 'Restored $importedBooks books, $importedJourneys journeys, and $importedLogs logs successfully!',
       );
     } catch (e) {
       return BackupResult(

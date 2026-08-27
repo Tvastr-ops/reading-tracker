@@ -456,7 +456,6 @@ class LibraryScreenState extends State<LibraryScreen> {
                   maxHeight: MediaQuery.of(context).size.height * 0.85,
                 ),
                 margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: sheetBg,
                   border: Border.all(
@@ -471,385 +470,405 @@ class LibraryScreenState extends State<LibraryScreen> {
                     ),
                   ],
                 ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'SORT & FILTER',
-                          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: inkColor),
-                        ),
-                        IconButton(
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          icon: Icon(Icons.close_rounded, size: 20, color: inkColor),
-                          onPressed: () => Navigator.pop(ctx),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Sort Option Chips
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('SORT BY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5, color: inkColor)),
-                        GestureDetector(
-                          onTap: () {
-                            setSheetState(() => _sortAscending = !_sortAscending);
-                            setState(() => _sortAscending = !_sortAscending);
-                          },
-                          child: Row(
-                            children: [
-                              Icon(
-                                _sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-                                size: 14,
-                                color: accentColor,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                _sortAscending ? 'ASCENDING' : 'DESCENDING',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w900,
-                                  color: accentColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _buildSortChip('Last Updated', 'updated_at', setSheetState),
-                        _buildSortChip('Title (A-Z)', 'title', setSheetState),
-                        _buildSortChip('Progress (%)', 'progress', setSheetState),
-                        _buildSortChip('Rating (High)', 'rating', setSheetState),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Format / Type Filters
-                    Text('FORMAT / TYPE FILTER', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5, color: inkColor)),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _buildTypeFilterChip('All Formats', 'All', setSheetState),
-                        ...primaryFormats.map((type) => _buildTypeFilterChip(type, type, setSheetState)),
-                        if (showAllFormats)
-                          ...moreFormats.map((type) => _buildTypeFilterChip(type, type, setSheetState)),
-                        BrutalistExpandToggleChip(
-                          isExpanded: showAllFormats,
-                          onTap: () => setSheetState(() => showAllFormats = !showAllFormats),
-                          size: BrutalistToggleSize.regular,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Rating Filters
-                    Text('RATING FILTER', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5, color: inkColor)),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _buildRatingFilterChip('All', 'All', setSheetState),
-                        _buildRatingFilterChip('5 ★ Only', '5', setSheetState),
-                        _buildRatingFilterChip('4 ★ & Above', '4', setSheetState),
-                        if (showAllRatings) ...[
-                          _buildRatingFilterChip('3 ★ & Above', '3', setSheetState),
-                          _buildRatingFilterChip('2 ★ & Above', '2', setSheetState),
-                          _buildRatingFilterChip('1 ★ & Above', '1', setSheetState),
-                        ],
-                        _buildRatingFilterChip('Unrated', 'unrated', setSheetState),
-                        BrutalistExpandToggleChip(
-                          isExpanded: showAllRatings,
-                          onTap: () => setSheetState(() => showAllRatings = !showAllRatings),
-                          size: BrutalistToggleSize.regular,
-                        ),
-                      ],
-                    ),
-                    if (_books.any((b) => b.shelvesList.isNotEmpty)) ...[
-                      const SizedBox(height: 16),
-                      Text('CUSTOM SHELVES', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5, color: inkColor)),
-                      const SizedBox(height: 8),
-                      Builder(
-                        builder: (context) {
-                          final distinctShelves = _books.expand((b) => b.shelvesList).toSet().toList()..sort();
-                          return Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  _themeService.triggerHapticClick();
-                                  setSheetState(() => _selectedShelf = null);
-                                  setState(() => _selectedShelf = null);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: _selectedShelf == null ? accentColor : (details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white)),
-                                    border: Border.all(color: borderColor, width: 1.5),
-                                  ),
-                                  child: Text(
-                                    'ALL SHELVES',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w800,
-                                      color: _selectedShelf == null ? Colors.white : inkColor,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              ...distinctShelves.map((sh) {
-                                final isSelected = _selectedShelf == sh;
-                                final count = _books
-                                    .where(_matchesNonStatusFilters)
-                                    .where((b) => b.shelvesList.any((s) => s.toLowerCase() == sh.toLowerCase()))
-                                    .length;
-                                return GestureDetector(
-                                  onTap: () {
-                                    _themeService.triggerHapticClick();
-                                    final newVal = isSelected ? null : sh;
-                                    setSheetState(() => _selectedShelf = newVal);
-                                    setState(() => _selectedShelf = newVal);
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: isSelected ? accentColor : (details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white)),
-                                      border: Border.all(color: borderColor, width: 1.5),
-                                    ),
-                                    child: Text(
-                                      '🔖 ${sh.toUpperCase()} ($count)',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w800,
-                                        color: isSelected ? Colors.white : inkColor,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
-                    if (_books.any((b) => b.tagsList.isNotEmpty)) ...[
-                      const SizedBox(height: 16),
-                      Row(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Sticky Header
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('GENRES / TAGS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5, color: inkColor)),
-                          if (_selectedTags.isNotEmpty)
-                            MouseRegion(
-                              cursor: SystemMouseCursors.click,
-                              child: GestureDetector(
-                                onTap: () {
-                                  _themeService.triggerHapticClick();
-                                  setSheetState(() => _selectedTags.clear());
-                                  setState(() => _selectedTags.clear());
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: accentColor.withValues(alpha: 0.14),
-                                    border: Border.all(color: accentColor, width: 1.0),
-                                  ),
+                          Text(
+                            'SORT & FILTER',
+                            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: inkColor),
+                          ),
+                          IconButton(
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            icon: Icon(Icons.close_rounded, size: 20, color: inkColor),
+                            onPressed: () => Navigator.pop(ctx),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Divider(height: 1, thickness: 1.5, color: borderColor.withValues(alpha: 0.2)),
+
+                    // Scrollable Filter Sections
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Sort Option Chips
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('SORT BY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5, color: inkColor)),
+                                GestureDetector(
+                                  onTap: () {
+                                    setSheetState(() => _sortAscending = !_sortAscending);
+                                    setState(() => _sortAscending = !_sortAscending);
+                                  },
                                   child: Row(
-                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.close_rounded, size: 11, color: accentColor),
-                                      const SizedBox(width: 3),
+                                      Icon(
+                                        _sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                                        size: 14,
+                                        color: accentColor,
+                                      ),
+                                      const SizedBox(width: 4),
                                       Text(
-                                        'CLEAR (${_selectedTags.length})',
+                                        _sortAscending ? 'ASCENDING' : 'DESCENDING',
                                         style: TextStyle(
-                                          fontSize: 9.0,
+                                          fontSize: 10,
                                           fontWeight: FontWeight.w900,
                                           color: accentColor,
-                                          letterSpacing: 0.4,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Builder(
-                        builder: (context) {
-                          // Frequency count across all books
-                          final tagCounts = <String, int>{};
-                          for (final b in _books) {
-                            for (final t in b.tagsList) {
-                              tagCounts[t] = (tagCounts[t] ?? 0) + 1;
-                            }
-                          }
-                          final sortedTags = tagCounts.keys.toList()
-                            ..sort((a, b) => tagCounts[b]!.compareTo(tagCounts[a]!));
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                _buildSortChip('Last Updated', 'updated_at', setSheetState),
+                                _buildSortChip('Title (A-Z)', 'title', setSheetState),
+                                _buildSortChip('Progress (%)', 'progress', setSheetState),
+                                _buildSortChip('Rating (High)', 'rating', setSheetState),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
 
-                          final primaryTags = sortedTags.take(5).toList();
-                          final remainingTags = sortedTags.skip(5).toList();
+                            // Format / Type Filters
+                            Text('FORMAT / TYPE FILTER', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5, color: inkColor)),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                _buildTypeFilterChip('All Formats', 'All', setSheetState),
+                                ...primaryFormats.map((type) => _buildTypeFilterChip(type, type, setSheetState)),
+                                if (showAllFormats)
+                                  ...moreFormats.map((type) => _buildTypeFilterChip(type, type, setSheetState)),
+                                BrutalistExpandToggleChip(
+                                  isExpanded: showAllFormats,
+                                  onTap: () => setSheetState(() => showAllFormats = !showAllFormats),
+                                  size: BrutalistToggleSize.regular,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
 
-                          return Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              ...primaryTags.map((tag) {
-                                final isSelected = _selectedTags.contains(tag);
-                                final matchingCount = _books
-                                    .where(_matchesNonStatusFilters)
-                                    .where((b) => b.tagsList.any((t) => t.toLowerCase() == tag.toLowerCase()))
-                                    .length;
-                                return GestureDetector(
-                                  onTap: () {
-                                    _themeService.triggerHapticClick();
-                                    setSheetState(() {
-                                      if (isSelected) {
-                                        _selectedTags.remove(tag);
-                                      } else {
-                                        _selectedTags.add(tag);
-                                      }
-                                    });
-                                    setState(() {});
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: isSelected ? accentColor : (details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white)),
-                                      border: Border.all(color: borderColor, width: 1.5),
-                                    ),
-                                    child: Text(
-                                      '#${tag.toUpperCase()} ($matchingCount)',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w800,
-                                        color: isSelected ? Colors.white : inkColor,
+                            // Rating Filters
+                            Text('RATING FILTER', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5, color: inkColor)),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                _buildRatingFilterChip('All', 'All', setSheetState),
+                                _buildRatingFilterChip('5 ★ Only', '5', setSheetState),
+                                _buildRatingFilterChip('4 ★ & Above', '4', setSheetState),
+                                if (showAllRatings) ...[
+                                  _buildRatingFilterChip('3 ★ & Above', '3', setSheetState),
+                                  _buildRatingFilterChip('2 ★ & Above', '2', setSheetState),
+                                  _buildRatingFilterChip('1 ★ & Above', '1', setSheetState),
+                                ],
+                                _buildRatingFilterChip('Unrated', 'unrated', setSheetState),
+                                BrutalistExpandToggleChip(
+                                  isExpanded: showAllRatings,
+                                  onTap: () => setSheetState(() => showAllRatings = !showAllRatings),
+                                  size: BrutalistToggleSize.regular,
+                                ),
+                              ],
+                            ),
+                            if (_books.any((b) => b.shelvesList.isNotEmpty)) ...[
+                              const SizedBox(height: 16),
+                              Text('CUSTOM SHELVES', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5, color: inkColor)),
+                              const SizedBox(height: 8),
+                              Builder(
+                                builder: (context) {
+                                  final distinctShelves = _books.expand((b) => b.shelvesList).toSet().toList()..sort();
+                                  return Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      GestureDetector(
+                                        onTap: () {
+                                          _themeService.triggerHapticClick();
+                                          setSheetState(() => _selectedShelf = null);
+                                          setState(() => _selectedShelf = null);
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: _selectedShelf == null ? accentColor : (details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white)),
+                                            border: Border.all(color: borderColor, width: 1.5),
+                                          ),
+                                          child: Text(
+                                            'ALL SHELVES',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w800,
+                                              color: _selectedShelf == null ? Colors.white : inkColor,
+                                            ),
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                );
-                              }),
-                              if (showAllTags)
-                                ...remainingTags.map((tag) {
-                                  final isSelected = _selectedTags.contains(tag);
-                                  final matchingCount = _books
-                                      .where(_matchesNonStatusFilters)
-                                      .where((b) => b.tagsList.any((t) => t.toLowerCase() == tag.toLowerCase()))
-                                      .length;
-                                  return GestureDetector(
-                                    onTap: () {
-                                      _themeService.triggerHapticClick();
-                                      setSheetState(() {
-                                        if (isSelected) {
-                                          _selectedTags.remove(tag);
-                                        } else {
-                                          _selectedTags.add(tag);
-                                        }
-                                      });
-                                      setState(() {});
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: isSelected ? accentColor : (details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white)),
-                                        border: Border.all(color: borderColor, width: 1.5),
-                                      ),
-                                      child: Text(
-                                        '#${tag.toUpperCase()} ($matchingCount)',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w800,
-                                          color: isSelected ? Colors.white : inkColor,
+                                      ...distinctShelves.map((sh) {
+                                        final isSelected = _selectedShelf == sh;
+                                        final count = _books
+                                            .where(_matchesNonStatusFilters)
+                                            .where((b) => b.shelvesList.any((s) => s.toLowerCase() == sh.toLowerCase()))
+                                            .length;
+                                        return GestureDetector(
+                                          onTap: () {
+                                            _themeService.triggerHapticClick();
+                                            final newVal = isSelected ? null : sh;
+                                            setSheetState(() => _selectedShelf = newVal);
+                                            setState(() => _selectedShelf = newVal);
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: isSelected ? accentColor : (details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white)),
+                                              border: Border.all(color: borderColor, width: 1.5),
+                                            ),
+                                            child: Text(
+                                              '🔖 ${sh.toUpperCase()} ($count)',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w800,
+                                                color: isSelected ? Colors.white : inkColor,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ],
+                            if (_books.any((b) => b.tagsList.isNotEmpty)) ...[
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('GENRES / TAGS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5, color: inkColor)),
+                                  if (_selectedTags.isNotEmpty)
+                                    MouseRegion(
+                                      cursor: SystemMouseCursors.click,
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          _themeService.triggerHapticClick();
+                                          setSheetState(() => _selectedTags.clear());
+                                          setState(() => _selectedTags.clear());
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: accentColor.withValues(alpha: 0.14),
+                                            border: Border.all(color: accentColor, width: 1.0),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.close_rounded, size: 11, color: accentColor),
+                                              const SizedBox(width: 3),
+                                              Text(
+                                                'CLEAR (${_selectedTags.length})',
+                                                style: TextStyle(
+                                                  fontSize: 9.0,
+                                                  fontWeight: FontWeight.w900,
+                                                  color: accentColor,
+                                                  letterSpacing: 0.4,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  );
-                                }),
-                              if (remainingTags.isNotEmpty)
-                                BrutalistExpandToggleChip(
-                                  isExpanded: showAllTags,
-                                  onTap: () {
-                                    _themeService.triggerHapticClick();
-                                    setSheetState(() => showAllTags = !showAllTags);
-                                  },
-                                  size: BrutalistToggleSize.regular,
-                                ),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
-                    const SizedBox(height: 20),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Builder(
+                                builder: (context) {
+                                  // Frequency count across all books
+                                  final tagCounts = <String, int>{};
+                                  for (final b in _books) {
+                                    for (final t in b.tagsList) {
+                                      tagCounts[t] = (tagCounts[t] ?? 0) + 1;
+                                    }
+                                  }
+                                  final sortedTags = tagCounts.keys.toList()
+                                    ..sort((a, b) => tagCounts[b]!.compareTo(tagCounts[a]!));
 
-                    Row(
-                      children: [
-                        Expanded(
-                          child: BrutalistButton(
-                            backgroundColor: details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white),
-                            textColor: inkColor,
-                            onPressed: () {
-                              _themeService.triggerHapticClick();
-                              setSheetState(() {
-                                _sortBy = 'updated_at';
-                                _sortAscending = false;
-                                _ratingFilter = 'All';
-                                _typeFilter = 'All';
-                                _selectedShelf = null;
-                                _selectedTags.clear();
-                              });
-                              setState(() {
-                                _sortBy = 'updated_at';
-                                _sortAscending = false;
-                                _ratingFilter = 'All';
-                                _typeFilter = 'All';
-                                _selectedShelf = null;
-                                _selectedTags.clear();
-                              });
-                            },
-                            child: const Text('RESET', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900)),
-                          ),
+                                  final primaryTags = sortedTags.take(5).toList();
+                                  final remainingTags = sortedTags.skip(5).toList();
+
+                                  return Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      ...primaryTags.map((tag) {
+                                        final isSelected = _selectedTags.contains(tag);
+                                        final matchingCount = _books
+                                            .where(_matchesNonStatusFilters)
+                                            .where((b) => b.tagsList.any((t) => t.toLowerCase() == tag.toLowerCase()))
+                                            .length;
+                                        return GestureDetector(
+                                          onTap: () {
+                                            _themeService.triggerHapticClick();
+                                            setSheetState(() {
+                                              if (isSelected) {
+                                                _selectedTags.remove(tag);
+                                              } else {
+                                                _selectedTags.add(tag);
+                                              }
+                                            });
+                                            setState(() {});
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: isSelected ? accentColor : (details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white)),
+                                              border: Border.all(color: borderColor, width: 1.5),
+                                            ),
+                                            child: Text(
+                                              '#${tag.toUpperCase()} ($matchingCount)',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w800,
+                                                color: isSelected ? Colors.white : inkColor,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }),
+                                      if (showAllTags)
+                                        ...remainingTags.map((tag) {
+                                          final isSelected = _selectedTags.contains(tag);
+                                          final matchingCount = _books
+                                              .where(_matchesNonStatusFilters)
+                                              .where((b) => b.tagsList.any((t) => t.toLowerCase() == tag.toLowerCase()))
+                                              .length;
+                                          return GestureDetector(
+                                            onTap: () {
+                                              _themeService.triggerHapticClick();
+                                              setSheetState(() {
+                                                if (isSelected) {
+                                                  _selectedTags.remove(tag);
+                                                } else {
+                                                  _selectedTags.add(tag);
+                                                }
+                                              });
+                                              setState(() {});
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                              decoration: BoxDecoration(
+                                                color: isSelected ? accentColor : (details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white)),
+                                                border: Border.all(color: borderColor, width: 1.5),
+                                              ),
+                                              child: Text(
+                                                '#${tag.toUpperCase()} ($matchingCount)',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: isSelected ? Colors.white : inkColor,
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        }),
+                                      if (remainingTags.isNotEmpty)
+                                        BrutalistExpandToggleChip(
+                                          isExpanded: showAllTags,
+                                          onTap: () {
+                                            _themeService.triggerHapticClick();
+                                            setSheetState(() => showAllTags = !showAllTags);
+                                          },
+                                          size: BrutalistToggleSize.regular,
+                                        ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ],
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          flex: 2,
-                          child: BrutalistButton(
-                            backgroundColor: accentColor,
-                            textColor: Colors.white,
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              setState(() {});
-                            },
-                            child: const Text('APPLY FILTERS', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
+                      ),
+                    ),
+
+                    // Sticky Bottom Action Bar (RESET & APPLY)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: details?.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg),
+                        border: Border(top: BorderSide(color: borderColor.withValues(alpha: 0.2), width: 1.5)),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: BrutalistButton(
+                              backgroundColor: details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                              textColor: inkColor,
+                              onPressed: () {
+                                _themeService.triggerHapticClick();
+                                setSheetState(() {
+                                  _sortBy = 'updated_at';
+                                  _sortAscending = false;
+                                  _ratingFilter = 'All';
+                                  _typeFilter = 'All';
+                                  _selectedShelf = null;
+                                  _selectedTags.clear();
+                                });
+                                setState(() {
+                                  _sortBy = 'updated_at';
+                                  _sortAscending = false;
+                                  _ratingFilter = 'All';
+                                  _typeFilter = 'All';
+                                  _selectedShelf = null;
+                                  _selectedTags.clear();
+                                });
+                              },
+                              child: const Text('RESET', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900)),
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          Expanded(
+                            flex: 2,
+                            child: BrutalistButton(
+                              backgroundColor: accentColor,
+                              textColor: Colors.white,
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                setState(() {});
+                              },
+                              child: const Text('APPLY FILTERS', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-            ),
-          );
-        },
-      );
-    },
-  );
-}
+            );
+          },
+        );
+      },
+    );
+  }
 
   Widget _buildSortChip(String label, String value, StateSetter setSheetState) {
     final isSelected = _sortBy == value;

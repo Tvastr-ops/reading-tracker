@@ -1,4 +1,5 @@
 import '../../models/book.dart';
+import '../../models/reading_journey.dart';
 
 enum SyncBackendType {
   supabase,
@@ -22,6 +23,16 @@ abstract class RemoteSyncProvider {
     return failed;
   }
   Future<bool> deleteBook(String id, {bool permanent = false});
+  Future<bool> pushReadingJourney(ReadingJourney journey);
+  Future<List<String>> pushReadingJourneys(List<ReadingJourney> journeys) async {
+    final failed = <String>[];
+    for (final j in journeys) {
+      final ok = await pushReadingJourney(j);
+      if (!ok) failed.add(j.id);
+    }
+    return failed;
+  }
+  Future<List<ReadingJourney>> fetchRemoteReadingJourneys({DateTime? since});
   Future<bool> pushReadingLog(ReadingLogEntry entry);
   Future<List<String>> pushReadingLogs(List<ReadingLogEntry> logs) async {
     final failed = <String>[];
