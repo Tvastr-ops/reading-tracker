@@ -5,7 +5,24 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
-## [2.4.0g] - 2026-08-27
+## [2.5.0] - 2026-08-27
+
+### Added
+- **Global REST API `/api/journeys` Endpoint**: Added server-side journey synchronization route allowing Generic REST clients to sync reading journeys, multi-read archives, and re-read timelines seamlessly.
+- **Dual-Trigger Timeline Feed & 500-Log Instant Startup**:
+  - Expanded initial query capacity from 100 to 500 logs ($< 2\text{ms}$ startup load time), rendering entire reading histories without initial pagination truncation.
+  - Added interactive footer badge `▼ LOAD OLDER READING LOGS` for manual deep history fetching alongside automatic scroll pagination.
+
+### Fixed
+- **Stats & Analytics Multi-Journey Resolution**:
+  - Fixed an issue where in-progress and plan-to-read books with journey records inflated completed book counts.
+  - Accurately partitioned monthly activity (July: 5 completed, August: 4 completed, 2016: 1 completed re-read) and lifetime archives (10 finished works total).
+- **Android SQLite LIMIT/OFFSET Driver Compatibility**:
+  - Replaced parameterized LIMIT binding with direct query interpolation in `getAllReadingLogsWithBookInfo` for universal Android compatibility.
+- **Clean Android Reinstalls**:
+  - Disabled Android Auto-Backup (`android:allowBackup="false"`) to prevent stale credentials and databases from persisting after uninstall/reinstall.
+
+---
 
 ### Fixed
 - **Timeline Full Historical Load Capacity (500 Logs Initial Query)**:

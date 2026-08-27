@@ -319,16 +319,22 @@ class _StatsScreenState extends State<StatsScreen> {
     final yearlyCounts = <int, int>{};
     int completedInSelectedYear = 0;
 
-    // Use reading journeys if available for full multi-year re-read accuracy, fallback to books
-    final completedJourneys = _allJourneys.where((j) => j.status == 'completed' || j.dateFinished != null).toList();
+    // Map reading journeys by book_id for historical re-read journey resolution
+    final journeysByBook = <String, List<ReadingJourney>>{};
+    for (final j in _allJourneys) {
+      journeysByBook.putIfAbsent(j.bookId, () => []).add(j);
+    }
 
-    if (completedJourneys.isNotEmpty) {
-      for (final j in completedJourneys) {
+    for (final b in _books) {
+      final isBookCompleted = b.status.toLowerCase() == BookStatus.completed.toLowerCase();
+
+      if (isBookCompleted) {
+        // Active book is currently Completed
         DateTime? dt;
-        if (j.dateFinished != null && j.dateFinished!.isNotEmpty) {
-          dt = DateTime.tryParse(j.dateFinished!);
+        if (b.dateFinished != null && b.dateFinished!.trim().isNotEmpty) {
+          dt = DateTime.tryParse(b.dateFinished!.trim());
         }
-        dt ??= DateTime.tryParse(j.updatedAt);
+        dt ??= DateTime.tryParse(b.updatedAt);
         if (dt != null) {
           if (isLifetime || dt.year == _selectedYear) {
             completedInSelectedYear++;
@@ -341,23 +347,30 @@ class _StatsScreenState extends State<StatsScreen> {
           }
         }
       }
-    } else {
-      for (final b in _books) {
-        if (b.status != BookStatus.completed) continue;
-        DateTime? dt;
-        if (b.dateFinished != null && b.dateFinished!.isNotEmpty) {
-          dt = DateTime.tryParse(b.dateFinished!);
-        }
-        dt ??= DateTime.tryParse(b.updatedAt);
-        if (dt != null) {
-          if (isLifetime || dt.year == _selectedYear) {
-            completedInSelectedYear++;
-            if (dt.month >= 1 && dt.month <= 12 && !isLifetime) {
-              monthlyCounts[dt.month - 1]++;
+
+      // Check for historical completed re-read journeys for this book (e.g. past reads)
+      final bookJourneys = journeysByBook[b.id];
+      if (bookJourneys != null && bookJourneys.isNotEmpty) {
+        // If the book is currently completed, its current journey is already counted above.
+        // We only count past/older completed journeys (e.g. Journey #1 when re-reading Journey #2).
+        for (final j in bookJourneys) {
+          final isPastCompletedJourney = j.status.toLowerCase() == 'completed' &&
+              (j.dateFinished != null && j.dateFinished!.trim().isNotEmpty) &&
+              (!isBookCompleted || j.journeyIndex < (b.rereadCount + 1));
+
+          if (isPastCompletedJourney) {
+            final dt = DateTime.tryParse(j.dateFinished!.trim());
+            if (dt != null) {
+              if (isLifetime || dt.year == _selectedYear) {
+                completedInSelectedYear++;
+                if (dt.month >= 1 && dt.month <= 12 && !isLifetime) {
+                  monthlyCounts[dt.month - 1]++;
+                }
+              }
+              if (dt.year >= 1947 && dt.year <= currentCalendarYear + 1) {
+                yearlyCounts[dt.year] = (yearlyCounts[dt.year] ?? 0) + 1;
+              }
             }
-          }
-          if (dt.year >= 1947 && dt.year <= currentCalendarYear + 1) {
-            yearlyCounts[dt.year] = (yearlyCounts[dt.year] ?? 0) + 1;
           }
         }
       }
@@ -1064,11 +1077,24 @@ class _StatsScreenState extends State<StatsScreen> {
                     }
                   }
 
-                  // Average days to finish a book across completed items with valid start/finish dates
+                  // Average days to finish a book across completed items and journeys with valid start/finish dates
                   double totalFinishDays = 0;
                   int booksWithDuration = 0;
                   for (final b in _books) {
-                    if (b.status == BookStatus.completed && b.dateStarted != null && b.dateFinished != null) {
+                    final bJourneys = journeysByBook[b.id];
+                    if (bJourneys != null && bJourneys.isNotEmpty) {
+                      for (final j in bJourneys.where((j) => j.status == 'completed' || j.dateFinished != null)) {
+                        if (j.dateStarted != null && j.dateFinished != null) {
+                          final s = DateTime.tryParse(j.dateStarted!);
+                          final f = DateTime.tryParse(j.dateFinished!);
+                          if (s != null && f != null && !f.isBefore(s)) {
+                            final diff = f.difference(s).inDays;
+                            totalFinishDays += (diff == 0 ? 1 : diff);
+                            booksWithDuration++;
+                          }
+                        }
+                      }
+                    } else if (b.status == BookStatus.completed && b.dateStarted != null && b.dateFinished != null) {
                       final s = DateTime.tryParse(b.dateStarted!);
                       final f = DateTime.tryParse(b.dateFinished!);
                       if (s != null && f != null && !f.isBefore(s)) {
