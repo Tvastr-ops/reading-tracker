@@ -41,7 +41,6 @@ Chronological reading cycles and multi-read history (Migration v13).
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
 | `id` | `uuid` | `PRIMARY KEY, DEFAULT gen_random_uuid()` | Journey entry UUID |
-| `user_id` | `uuid` | `REFERENCES auth.users(id) ON DELETE CASCADE`| Account owner |
 | `book_id` | `uuid` | `REFERENCES books(id) ON DELETE CASCADE`| Target book |
 | `journey_index` | `integer` | `NOT NULL, DEFAULT 1` | Read number (1 = original, 2 = re-read 1...) |
 | `status` | `text` | `NOT NULL, DEFAULT 'reading'` | `reading`, `completed`, `abandoned`, `on_hold` |
