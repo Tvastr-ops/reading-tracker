@@ -1031,7 +1031,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                           constraints: const BoxConstraints(maxWidth: 1060),
                           child: RefreshIndicator(
                             onRefresh: () async {
-                              await _syncManager.syncNow();
+                              await _syncManager.syncNow(forceFullReconciliation: true);
                               await _loadInitialLogs();
                             },
                             child: Padding(
@@ -1075,7 +1075,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
                     return RefreshIndicator(
                       onRefresh: () async {
-                        await _syncManager.syncNow();
+                        await _syncManager.syncNow(forceFullReconciliation: true);
                         await _loadInitialLogs();
                       },
                       child: _buildTimelineFeed(
