@@ -5,6 +5,16 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.4.0d] - 2026-08-27
+
+### Fixed
+- **Timeline Pagination Exhaustion & Deterministic Offset**:
+  - Replaced dynamic list-length offset calculation with monotonic `_dbOffset` tracking, preventing offset desynchronization across pagination pages.
+  - Added deterministic secondary ordering (`ORDER BY l.logged_at DESC, l.id DESC`) in SQLite queries to eliminate duplicate page overlaps.
+  - Removed premature termination when deduplicated page slices are processed, and added auto-fetch loop to ensure seamless infinite scrolling all the way back to your earliest historical entries.
+
+---
+
 ## [2.4.0c] - 2026-08-27
 
 ### Added & Improved

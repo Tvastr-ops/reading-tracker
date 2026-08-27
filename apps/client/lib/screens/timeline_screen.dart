@@ -86,6 +86,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
   final ScrollController _scrollController = ScrollController();
 
   static const int _pageSize = 50;
+  int _dbOffset = 0;
   List<Map<String, dynamic>> _rawLogs = [];
   List<_TimelineDayGroup> _dayGroups = [];
   bool _isLoading = true;
@@ -116,7 +117,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
   void _onScroll() {
     if (_scrollController.hasClients &&
-        _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
+        _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 300 &&
         !_isLoading &&
         !_isLoadingMore &&
         _hasMore) {
@@ -128,6 +129,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
     setState(() {
       _isLoading = true;
       _hasMore = true;
+      _dbOffset = 0;
     });
 
     try {
@@ -136,6 +138,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
       if (mounted) {
         setState(() {
           _rawLogs = logs;
+          _dbOffset = logs.length;
           _dayGroups = _processLogsIntoDayGroups(logs);
           _isLoading = false;
           _hasMore = logs.length >= _pageSize;
@@ -161,7 +164,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
     try {
       final nextLogs = await _dbHelper.getAllReadingLogsWithBookInfo(
         limit: _pageSize,
-        offset: _rawLogs.length,
+        offset: _dbOffset,
       );
 
       if (mounted) {
@@ -173,17 +176,27 @@ class _TimelineScreenState extends State<TimelineScreen> {
           return;
         }
 
+        _dbOffset += nextLogs.length;
+
         // Deduplicate logs by log_id to prevent duplicates from shifting offsets
         final existingIds = _rawLogs.map((l) => l['log_id']?.toString()).toSet();
         final uniqueNextLogs = nextLogs.where((l) => !existingIds.contains(l['log_id']?.toString())).toList();
 
+        final hasMoreLogs = nextLogs.length >= _pageSize;
+
         setState(() {
-          _rawLogs.addAll(uniqueNextLogs);
-          _dayGroups = _processLogsIntoDayGroups(_rawLogs);
+          if (uniqueNextLogs.isNotEmpty) {
+            _rawLogs.addAll(uniqueNextLogs);
+            _dayGroups = _processLogsIntoDayGroups(_rawLogs);
+          }
           _isLoadingMore = false;
-          // Stop pagination if fewer than _pageSize logs or no new unique logs were returned
-          _hasMore = nextLogs.length >= _pageSize && uniqueNextLogs.isNotEmpty;
+          _hasMore = hasMoreLogs;
         });
+
+        // If this page had only duplicate records but database still has more, auto-fetch next page
+        if (uniqueNextLogs.isEmpty && hasMoreLogs) {
+          _loadMoreLogs();
+        }
       }
     } catch (e, stack) {
       debugPrint('Error loading more logs in TimelineScreen: $e\n$stack');

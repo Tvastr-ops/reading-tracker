@@ -870,7 +870,7 @@ class DatabaseHelper {
         b.cover_url as book_cover_url
       FROM reading_log l
       LEFT JOIN books b ON l.book_id = b.id
-      ORDER BY l.logged_at DESC
+      ORDER BY l.logged_at DESC, l.id DESC
       LIMIT ? OFFSET ?
     ''', [limit, offset]);
   }
