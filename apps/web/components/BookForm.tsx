@@ -490,6 +490,83 @@ export default function BookForm({
                     </p>
                   </div>
 
+                  {/* Reading Dates & Simulation Card directly in General tab when Completed */}
+                  {form.status === 'Completed' && (
+                    <div className="col-span-full space-y-2.5 rounded-xl border border-border/80 bg-surface/40 p-3">
+                      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                        <div>
+                          <div className="mb-1 flex items-center justify-between">
+                            <label className={labelClass}>Date Started</label>
+                            <button
+                              type="button"
+                              onClick={() => set('date_started', getLocalDateString())}
+                              className="font-medium text-[10px] text-accent-color hover:underline"
+                            >
+                              Today
+                            </button>
+                          </div>
+                          <input
+                            className={inputClass}
+                            type="date"
+                            value={form.date_started || ''}
+                            onChange={(e) => set('date_started', e.target.value)}
+                          />
+                        </div>
+
+                        <div>
+                          <div className="mb-1 flex items-center justify-between">
+                            <label className={labelClass}>Date Finished</label>
+                            <button
+                              type="button"
+                              onClick={() => set('date_finished', getLocalDateString())}
+                              className="font-medium text-[10px] text-accent-color hover:underline"
+                            >
+                              Today
+                            </button>
+                          </div>
+                          <input
+                            className={inputClass}
+                            type="date"
+                            value={form.date_finished || ''}
+                            onChange={(e) => set('date_finished', e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Simulation Checkbox Option */}
+                      {!initial &&
+                        form.date_started &&
+                        form.date_finished &&
+                        (form.total_units || 0) > 0 && (
+                          <div
+                            className={`rounded-lg border p-2.5 transition-colors ${
+                              simulateDailyLogs
+                                ? 'border-accent-color bg-accent-color/10'
+                                : 'border-border bg-card-bg'
+                            }`}
+                          >
+                            <label className="flex cursor-pointer items-start gap-2">
+                              <input
+                                type="checkbox"
+                                className="mt-0.5 h-4 w-4 rounded border-border text-accent-color focus:ring-accent-color"
+                                checked={simulateDailyLogs}
+                                onChange={(e) => setSimulateDailyLogs(e.target.checked)}
+                              />
+                              <div>
+                                <span className="block font-bold text-xs text-text">
+                                  🎲 Simulate Realistic Daily Reading Logs
+                                </span>
+                                <span className="mt-0.5 block text-[10.5px] text-text-muted">
+                                  Generates natural non-uniform reading sessions between{' '}
+                                  {form.date_started} and {form.date_finished}
+                                </span>
+                              </div>
+                            </label>
+                          </div>
+                        )}
+                    </div>
+                  )}
+
                   {/* Inline Compact Tracking Settings Expander */}
                   <div className="col-span-full pt-1">
                     <button
@@ -927,6 +1004,9 @@ export default function BookForm({
                     bookId={initial.id}
                     currentProgress={form.progress ?? 0}
                     totalUnits={form.total_units ?? null}
+                    startDate={form.date_started}
+                    endDate={form.date_finished}
+                    status={form.status}
                     onProgressUpdated={(p) => set('progress', p)}
                   />
                 </TabsContent>
