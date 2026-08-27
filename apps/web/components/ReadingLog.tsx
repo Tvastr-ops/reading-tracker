@@ -110,6 +110,7 @@ export default function ReadingLog({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          id: crypto.randomUUID(),
           from_progress: log.from_progress,
           to_progress: log.to_progress,
           note: log.note || null,
