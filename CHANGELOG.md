@@ -5,6 +5,20 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.4.0a] - 2026-08-27
+
+### Added & Improved
+- **Child-Proof Log & Entry Deletion**:
+  - Added child-proof double-confirmation dialog for deleting individual reading log entries and clearing all historical logs across Flutter Client and Web App.
+- **Midday UTC Session Timestamping**:
+  - Shifted simulation time generator to midday UTC (12:00 – 14:00) so timezone offsets ($\text{UTC}-12$ to $\text{UTC}+14$) never shift simulation entries past midnight into adjacent calendar days.
+- **Robust Display Date Parsing**:
+  - Updated `formatDisplayDate` to support both raw calendar date strings (`YYYY-MM-DD`) and full ISO timestamps without localized date skew.
+- **Sync Timestamp Preservation**:
+  - Web backfill generator now preserves original client UUID and exact historical log timestamps on backfill.
+
+---
+
 ## [2.4.0] - 2026-08-27
 
 ### Added
