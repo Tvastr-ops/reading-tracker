@@ -287,6 +287,22 @@ class DatabaseHelper {
     return await db.insert('books', book.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
+  /// Atomically inserts a new book along with its initial reading journey and optional simulated reading logs.
+  Future<void> insertBookWithInitialJourneysAndLogs({
+    required Book book,
+    required ReadingJourney journey,
+    List<ReadingLogEntry> logs = const [],
+  }) async {
+    final db = await instance.database;
+    await db.transaction((txn) async {
+      await txn.insert('books', book.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+      await txn.insert('reading_journeys', journey.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+      for (final log in logs) {
+        await txn.insert('reading_log', log.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+    });
+  }
+
   Future<int> updateBook(Book book) async {
     final db = await instance.database;
     return await db.update(

@@ -7,11 +7,12 @@ import '../services/database_helper.dart';
 import '../services/open_library_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
+import '../utils/progression_logic.dart';
 import 'brutalist_widgets.dart';
 
 class BookEditDialog extends StatefulWidget {
   final Book? book;
-  final Function(Book) onSave;
+  final Function(Book, {List<ReadingLogEntry> simulatedLogs}) onSave;
   final Function(String)? onDelete;
 
   const BookEditDialog({
@@ -58,6 +59,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
   List<String> _shelves = [];
   List<String> _availableShelves = [];
   int _rereadCount = 0;
+  bool _simulateDailyLogs = false;
 
   @override
   void initState() {
@@ -266,7 +268,26 @@ class _BookEditDialogState extends State<BookEditDialog> {
       syncStatus: widget.book == null ? 'pending_create' : 'pending_update',
     );
 
-    widget.onSave(updatedBook);
+    List<ReadingLogEntry> simulatedLogs = [];
+    if (widget.book == null &&
+        _simulateDailyLogs &&
+        _status == BookStatus.completed &&
+        _dateStarted != null &&
+        _dateFinished != null &&
+        totalUnitsVal != null &&
+        totalUnitsVal > 0) {
+      final startDt = DateTime.tryParse(_dateStarted!) ?? DateTime.now();
+      final endDt = DateTime.tryParse(_dateFinished!) ?? DateTime.now();
+      simulatedLogs = simulateReadingHistoryLogs(
+        bookId: updatedBook.id,
+        journeyId: generateUuidV4(), // Assigned journey id
+        totalUnits: totalUnitsVal,
+        startDate: startDt,
+        endDate: endDt,
+      );
+    }
+
+    widget.onSave(updatedBook, simulatedLogs: simulatedLogs);
     Navigator.pop(context);
   }
 
@@ -892,6 +913,60 @@ class _BookEditDialogState extends State<BookEditDialog> {
                     ),
                   ],
                 ),
+
+                // Backlog Log Simulation Card (Only when adding completed book with both dates and units)
+                if (widget.book == null &&
+                    _status == BookStatus.completed &&
+                    _dateStarted != null &&
+                    _dateFinished != null &&
+                    (double.tryParse(_totalUnitsController.text) ?? 0.0) > 0) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _simulateDailyLogs
+                          ? AppColors.electricCobalt.withValues(alpha: 0.12)
+                          : (isDark ? AppColors.darkSurface : AppColors.paperSurface),
+                      border: Border.all(
+                        color: _simulateDailyLogs ? AppColors.electricCobalt : borderColor.withValues(alpha: 0.5),
+                        width: _simulateDailyLogs ? 1.5 : 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: _simulateDailyLogs,
+                          activeColor: AppColors.electricCobalt,
+                          onChanged: (val) => setState(() => _simulateDailyLogs = val ?? false),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '🎲 SIMULATE REALISTIC DAILY LOGS',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w900,
+                                  color: _simulateDailyLogs ? AppColors.electricCobalt : inkColor,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Generates natural non-uniform daily reading sessions between $_dateStarted and $_dateFinished',
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.6),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 18),
 
                 // Section 5: Genres & Tags

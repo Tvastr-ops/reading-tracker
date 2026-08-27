@@ -144,5 +144,37 @@ export const POST = withAuth(async (req: NextRequest) => {
   const { data, error } = await supabase.from('books').insert(clean).select().single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Create initial Journey #1 and insert simulated logs if provided
+  const isCompleted = data.status === 'Completed';
+  const isReading = data.status === 'Reading';
+
+  if (isCompleted || isReading || (Array.isArray(body.simulated_logs) && body.simulated_logs.length > 0)) {
+    const { data: journeyData } = await supabase
+      .from('reading_journeys')
+      .insert({
+        book_id: data.id,
+        journey_index: 1,
+        status: isCompleted ? 'completed' : 'reading',
+        date_started: data.date_started || data.created_at || new Date().toISOString(),
+        date_finished: isCompleted ? (data.date_finished || new Date().toISOString()) : null,
+        rating: isCompleted ? data.rating : null,
+      })
+      .select()
+      .single();
+
+    if (journeyData && Array.isArray(body.simulated_logs) && body.simulated_logs.length > 0) {
+      const logsToInsert = body.simulated_logs.map((log: any) => ({
+        book_id: data.id,
+        journey_id: journeyData.id,
+        from_progress: log.from_progress ?? 0,
+        to_progress: log.to_progress,
+        note: log.note || null,
+        logged_at: log.logged_at || new Date().toISOString(),
+      }));
+      await supabase.from('reading_log').insert(logsToInsert);
+    }
+  }
+
   return NextResponse.json({ book: data }, { status: 201 });
 });

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/book.dart';
+import '../models/reading_journey.dart';
 import '../services/database_helper.dart';
 import '../services/reading_mutation_service.dart';
 import '../services/sync/sync_manager.dart';
 import '../services/theme_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/formatters.dart';
 import '../widgets/book_card.dart';
 import '../widgets/book_cover_card.dart';
 import '../widgets/book_detail_panel.dart';
@@ -366,9 +368,37 @@ class LibraryScreenState extends State<LibraryScreen> {
       context: context,
       builder: (ctx) => BookEditDialog(
         book: book,
-        onSave: (savedBook) async {
+        onSave: (savedBook, {simulatedLogs = const []}) async {
           if (book == null) {
-            await _dbHelper.insertBook(savedBook);
+            final nowIso = DateTime.now().toUtc().toIso8601String();
+            final isCompleted = savedBook.status == BookStatus.completed;
+            final isReading = savedBook.status == BookStatus.reading;
+
+            // Generate Journey #1
+            final journeyId = simulatedLogs.isNotEmpty ? simulatedLogs.first.journeyId! : generateUuidV4();
+            final initialJourney = ReadingJourney(
+              id: journeyId,
+              bookId: savedBook.id,
+              journeyIndex: 1,
+              status: isCompleted ? 'completed' : 'reading',
+              dateStarted: savedBook.dateStarted ?? nowIso,
+              dateFinished: isCompleted ? (savedBook.dateFinished ?? nowIso) : null,
+              rating: isCompleted ? savedBook.rating : null,
+              createdAt: savedBook.createdAt,
+              updatedAt: savedBook.updatedAt,
+              syncStatus: 'pending_create',
+            );
+
+            if (isCompleted || isReading || simulatedLogs.isNotEmpty) {
+              await _dbHelper.insertBookWithInitialJourneysAndLogs(
+                book: savedBook,
+                journey: initialJourney,
+                logs: simulatedLogs,
+              );
+            } else {
+              await _dbHelper.insertBook(savedBook);
+            }
+
             // Ensure the newly added book is visible even if user was filtered to a specific status
             if (_selectedStatus != 'All' && _selectedStatus != savedBook.status) {
               setState(() {

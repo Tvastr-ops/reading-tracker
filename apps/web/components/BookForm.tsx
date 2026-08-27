@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import { getDefaultUnitType, normalizeStatusTransition } from '@/lib/progress';
+import { getDefaultUnitType, normalizeStatusTransition, simulateReadingHistoryLogs } from '@/lib/progress';
 import {
   type Book,
   type BookInput,
@@ -129,6 +129,7 @@ export default function BookForm({
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [simulateDailyLogs, setSimulateDailyLogs] = useState(false);
   const [coverResults, setCoverResults] = useState<
     { title: string; author: string | null; cover_url: string }[]
   >([]);
@@ -222,6 +223,21 @@ export default function BookForm({
     if (!payload.is_ongoing && payload.total_units == null && payload.latest_units != null) {
       // If ongoing is unchecked and total_units is null, copy latest_units to total_units
       payload.total_units = payload.latest_units;
+    }
+
+    if (
+      !initial &&
+      simulateDailyLogs &&
+      payload.status === 'Completed' &&
+      payload.date_started &&
+      payload.date_finished &&
+      (payload.total_units || 0) > 0
+    ) {
+      (payload as any).simulated_logs = simulateReadingHistoryLogs({
+        totalUnits: payload.total_units!,
+        startDate: payload.date_started,
+        endDate: payload.date_finished,
+      });
     }
 
     try {
@@ -864,6 +880,39 @@ export default function BookForm({
                       />
                     </div>
                   </div>
+
+                  {/* Backlog Log Simulation Card (Only when adding completed book with both dates and units) */}
+                  {!initial &&
+                    form.status === 'Completed' &&
+                    form.date_started &&
+                    form.date_finished &&
+                    (form.total_units || 0) > 0 && (
+                      <div
+                        className={`rounded-lg border p-3 transition-colors ${
+                          simulateDailyLogs
+                            ? 'border-accent-color bg-accent-color/10'
+                            : 'border-border bg-card-bg'
+                        }`}
+                      >
+                        <label className="flex cursor-pointer items-start gap-2.5">
+                          <input
+                            type="checkbox"
+                            className="mt-0.5 h-4 w-4 rounded border-border text-accent-color focus:ring-accent-color"
+                            checked={simulateDailyLogs}
+                            onChange={(e) => setSimulateDailyLogs(e.target.checked)}
+                          />
+                          <div>
+                            <span className="block font-bold text-xs text-text">
+                              🎲 Simulate Realistic Daily Reading Logs
+                            </span>
+                            <span className="mt-0.5 block text-[11px] text-text-muted">
+                              Generates natural, non-uniform daily reading sessions between{' '}
+                              {form.date_started} and {form.date_finished}
+                            </span>
+                          </div>
+                        </label>
+                      </div>
+                    )}
                 </div>
               </TabsContent>
 

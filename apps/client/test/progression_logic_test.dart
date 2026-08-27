@@ -138,5 +138,45 @@ void main() {
       expect(result.updatedBook.status, BookStatus.completed);
       expect(result.updatedBook.dateFinished, '2026-08-22');
     });
+
+    test('simulateReadingHistoryLogs generates organic multi-day logs correctly', () {
+      final logs = simulateReadingHistoryLogs(
+        bookId: 'stranger-1',
+        journeyId: 'journey-1',
+        totalUnits: 120,
+        startDate: DateTime(2023, 7, 3),
+        endDate: DateTime(2023, 7, 6),
+      );
+
+      expect(logs.length, 4);
+      expect(logs.first.fromProgress, 0.0);
+      expect(logs.last.toProgress, 120.0);
+      expect(logs.last.note, 'Completed book');
+
+      // Monotonic progression checks
+      for (int i = 0; i < logs.length; i++) {
+        expect(logs[i].bookId, 'stranger-1');
+        expect(logs[i].journeyId, 'journey-1');
+        expect(logs[i].toProgress, greaterThan(logs[i].fromProgress ?? -1));
+        if (i > 0) {
+          expect(logs[i].fromProgress, logs[i - 1].toProgress);
+        }
+      }
+    });
+
+    test('simulateReadingHistoryLogs handles single day completion cleanly', () {
+      final logs = simulateReadingHistoryLogs(
+        bookId: 'novella-1',
+        journeyId: 'journey-novella',
+        totalUnits: 65,
+        startDate: DateTime(2024, 1, 15),
+        endDate: DateTime(2024, 1, 15),
+      );
+
+      expect(logs.length, 1);
+      expect(logs.first.fromProgress, 0.0);
+      expect(logs.first.toProgress, 65.0);
+      expect(logs.first.note, 'Completed book');
+    });
   });
 }
