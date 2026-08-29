@@ -36,7 +36,6 @@ export function StreakHeatmap({ logs, selectedYear = 'lifetime' }: StreakHeatmap
     yearActiveDays,
     totalActiveDays,
     weeks,
-    monthMarkers,
     maxDailyUnits,
     subtitle,
   } = useMemo(() => {
@@ -155,6 +154,7 @@ export function StreakHeatmap({ logs, selectedYear = 'lifetime' }: StreakHeatmap
 
     const weeksList: {
       weekIndex: number;
+      monthLabel?: string;
       days: {
         date: Date;
         dateStr: string;
@@ -165,13 +165,14 @@ export function StreakHeatmap({ logs, selectedYear = 'lifetime' }: StreakHeatmap
       }[];
     }[] = [];
 
-    const monthMarkers: { weekIndex: number; label: string; month: number }[] = [];
     let maxUnits = 1;
     const curr = new Date(startDate);
     let lastMonth = -1;
+    let lastMonthWeek = -5;
 
     for (let w = 0; w < numWeeks; w++) {
       const days = [];
+      let weekMonthLabel: string | undefined;
 
       for (let d = 0; d < 7; d++) {
         const dateObj = new Date(curr);
@@ -184,16 +185,18 @@ export function StreakHeatmap({ logs, selectedYear = 'lifetime' }: StreakHeatmap
           maxUnits = act.units;
         }
 
-        // Track month start on first row (Sunday)
-        if (d === 0) {
-          const m = dateObj.getMonth();
-          if (m !== lastMonth && (!isOutsideYear || w === 0)) {
-            monthMarkers.push({
-              weekIndex: w,
-              label: dateObj.toLocaleDateString(undefined, { month: 'short' }),
-              month: m,
-            });
+        // Detect month transitions within valid year
+        const m = dateObj.getMonth();
+        if (!isOutsideYear) {
+          if (w === 0 && lastMonth === -1) {
+            // First week in year always starts with Jan (or first active month in rolling view)
+            weekMonthLabel = dateObj.toLocaleDateString(undefined, { month: 'short' });
             lastMonth = m;
+            lastMonthWeek = w;
+          } else if (m !== lastMonth && w - lastMonthWeek >= 2) {
+            weekMonthLabel = dateObj.toLocaleDateString(undefined, { month: 'short' });
+            lastMonth = m;
+            lastMonthWeek = w;
           }
         }
 
@@ -211,6 +214,7 @@ export function StreakHeatmap({ logs, selectedYear = 'lifetime' }: StreakHeatmap
 
       weeksList.push({
         weekIndex: w,
+        monthLabel: weekMonthLabel,
         days,
       });
     }
@@ -227,7 +231,6 @@ export function StreakHeatmap({ logs, selectedYear = 'lifetime' }: StreakHeatmap
       yearActiveDays,
       totalActiveDays,
       weeks: weeksList,
-      monthMarkers,
       maxDailyUnits: maxUnits,
       subtitle,
     };
@@ -239,7 +242,8 @@ export function StreakHeatmap({ logs, selectedYear = 'lifetime' }: StreakHeatmap
     isFuture: boolean,
     isOutsideYear: boolean,
   ): string {
-    if (isOutsideYear || isFuture) return 'bg-transparent border-transparent';
+    if (isOutsideYear) return 'bg-transparent border-transparent';
+    if (isFuture) return 'bg-surface/20 border border-border/20 dark:border-white/5';
     if (count === 0 || units === 0) return 'bg-surface/50 border-border/40';
 
     const ratio = units / maxDailyUnits;
@@ -318,23 +322,12 @@ export function StreakHeatmap({ logs, selectedYear = 'lifetime' }: StreakHeatmap
       <div ref={scrollContainerRef} className="pt-4 overflow-x-auto scroll-smooth">
         <TooltipProvider delayDuration={100}>
           <div className="min-w-[780px] sm:min-w-[840px]">
-            {/* Month Labels Strip */}
-            <div className="relative h-4 mb-1 pl-5">
-              {monthMarkers.map((m) => (
-                <div
-                  key={`${m.month}-${m.weekIndex}`}
-                  className="absolute font-mono text-[10px] font-bold text-text-muted select-none"
-                  style={{ left: `calc(1.25rem + ${m.weekIndex} * 15.5px)` }}
-                >
-                  {m.label}
-                </div>
-              ))}
-            </div>
-
-            {/* Matrix Grid */}
+            {/* Matrix Grid with Column-Anchored Month Labels */}
             <div className="flex">
               {/* Weekday labels */}
               <div className="flex flex-col justify-between pr-2 font-mono text-[9px] font-bold text-text-muted select-none">
+                {/* Spacer for month labels row */}
+                <span className="h-4 leading-4" />
                 {weekdayLabels.map((lbl, idx) => (
                   <span key={idx} className="h-3 sm:h-3.5 leading-3 sm:leading-3.5">
                     {idx % 2 === 1 ? lbl : ''}
@@ -346,6 +339,11 @@ export function StreakHeatmap({ logs, selectedYear = 'lifetime' }: StreakHeatmap
               <div className="flex gap-1">
                 {weeks.map((w) => (
                   <div key={w.weekIndex} className="flex flex-col gap-1">
+                    {/* Month Label locked directly to this column */}
+                    <div className="h-4 font-mono text-[10px] font-bold text-text-muted select-none overflow-visible whitespace-nowrap">
+                      {w.monthLabel || ''}
+                    </div>
+
                     {w.days.map((day) => (
                       <Tooltip key={day.dateStr}>
                         <TooltipTrigger asChild>
