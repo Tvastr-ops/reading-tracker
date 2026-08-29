@@ -26,10 +26,36 @@ export function ReadingPassport({
     const totalBooks = books.length;
     const allCompleted = books.filter((b) => b.status === 'Completed');
 
-    // Filter completed books for selected timeframe
+    // Filter completed books/works for selected timeframe (journey-aware)
+    const yearJourneyBookMap = new Map<string, { format: string; days: number | null }>();
+    if (!isLifetime) {
+      for (const j of journeys) {
+        if ((j.status === 'completed' || j.date_finished) && j.date_finished) {
+          const d = parseLocalDate(j.date_finished);
+          if (d && d.getFullYear() === targetYearNum) {
+            const b = books.find((x) => x.id === j.book_id);
+            let days: number | null = null;
+            if (j.date_started && j.date_finished) {
+              const s = parseLocalDate(j.date_started);
+              const f = parseLocalDate(j.date_finished);
+              if (s && f && f >= s) {
+                days = Math.max(1, Math.round((f.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)));
+              }
+            }
+            yearJourneyBookMap.set(j.book_id, {
+              format: b?.type || 'Novel',
+              days,
+            });
+          }
+        }
+      }
+    }
+
     const scopedCompleted = isLifetime
       ? allCompleted
-      : allCompleted.filter((b) => {
+      : books.filter((b) => {
+          if (yearJourneyBookMap.has(b.id)) return true;
+          if (b.status !== 'Completed') return false;
           const dt = b.date_finished ? parseLocalDate(b.date_finished) : null;
           if (dt) return dt.getFullYear() === targetYearNum;
           if (b.updated_at) return new Date(b.updated_at).getFullYear() === targetYearNum;
@@ -57,12 +83,16 @@ export function ReadingPassport({
     // 2. Re-reads
     let totalRereads = 0;
     if (isLifetime) {
-      totalRereads = books.reduce((sum, b) => sum + (Number(b.reread_count) || 0), 0);
+      const journeyRereads = journeys.filter((j) => (j.journey_index || 1) > 1).length;
+      const bookRereads = books.reduce((sum, b) => sum + (Number(b.reread_count) || 0), 0);
+      totalRereads = Math.max(journeyRereads, bookRereads);
     } else {
-      // Re-read journeys completed in this specific year
+      // Re-read journeys (journey_index > 1) completed in this specific year
       const yearJourneys = journeys.filter((j) => {
-        if (j.status !== 'completed' || !j.date_finished) return false;
-        const d = parseLocalDate(j.date_finished);
+        const isReread = (j.journey_index || 1) > 1;
+        if (!isReread) return false;
+        if (j.status !== 'completed' && !j.date_finished) return false;
+        const d = j.date_finished ? parseLocalDate(j.date_finished) : null;
         return d ? d.getFullYear() === targetYearNum : false;
       });
       totalRereads = yearJourneys.length;
@@ -72,19 +102,23 @@ export function ReadingPassport({
       : `Re-reads finished in ${selectedYear}`;
 
     // 3. Average time to finish
-    const completedWithDates = scopedCompleted.filter((b) => b.date_started && b.date_finished);
     let totalDays = 0;
-    for (const b of completedWithDates) {
-      const s = parseLocalDate(b.date_started!);
-      const f = parseLocalDate(b.date_finished!);
-      if (s && f && f >= s) {
-        const days = Math.max(1, Math.round((f.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)));
-        totalDays += days;
+    let daysCount = 0;
+    for (const b of scopedCompleted) {
+      const jData = yearJourneyBookMap.get(b.id);
+      if (jData?.days != null) {
+        totalDays += jData.days;
+        daysCount += 1;
+      } else if (b.date_started && b.date_finished) {
+        const s = parseLocalDate(b.date_started);
+        const f = parseLocalDate(b.date_finished);
+        if (s && f && f >= s) {
+          totalDays += Math.max(1, Math.round((f.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)));
+          daysCount += 1;
+        }
       }
     }
-    const avgDaysToFinish = completedWithDates.length
-      ? Math.round(totalDays / completedWithDates.length)
-      : null;
+    const avgDaysToFinish = daysCount > 0 ? Math.round(totalDays / daysCount) : null;
     const avgTimeSub = isLifetime
       ? 'Lifetime finish average'
       : `For works finished in ${selectedYear}`;
@@ -92,7 +126,7 @@ export function ReadingPassport({
     // 4. Most read format
     const formatCounts: Record<string, number> = {};
     for (const b of scopedCompleted) {
-      const fmt = b.type || 'Novel';
+      const fmt = yearJourneyBookMap.get(b.id)?.format || b.type || 'Novel';
       formatCounts[fmt] = (formatCounts[fmt] || 0) + 1;
     }
     const topFormat = Object.entries(formatCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';

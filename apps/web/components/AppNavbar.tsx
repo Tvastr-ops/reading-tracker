@@ -72,7 +72,7 @@ export const PALETTES: PaletteOption[] = [
 export function AppNavbar() {
   const pathname = usePathname();
   const { themeMode, themePalette, setThemePalette, setThemeMode } = useLibraryData();
-  const { onAddEntry, setIsCommandPaletteOpen } = useLibraryUI();
+  const { onAddEntry, setIsCommandPaletteOpen, modKey } = useLibraryUI();
 
   const activePalette = PALETTES.find((p) => p.id === themePalette) || PALETTES[0];
 
@@ -173,8 +173,8 @@ export function AppNavbar() {
         >
           <Search className="h-3.5 w-3.5" />
           <span>Search</span>
-          <kbd className="ml-1 inline-flex items-center rounded border border-border/80 bg-surface-container px-1 py-0.5 text-[10px] font-semibold text-text-muted">
-            ⌘K
+          <kbd className="ml-1 inline-flex items-center rounded border border-border/80 bg-surface-container px-1.5 py-0.5 font-mono text-[10px] font-bold text-text-muted">
+            {modKey || 'Ctrl+K'}
           </kbd>
         </Button>
 
