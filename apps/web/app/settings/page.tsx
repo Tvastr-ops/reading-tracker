@@ -6,14 +6,16 @@ import {
   Download,
   FileSpreadsheet,
   FileText,
+  LayoutGrid,
   LogOut,
   Moon,
   Sparkles,
   Sun,
+  Table,
   Upload,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PALETTES } from '@/components/AppNavbar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,6 +35,20 @@ export default function SettingsPage() {
     logout,
     books,
   } = useLibraryData();
+
+  const [defaultViewMode, setDefaultViewMode] = useState<'grid' | 'table'>('grid');
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem('viewMode');
+    if (saved === 'grid' || saved === 'table') {
+      setDefaultViewMode(saved);
+    }
+  }, []);
+
+  const handleSetDefaultViewMode = (mode: 'grid' | 'table') => {
+    setDefaultViewMode(mode);
+    window.localStorage.setItem('viewMode', mode);
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -54,7 +70,8 @@ export default function SettingsPage() {
             </h1>
           </div>
           <p className="font-hanken text-xs text-text-muted sm:text-sm">
-            Customize palettes, tactile textures, export backups, and manage your library data.
+            Customize palettes, tactile textures, default library layout, and manage your library
+            data.
           </p>
         </div>
 
@@ -82,7 +99,7 @@ export default function SettingsPage() {
             </CardTitle>
           </div>
           <CardDescription className="text-xs text-text-muted">
-            Choose your preferred colorway and light/dark mode.
+            Choose your preferred colorway, layout mode, and tactile paper texture.
           </CardDescription>
         </CardHeader>
 
@@ -113,6 +130,72 @@ export default function SettingsPage() {
                 <span>Dark Ink</span>
                 {themeMode === 'dark' && <Check className="ml-1 h-3.5 w-3.5" />}
               </Button>
+            </div>
+          </div>
+
+          {/* Default Library Layout Switcher */}
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-wider text-text-muted">
+              Default Library View
+            </label>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => handleSetDefaultViewMode('grid')}
+                className={`flex items-start gap-3 rounded-lg border-2 p-3.5 text-left transition-all ${
+                  defaultViewMode === 'grid'
+                    ? 'border-accent-bg bg-accent-bg/10 shadow-[2.5px_2.5px_0px_var(--border)]'
+                    : 'border-border bg-card-bg/60 hover:border-border-soft hover:bg-surface/50'
+                }`}
+              >
+                <LayoutGrid className="mt-0.5 h-5 w-5 text-accent-color shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="font-anton text-sm tracking-wide text-text">
+                      COVER GRID (DEFAULT)
+                    </span>
+                    {defaultViewMode === 'grid' && (
+                      <Badge
+                        variant="outline"
+                        className="border-border text-[10px] font-black uppercase"
+                      >
+                        Active
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-xs text-text-muted">
+                    Visual cover art and typographic cards with reading progress rings.
+                  </p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSetDefaultViewMode('table')}
+                className={`flex items-start gap-3 rounded-lg border-2 p-3.5 text-left transition-all ${
+                  defaultViewMode === 'table'
+                    ? 'border-accent-bg bg-accent-bg/10 shadow-[2.5px_2.5px_0px_var(--border)]'
+                    : 'border-border bg-card-bg/60 hover:border-border-soft hover:bg-surface/50'
+                }`}
+              >
+                <Table className="mt-0.5 h-5 w-5 text-accent-color shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="font-anton text-sm tracking-wide text-text">DENSE TABLE</span>
+                    {defaultViewMode === 'table' && (
+                      <Badge
+                        variant="outline"
+                        className="border-border text-[10px] font-black uppercase"
+                      >
+                        Active
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-xs text-text-muted">
+                    Compact spreadsheet tabular view with sortable columns and inline quick-chips.
+                  </p>
+                </div>
+              </button>
             </div>
           </div>
 

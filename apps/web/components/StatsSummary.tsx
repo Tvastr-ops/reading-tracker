@@ -336,23 +336,101 @@ export default function StatsSummary({
   const monthlyData = useMemo(() => {
     const counts = Array.from({ length: 12 }, () => 0);
     const targetYear = selectedYear === 'lifetime' ? thisYear : selectedYear;
+    const recordedBookMonths = new Set<string>();
 
+    // 1. From completed books
     books.forEach((b) => {
       if (b.status === 'Completed' && b.date_finished) {
         const d = parseLocalDate(b.date_finished);
         if (d && d.getFullYear() === targetYear) {
           counts[d.getMonth()] += 1;
+          recordedBookMonths.add(`${b.id}_${d.getMonth()}`);
         }
       }
     });
+
+    // 2. From completed reading journeys
+    journeys.forEach((j) => {
+      if ((j.status === 'completed' || j.date_finished) && j.date_finished) {
+        const d = parseLocalDate(j.date_finished);
+        if (d && d.getFullYear() === targetYear) {
+          const key = `${j.book_id}_${d.getMonth()}`;
+          if (!recordedBookMonths.has(key)) {
+            counts[d.getMonth()] += 1;
+            recordedBookMonths.add(key);
+          }
+        }
+      }
+    });
+
     return MONTH_LABELS.map((label, idx) => ({
       label,
       monthName: MONTH_NAMES[idx],
       count: counts[idx],
     }));
-  }, [books, selectedYear, thisYear]);
+  }, [books, journeys, selectedYear, thisYear]);
 
   const maxMonthCount = Math.max(1, ...monthlyData.map((m) => m.count));
+
+  // Yearly completions data for Lifetime view
+  const yearlyCompletionsData = useMemo(() => {
+    if (!isLifetime) return { entries: [], maxCount: 1, peakYear: 0, totalCompletions: 0 };
+    const countsMap = new Map<number, number>();
+    const recordedBookYears = new Set<string>();
+
+    // 1. From completed books
+    books.forEach((b) => {
+      if (b.status === 'Completed') {
+        const d = b.date_finished
+          ? parseLocalDate(b.date_finished)
+          : b.updated_at
+            ? new Date(b.updated_at)
+            : null;
+        if (d && !Number.isNaN(d.getTime())) {
+          const y = d.getFullYear();
+          countsMap.set(y, (countsMap.get(y) || 0) + 1);
+          recordedBookYears.add(`${b.id}_${y}`);
+        }
+      }
+    });
+
+    // 2. From completed reading journeys
+    journeys.forEach((j) => {
+      if ((j.status === 'completed' || j.date_finished) && j.date_finished) {
+        const d = parseLocalDate(j.date_finished);
+        if (d && !Number.isNaN(d.getTime())) {
+          const y = d.getFullYear();
+          const key = `${j.book_id}_${y}`;
+          if (!recordedBookYears.has(key)) {
+            countsMap.set(y, (countsMap.get(y) || 0) + 1);
+            recordedBookYears.add(key);
+          }
+        }
+      }
+    });
+
+    // Always include current year if active or existing
+    if (!countsMap.has(thisYear)) {
+      countsMap.set(thisYear, 0);
+    }
+
+    const entries = Array.from(countsMap.entries())
+      .filter(([y, count]) => count > 0 || y === thisYear)
+      .sort((a, b) => b[0] - a[0]);
+
+    const maxCount = Math.max(1, ...entries.map((e) => e[1]));
+    const peakYear = entries.reduce(
+      (best, cur) => (cur[1] > best.count ? { year: cur[0], count: cur[1] } : best),
+      { year: 0, count: 0 },
+    ).year;
+
+    return {
+      entries,
+      maxCount,
+      peakYear,
+      totalCompletions: entries.reduce((sum, e) => sum + e[1], 0),
+    };
+  }, [books, journeys, isLifetime, thisYear]);
 
   // Overall Status Breakdown counts
   const _totalCount = books.length;
@@ -382,143 +460,201 @@ export default function StatsSummary({
           >
             {availableYears.map((y) => (
               <option key={y} value={y} className="bg-card-bg text-text">
-                {y} ARCHIVE
+                {y === thisYear ? `${y} (CURRENT)` : `${y}`}
               </option>
             ))}
             <option value="lifetime" className="bg-card-bg text-text">
-              LIFETIME ARCHIVES
+              LIFETIME (ALL-TIME)
             </option>
           </select>
         </div>
       </div>
 
       {/* 1. VELOCITY CARDS DASHBOARD */}
-      <VelocityCards books={books} logs={logs} />
+      <VelocityCards books={books} logs={logs} journeys={journeys} selectedYear={selectedYear} />
 
-      {/* 2. MAIN ANNUAL GOAL & MONTHLY PACING CARD */}
+      {/* 2. MAIN ANNUAL GOAL (YEARLY) OR YEARLY COMPLETIONS BREAKDOWN (LIFETIME) */}
       <Card className="surface-t1 border-2 border-border p-4 sm:p-6 shadow-[3px_3px_0px_var(--border)]">
-        {/* Goal Metric Selector & Pace Badge */}
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b-2 border-border/30 pb-4">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-1.5">
-              <span className="font-anton text-base sm:text-lg tracking-wide text-text uppercase">
-                {isLifetime ? 'LIFETIME' : `${selectedYear}`} GOAL:
-              </span>
-            </div>
-
-            {/* Metric Chips */}
-            <div className="flex items-center gap-1 border-2 border-border bg-surface p-1 shadow-[2px_2px_0px_var(--border)]">
-              {(['books', 'pages', 'chapters', 'volumes'] as GoalMetric[]).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setSelectedMetric(m)}
-                  className={`px-2.5 py-1 font-mono text-[11px] font-bold uppercase transition-all ${
-                    selectedMetric === m
-                      ? 'bg-accent-color text-accent-text border border-border shadow-[1px_1px_0px_var(--border)]'
-                      : 'text-text-muted hover:text-text'
-                  }`}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Goal Pace Badge & Set Goal Button */}
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <div
-              className={`flex items-center gap-1.5 border-2 px-3 py-1 font-mono text-xs ${paceBadgeClass}`}
-            >
-              {paceIcon}
-              <span>{paceStatus}</span>
-            </div>
-
-            {!isLifetime && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={openGoalModal}
-                className="gap-1.5 font-mono text-xs font-bold shadow-[2px_2px_0px_var(--border)]"
-              >
-                <Edit2 className="h-3 w-3" />
-                <span>SET {selectedMetric.toUpperCase()} GOAL</span>
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Goal Gauge & Monthly Bar Chart Grid */}
-        <div className="pt-5 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-          {/* Left Column: Big Numbers & Gauge */}
-          <div className="lg:col-span-5 space-y-3">
-            <div className="flex items-baseline justify-between">
-              <div>
-                <span className="font-anton text-4xl sm:text-5xl text-text tracking-wide">
-                  {actualProgress.toLocaleString()}
-                </span>
-                <span className="ml-2 font-mono text-sm font-bold text-text-muted uppercase">
-                  / {targetGoal > 0 ? targetGoal.toLocaleString() : '—'} {selectedMetric}
-                </span>
+        {isLifetime ? (
+          <div>
+            {/* Header */}
+            <div className="flex items-center justify-between border-b-2 border-border/30 pb-4">
+              <div className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-accent-color" />
+                <h3 className="font-anton text-lg sm:text-xl tracking-wide text-text uppercase">
+                  YEARLY COMPLETIONS
+                </h3>
               </div>
-              <span className="font-mono text-base font-bold text-accent-color">
-                {targetGoal > 0 ? `${goalProgressPct}%` : ''}
-              </span>
+              <div className="border-2 border-border bg-accent-color px-3 py-1 text-accent-text font-mono text-xs font-bold shadow-[1.5px_1.5px_0px_var(--border)]">
+                {yearlyCompletionsData.totalCompletions} TOTAL FINISHED WORKS
+              </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="h-4 w-full bg-border/40 border-2 border-border overflow-hidden p-0.5">
-              <div
-                className="h-full bg-accent-color transition-all duration-700 shadow-sm"
-                style={{ width: `${goalProgressPct}%` }}
-              />
-            </div>
+            {/* List of active years */}
+            <div className="pt-5 space-y-3">
+              {yearlyCompletionsData.entries.map(([year, count]) => {
+                const isPeak = count > 0 && year === yearlyCompletionsData.peakYear;
+                const pct = Math.round((count / yearlyCompletionsData.maxCount) * 100);
 
-            <p className="font-mono text-xs text-text-muted">
-              {isGoalAchieved
-                ? `🎉 Target exceeded by ${(actualProgress - targetGoal).toLocaleString()} ${selectedMetric}!`
-                : targetGoal > 0
-                  ? `${(targetGoal - actualProgress).toLocaleString()} ${selectedMetric} remaining to achieve goal.`
-                  : 'No specific goal set for this period.'}
-            </p>
-          </div>
-
-          {/* Right Column: 12-Month Completion History */}
-          <div className="lg:col-span-7 space-y-2">
-            <div className="flex items-center justify-between font-mono text-xs font-bold text-text-muted">
-              <span>
-                {isLifetime ? `${thisYear} MONTHLY ACTIVITY` : `${selectedYear} MONTHLY BREAKDOWN`}
-              </span>
-              <span>
-                {actualProgress} {selectedMetric} TOTAL
-              </span>
-            </div>
-
-            <div className="h-28 flex items-end justify-between gap-1.5 pt-4 px-2 border-2 border-border bg-surface shadow-[2px_2px_0px_var(--border)]">
-              {monthlyData.map((m) => {
-                const heightPct = Math.round((m.count / maxMonthCount) * 100);
                 return (
-                  <div key={m.monthName} className="flex-1 flex flex-col items-center gap-1 group">
-                    <span className="font-mono text-[10px] font-bold text-text opacity-0 group-hover:opacity-100 transition-opacity">
-                      {m.count}
-                    </span>
-                    <div className="w-full bg-border/30 h-16 flex items-end overflow-hidden border border-border/40">
+                  <button
+                    key={year}
+                    type="button"
+                    onClick={() => setSelectedYear(year)}
+                    className="w-full text-left group p-3 border-2 border-border bg-surface shadow-[2px_2px_0px_var(--border)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0px_var(--border)] transition-all cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2.5">
+                        <span className="font-anton text-lg sm:text-xl text-text group-hover:text-accent-color transition-colors">
+                          {year}
+                        </span>
+                        {isPeak && (
+                          <span className="px-2 py-0.5 font-mono text-[10px] font-bold uppercase bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40">
+                            PEAK RECORD
+                          </span>
+                        )}
+                      </div>
+                      <span className="font-mono text-xs sm:text-sm font-bold text-text">
+                        {count} {count === 1 ? 'book' : 'books'}
+                      </span>
+                    </div>
+
+                    <div className="h-3 w-full border border-border bg-card-bg overflow-hidden p-0.5">
                       <div
-                        className={`w-full transition-all duration-500 ${
-                          m.count > 0 ? 'bg-accent-color' : 'bg-transparent'
-                        }`}
-                        style={{ height: `${heightPct}%` }}
+                        className="h-full bg-accent-color transition-all duration-500"
+                        style={{ width: `${Math.max(3, pct)}%` }}
                       />
                     </div>
-                    <span className="font-mono text-[10px] font-bold text-text-muted">
-                      {m.label}
-                    </span>
-                  </div>
+                  </button>
                 );
               })}
             </div>
           </div>
-        </div>
+        ) : (
+          <div>
+            {/* Goal Metric Selector & Pace Badge */}
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b-2 border-border/30 pb-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-anton text-base sm:text-lg tracking-wide text-text uppercase">
+                    {selectedYear} GOAL:
+                  </span>
+                </div>
+
+                {/* Metric Chips */}
+                <div className="flex items-center gap-1 border-2 border-border bg-surface p-1 shadow-[2px_2px_0px_var(--border)]">
+                  {(['books', 'pages', 'chapters', 'volumes'] as GoalMetric[]).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setSelectedMetric(m)}
+                      className={`px-2.5 py-1 font-mono text-[11px] font-bold uppercase transition-all ${
+                        selectedMetric === m
+                          ? 'bg-accent-color text-accent-text border border-border shadow-[1px_1px_0px_var(--border)]'
+                          : 'text-text-muted hover:text-text'
+                      }`}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Goal Pace Badge & Set Goal Button */}
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <div
+                  className={`flex items-center gap-1.5 border-2 px-3 py-1 font-mono text-xs ${paceBadgeClass}`}
+                >
+                  {paceIcon}
+                  <span>{paceStatus}</span>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={openGoalModal}
+                  className="gap-1.5 font-mono text-xs font-bold shadow-[2px_2px_0px_var(--border)]"
+                >
+                  <Edit2 className="h-3 w-3" />
+                  <span>SET {selectedMetric.toUpperCase()} GOAL</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Goal Gauge & Monthly Bar Chart Grid */}
+            <div className="pt-5 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+              {/* Left Column: Big Numbers & Gauge */}
+              <div className="lg:col-span-5 space-y-3">
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <span className="font-anton text-4xl sm:text-5xl text-text tracking-wide">
+                      {actualProgress.toLocaleString()}
+                    </span>
+                    <span className="ml-2 font-mono text-sm font-bold text-text-muted uppercase">
+                      / {targetGoal > 0 ? targetGoal.toLocaleString() : '—'} {selectedMetric}
+                    </span>
+                  </div>
+                  <span className="font-mono text-base font-bold text-accent-color">
+                    {targetGoal > 0 ? `${goalProgressPct}%` : ''}
+                  </span>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="h-4 w-full bg-border/40 border-2 border-border overflow-hidden p-0.5">
+                  <div
+                    className="h-full bg-accent-color transition-all duration-700 shadow-sm"
+                    style={{ width: `${goalProgressPct}%` }}
+                  />
+                </div>
+
+                <p className="font-mono text-xs text-text-muted">
+                  {isGoalAchieved
+                    ? `🎉 Target exceeded by ${(actualProgress - targetGoal).toLocaleString()} ${selectedMetric}!`
+                    : targetGoal > 0
+                      ? `${(targetGoal - actualProgress).toLocaleString()} ${selectedMetric} remaining to achieve goal.`
+                      : 'No specific goal set for this period.'}
+                </p>
+              </div>
+
+              {/* Right Column: 12-Month Completion History */}
+              <div className="lg:col-span-7 space-y-2">
+                <div className="flex items-center justify-between font-mono text-xs font-bold text-text-muted">
+                  <span>{selectedYear} MONTHLY BREAKDOWN</span>
+                  <span>
+                    {actualProgress} {selectedMetric} TOTAL
+                  </span>
+                </div>
+
+                <div className="h-28 flex items-end justify-between gap-1.5 pt-4 px-2 border-2 border-border bg-surface shadow-[2px_2px_0px_var(--border)]">
+                  {monthlyData.map((m) => {
+                    const heightPct = Math.round((m.count / maxMonthCount) * 100);
+                    return (
+                      <div
+                        key={m.monthName}
+                        className="flex-1 flex flex-col items-center gap-1 group"
+                      >
+                        <span className="font-mono text-[10px] font-bold text-text opacity-0 group-hover:opacity-100 transition-opacity">
+                          {m.count}
+                        </span>
+                        <div className="w-full bg-border/30 h-16 flex items-end overflow-hidden border border-border/40">
+                          <div
+                            className={`w-full transition-all duration-500 ${
+                              m.count > 0 ? 'bg-accent-color' : 'bg-transparent'
+                            }`}
+                            style={{ height: `${heightPct}%` }}
+                          />
+                        </div>
+                        <span className="font-mono text-[10px] font-bold text-text-muted">
+                          {m.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* 3. READING PASSPORT & MILESTONES */}
@@ -534,7 +670,7 @@ export default function StatsSummary({
       />
 
       {/* 4. GITHUB-STYLE STREAK & DAILY HEATMAP */}
-      <StreakHeatmap logs={logs} />
+      <StreakHeatmap logs={logs} selectedYear={selectedYear} />
 
       {/* 5. LIBRARY DISTRIBUTIONS (FORMATS, GENRES, RATINGS) */}
       <DistributionTabs books={books} />
