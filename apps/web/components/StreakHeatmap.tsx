@@ -10,13 +10,22 @@ interface StreakHeatmapProps {
   logs: ReadingLogEntry[];
 }
 
+function formatLocalDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export function StreakHeatmap({ logs }: StreakHeatmapProps) {
   const { currentStreak, longestStreak, totalActiveDays, weeks, maxDailyUnits } = useMemo(() => {
     const dailyActivity = new Map<string, { count: number; units: number }>();
 
     for (const log of logs) {
       if (!log.logged_at) continue;
-      const dateStr = log.logged_at.slice(0, 10);
+      const d = new Date(log.logged_at);
+      if (Number.isNaN(d.getTime())) continue;
+      const dateStr = formatLocalDate(d);
       const units = Math.max(0, (log.to_progress || 0) - (log.from_progress || 0));
       const curr = dailyActivity.get(dateStr) || { count: 0, units: 0 };
       dailyActivity.set(dateStr, {
@@ -27,7 +36,7 @@ export function StreakHeatmap({ logs }: StreakHeatmapProps) {
 
     const totalActiveDays = dailyActivity.size;
 
-    // Calculate streaks
+    // Calculate streaks matching Flutter DatabaseHelper
     let currentStreak = 0;
     let longestStreak = 0;
     let tempStreak = 0;
@@ -35,11 +44,10 @@ export function StreakHeatmap({ logs }: StreakHeatmapProps) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Check if read today or yesterday to continue current streak
+    const todayStr = formatLocalDate(today);
     const checkDate = new Date(today);
-    const todayStr = checkDate.toISOString().slice(0, 10);
     checkDate.setDate(checkDate.getDate() - 1);
-    const yesterdayStr = checkDate.toISOString().slice(0, 10);
+    const yesterdayStr = formatLocalDate(checkDate);
 
     const hasToday = dailyActivity.has(todayStr);
     const hasYesterday = dailyActivity.has(yesterdayStr);
@@ -47,7 +55,7 @@ export function StreakHeatmap({ logs }: StreakHeatmapProps) {
     if (hasToday || hasYesterday) {
       const iterDate = new Date(hasToday ? today : checkDate);
       while (true) {
-        const iterStr = iterDate.toISOString().slice(0, 10);
+        const iterStr = formatLocalDate(iterDate);
         if (dailyActivity.has(iterStr)) {
           currentStreak++;
           iterDate.setDate(iterDate.getDate() - 1);
@@ -62,7 +70,8 @@ export function StreakHeatmap({ logs }: StreakHeatmapProps) {
     let prevDate: Date | null = null;
 
     for (const dateStr of sortedDates) {
-      const d = new Date(dateStr);
+      const [y, m, day] = dateStr.split('-').map(Number);
+      const d = new Date(y, m - 1, day);
       d.setHours(0, 0, 0, 0);
 
       if (!prevDate) {
@@ -108,7 +117,7 @@ export function StreakHeatmap({ logs }: StreakHeatmapProps) {
 
       for (let d = 0; d < 7; d++) {
         const dateObj = new Date(curr);
-        const dateStr = dateObj.toISOString().slice(0, 10);
+        const dateStr = formatLocalDate(dateObj);
         const isFuture = dateObj > today;
         const act = dailyActivity.get(dateStr) || { count: 0, units: 0 };
 
