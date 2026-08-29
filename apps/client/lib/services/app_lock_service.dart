@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_windowmanager/flutter_windowmanager.dart';
+import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'secure_storage_service.dart';
@@ -100,15 +100,14 @@ class AppLockService extends ChangeNotifier {
     notifyListeners();
   }
 
+  static const MethodChannel _securityChannel =
+      MethodChannel('com.readingtracker.mobile/window_security');
+
   Future<void> _applyPrivacyScreen(bool enable) async {
     if (kIsWeb) return;
     if (Platform.isAndroid) {
       try {
-        if (enable) {
-          await FlutterWindowManager.addFlags(FlutterWindowManager.FLAG_SECURE);
-        } else {
-          await FlutterWindowManager.clearFlags(FlutterWindowManager.FLAG_SECURE);
-        }
+        await _securityChannel.invokeMethod('setSecure', {'enable': enable});
       } catch (e) {
         debugPrint('AppLockService privacy screen error: $e');
       }
@@ -184,10 +183,7 @@ class AppLockService extends ChangeNotifier {
     try {
       final authenticated = await _localAuth.authenticate(
         localizedReason: 'Authenticate to unlock Paperback Reader',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: false,
-        ),
+        persistAcrossBackgrounding: true,
       );
 
       if (authenticated) {

@@ -288,11 +288,26 @@ class SyncManager extends ChangeNotifier {
         await _dbHelper.recalculatePaceForBooks(affectedBookIds);
       }
 
-      final remoteGoal = await _activeProvider!.fetchYearlyGoal();
-      if (remoteGoal != null && remoteGoal != _yearlyGoal) {
-        _yearlyGoal = remoteGoal;
+      final remoteGoals = await _activeProvider!.fetchGoals();
+      if (remoteGoals != null && remoteGoals.isNotEmpty) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setInt('yearly_goal', _yearlyGoal);
+        for (final entry in remoteGoals.entries) {
+          final key = 'yearly_goal_${entry.key}';
+          _sharedPreferencesCache[key] = entry.value;
+          await prefs.setInt(key, entry.value);
+        }
+        final currentYearBookGoal = remoteGoals['${DateTime.now().year}_books'];
+        if (currentYearBookGoal != null) {
+          _yearlyGoal = currentYearBookGoal;
+          await prefs.setInt('yearly_goal', _yearlyGoal);
+        }
+      } else {
+        final remoteGoal = await _activeProvider!.fetchYearlyGoal();
+        if (remoteGoal != null && remoteGoal != _yearlyGoal) {
+          _yearlyGoal = remoteGoal;
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt('yearly_goal', _yearlyGoal);
+        }
       }
 
       _lastSyncedAt = DateTime.now();
@@ -357,9 +372,10 @@ class SyncManager extends ChangeNotifier {
     if (metric == 'books' && year == DateTime.now().year) {
       _yearlyGoal = target;
       await prefs.setInt('yearly_goal', target);
-      if (!_offlineMode && _activeProvider != null) {
-        await _activeProvider!.pushYearlyGoal(target);
-      }
+    }
+
+    if (!_offlineMode && _activeProvider != null) {
+      await _activeProvider!.pushGoalTarget(year: year, metric: metric, target: target);
     }
 
     notifyListeners();

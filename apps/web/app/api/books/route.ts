@@ -220,18 +220,31 @@ export const POST = withAuth(async (req: NextRequest) => {
     isReading ||
     (Array.isArray(body.simulated_logs) && body.simulated_logs.length > 0)
   ) {
-    const { data: journeyData } = await supabase
+    // Check if a Journey #1 already exists for this book before inserting
+    const { data: existingJourneys } = await supabase
       .from('reading_journeys')
-      .insert({
-        book_id: data.id,
-        journey_index: 1,
-        status: isCompleted ? 'completed' : 'reading',
-        date_started: data.date_started || data.created_at || new Date().toISOString(),
-        date_finished: isCompleted ? data.date_finished || new Date().toISOString() : null,
-        rating: isCompleted ? data.rating : null,
-      })
-      .select()
-      .single();
+      .select('*')
+      .eq('book_id', data.id)
+      .eq('journey_index', 1)
+      .limit(1);
+
+    let journeyData = existingJourneys && existingJourneys.length > 0 ? existingJourneys[0] : null;
+
+    if (!journeyData) {
+      const { data: createdJourney } = await supabase
+        .from('reading_journeys')
+        .insert({
+          book_id: data.id,
+          journey_index: 1,
+          status: isCompleted ? 'completed' : 'reading',
+          date_started: data.date_started || data.created_at || new Date().toISOString(),
+          date_finished: isCompleted ? data.date_finished || new Date().toISOString() : null,
+          rating: isCompleted ? data.rating : null,
+        })
+        .select()
+        .single();
+      journeyData = createdJourney;
+    }
 
     if (journeyData && Array.isArray(body.simulated_logs) && body.simulated_logs.length > 0) {
       const logsToInsert = body.simulated_logs.map((log: any) => ({

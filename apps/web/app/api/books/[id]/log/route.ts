@@ -35,8 +35,7 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
       { status: 400 },
     );
   }
-  const note = typeof body?.note === 'string' ? body.note.slice(0, 500) : null;
-  const journeyId =
+  let journeyId =
     typeof body?.journey_id === 'string' && UUID_RE.test(body.journey_id) ? body.journey_id : null;
   const clientLogId = typeof body?.id === 'string' && UUID_RE.test(body.id) ? body.id : null;
   const fromProgress = Number.isFinite(Number(body?.from_progress))
@@ -47,9 +46,24 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
       ? body.logged_at
       : new Date().toISOString();
 
+  const supabase = supabaseServer();
+
+  if (!journeyId) {
+    const { data: latestJourneys } = await supabase
+      .from('reading_journeys')
+      .select('id')
+      .eq('book_id', id)
+      .order('journey_index', { ascending: false })
+      .order('updated_at', { ascending: false })
+      .limit(1);
+
+    if (latestJourneys && latestJourneys.length > 0) {
+      journeyId = latestJourneys[0].id;
+    }
+  }
+
   // If client provided a deterministic UUID (from offline sync or mobile client), upsert directly
   if (clientLogId) {
-    const supabase = supabaseServer();
     const { data: logEntry, error: logError } = await supabase
       .from('reading_log')
       .upsert(
@@ -100,7 +114,6 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
     );
   }
 
-  const supabase = supabaseServer();
   let entry = null;
   if (result.data.entryId) {
     const { data: logEntry } = await supabase

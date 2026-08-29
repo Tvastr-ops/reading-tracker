@@ -757,9 +757,17 @@ class DatabaseHelper {
       'reading_journeys',
       where: 'book_id = ?',
       whereArgs: [bookId],
-      orderBy: 'journey_index DESC, created_at DESC',
+      orderBy: 'journey_index DESC, updated_at DESC',
     );
-    return result.map((json) => ReadingJourney.fromMap(json)).toList();
+    final all = result.map((json) => ReadingJourney.fromMap(json)).toList();
+    final deduped = <ReadingJourney>[];
+    final seen = <int>{};
+    for (final j in all) {
+      if (seen.add(j.journeyIndex)) {
+        deduped.add(j);
+      }
+    }
+    return deduped;
   }
 
   Future<ReadingJourney?> getActiveJourney(String bookId) async {

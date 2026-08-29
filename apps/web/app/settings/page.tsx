@@ -10,7 +10,6 @@ import {
   Moon,
   Sparkles,
   Sun,
-  Trash2,
   Upload,
 } from 'lucide-react';
 import Link from 'next/link';

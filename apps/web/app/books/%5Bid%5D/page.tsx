@@ -1,30 +1,15 @@
 'use client';
 
-import {
-  ArrowLeft,
-  BookOpen,
-  Calendar,
-  Check,
-  Clock,
-  Edit3,
-  ExternalLink,
-  Flame,
-  Heart,
-  RotateCcw,
-  Sparkles,
-  Star,
-  Trash2,
-} from 'lucide-react';
+import { ArrowLeft, BookOpen, Edit3, ExternalLink, Heart, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import CoverImage from '@/components/CoverImage';
 import { InteractiveStarRating } from '@/components/RatingInput';
 import ReadingLog from '@/components/ReadingLog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import {
   Select,
@@ -58,7 +43,7 @@ export default function BookDetailPage() {
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingProgress, setSavingProgress] = useState(false);
-  const [journeys, setJourneys] = useState<ReadingJourney[]>([]);
+  const [_journeys, setJourneys] = useState<ReadingJourney[]>([]);
 
   // Find book from cached library or fetch if opened directly
   useEffect(() => {
@@ -122,9 +107,9 @@ export default function BookDetailPage() {
 
   const pct = calculateProgressPercentage(book);
   const formattedProgress = getStatusAwareProgressText(book);
-  const statusCfg = getStatusConfig(book.status);
+  const _statusCfg = getStatusConfig(book.status);
   const durationText = calculateReadingDuration(book.date_started, book.date_finished);
-  const unitType = book.unit_type || 'pages';
+  const _unitType = book.unit_type || 'pages';
 
   const handleQuickIncrement = async (delta: number) => {
     if (!book) return;

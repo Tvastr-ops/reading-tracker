@@ -123,8 +123,37 @@ export default function ReadingLog({
     return paceText;
   }
 
+  // Deduplicate journeys by journey_index (taking latest or one with logs) to prevent duplicate ghost initial reads
+  const dedupedJourneys = useMemo(() => {
+    if (!journeys.length) return [];
+    const journeyEntryCounts = new Map<string, number>();
+    for (const e of entries) {
+      if (e.journey_id) {
+        journeyEntryCounts.set(e.journey_id, (journeyEntryCounts.get(e.journey_id) || 0) + 1);
+      }
+    }
+
+    // Sort by journey_index desc, then entries count desc, then updated_at desc
+    const sorted = [...journeys].sort((a, b) => {
+      if (b.journey_index !== a.journey_index) return b.journey_index - a.journey_index;
+      const countA = journeyEntryCounts.get(a.id) || 0;
+      const countB = journeyEntryCounts.get(b.id) || 0;
+      if (countB !== countA) return countB - countA;
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    });
+
+    const indexMap = new Map<number, ReadingJourney>();
+    for (const j of sorted) {
+      if (!indexMap.has(j.journey_index)) {
+        indexMap.set(j.journey_index, j);
+      }
+    }
+
+    return Array.from(indexMap.values()).sort((a, b) => b.journey_index - a.journey_index);
+  }, [journeys, entries]);
+
   // Active Journey Detection & Journey-Aware Grouping
-  const activeJourney = journeys.find((j) => j.status === 'reading') || journeys[0];
+  const activeJourney = dedupedJourneys.find((j) => j.status === 'reading') || dedupedJourneys[0];
   const activeJourneyId = activeJourney?.id;
 
   // Logs for the active journey specifically for main header pace calculation
@@ -154,6 +183,7 @@ export default function ReadingLog({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: crypto.randomUUID(),
+          journey_id: activeJourneyId,
           from_progress: log.from_progress,
           to_progress: log.to_progress,
           note: log.note || null,
@@ -177,8 +207,8 @@ export default function ReadingLog({
   const inputClass =
     'h-9 px-3 py-1.5 text-sm border border-border rounded-lg bg-card-bg text-text focus:outline-none focus:ring-2 focus:ring-accent-color transition-all';
 
-  // Group logs into journeys if multiple journeys exist
-  const hasMultipleJourneys = journeys.length > 1;
+  // Group logs into journeys if multiple distinct journeys exist
+  const hasMultipleJourneys = dedupedJourneys.length > 1;
 
   function renderLogEntryRow(e: ReadingLogEntry) {
     return (
@@ -324,12 +354,15 @@ export default function ReadingLog({
 
           {hasMultipleJourneys ? (
             <div className="space-y-2.5">
-              {journeys.map((j) => {
-                const isCurrentActive = j.status === 'reading' || j.id === activeJourneyId;
+              {dedupedJourneys.map((j) => {
+                const isCurrentActive = j.status === 'reading' && status === 'Reading';
                 const journeyEntries = entries.filter(
-                  (e) => e.journey_id === j.id || (!e.journey_id && isCurrentActive),
+                  (e) =>
+                    e.journey_id === j.id ||
+                    (!e.journey_id && (j.id === activeJourneyId || dedupedJourneys.length === 1)),
                 );
-                const isExpanded = expandedJourneys[j.id] ?? isCurrentActive;
+                const isExpanded =
+                  expandedJourneys[j.id] ?? (isCurrentActive || j.id === activeJourneyId);
                 const startDateStr = j.date_started
                   ? new Date(j.date_started).toLocaleDateString(undefined, {
                       month: 'short',

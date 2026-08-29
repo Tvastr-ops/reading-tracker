@@ -4,7 +4,6 @@ import {
   BarChart3,
   BookOpen,
   Check,
-  Command,
   History,
   Moon,
   Plus,
@@ -18,7 +17,6 @@ import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
