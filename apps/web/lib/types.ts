@@ -111,3 +111,12 @@ export interface ReadingLogEntry {
 }
 
 export type ReadingLog = ReadingLogEntry;
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}

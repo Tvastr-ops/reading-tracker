@@ -118,6 +118,8 @@ const THEME_INIT_SCRIPT = `
 })();
 `;
 
+import { AppShell } from '@/components/AppShell';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
@@ -129,7 +131,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="bg-bg font-sans text-text antialiased transition-colors duration-200">
-        <main>{children}</main>
+        <AppShell>
+          <main>{children}</main>
+        </AppShell>
         <Toaster position="bottom-right" richColors closeButton />
         <SpeedInsights />
       </body>

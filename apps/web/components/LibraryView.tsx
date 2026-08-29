@@ -4,6 +4,7 @@ import BookGrid from '@/components/BookGrid';
 import BookInspectorDrawer from '@/components/BookInspectorDrawer';
 import BookTable from '@/components/BookTable';
 import EmptyState from '@/components/EmptyState';
+import { PaginationControls } from '@/components/PaginationControls';
 import { useLibraryData } from '@/contexts/LibraryDataContext';
 import { useLibraryFiltersContext } from '@/contexts/LibraryFiltersContext';
 import { useLibraryUI } from '@/contexts/LibraryUIContext';
@@ -23,6 +24,12 @@ export function LibraryView() {
 
   const {
     filteredBooks,
+    paginatedBooks,
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
     viewMode,
     ratingMode,
     sortField,
@@ -68,44 +75,64 @@ export function LibraryView() {
             onAddEntry={onAddEntry}
           />
         ) : viewMode === 'grid' ? (
-          <BookGrid
-            books={filteredBooks}
-            ratingMode={ratingMode}
-            hasAnyBooks={books.length > 0}
-            selectMode={selectMode}
-            selected={selected}
-            onToggleSelect={toggleSelect}
-            trashMode={showTrash}
-            focusedId={focusedId}
-            onEdit={(b) => setInspectedBook(b)}
-            onFullEdit={(b) => setEditing(b)}
-            onDelete={deleteBook}
-            onRestore={restoreBook}
-            onPermanentDelete={permanentlyDeleteBook}
-            onToggleFavorite={handleToggleFavorite}
-          />
+          <>
+            <BookGrid
+              books={paginatedBooks}
+              ratingMode={ratingMode}
+              hasAnyBooks={books.length > 0}
+              selectMode={selectMode}
+              selected={selected}
+              onToggleSelect={toggleSelect}
+              trashMode={showTrash}
+              focusedId={focusedId}
+              onEdit={(b) => setInspectedBook(b)}
+              onFullEdit={(b) => setEditing(b)}
+              onDelete={deleteBook}
+              onRestore={restoreBook}
+              onPermanentDelete={permanentlyDeleteBook}
+              onToggleFavorite={handleToggleFavorite}
+            />
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredBooks.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
+          </>
         ) : (
-          <BookTable
-            books={filteredBooks}
-            ratingMode={ratingMode}
-            sortField={sortField}
-            sortDir={sortDir}
-            onSort={handleSort}
-            trashMode={showTrash}
-            hasAnyBooks={books.length > 0}
-            selectMode={selectMode}
-            selected={selected}
-            onToggleSelect={toggleSelect}
-            onToggleSelectAll={() => toggleSelectAll(filteredBooks)}
-            focusedId={focusedId}
-            onEdit={(b) => setInspectedBook(b)}
-            onFullEdit={(b) => setEditing(b)}
-            onDelete={deleteBook}
-            onRestore={restoreBook}
-            onPermanentDelete={permanentlyDeleteBook}
-            onQuickStatus={quickStatusChange}
-            onToggleFavorite={handleToggleFavorite}
-          />
+          <>
+            <BookTable
+              books={paginatedBooks}
+              ratingMode={ratingMode}
+              sortField={sortField}
+              sortDir={sortDir}
+              onSort={handleSort}
+              trashMode={showTrash}
+              hasAnyBooks={books.length > 0}
+              selectMode={selectMode}
+              selected={selected}
+              onToggleSelect={toggleSelect}
+              onToggleSelectAll={() => toggleSelectAll(filteredBooks)}
+              focusedId={focusedId}
+              onEdit={(b) => setInspectedBook(b)}
+              onFullEdit={(b) => setEditing(b)}
+              onDelete={deleteBook}
+              onRestore={restoreBook}
+              onPermanentDelete={permanentlyDeleteBook}
+              onQuickStatus={quickStatusChange}
+              onToggleFavorite={handleToggleFavorite}
+            />
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredBooks.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
+          </>
         )}
       </div>
 

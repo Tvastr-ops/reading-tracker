@@ -1,0 +1,77 @@
+'use client';
+
+import { BarChart3, ChevronLeft } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import StatsSummary from '@/components/StatsSummary';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { useLibraryData } from '@/contexts/LibraryDataContext';
+import { useLibraryFiltersContext } from '@/contexts/LibraryFiltersContext';
+import type { Book } from '@/lib/types';
+
+export default function AnalyticsPage() {
+  const { books, loading } = useLibraryData();
+  const { setStatusFilter } = useLibraryFiltersContext();
+  const router = useRouter();
+
+  const handleStatusSelect = (status: string) => {
+    setStatusFilter(status as Book['status'] | 'All');
+    router.push('/');
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-4 py-8">
+        <div className="h-8 w-64 animate-pulse rounded bg-surface/60" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-32 animate-pulse rounded-lg bg-surface/60" />
+          ))}
+        </div>
+        <div className="h-64 animate-pulse rounded-lg bg-surface/60" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Analytics Page Title Bar */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/"
+              className="text-text-muted transition-colors hover:text-text md:hidden"
+              aria-label="Back to Library"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+            <h1 className="font-anton text-2xl tracking-wider text-text sm:text-3xl">
+              READING ANALYTICS
+            </h1>
+          </div>
+          <p className="font-hanken text-xs text-text-muted sm:text-sm">
+            Yearly goals, monthly pacing charts, format breakdowns, and reading velocity.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Link href="/">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs font-bold shadow-[1.5px_1.5px_0px_var(--border)]"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              <span>Back to Library</span>
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      {/* Main Stats Summary */}
+      <StatsSummary books={books} onStatusSelect={handleStatusSelect} />
+    </div>
+  );
+}

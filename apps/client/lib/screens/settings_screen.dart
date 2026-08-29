@@ -3,7 +3,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../services/app_lock_service.dart';
 import '../services/backup_service.dart';
+import '../services/secure_storage_service.dart';
 import '../services/sync/generic_rest_sync_provider.dart';
 import '../services/sync/supabase_sync_provider.dart';
 import '../services/sync/sync_manager.dart';
@@ -32,6 +34,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final SyncManager _syncManager = SyncManager.instance;
   final ThemeService _themeService = ThemeService.instance;
   final UpdateService _updateService = UpdateService.instance;
+  final AppLockService _appLockService = AppLockService.instance;
 
   late TextEditingController _urlController;
   late TextEditingController _apiKeyController;
@@ -52,6 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   static const String _keyPrefDisplay = 'settings_expanded_display';
   static const String _keyPrefLibraryNav = 'settings_expanded_library_nav';
   static const String _keyPrefNetwork = 'settings_expanded_network';
+  static const String _keyPrefSecurity = 'settings_expanded_security';
   static const String _keyPrefData = 'settings_expanded_data';
   static const String _keyPrefAbout = 'settings_expanded_about';
 
@@ -59,6 +63,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isDisplayExpanded = true;
   bool _isLibraryNavExpanded = true;
   bool _isNetworkExpanded = true;
+  bool _isSecurityExpanded = true;
   bool _isDataExpanded = true;
   bool _isAboutExpanded = false;
 
@@ -73,6 +78,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     _syncManager.addListener(_onSyncUpdate);
     _themeService.addListener(_onThemeUpdate);
+    _appLockService.addListener(_onAppLockUpdate);
     _loadSectionPreferences();
 
     _updateService.getCurrentAppVersion().then((v) {
@@ -86,9 +92,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void dispose() {
     _syncManager.removeListener(_onSyncUpdate);
     _themeService.removeListener(_onThemeUpdate);
+    _appLockService.removeListener(_onAppLockUpdate);
     _urlController.dispose();
     _apiKeyController.dispose();
     super.dispose();
+  }
+
+  void _onAppLockUpdate() {
+    if (mounted) setState(() {});
   }
 
   void _onThemeUpdate() {
@@ -103,6 +114,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _isDisplayExpanded = prefs.getBool(_keyPrefDisplay) ?? true;
       _isLibraryNavExpanded = prefs.getBool(_keyPrefLibraryNav) ?? true;
       _isNetworkExpanded = prefs.getBool(_keyPrefNetwork) ?? true;
+      _isSecurityExpanded = prefs.getBool(_keyPrefSecurity) ?? true;
       _isDataExpanded = prefs.getBool(_keyPrefData) ?? true;
       _isAboutExpanded = prefs.getBool(_keyPrefAbout) ?? false;
     });
@@ -123,6 +135,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _isDisplayExpanded = expand;
       _isLibraryNavExpanded = expand;
       _isNetworkExpanded = expand;
+      _isSecurityExpanded = expand;
       _isDataExpanded = expand;
       _isAboutExpanded = expand;
     });
@@ -131,6 +144,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setBool(_keyPrefDisplay, expand);
     await prefs.setBool(_keyPrefLibraryNav, expand);
     await prefs.setBool(_keyPrefNetwork, expand);
+    await prefs.setBool(_keyPrefSecurity, expand);
     await prefs.setBool(_keyPrefData, expand);
     await prefs.setBool(_keyPrefAbout, expand);
   }
@@ -275,6 +289,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _isDisplayExpanded &&
         _isLibraryNavExpanded &&
         _isNetworkExpanded &&
+        _isSecurityExpanded &&
         _isDataExpanded &&
         _isAboutExpanded;
 
@@ -361,6 +376,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildNetworkPreferences(isDark),
           const SizedBox(height: 10),
           _buildBackendConfigCard(isDark),
+          const SizedBox(height: 14),
+        ],
+        const SizedBox(height: 8),
+
+        // Section: Security & Privacy
+        _buildCollapsibleSectionHeader(
+          'SECURITY & PRIVACY',
+          _isSecurityExpanded,
+          () => _toggleSection(_keyPrefSecurity, _isSecurityExpanded, (v) => _isSecurityExpanded = v),
+          badgeLabel: _appLockService.isLockEnabled ? 'Active' : 'Disabled',
+        ),
+        const SizedBox(height: 6),
+        if (_isSecurityExpanded) ...[
+          _buildSecurityPreferences(isDark),
           const SizedBox(height: 14),
         ],
         const SizedBox(height: 8),
@@ -471,6 +500,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _buildNetworkPreferences(isDark),
                       const SizedBox(height: 10),
                       _buildBackendConfigCard(isDark),
+                      const SizedBox(height: 16),
+                    ],
+                    const SizedBox(height: 12),
+
+                    _buildCollapsibleSectionHeader(
+                      'SECURITY & PRIVACY',
+                      _isSecurityExpanded,
+                      () => _toggleSection(_keyPrefSecurity, _isSecurityExpanded, (v) => _isSecurityExpanded = v),
+                      badgeLabel: _appLockService.isLockEnabled ? 'Active' : 'Disabled',
+                    ),
+                    const SizedBox(height: 6),
+                    if (_isSecurityExpanded) ...[
+                      _buildSecurityPreferences(isDark),
                       const SizedBox(height: 16),
                     ],
                     const SizedBox(height: 12),
@@ -2424,6 +2466,1012 @@ class _SettingsScreenState extends State<SettingsScreen> {
           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         ),
       ),
+    );
+  }
+
+  Widget _buildSecurityPreferences(bool isDark) {
+    final theme = Theme.of(context);
+    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+    final isPortable = SecureStorageService.instance.isPortable;
+
+    final timeoutLabels = <int, String>{
+      0: 'Instant (on minimize)',
+      60: '1 Minute',
+      300: '5 Minutes (Default)',
+      600: '10 Minutes',
+      900: '15 Minutes',
+      -1: 'Cold Start Only',
+    };
+
+    return BrutalistCard(
+      margin: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.security_rounded,
+                    size: 16,
+                    color: _appLockService.isLockEnabled
+                        ? theme.colorScheme.primary
+                        : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'SECURITY & APP LOCK',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12.5,
+                      letterSpacing: 0.3,
+                      color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isPortable ? Colors.amber.shade800 : theme.colorScheme.primary,
+                  border: Border.all(color: borderColor, width: 1),
+                ),
+                child: Text(
+                  isPortable ? 'PORTABLE (AES-256)' : 'KEYSTORE / DPAPI',
+                  style: const TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isPortable
+                ? 'Portable mode active: sync credentials are encrypted via AES-256-GCM in portable_data/secure_config.dat.'
+                : 'Standard mode active: sync credentials are encrypted via hardware-backed platform keystore.',
+            style: TextStyle(
+              fontSize: 11,
+              height: 1.4,
+              color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.75),
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+
+          // Option 1: App Lock Toggle
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+              border: Border.all(
+                color: _appLockService.isLockEnabled
+                    ? theme.colorScheme.primary
+                    : (isDark ? AppColors.darkInkWhite.withValues(alpha: 0.3) : AppColors.inkBlack.withValues(alpha: 0.2)),
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.lock_outline_rounded,
+                            size: 15,
+                            color: _appLockService.isLockEnabled
+                                ? theme.colorScheme.primary
+                                : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'ENABLE APP LOCK',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.3,
+                              color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        _appLockService.isLockEnabled
+                            ? 'App requires PIN or Password to unlock.'
+                            : 'Protect app entry and credential access with a PIN or password.',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                BrutalistSwitch(
+                  value: _appLockService.isLockEnabled,
+                  onChanged: (val) {
+                    if (val) {
+                      _showSetupLockDialog(context, isDark);
+                    } else {
+                      _showDisableLockDialog(context, isDark);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          if (_appLockService.isLockEnabled) ...[
+            const SizedBox(height: 10),
+
+            // Lock Type & Change Secret row
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+                border: Border.all(
+                  color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.3) : AppColors.inkBlack.withValues(alpha: 0.2),
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'AUTHENTICATION METHOD',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.3,
+                          color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _appLockService.lockType == AppLockType.pin
+                            ? '6+ Digit Numeric PIN'
+                            : '12+ Char Password',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  OutlinedButton(
+                    onPressed: () => _showChangeSecretDialog(context, isDark),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: borderColor, width: 1.2),
+                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    ),
+                    child: Text(
+                      'CHANGE',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w900,
+                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            if (_appLockService.isBiometricAvailable) ...[
+              const SizedBox(height: 10),
+              // Biometric Switch
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+                  border: Border.all(
+                    color: _appLockService.isBiometricEnabled
+                        ? theme.colorScheme.primary
+                        : (isDark ? AppColors.darkInkWhite.withValues(alpha: 0.3) : AppColors.inkBlack.withValues(alpha: 0.2)),
+                    width: 1.5,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.fingerprint_rounded,
+                                size: 15,
+                                color: _appLockService.isBiometricEnabled
+                                    ? theme.colorScheme.primary
+                                    : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'BIOMETRIC / HELLO UNLOCK',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.3,
+                                  color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'Quick unlock using enrolled fingerprint, face, or Windows Hello.',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    BrutalistSwitch(
+                      value: _appLockService.isBiometricEnabled,
+                      onChanged: (val) {
+                        _appLockService.updateBiometric(val);
+                        setState(() {});
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 10),
+
+            // Auto-Lock Timeout Selector
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+                border: Border.all(
+                  color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.3) : AppColors.inkBlack.withValues(alpha: 0.2),
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.timer_outlined,
+                              size: 15,
+                              color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'AUTO-LOCK TIMEOUT',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.3,
+                                color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          'Re-locks app after being minimized or in background.',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  DropdownButton<int>(
+                    value: _appLockService.autoLockDurationSeconds,
+                    underline: const SizedBox.shrink(),
+                    dropdownColor: isDark ? AppColors.darkSurface : Colors.white,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                    ),
+                    items: timeoutLabels.entries.map((e) {
+                      return DropdownMenuItem<int>(
+                        value: e.key,
+                        child: Text(e.value),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        _appLockService.updateTimeout(val);
+                        setState(() {});
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            // Lock Now Action
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  _appLockService.lockNow();
+                },
+                icon: const Icon(Icons.lock_clock_rounded, size: 16),
+                label: const Text(
+                  'LOCK APPLICATION NOW',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: borderColor, width: 1.5),
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 10),
+
+          // Option 2: Privacy Screen / Screenshot Protection
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+              border: Border.all(
+                color: _appLockService.isPrivacyScreenEnabled
+                    ? theme.colorScheme.primary
+                    : (isDark ? AppColors.darkInkWhite.withValues(alpha: 0.3) : AppColors.inkBlack.withValues(alpha: 0.2)),
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.visibility_off_outlined,
+                            size: 15,
+                            color: _appLockService.isPrivacyScreenEnabled
+                                ? theme.colorScheme.primary
+                                : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'PRIVACY & APP SWITCHER MASK',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.3,
+                              color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Masks app preview in Recent Apps task switcher and blocks screenshots (Android).',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                BrutalistSwitch(
+                  value: _appLockService.isPrivacyScreenEnabled,
+                  onChanged: (val) {
+                    _appLockService.setPrivacyScreen(val);
+                    setState(() {});
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showSetupLockDialog(BuildContext context, bool isDark) async {
+    final theme = Theme.of(context);
+    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+
+    AppLockType chosenType = AppLockType.pin;
+    final secretController = TextEditingController();
+    final confirmController = TextEditingController();
+    int chosenTimeout = 300;
+    bool enableBiometric = _appLockService.isBiometricAvailable;
+    String? errorText;
+
+    await showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              title: Text(
+                'SETUP APP LOCK',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 15,
+                  letterSpacing: 0.5,
+                  color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                ),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Choose authentication method:',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => setDialogState(() {
+                              chosenType = AppLockType.pin;
+                              errorText = null;
+                            }),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              decoration: BoxDecoration(
+                                color: chosenType == AppLockType.pin
+                                    ? theme.colorScheme.primary
+                                    : (isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface),
+                                border: Border.all(color: borderColor, width: 1.5),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'PIN (6+ DIGITS)',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 10,
+                                  color: chosenType == AppLockType.pin
+                                      ? Colors.white
+                                      : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => setDialogState(() {
+                              chosenType = AppLockType.password;
+                              errorText = null;
+                            }),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              decoration: BoxDecoration(
+                                color: chosenType == AppLockType.password
+                                    ? theme.colorScheme.primary
+                                    : (isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface),
+                                border: Border.all(color: borderColor, width: 1.5),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'PASSWORD (12+)',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 10,
+                                  color: chosenType == AppLockType.password
+                                      ? Colors.white
+                                      : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    TextField(
+                      controller: secretController,
+                      obscureText: true,
+                      keyboardType: chosenType == AppLockType.pin ? TextInputType.number : TextInputType.text,
+                      style: TextStyle(
+                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                        fontSize: 13,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: chosenType == AppLockType.pin ? 'Enter PIN (min 6 digits)' : 'Enter Password (min 12 chars)',
+                        border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    TextField(
+                      controller: confirmController,
+                      obscureText: true,
+                      keyboardType: chosenType == AppLockType.pin ? TextInputType.number : TextInputType.text,
+                      style: TextStyle(
+                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                        fontSize: 13,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Confirm PIN / Password',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      ),
+                    ),
+
+                    if (_appLockService.isBiometricAvailable) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Enable Biometric shortcut',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                            ),
+                          ),
+                          BrutalistSwitch(
+                            value: enableBiometric,
+                            onChanged: (v) => setDialogState(() => enableBiometric = v),
+                          ),
+                        ],
+                      ),
+                    ],
+
+                    if (errorText != null) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.errorContainer,
+                          border: Border.all(color: theme.colorScheme.error),
+                        ),
+                        child: Text(
+                          errorText!,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onErrorContainer,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogCtx).pop(),
+                  child: Text(
+                    'CANCEL',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                    ),
+                  ),
+                ),
+                FilledButton(
+                  onPressed: () async {
+                    final secret = secretController.text.trim();
+                    final confirm = confirmController.text.trim();
+
+                    if (chosenType == AppLockType.pin) {
+                      if (!RegExp(r'^\d+$').hasMatch(secret) || secret.length < 6) {
+                        setDialogState(() => errorText = 'PIN must be at least 6 numeric digits.');
+                        return;
+                      }
+                    } else {
+                      if (secret.length < 12) {
+                        setDialogState(() => errorText = 'Password must be at least 12 characters.');
+                        return;
+                      }
+                    }
+
+                    if (secret != confirm) {
+                      setDialogState(() => errorText = 'Secrets do not match.');
+                      return;
+                    }
+
+                    await _appLockService.setupLock(
+                      secret: secret,
+                      type: chosenType,
+                      timeoutSeconds: chosenTimeout,
+                      enableBiometric: enableBiometric,
+                    );
+
+                    if (context.mounted) {
+                      Navigator.of(dialogCtx).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('App Lock configured successfully.')),
+                      );
+                      setState(() {});
+                    }
+                  },
+                  style: FilledButton.styleFrom(
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  ),
+                  child: const Text('ENABLE', style: TextStyle(fontWeight: FontWeight.w900)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showDisableLockDialog(BuildContext context, bool isDark) async {
+    final theme = Theme.of(context);
+    final secretController = TextEditingController();
+    String? errorText;
+
+    await showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              title: Text(
+                'DISABLE APP LOCK',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 15,
+                  color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Enter your current PIN or password to disable app lock:',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: secretController,
+                    obscureText: true,
+                    style: TextStyle(
+                      color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                      fontSize: 13,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Current PIN / Password',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                    ),
+                  ),
+                  if (errorText != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      errorText!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogCtx).pop(),
+                  child: Text(
+                    'CANCEL',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                    ),
+                  ),
+                ),
+                FilledButton(
+                  onPressed: () async {
+                    final secret = secretController.text.trim();
+                    final valid = await _appLockService.verifySecret(secret);
+                    if (!valid) {
+                      setDialogState(() => errorText = 'Incorrect PIN or password.');
+                      return;
+                    }
+
+                    await _appLockService.disableLock();
+                    if (context.mounted) {
+                      Navigator.of(dialogCtx).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('App Lock disabled.')),
+                      );
+                      setState(() {});
+                    }
+                  },
+                  style: FilledButton.styleFrom(
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                    backgroundColor: theme.colorScheme.error,
+                  ),
+                  child: const Text('DISABLE', style: TextStyle(fontWeight: FontWeight.w900)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showChangeSecretDialog(BuildContext context, bool isDark) async {
+    final theme = Theme.of(context);
+    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+
+    final currentController = TextEditingController();
+    final newSecretController = TextEditingController();
+    final confirmController = TextEditingController();
+    AppLockType chosenType = _appLockService.lockType;
+    String? errorText;
+
+    await showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              title: Text(
+                'CHANGE PIN / PASSWORD',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 15,
+                  color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                ),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: currentController,
+                      obscureText: true,
+                      style: TextStyle(
+                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                        fontSize: 13,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Current PIN / Password',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    Text(
+                      'New auth method:',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => setDialogState(() => chosenType = AppLockType.pin),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              decoration: BoxDecoration(
+                                color: chosenType == AppLockType.pin
+                                    ? theme.colorScheme.primary
+                                    : (isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface),
+                                border: Border.all(color: borderColor, width: 1.2),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'PIN (6+)',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 10,
+                                  color: chosenType == AppLockType.pin
+                                      ? Colors.white
+                                      : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => setDialogState(() => chosenType = AppLockType.password),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              decoration: BoxDecoration(
+                                color: chosenType == AppLockType.password
+                                    ? theme.colorScheme.primary
+                                    : (isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface),
+                                border: Border.all(color: borderColor, width: 1.2),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'PASSWORD (12+)',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 10,
+                                  color: chosenType == AppLockType.password
+                                      ? Colors.white
+                                      : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    TextField(
+                      controller: newSecretController,
+                      obscureText: true,
+                      keyboardType: chosenType == AppLockType.pin ? TextInputType.number : TextInputType.text,
+                      style: TextStyle(
+                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                        fontSize: 13,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: chosenType == AppLockType.pin ? 'New PIN (min 6 digits)' : 'New Password (min 12 chars)',
+                        border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    TextField(
+                      controller: confirmController,
+                      obscureText: true,
+                      keyboardType: chosenType == AppLockType.pin ? TextInputType.number : TextInputType.text,
+                      style: TextStyle(
+                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                        fontSize: 13,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Confirm New PIN / Password',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      ),
+                    ),
+
+                    if (errorText != null) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.errorContainer,
+                          border: Border.all(color: theme.colorScheme.error),
+                        ),
+                        child: Text(
+                          errorText!,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onErrorContainer,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogCtx).pop(),
+                  child: Text(
+                    'CANCEL',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                    ),
+                  ),
+                ),
+                FilledButton(
+                  onPressed: () async {
+                    final current = currentController.text.trim();
+                    final newSecret = newSecretController.text.trim();
+                    final confirm = confirmController.text.trim();
+
+                    final validCurrent = await _appLockService.verifySecret(current);
+                    if (!validCurrent) {
+                      setDialogState(() => errorText = 'Current PIN or password is incorrect.');
+                      return;
+                    }
+
+                    if (chosenType == AppLockType.pin) {
+                      if (!RegExp(r'^\d+$').hasMatch(newSecret) || newSecret.length < 6) {
+                        setDialogState(() => errorText = 'New PIN must be at least 6 numeric digits.');
+                        return;
+                      }
+                    } else {
+                      if (newSecret.length < 12) {
+                        setDialogState(() => errorText = 'New password must be at least 12 characters.');
+                        return;
+                      }
+                    }
+
+                    if (newSecret != confirm) {
+                      setDialogState(() => errorText = 'New secrets do not match.');
+                      return;
+                    }
+
+                    await _appLockService.setupLock(
+                      secret: newSecret,
+                      type: chosenType,
+                      timeoutSeconds: _appLockService.autoLockDurationSeconds,
+                      enableBiometric: _appLockService.isBiometricEnabled,
+                    );
+
+                    if (context.mounted) {
+                      Navigator.of(dialogCtx).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('PIN/Password updated successfully.')),
+                      );
+                      setState(() {});
+                    }
+                  },
+                  style: FilledButton.styleFrom(
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  ),
+                  child: const Text('UPDATE', style: TextStyle(fontWeight: FontWeight.w900)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

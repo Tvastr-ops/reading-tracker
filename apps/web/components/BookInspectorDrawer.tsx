@@ -14,6 +14,7 @@ import {
   Undo2,
   X,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -173,6 +174,14 @@ export default function BookInspectorDrawer({
             )}
           </div>
           <div className="flex items-center gap-1">
+            <Link
+              href={`/books/${book.id}`}
+              className="flex h-8 items-center gap-1 rounded-md px-2 text-xs font-semibold text-text-muted transition-colors hover:bg-surface hover:text-text"
+              title="Open full page view"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              <span className="hidden xl:inline">Full Page</span>
+            </Link>
             <Button
               variant="ghost"
               size="sm"
@@ -181,7 +190,7 @@ export default function BookInspectorDrawer({
               title="Press E to edit"
             >
               <Edit3 className="h-3.5 w-3.5" />
-              <span>Full Edit</span>
+              <span>Edit</span>
               <kbd className="font-mono text-[9px] font-semibold bg-surface border border-border px-1 rounded text-text-muted">
                 E
               </kbd>

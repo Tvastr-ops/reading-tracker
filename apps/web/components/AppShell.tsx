@@ -1,0 +1,32 @@
+'use client';
+
+import { usePathname } from 'next/navigation';
+import { AppNavbar } from '@/components/AppNavbar';
+import { BookFormModal } from '@/components/BookFormModal';
+import { CommandPaletteModal } from '@/components/CommandPaletteModal';
+import { ImportNotification } from '@/components/ImportNotification';
+import { MobileBottomNav } from '@/components/MobileBottomNav';
+import { LibraryProvider } from '@/contexts/LibraryContext';
+
+export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isLoginPage = pathname === '/login';
+
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
+
+  return (
+    <LibraryProvider>
+      <div className="mx-auto min-h-screen max-w-7xl px-4 py-6 pb-24 sm:px-6 md:pb-12 lg:px-8 xl:px-10 2xl:max-w-screen-2xl">
+        <link rel="dns-prefetch" href="https://covers.openlibrary.org" />
+        <AppNavbar />
+        <ImportNotification />
+        {children}
+        <BookFormModal />
+        <CommandPaletteModal />
+        <MobileBottomNav />
+      </div>
+    </LibraryProvider>
+  );
+}

@@ -5,6 +5,28 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.6.0] - 2026-08-29
+
+### Added
+- **App Lock Authentication (Biometric, PIN, Password)**:
+  - Added multi-tier app security with 6-digit minimum PIN mode (custom brutalist numeric keypad) and 12-character minimum password mode.
+  - Native biometric & Windows Hello unlock on Android and supported desktop hardware.
+  - Rate-limiting protection with 3-attempt 30-second exponential lockout cooldown.
+  - Hardened cryptographic key derivation using **600,000 PBKDF2 HMAC-SHA256 iterations** with a 32-byte CSPRNG salt.
+- **Hardware-Backed & Portable Secure Credential Storage**:
+  - Upgraded sync credentials storage from plaintext `SharedPreferences` to hardware-backed TEE / DPAPI / Keystore (`FlutterSecureStorage`).
+  - Unified Desktop Portable Mode: Self-contained AES-256-GCM encrypted storage in `portable_data/secure_config.dat` using the user's PIN/password as the master key.
+  - Zero-friction auto-migration: Automatically migrates existing plaintext credentials on first boot and purges them from disk.
+- **Configurable Auto-Lock Timeouts**:
+  - Added configurable background auto-lock durations (Instant, 1m, 5m, 10m, 15m, Cold start only).
+- **Privacy Mode & App Switcher Masking**:
+  - Added `FLAG_SECURE` integration on Android to mask app previews in the Recent Apps overview screen and prevent screenshots/screen recording.
+- **Modernized Multi-Page Web Frontend (`apps/web`)**:
+  - Converted single-page web app into dedicated Next.js App Router routes: `/` (Library), `/books/[id]` (Book Inspector & Log Manager), `/journal` (Reading Timeline), `/analytics` (Stats & Reading Velocity), and `/settings`.
+  - Added client-side library pagination and desktop/mobile responsive navigation shells (`AppNavbar`, `MobileBottomNav`).
+
+---
+
 ## [2.5.0] - 2026-08-27
 
 ### Added

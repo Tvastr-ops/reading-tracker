@@ -33,6 +33,10 @@ export function formatShortDate(dateStr: string | null | undefined): string | nu
   }
 }
 
+export function formatDisplayDate(dateStr: string | null | undefined): string {
+  return formatShortDate(dateStr) || '—';
+}
+
 export function calculateReadingDuration(
   startDateStr: string | null | undefined,
   endDateStr: string | null | undefined,
