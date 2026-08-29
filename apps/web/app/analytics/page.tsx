@@ -8,12 +8,13 @@ import StatsSummary from '@/components/StatsSummary';
 import { Button } from '@/components/ui/button';
 import { useLibraryData } from '@/contexts/LibraryDataContext';
 import { useLibraryFiltersContext } from '@/contexts/LibraryFiltersContext';
-import type { Book, ReadingLogEntry } from '@/lib/types';
+import type { Book, ReadingJourney, ReadingLogEntry } from '@/lib/types';
 
 export default function AnalyticsPage() {
   const { books, loading } = useLibraryData();
   const { setStatusFilter } = useLibraryFiltersContext();
   const [logs, setLogs] = useState<ReadingLogEntry[]>([]);
+  const [journeys, setJourneys] = useState<ReadingJourney[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -22,6 +23,15 @@ export default function AnalyticsPage() {
       .then((d) => {
         if (d?.entries) {
           setLogs(d.entries);
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/journeys')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.journeys) {
+          setJourneys(d.journeys);
         }
       })
       .catch(() => {});
@@ -82,8 +92,13 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Main Stats Summary with Logs */}
-      <StatsSummary books={books} logs={logs} onStatusSelect={handleStatusSelect} />
+      {/* Main Stats Summary with Logs & Journeys */}
+      <StatsSummary
+        books={books}
+        logs={logs}
+        journeys={journeys}
+        onStatusSelect={handleStatusSelect}
+      />
     </div>
   );
 }

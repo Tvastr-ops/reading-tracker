@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import type { Book, ReadingLogEntry } from '@/lib/types';
+import type { Book, ReadingJourney, ReadingLogEntry } from '@/lib/types';
 import { parseLocalDate } from '@/lib/utils';
 import { DistributionTabs } from './DistributionTabs';
 import { ReadingPassport } from './ReadingPassport';
@@ -34,10 +34,12 @@ type GoalMetric = 'books' | 'pages' | 'chapters' | 'volumes';
 export default function StatsSummary({
   books,
   logs = [],
+  journeys = [],
   onStatusSelect: _onStatusSelect,
 }: {
   books: Book[];
   logs?: ReadingLogEntry[];
+  journeys?: ReadingJourney[];
   onStatusSelect?: (status: string) => void;
 }) {
   const thisYear = new Date().getFullYear();
@@ -125,45 +127,120 @@ export default function StatsSummary({
     : (goalsMap[`${selectedYear}_${selectedMetric}`] ??
       (selectedMetric === 'books' && selectedYear === thisYear ? 25 : 0));
 
-  // Calculate actual progress for selectedYear and selectedMetric
+  // Map reading journeys by book_id for historical re-read journey resolution
+  const journeysByBook = useMemo(() => {
+    const map = new Map<string, ReadingJourney[]>();
+    for (const j of journeys) {
+      const list = map.get(j.book_id) || [];
+      list.push(j);
+      map.set(j.book_id, list);
+    }
+    return map;
+  }, [journeys]);
+
+  // Books map for fast lookup
+  const booksMap = useMemo(() => {
+    const map = new Map<string, Book>();
+    for (const b of books) {
+      map.set(b.id, b);
+    }
+    return map;
+  }, [books]);
+
+  // Calculate actual progress for selectedYear and selectedMetric matching Flutter Client 1:1
   const actualProgress = useMemo(() => {
+    const targetYearNum = isLifetime ? null : (selectedYear as number);
+
     if (selectedMetric === 'books') {
-      if (isLifetime) return books.filter((b) => b.status === 'Completed').length;
-      return books.filter((b) => {
-        if (b.status !== 'Completed' || !b.date_finished) return false;
-        const d = parseLocalDate(b.date_finished);
-        return d ? d.getFullYear() === selectedYear : false;
-      }).length;
+      let completedCount = 0;
+
+      for (const b of books) {
+        const isBookCompleted = b.status?.toLowerCase() === 'completed';
+
+        if (isBookCompleted) {
+          let dt = b.date_finished ? parseLocalDate(b.date_finished) : null;
+          if (!dt && b.updated_at) dt = new Date(b.updated_at);
+
+          if (dt && !Number.isNaN(dt.getTime())) {
+            if (isLifetime || dt.getFullYear() === targetYearNum) {
+              completedCount++;
+            }
+          }
+        }
+
+        // Check for historical completed re-read journeys for this book
+        const bookJourneys = journeysByBook.get(b.id);
+        if (bookJourneys && bookJourneys.length > 0) {
+          for (const j of bookJourneys) {
+            const isPastCompletedJourney =
+              j.status?.toLowerCase() === 'completed' &&
+              j.date_finished &&
+              (!isBookCompleted || j.journey_index < (b.reread_count || 0) + 1);
+
+            if (isPastCompletedJourney) {
+              const dt = parseLocalDate(j.date_finished!);
+              if (dt && !Number.isNaN(dt.getTime())) {
+                if (isLifetime || dt.getFullYear() === targetYearNum) {
+                  completedCount++;
+                }
+              }
+            }
+          }
+        }
+      }
+      return completedCount;
     }
 
     // Units (pages, chapters, volumes)
+    // 1. If logs are available, sum delta from reading logs exactly like Flutter getUnitBreakdownStats
     let sum = 0;
-    const targetYearNum = selectedYear === 'lifetime' ? null : selectedYear;
+    const loggedBookIds = new Set<string>();
 
-    for (const b of books) {
-      if (targetYearNum) {
-        if (!b.date_finished && !b.date_started) continue;
-        const d = parseLocalDate(b.date_finished || b.date_started!);
-        if (d && d.getFullYear() !== targetYearNum) continue;
-      }
+    if (logs.length > 0) {
+      for (const log of logs) {
+        if (!isLifetime && targetYearNum) {
+          const logDate = log.logged_at ? new Date(log.logged_at) : null;
+          if (!logDate || Number.isNaN(logDate.getTime()) || logDate.getFullYear() !== targetYearNum) {
+            continue;
+          }
+        }
 
-      const unitType = (b.unit_type || 'pages').toLowerCase();
-      if (selectedMetric === 'pages' && (unitType === 'pages' || unitType === 'units')) {
-        sum += b.status === 'Completed' ? b.total_units || b.progress || 0 : b.progress || 0;
-      } else if (
-        selectedMetric === 'chapters' &&
-        (unitType === 'chapters' || b.progress_structure !== 'single')
-      ) {
-        sum += b.progress || 0;
-      } else if (
-        selectedMetric === 'volumes' &&
-        (unitType === 'volumes' || b.parent_progress != null)
-      ) {
-        sum += b.parent_progress || (b.status === 'Completed' ? 1 : 0);
+        const delta = Number(log.to_progress) - Number(log.from_progress);
+        if (delta <= 0) continue;
+
+        loggedBookIds.add(log.book_id);
+        const book = booksMap.get(log.book_id);
+        const unitType = (book?.unit_type || 'pages').toLowerCase();
+        if (selectedMetric === 'pages' && (unitType === 'pages' || unitType === 'units')) {
+          sum += delta;
+        } else if (selectedMetric === 'chapters' && unitType === 'chapters') {
+          sum += delta;
+        } else if (selectedMetric === 'volumes' && unitType === 'volumes') {
+          sum += delta;
+        }
       }
     }
+
+    // 2. Fallback: Include base progress for books that have progress but no log rows yet (matching Flutter)
+    if (isLifetime || targetYearNum === thisYear) {
+      for (const b of books) {
+        if (loggedBookIds.has(b.id)) continue;
+        const p = b.progress || 0;
+        if (p <= 0) continue;
+
+        const unitType = (b.unit_type || 'pages').toLowerCase();
+        if (selectedMetric === 'pages' && (unitType === 'pages' || unitType === 'units')) {
+          sum += p;
+        } else if (selectedMetric === 'chapters' && unitType === 'chapters') {
+          sum += p;
+        } else if (selectedMetric === 'volumes' && unitType === 'volumes') {
+          sum += p;
+        }
+      }
+    }
+
     return sum;
-  }, [books, selectedMetric, selectedYear, isLifetime]);
+  }, [books, logs, journeysByBook, booksMap, selectedMetric, selectedYear, isLifetime, thisYear]);
 
   // Pacing status calculations
   const goalProgressPct =
