@@ -45,6 +45,7 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
     typeof body?.logged_at === 'string' && !Number.isNaN(Date.parse(body.logged_at))
       ? body.logged_at
       : new Date().toISOString();
+  const note = typeof body?.note === 'string' ? body.note : null;
 
   const supabase = supabaseServer();
 
