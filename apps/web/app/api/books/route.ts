@@ -8,24 +8,90 @@ import { validateProgressionFields } from '@/lib/validation';
 export const dynamic = 'force-dynamic';
 
 export const GET = withAuth(async (req: NextRequest) => {
-  const showTrash = req.nextUrl.searchParams.get('trash') === '1';
-  const includeAll =
-    req.nextUrl.searchParams.get('all') === '1' || req.nextUrl.searchParams.get('sync') === '1';
+  const url = req.nextUrl;
+  const showTrash = url.searchParams.get('trash') === '1';
+  const includeAll = url.searchParams.get('all') === '1' || url.searchParams.get('sync') === '1';
+  const pageParam = parseInt(url.searchParams.get('page') || '1', 10);
+  const limitParam = parseInt(url.searchParams.get('limit') || '50', 10);
+  const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+  const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 500) : 50;
+
+  const status = url.searchParams.get('status');
+  const search = url.searchParams.get('search')?.trim();
+  const favorite = url.searchParams.get('favorite') === '1';
+  const sortField = url.searchParams.get('sortField') || 'updated_at';
+  const sortDir = url.searchParams.get('sortDir') === 'asc';
 
   const supabase = supabaseServer();
   let query = supabase
     .from('books')
     .select(
       'id, title, type, unit_type, progress_structure, parent_progress, parent_total, latest_units, is_ongoing, author, status, rating, progress, total_units, genre_tags, source_link, cover_url, reading_pace, date_started, date_finished, notes, is_favorite, series_name, series_order, shelf_names, reread_count, deleted_at, created_at, updated_at',
+      { count: 'exact' },
     );
+
   if (!includeAll) {
     query = showTrash ? query.not('deleted_at', 'is', null) : query.is('deleted_at', null);
   }
-  const { data, error } = await query.order('updated_at', { ascending: false });
+
+  const since = url.searchParams.get('since');
+  if (since) {
+    query = query.gt('updated_at', since);
+  }
+
+  if (status && status !== 'All') {
+    query = query.eq('status', status);
+  }
+
+  if (favorite) {
+    query = query.eq('is_favorite', true);
+  }
+
+  if (search) {
+    query = query.or(
+      `title.ilike.%${search}%,author.ilike.%${search}%,series_name.ilike.%${search}%,genre_tags.ilike.%${search}%,shelf_names.ilike.%${search}%`,
+    );
+  }
+
+  // Safe sort field whitelist
+  const allowedSortFields = [
+    'updated_at',
+    'created_at',
+    'title',
+    'rating',
+    'date_finished',
+    'status',
+    'progress',
+    'author',
+  ];
+  const safeSortField = allowedSortFields.includes(sortField) ? sortField : 'updated_at';
+  query = query.order(safeSortField, { ascending: sortDir });
+
+  if (!includeAll && url.searchParams.has('page')) {
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+    query = query.range(from, to);
+  }
+
+  const { data, count, error } = await query;
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const total = count ?? data?.length ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+
   return NextResponse.json(
-    { books: data },
+    {
+      books: data || [],
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    },
     {
       headers: {
         'Cache-Control': 'private, no-cache, must-revalidate',

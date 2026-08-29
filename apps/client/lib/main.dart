@@ -4,7 +4,10 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
+import 'screens/app_lock_screen.dart';
 import 'screens/main_navigation_screen.dart';
+import 'services/app_lock_service.dart';
+import 'services/secure_storage_service.dart';
 import 'services/sync/sync_manager.dart';
 import 'services/theme_service.dart';
 
@@ -19,7 +22,9 @@ void main() async {
     await windowManager.ensureInitialized();
   }
   await ThemeService.instance.init();
+  await SecureStorageService.instance.init();
   await SyncManager.instance.init();
+  await AppLockService.instance.init();
   runApp(const ReadingTrackerApp());
 }
 
@@ -60,8 +65,30 @@ ColorScheme? _toFlutterScheme(dynamic s, Brightness brightness) {
   );
 }
 
-class ReadingTrackerApp extends StatelessWidget {
+class ReadingTrackerApp extends StatefulWidget {
   const ReadingTrackerApp({super.key});
+
+  @override
+  State<ReadingTrackerApp> createState() => _ReadingTrackerAppState();
+}
+
+class _ReadingTrackerAppState extends State<ReadingTrackerApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    AppLockService.instance.handleAppLifecycleState(state);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,12 +117,24 @@ class ReadingTrackerApp extends StatelessWidget {
                 },
                 physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
               ),
-              home: MainNavigationScreen(
-                onThemeToggle: () {
-                  final isDark = themeService.themeMode == ThemeMode.dark;
-                  themeService.setThemeMode(isDark ? ThemeMode.light : ThemeMode.dark);
+              home: ValueListenableBuilder<bool>(
+                valueListenable: AppLockService.instance.isCurrentlyLocked,
+                builder: (context, isLocked, child) {
+                  if (isLocked) {
+                    return AppLockScreen(
+                      onUnlocked: () {
+                        AppLockService.instance.isCurrentlyLocked.value = false;
+                      },
+                    );
+                  }
+                  return MainNavigationScreen(
+                    onThemeToggle: () {
+                      final isDark = themeService.themeMode == ThemeMode.dark;
+                      themeService.setThemeMode(isDark ? ThemeMode.light : ThemeMode.dark);
+                    },
+                    isDarkMode: themeService.themeMode == ThemeMode.dark,
+                  );
                 },
-                isDarkMode: themeService.themeMode == ThemeMode.dark,
               ),
             );
           },

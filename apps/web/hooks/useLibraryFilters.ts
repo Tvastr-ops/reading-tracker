@@ -27,7 +27,9 @@ export function useLibraryFilters(books: Book[]) {
   const [ratingMode, setRatingMode] = useState<'stars' | 'decimal'>('stars');
   const [sortField, setSortField] = useState<SortField>('updated_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSizeState] = useState<number | 'all'>(50);
 
   // Load saved preferences from localStorage on mount
   useEffect(() => {
@@ -44,6 +46,13 @@ export function useLibraryFilters(books: Book[]) {
     const savedRatingMode = window.localStorage.getItem('ratingMode');
     if (savedRatingMode === 'stars' || savedRatingMode === 'decimal') {
       setRatingMode(savedRatingMode);
+    }
+    const savedPageSize = window.localStorage.getItem('pageSize');
+    if (savedPageSize === 'all') {
+      setPageSizeState('all');
+    } else if (savedPageSize) {
+      const num = parseInt(savedPageSize, 10);
+      if (Number.isFinite(num) && num > 0) setPageSizeState(num);
     }
   }, []);
 
@@ -215,6 +224,30 @@ export function useLibraryFilters(books: Book[]) {
     return counts;
   }, [books, allShelves]);
 
+  const setPageSize = (size: number | 'all') => {
+    setPageSizeState(size);
+    setCurrentPage(1);
+    window.localStorage.setItem('pageSize', String(size));
+  };
+
+  // Reset to page 1 whenever filters change and current page is out of range
+  const totalPages = useMemo(() => {
+    if (pageSize === 'all') return 1;
+    return Math.max(1, Math.ceil(filteredBooks.length / pageSize));
+  }, [filteredBooks.length, pageSize]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  const paginatedBooks = useMemo(() => {
+    if (pageSize === 'all') return filteredBooks;
+    const start = (currentPage - 1) * pageSize;
+    return filteredBooks.slice(start, start + pageSize);
+  }, [filteredBooks, currentPage, pageSize]);
+
   const filtersActive =
     statusFilter !== 'All' ||
     shelfFilter !== null ||
@@ -228,21 +261,37 @@ export function useLibraryFilters(books: Book[]) {
     setRatingFilter('All');
     setShowFavoritesOnly(false);
     setSearch('');
+    setCurrentPage(1);
   };
 
   return {
     statusFilter,
-    setStatusFilter,
+    setStatusFilter: (s: string) => {
+      setStatusFilter(s);
+      setCurrentPage(1);
+    },
     shelfFilter,
-    setShelfFilter,
+    setShelfFilter: (sh: string | null) => {
+      setShelfFilter(sh);
+      setCurrentPage(1);
+    },
     allShelves,
     shelfCounts,
     ratingFilter,
-    setRatingFilter,
+    setRatingFilter: (r: number | 'All' | 'Unrated') => {
+      setRatingFilter(r);
+      setCurrentPage(1);
+    },
     showFavoritesOnly,
-    setShowFavoritesOnly,
+    setShowFavoritesOnly: (f: boolean | ((prev: boolean) => boolean)) => {
+      setShowFavoritesOnly(f);
+      setCurrentPage(1);
+    },
     search,
-    setSearch,
+    setSearch: (s: string) => {
+      setSearch(s);
+      setCurrentPage(1);
+    },
     ratingMode,
     toggleRatingMode,
     sortField,
@@ -252,6 +301,12 @@ export function useLibraryFilters(books: Book[]) {
     viewMode,
     toggleViewMode,
     filteredBooks,
+    paginatedBooks,
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
     statusCounts,
     filtersActive,
     clearFilters,

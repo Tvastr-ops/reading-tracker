@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/book.dart';
 import '../database_helper.dart';
+import '../secure_storage_service.dart';
 import 'generic_rest_sync_provider.dart';
 import 'supabase_sync_provider.dart';
 import 'sync_provider.dart';
@@ -44,11 +45,12 @@ class SyncManager extends ChangeNotifier {
   RemoteSyncProvider? get activeProvider => _activeProvider;
 
   Future<void> init() async {
+    await SecureStorageService.instance.init();
     final prefs = await SharedPreferences.getInstance();
     _offlineMode = prefs.getBool('offline_mode') ?? false;
     _autoSync = prefs.getBool('auto_sync') ?? true;
-    _serverUrl = prefs.getString('server_url') ?? '';
-    _apiKey = prefs.getString('api_key') ?? '';
+    _serverUrl = await SecureStorageService.instance.read('server_url') ?? '';
+    _apiKey = await SecureStorageService.instance.read('api_key') ?? '';
     _yearlyGoal = prefs.getInt('yearly_goal') ?? 25;
     final lastSyncedStr = prefs.getString('last_synced_at');
     if (lastSyncedStr != null && lastSyncedStr.isNotEmpty) {
@@ -125,10 +127,13 @@ class SyncManager extends ChangeNotifier {
     _lastLogSyncCursor = null;
     _lastJourneySyncCursor = null;
 
+    await SecureStorageService.instance.write('server_url', _serverUrl);
+    await SecureStorageService.instance.write('api_key', _apiKey);
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('backend_type', type.index);
-    await prefs.setString('server_url', _serverUrl);
-    await prefs.setString('api_key', _apiKey);
+    await prefs.remove('server_url');
+    await prefs.remove('api_key');
     await prefs.setBool('offline_mode', _offlineMode);
     await prefs.setBool('auto_sync', _autoSync);
     await prefs.remove('last_synced_at');
