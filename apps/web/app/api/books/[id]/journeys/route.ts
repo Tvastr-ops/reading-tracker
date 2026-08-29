@@ -16,10 +16,22 @@ export const GET = withAuth(async (_req: NextRequest, { params }: RouteContext) 
     .from('reading_journeys')
     .select('*')
     .eq('book_id', id)
-    .order('journey_index', { ascending: false });
+    .order('journey_index', { ascending: false })
+    .order('updated_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ journeys: data });
+
+  // Deduplicate any duplicate journey_index records
+  const deduped: any[] = [];
+  const seen = new Set<number>();
+  for (const j of data || []) {
+    if (!seen.has(j.journey_index)) {
+      seen.add(j.journey_index);
+      deduped.push(j);
+    }
+  }
+
+  return NextResponse.json({ journeys: deduped });
 });
 
 export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) => {

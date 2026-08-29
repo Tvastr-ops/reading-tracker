@@ -1,19 +1,31 @@
 'use client';
 
-import { BarChart3, ChevronLeft } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import StatsSummary from '@/components/StatsSummary';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { useLibraryData } from '@/contexts/LibraryDataContext';
 import { useLibraryFiltersContext } from '@/contexts/LibraryFiltersContext';
-import type { Book } from '@/lib/types';
+import type { Book, ReadingLogEntry } from '@/lib/types';
 
 export default function AnalyticsPage() {
   const { books, loading } = useLibraryData();
   const { setStatusFilter } = useLibraryFiltersContext();
+  const [logs, setLogs] = useState<ReadingLogEntry[]>([]);
   const router = useRouter();
+
+  useEffect(() => {
+    fetch('/api/logs?limit=5000')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.entries) {
+          setLogs(d.entries);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleStatusSelect = (status: string) => {
     setStatusFilter(status as Book['status'] | 'All');
@@ -52,7 +64,7 @@ export default function AnalyticsPage() {
             </h1>
           </div>
           <p className="font-hanken text-xs text-text-muted sm:text-sm">
-            Yearly goals, monthly pacing charts, format breakdowns, and reading velocity.
+            Yearly goals, velocity cards, daily streak heatmap, and library distributions.
           </p>
         </div>
 
@@ -70,8 +82,8 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Main Stats Summary */}
-      <StatsSummary books={books} onStatusSelect={handleStatusSelect} />
+      {/* Main Stats Summary with Logs */}
+      <StatsSummary books={books} logs={logs} onStatusSelect={handleStatusSelect} />
     </div>
   );
 }

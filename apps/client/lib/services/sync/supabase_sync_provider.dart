@@ -299,9 +299,51 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
   }
 
   @override
-  Future<bool> pushYearlyGoal(int goal) async {
+  Future<Map<String, int>?> fetchGoals() async {
+    if (supabaseUrl.isEmpty || anonKey.isEmpty) return null;
+    try {
+      final uri = Uri.parse('$supabaseUrl/rest/v1/app_settings?key=eq.yearly_goal&select=value');
+      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 6));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final dynamic data = jsonDecode(res.body);
+        if (data is List && data.isNotEmpty) {
+          final val = data.first['value'];
+          if (val is Map) {
+            final result = <String, int>{};
+            if (val['count'] != null) {
+              final count = (val['count'] as num).toInt();
+              result['${DateTime.now().year}_books'] = count;
+            }
+            if (val['goals'] is Map) {
+              final goalsMap = val['goals'] as Map;
+              goalsMap.forEach((k, v) {
+                if (v is num) {
+                  result[k.toString()] = v.toInt();
+                }
+              });
+            }
+            return result;
+          }
+        }
+      }
+      return null;
+    } catch (e) {
+      debugPrint('SupabaseSyncProvider fetchGoals error: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<bool> pushGoalTarget({required int year, required String metric, required int target}) async {
     if (supabaseUrl.isEmpty || anonKey.isEmpty) return false;
     try {
+      // 1. Fetch current settings value to merge
+      final current = await fetchGoals() ?? {};
+      current['${year}_$metric'] = target;
+
+      final currentYear = DateTime.now().year;
+      final bookGoal = current['${currentYear}_books'] ?? (metric == 'books' && year == currentYear ? target : 25);
+
       final uri = Uri.parse('$supabaseUrl/rest/v1/app_settings?on_conflict=key');
       final now = DateTime.now().toUtc().toIso8601String();
       final res = await http
@@ -314,7 +356,10 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
             body: jsonEncode([
               {
                 'key': 'yearly_goal',
-                'value': {'count': goal},
+                'value': {
+                  'count': bookGoal,
+                  'goals': current,
+                },
                 'updated_at': now,
               }
             ]),
@@ -322,8 +367,13 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
           .timeout(const Duration(seconds: 6));
       return res.statusCode >= 200 && res.statusCode < 300;
     } catch (e) {
-      debugPrint('SupabaseSyncProvider pushYearlyGoal error: $e');
+      debugPrint('SupabaseSyncProvider pushGoalTarget error: $e');
       return false;
     }
+  }
+
+  @override
+  Future<bool> pushYearlyGoal(int goal) async {
+    return pushGoalTarget(year: DateTime.now().year, metric: 'books', target: goal);
   }
 }

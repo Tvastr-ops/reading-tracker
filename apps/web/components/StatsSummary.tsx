@@ -1,56 +1,17 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
-import {
-  Award,
-  BarChart2,
-  BookCheck,
-  BookOpen,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Edit2,
-  Flame,
-  Sparkles,
-  Star,
-  Trophy,
-} from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Award, CheckCircle2, Edit2, Target, TrendingDown, TrendingUp, Trophy } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import type { Book } from '@/lib/types';
+import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import type { Book, ReadingLogEntry } from '@/lib/types';
 import { parseLocalDate } from '@/lib/utils';
-
-function useAnimatedNumber(value: number, duration = 500): number {
-  const [display, setDisplay] = useState(value);
-  const startTimeRef = useRef<number | null>(null);
-  const startValRef = useRef(display);
-
-  useEffect(() => {
-    startValRef.current = display;
-    startTimeRef.current = null;
-    let frameId: number;
-
-    const step = (timestamp: number) => {
-      if (!startTimeRef.current) startTimeRef.current = timestamp;
-      const progress = Math.min((timestamp - startTimeRef.current) / duration, 1);
-      const ease = 1 - (1 - progress) ** 3;
-      const current = Math.round(startValRef.current + (value - startValRef.current) * ease);
-      setDisplay(current);
-
-      if (progress < 1) {
-        frameId = requestAnimationFrame(step);
-      }
-    };
-
-    frameId = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frameId);
-  }, [value, duration]);
-
-  return display;
-}
+import { DistributionTabs } from './DistributionTabs';
+import { ReadingPassport } from './ReadingPassport';
+import { StreakHeatmap } from './StreakHeatmap';
+import { VelocityCards } from './VelocityCards';
 
 const MONTH_LABELS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 const MONTH_NAMES = [
@@ -68,116 +29,191 @@ const MONTH_NAMES = [
   'Dec',
 ];
 
-const _SPINE_COLORS = [
-  '#8a3b30', // Terracotta
-  '#3f6b4f', // Sage
-  '#a6752f', // Amber
-  '#4a6fa5', // Slate Blue
-  '#7c5295', // Violet
-  '#994e36', // Rust
-];
+type GoalMetric = 'books' | 'pages' | 'chapters' | 'volumes';
 
 export default function StatsSummary({
   books,
-  onStatusSelect,
+  logs = [],
+  onStatusSelect: _onStatusSelect,
 }: {
   books: Book[];
+  logs?: ReadingLogEntry[];
   onStatusSelect?: (status: string) => void;
 }) {
-  const [goal, setGoal] = useState<number | null>(null);
-  const [goalInput, setGoalInput] = useState('');
-  const [editingGoal, setEditingGoal] = useState(false);
-  const [savingGoal, setSavingGoal] = useState(false);
-  const [isExpanded, setIsExpanded] = useState<boolean>(true);
-
   const thisYear = new Date().getFullYear();
 
+  // Multi-unit & Multi-year Goal states
+  const [selectedYear, setSelectedYear] = useState<number | 'lifetime'>(thisYear);
+  const [selectedMetric, setSelectedMetric] = useState<GoalMetric>('books');
+  const [goalsMap, setGoalsMap] = useState<Record<string, number>>({});
+  const [goalModalOpen, setGoalModalOpen] = useState(false);
+  const [goalInputVal, setGoalInputVal] = useState('');
+  const [savingGoal, setSavingGoal] = useState(false);
+
+  // Available Years
+  const availableYears = useMemo(() => {
+    const yearsSet = new Set<number>([thisYear]);
+    for (const b of books) {
+      if (b.date_finished) {
+        const d = parseLocalDate(b.date_finished);
+        if (d) yearsSet.add(d.getFullYear());
+      }
+      if (b.date_started) {
+        const d = parseLocalDate(b.date_started);
+        if (d) yearsSet.add(d.getFullYear());
+      }
+    }
+    return Array.from(yearsSet).sort((a, b) => b - a);
+  }, [books, thisYear]);
+
+  // Load cloud synced goals on mount
   useEffect(() => {
     fetch('/api/settings')
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (d?.yearlyGoal != null) setGoal(d.yearlyGoal);
+        if (d) {
+          const map: Record<string, number> = d.goals || {};
+          if (d.yearlyGoal != null && !map[`${thisYear}_books`]) {
+            map[`${thisYear}_books`] = d.yearlyGoal;
+          }
+          setGoalsMap(map);
+        }
       })
       .catch(() => {});
-  }, []);
+  }, [thisYear]);
 
-  async function saveGoal() {
-    const n = parseInt(goalInput, 10);
-    if (!Number.isFinite(n) || n < 0) return;
+  // Save Goal Handler
+  async function handleSaveGoal() {
+    if (selectedYear === 'lifetime') return;
+    const target = parseInt(goalInputVal, 10);
+    if (!Number.isFinite(target) || target < 0) return;
+
     setSavingGoal(true);
+    const key = `${selectedYear}_${selectedMetric}`;
+    const updatedMap = { ...goalsMap, [key]: target };
+
     const res = await fetch('/api/settings', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ yearlyGoal: n }),
+      body: JSON.stringify({
+        year: selectedYear,
+        metric: selectedMetric,
+        target,
+        goals: updatedMap,
+      }),
     });
+
     setSavingGoal(false);
     if (res.ok) {
-      setGoal(n);
-      setEditingGoal(false);
+      setGoalsMap(updatedMap);
+      setGoalModalOpen(false);
     }
   }
 
-  const totalCount = books.length;
-  const completedCount = books.filter((b) => b.status === 'Completed').length;
-  const readingCount = books.filter((b) => b.status === 'Reading').length;
-  const onHoldCount = books.filter((b) => b.status === 'On Hold').length;
-  const planToReadCount = books.filter((b) => b.status === 'Plan to Read').length;
-  const droppedCount = books.filter((b) => b.status === 'Dropped').length;
-
-  function distributePercentages(counts: number[], total: number): number[] {
-    if (total === 0) return counts.map(() => 0);
-    const raw = counts.map((c) => (c / total) * 100);
-    const floored = raw.map(Math.floor);
-    const remainder = 100 - floored.reduce((a, b) => a + b, 0);
-    const order = raw
-      .map((v, i) => ({ i, frac: v - Math.floor(v) }))
-      .sort((a, b) => b.frac - a.frac);
-    const result = [...floored];
-    for (let k = 0; k < remainder; k++) {
-      result[order[k % order.length].i] += 1;
-    }
-    return result;
+  function openGoalModal() {
+    if (selectedYear === 'lifetime') return;
+    const currentTarget =
+      goalsMap[`${selectedYear}_${selectedMetric}`] ?? (selectedMetric === 'books' ? 25 : 0);
+    setGoalInputVal(currentTarget > 0 ? String(currentTarget) : '');
+    setGoalModalOpen(true);
   }
 
-  const [compPct, readPct, holdPct, planPct, dropPct] = distributePercentages(
-    [completedCount, readingCount, onHoldCount, planToReadCount, droppedCount],
-    totalCount,
-  );
+  // --- Calculations for Goal Card ---
+  const isLifetime = selectedYear === 'lifetime';
+  const targetGoal = isLifetime
+    ? 0
+    : (goalsMap[`${selectedYear}_${selectedMetric}`] ??
+      (selectedMetric === 'books' && selectedYear === thisYear ? 25 : 0));
 
-  const rated = books.filter((b) => b.rating != null && b.rating > 0);
-  const avgRating = rated.length
-    ? (rated.reduce((sum, b) => sum + (b.rating || 0), 0) / rated.length).toFixed(2)
-    : '—';
+  // Calculate actual progress for selectedYear and selectedMetric
+  const actualProgress = useMemo(() => {
+    if (selectedMetric === 'books') {
+      if (isLifetime) return books.filter((b) => b.status === 'Completed').length;
+      return books.filter((b) => {
+        if (b.status !== 'Completed' || !b.date_finished) return false;
+        const d = parseLocalDate(b.date_finished);
+        return d ? d.getFullYear() === selectedYear : false;
+      }).length;
+    }
 
-  const completedThisYear = books.filter((b) => {
-    if (b.status !== 'Completed' || !b.date_finished) return false;
-    const d = parseLocalDate(b.date_finished);
-    return d ? d.getFullYear() === thisYear : false;
-  }).length;
+    // Units (pages, chapters, volumes)
+    let sum = 0;
+    const targetYearNum = selectedYear === 'lifetime' ? null : selectedYear;
 
-  const totalRated = rated.length || 1;
-  const ratingDistribution = [5, 4, 3, 2, 1].map((star) => {
-    const count = books.filter((b) => {
-      if (b.rating == null) return false;
-      const r = Number(b.rating);
-      if (star === 5) {
-        return r === 5;
+    for (const b of books) {
+      if (targetYearNum) {
+        if (!b.date_finished && !b.date_started) continue;
+        const d = parseLocalDate(b.date_finished || b.date_started!);
+        if (d && d.getFullYear() !== targetYearNum) continue;
       }
-      return r >= star && r < star + 1;
-    }).length;
-    const percentage = Math.round((count / totalRated) * 100);
-    return { star, count, percentage };
-  });
 
-  const ratedCount = rated.length;
-  const fiveStarPct = ratingDistribution.find((r) => r.star === 5)?.percentage || 0;
+      const unitType = (b.unit_type || 'pages').toLowerCase();
+      if (selectedMetric === 'pages' && (unitType === 'pages' || unitType === 'units')) {
+        sum += b.status === 'Completed' ? b.total_units || b.progress || 0 : b.progress || 0;
+      } else if (
+        selectedMetric === 'chapters' &&
+        (unitType === 'chapters' || b.progress_structure !== 'single')
+      ) {
+        sum += b.progress || 0;
+      } else if (
+        selectedMetric === 'volumes' &&
+        (unitType === 'volumes' || b.parent_progress != null)
+      ) {
+        sum += b.parent_progress || (b.status === 'Completed' ? 1 : 0);
+      }
+    }
+    return sum;
+  }, [books, selectedMetric, selectedYear, isLifetime]);
 
+  // Pacing status calculations
+  const goalProgressPct =
+    targetGoal > 0 ? Math.min(100, Math.round((actualProgress / targetGoal) * 100)) : 0;
+  const isGoalAchieved = targetGoal > 0 && actualProgress >= targetGoal;
+
+  const currentMonthIdx = new Date().getMonth();
+  const elapsedMonths = selectedYear === thisYear ? currentMonthIdx + 1 : 12;
+  const expectedByNow = targetGoal > 0 ? (targetGoal / 12) * elapsedMonths : 0;
+  const paceDiff = Math.round(actualProgress - expectedByNow);
+
+  let paceStatus = 'NO GOAL SET';
+  let paceBadgeClass = 'border-border text-text-muted bg-surface';
+  let paceIcon = <Target className="h-3.5 w-3.5" />;
+
+  if (isLifetime) {
+    paceStatus = 'ALL-TIME';
+    paceBadgeClass = 'border-border text-text bg-surface shadow-[1px_1px_0px_var(--border)]';
+    paceIcon = <Award className="h-3.5 w-3.5 text-accent-color" />;
+  } else if (targetGoal === 0) {
+    paceStatus = 'NO GOAL SET';
+  } else if (isGoalAchieved) {
+    paceStatus = 'GOAL ACHIEVED!';
+    paceBadgeClass =
+      'border-border bg-accent-color text-accent-text shadow-[1.5px_1.5px_0px_var(--border)]';
+    paceIcon = <Trophy className="h-3.5 w-3.5 text-accent-text" />;
+  } else if (paceDiff > 0) {
+    paceStatus = `+${paceDiff} AHEAD`;
+    paceBadgeClass =
+      'border-emerald-600 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold';
+    paceIcon = <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />;
+  } else if (paceDiff === 0) {
+    paceStatus = 'ON TRACK';
+    paceBadgeClass = 'border-sky-600 bg-sky-500/15 text-sky-600 dark:text-sky-400 font-bold';
+    paceIcon = <CheckCircle2 className="h-3.5 w-3.5 text-sky-500" />;
+  } else {
+    paceStatus = `${Math.abs(paceDiff)} BEHIND`;
+    paceBadgeClass = 'border-rose-600 bg-rose-500/15 text-rose-600 dark:text-rose-400 font-bold';
+    paceIcon = <TrendingDown className="h-3.5 w-3.5 text-rose-500" />;
+  }
+
+  // Monthly breakdown bar chart
   const monthlyData = useMemo(() => {
     const counts = Array.from({ length: 12 }, () => 0);
+    const targetYear = selectedYear === 'lifetime' ? thisYear : selectedYear;
+
     books.forEach((b) => {
       if (b.status === 'Completed' && b.date_finished) {
         const d = parseLocalDate(b.date_finished);
-        if (d && d.getFullYear() === thisYear) {
+        if (d && d.getFullYear() === targetYear) {
           counts[d.getMonth()] += 1;
         }
       }
@@ -187,545 +223,225 @@ export default function StatsSummary({
       monthName: MONTH_NAMES[idx],
       count: counts[idx],
     }));
-  }, [books, thisYear]);
+  }, [books, selectedYear, thisYear]);
 
-  const targetGoal = goal ?? 30;
-  const currentMonthIdx = new Date().getMonth();
-  const elapsedMonths = currentMonthIdx + 1;
-  const remainingMonths = 12 - currentMonthIdx;
+  const maxMonthCount = Math.max(1, ...monthlyData.map((m) => m.count));
 
-  const avgPacePerMonth = completedThisYear
-    ? (completedThisYear / elapsedMonths).toFixed(1)
-    : '0.0';
-  const remainingBooksNeeded = Math.max(0, targetGoal - completedThisYear);
-  const requiredPace = (remainingBooksNeeded / remainingMonths).toFixed(1);
-  const isOnTrack =
-    completedThisYear >= targetGoal || Number(avgPacePerMonth) >= Number(requiredPace);
-
-  const goalPct = goal ? Math.min(100, Math.round((completedThisYear / goal) * 100)) : 0;
-
-  const animatedTotalCount = useAnimatedNumber(totalCount);
-  const animatedCompletedCount = useAnimatedNumber(completedCount);
-  const animatedReadingCount = useAnimatedNumber(readingCount);
-  const animatedCompletedThisYear = useAnimatedNumber(completedThisYear);
+  // Overall Status Breakdown counts
+  const _totalCount = books.length;
+  const _completedCount = books.filter((b) => b.status === 'Completed').length;
+  const _readingCount = books.filter((b) => b.status === 'Reading').length;
+  const _onHoldCount = books.filter((b) => b.status === 'On Hold').length;
+  const _planToReadCount = books.filter((b) => b.status === 'Plan to Read').length;
+  const _droppedCount = books.filter((b) => b.status === 'Dropped').length;
 
   return (
-    <Card className="surface-t1 mb-6">
-      <CardHeader className="flex flex-row items-center justify-between pb-4">
-        <div className="flex items-center gap-2">
-          <BarChart2 className="h-5 w-5 text-accent-color" />
-          <CardTitle className="font-bold text-lg">Reading Dashboard</CardTitle>
+    <div className="space-y-6">
+      {/* 1. VELOCITY CARDS DASHBOARD */}
+      <VelocityCards books={books} logs={logs} />
+
+      {/* 2. MAIN ANNUAL GOAL & MONTHLY PACING CARD */}
+      <Card className="surface-t1 border-2 border-border p-4 sm:p-6 shadow-[3px_3px_0px_var(--border)]">
+        {/* Year Selector & Goal Metric Selector */}
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b-2 border-border/30 pb-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-1 border-2 border-border bg-surface p-1 shadow-[2px_2px_0px_var(--border)]">
+              <select
+                value={selectedYear}
+                onChange={(e) =>
+                  setSelectedYear(
+                    e.target.value === 'lifetime' ? 'lifetime' : parseInt(e.target.value, 10),
+                  )
+                }
+                className="bg-transparent font-anton text-sm sm:text-base text-text focus:outline-none cursor-pointer pr-1"
+              >
+                {availableYears.map((y) => (
+                  <option key={y} value={y} className="bg-card-bg text-text">
+                    {y} ANNUAL GOAL
+                  </option>
+                ))}
+                <option value="lifetime" className="bg-card-bg text-text">
+                  LIFETIME ARCHIVES
+                </option>
+              </select>
+            </div>
+
+            {/* Metric Chips */}
+            <div className="flex items-center gap-1 border-2 border-border bg-surface p-1 shadow-[2px_2px_0px_var(--border)]">
+              {(['books', 'pages', 'chapters', 'volumes'] as GoalMetric[]).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setSelectedMetric(m)}
+                  className={`px-2.5 py-1 font-mono text-[11px] font-bold uppercase transition-all ${
+                    selectedMetric === m
+                      ? 'bg-accent-color text-accent-text border border-border shadow-[1px_1px_0px_var(--border)]'
+                      : 'text-text-muted hover:text-text'
+                  }`}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Goal Pace Badge & Set Goal Button */}
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <div
+              className={`flex items-center gap-1.5 border-2 px-3 py-1 font-mono text-xs ${paceBadgeClass}`}
+            >
+              {paceIcon}
+              <span>{paceStatus}</span>
+            </div>
+
+            {!isLifetime && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={openGoalModal}
+                className="gap-1.5 font-mono text-xs font-bold shadow-[2px_2px_0px_var(--border)]"
+              >
+                <Edit2 className="h-3 w-3" />
+                <span>SET {selectedMetric.toUpperCase()} GOAL</span>
+              </Button>
+            )}
+          </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="text-text-muted text-xs hover:text-text"
-        >
-          <span>{isExpanded ? 'Hide Details' : 'Show Details'}</span>
-          {isExpanded ? (
-            <ChevronUp className="ml-1 h-4 w-4" />
-          ) : (
-            <ChevronDown className="ml-1 h-4 w-4" />
-          )}
-        </Button>
-      </CardHeader>
 
-      <AnimatePresence initial={false}>
-        {isExpanded ? (
-          <motion.div
-            key="expanded-dashboard"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="overflow-hidden"
-          >
-            <CardContent className="space-y-4 pt-1 pb-5">
-              <div className="grid grid-cols-1 gap-4 p-1 md:grid-cols-3">
-                {/* WIDGET 1: STATUS BREAKDOWN */}
-                <motion.div
-                  whileHover={{ y: -2.5 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                  className="surface-t2 group relative flex flex-col justify-between overflow-hidden rounded-2xl p-4"
-                >
-                  <div className="flex items-center justify-between font-bold text-text-muted text-xs uppercase tracking-wider">
-                    <span className="flex items-center gap-1.5">
-                      <BookCheck className="h-3.5 w-3.5 text-accent-color" />
-                      Status Breakdown
-                    </span>
-                  </div>
-
-                  {/* Refined Matte-Satin 3D Progress Bar */}
-                  <div className="my-3">
-                    <div className="groove-inset relative flex h-5 items-center gap-[2px] overflow-hidden rounded-full border border-border/40 bg-border/40 p-0.5 shadow-inner">
-                      {[
-                        {
-                          label: 'Completed',
-                          count: completedCount,
-                          pct: compPct,
-                          gradient: 'bg-gradient-to-r from-emerald-600 to-emerald-500',
-                        },
-                        {
-                          label: 'Reading',
-                          count: readingCount,
-                          pct: readPct,
-                          gradient: 'bg-gradient-to-r from-sky-600 to-sky-500',
-                        },
-                        {
-                          label: 'On Hold',
-                          count: onHoldCount,
-                          pct: holdPct,
-                          gradient: 'bg-gradient-to-r from-orange-600 via-orange-500 to-red-500',
-                        },
-                        {
-                          label: 'Plan to Read',
-                          count: planToReadCount,
-                          pct: planPct,
-                          gradient: 'bg-gradient-to-r from-amber-400 via-yellow-400 to-yellow-300',
-                        },
-                        {
-                          label: 'Dropped',
-                          count: droppedCount,
-                          pct: dropPct,
-                          gradient: 'bg-gradient-to-r from-rose-600 to-pink-500',
-                        },
-                      ]
-                        .filter((s) => s.count > 0)
-                        .map((s, idx) => (
-                          <motion.div
-                            key={s.label}
-                            className={`h-full rounded-full ${s.gradient} relative cursor-pointer border-white/30 border-t shadow-2xs transition-opacity hover:opacity-90 active:scale-95`}
-                            initial={{ width: 0 }}
-                            animate={{ width: `${s.pct}%` }}
-                            transition={{
-                              type: 'spring',
-                              stiffness: 200,
-                              damping: 25,
-                              delay: idx * 0.04,
-                            }}
-                            onClick={() => onStatusSelect?.(s.label)}
-                            title={`${s.label}: ${s.count} (${totalCount ? Math.round((s.count / totalCount) * 100) : 0}%)`}
-                          >
-                            {/* Subtle Inner Top Catch-light Reflection */}
-                            <div className="absolute inset-x-1 top-[1px] h-[1px] rounded-full bg-white/35" />
-                          </motion.div>
-                        ))}
-                    </div>
-                  </div>
-
-                  {/* 3-Row Breakdown Grid matching design mockup */}
-                  <div className="my-2.5 space-y-1 text-xs">
-                    {/* Row 1: Completed & Reading */}
-                    <div className="grid grid-cols-2 gap-2 border-border/30 border-b pb-2">
-                      <div
-                        onClick={() => onStatusSelect?.('Completed')}
-                        className="flex cursor-pointer items-center justify-between rounded-lg border-border/30 border-r pr-2 pl-1 transition-colors hover:bg-text/5"
-                        title="Filter by Completed"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500" />
-                          <div className="flex flex-col min-w-0">
-                            <span className="font-semibold text-text leading-tight">Completed</span>
-                            <span className="text-[10px] text-text-muted">
-                              ({totalCount ? Math.round((completedCount / totalCount) * 100) : 0}%)
-                            </span>
-                          </div>
-                        </div>
-                        <span className="font-bold text-sm text-text shrink-0">
-                          {animatedCompletedCount}
-                        </span>
-                      </div>
-
-                      <div
-                        onClick={() => onStatusSelect?.('Reading')}
-                        className="flex cursor-pointer items-center justify-between rounded-lg pl-1 transition-colors hover:bg-text/5"
-                        title="Filter by Reading"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-sky-500" />
-                          <div className="flex flex-col min-w-0">
-                            <span className="font-semibold text-text leading-tight">Reading</span>
-                            <span className="text-[10px] text-text-muted">
-                              ({totalCount ? Math.round((readingCount / totalCount) * 100) : 0}%)
-                            </span>
-                          </div>
-                        </div>
-                        <span className="font-bold text-sm text-text shrink-0">
-                          {animatedReadingCount}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Row 2: On Hold & Plan to Read */}
-                    <div className="grid grid-cols-2 gap-2 border-border/30 border-b py-2">
-                      <div
-                        onClick={() => onStatusSelect?.('On Hold')}
-                        className="flex cursor-pointer items-center justify-between rounded-lg border-border/30 border-r pr-2 pl-1 transition-colors hover:bg-text/5"
-                        title="Filter by On Hold"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-orange-500" />
-                          <div className="flex flex-col min-w-0">
-                            <span className="font-semibold text-text leading-tight">On Hold</span>
-                            <span className="text-[10px] text-text-muted">
-                              ({totalCount ? Math.round((onHoldCount / totalCount) * 100) : 0}%)
-                            </span>
-                          </div>
-                        </div>
-                        <span className="font-bold text-sm text-text shrink-0">{onHoldCount}</span>
-                      </div>
-
-                      <div
-                        onClick={() => onStatusSelect?.('Plan to Read')}
-                        className="flex cursor-pointer items-center justify-between rounded-lg pl-1 transition-colors hover:bg-text/5"
-                        title="Filter by Plan to Read"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500" />
-                          <div className="flex flex-col min-w-0">
-                            <span className="font-semibold text-text leading-tight truncate">
-                              Plan to Read
-                            </span>
-                            <span className="text-[10px] text-text-muted">
-                              ({totalCount ? Math.round((planToReadCount / totalCount) * 100) : 0}%)
-                            </span>
-                          </div>
-                        </div>
-                        <span className="font-bold text-sm text-text shrink-0">
-                          {planToReadCount}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Row 3: Dropped */}
-                    <div className="pt-1.5 pb-0.5">
-                      <div
-                        onClick={() => onStatusSelect?.('Dropped')}
-                        className="flex w-max cursor-pointer items-center gap-2 rounded-lg px-1.5 py-1 transition-colors hover:bg-text/5"
-                        title="Filter by Dropped"
-                      >
-                        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-rose-500" />
-                        <span className="font-semibold text-text">Dropped</span>
-                        <span className="font-bold text-sm text-text ml-1">{droppedCount}</span>
-                        <span className="text-[10px] text-text-muted">
-                          ({totalCount ? Math.round((droppedCount / totalCount) * 100) : 0}%)
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Widget 1 Footer Badges */}
-                  <div className="mt-2 grid grid-cols-2 gap-2 border-border/40 border-t pt-2.5 text-xs">
-                    <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface/70 p-2 shadow-2xs">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-card-bg text-text-muted">
-                        <BookOpen className="h-3.5 w-3.5" />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-medium text-[10px] text-text-muted leading-tight">
-                          Total Entries
-                        </span>
-                        <span className="font-bold text-sm text-text leading-tight">
-                          {totalCount}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface/70 p-2 shadow-2xs">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-card-bg text-text-muted">
-                        <Star className="h-3.5 w-3.5 text-amber-400" />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-medium text-[10px] text-text-muted leading-tight">
-                          Avg Rating
-                        </span>
-                        <span className="flex items-center gap-1 font-bold text-sm text-text leading-tight">
-                          {avgRating} <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* WIDGET 2: ANNUAL SHELF & GOALS */}
-                <motion.div
-                  whileHover={{ y: -2.5 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                  className="surface-t2 group relative flex flex-col justify-between overflow-hidden rounded-2xl p-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 font-bold text-text-muted text-xs uppercase tracking-wider">
-                      <Trophy className="h-3.5 w-3.5 text-amber-500" />
-                      <span>{thisYear} Goal & Pace</span>
-                    </div>
-
-                    {/* Animated Pace Indicator */}
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="flex h-6 w-6 cursor-help items-center justify-center rounded-full border border-border/50 bg-surface/80 shadow-2xs transition-transform hover:scale-110">
-                            {isOnTrack ? (
-                              <Sparkles className="h-3.5 w-3.5 animate-pulse text-emerald-500" />
-                            ) : (
-                              <Flame className="h-3.5 w-3.5 animate-pulse text-amber-500" />
-                            )}
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {isOnTrack
-                            ? `⚡ Excellent pace! You've finished ${completedThisYear} books out of ${targetGoal}.`
-                            : `📈 Keep going! Target pace requires ~${Math.max(1, Math.round((targetGoal - completedThisYear) / Math.max(1, 12 - new Date().getMonth())))} bks/mo.`}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-
-                  {/* Monthly Histogram Bars */}
-                  <div className="my-3 space-y-1">
-                    <div className="grid h-14 grid-cols-12 items-end gap-1 px-1">
-                      {monthlyData.map((d, mIdx) => (
-                        <div
-                          key={mIdx}
-                          className="group relative flex h-full flex-col items-center justify-end"
-                          title={`${d.monthName}: ${d.count} finished`}
-                        >
-                          <motion.div
-                            className="w-full rounded-t-xs bg-gradient-to-t from-accent-color/85 to-accent-color/60 transition-colors group-hover:from-accent-color group-hover:to-accent-color/80"
-                            initial={{ height: 0 }}
-                            animate={{
-                              height:
-                                d.count === 0
-                                  ? '2px'
-                                  : `${Math.round((d.count / Math.max(1, ...monthlyData.map((m) => m.count))) * 100)}%`,
-                            }}
-                            transition={{
-                              type: 'spring',
-                              stiffness: 200,
-                              damping: 20,
-                              delay: mIdx * 0.02,
-                            }}
-                          />
-                          <span className="mt-1 font-mono text-[9px] text-text-muted/80 transition-colors group-hover:text-text">
-                            {d.label}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Goal Progress Ring & Edit */}
-                  <div className="flex items-center gap-3 border-border/50 border-t pt-2.5">
-                    <div className="w-full space-y-1">
-                      {!editingGoal ? (
-                        <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-1">
-                            <span className="text-text-muted">Target:</span>
-                            <strong className="text-text">
-                              {completedThisYear} / {targetGoal} books
-                            </strong>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            aria-label="Edit reading goal"
-                            onClick={() => {
-                              setGoalInput(String(targetGoal));
-                              setEditingGoal(true);
-                            }}
-                            className="h-6 w-6 rounded-md p-0 text-accent-color text-xs transition-transform hover:scale-110 hover:bg-accent-color/10 active:scale-95"
-                          >
-                            <Edit2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5">
-                          <input
-                            type="number"
-                            min={0}
-                            value={goalInput}
-                            onChange={(e) => setGoalInput(e.target.value)}
-                            className="h-7 w-16 rounded border border-border bg-card-bg px-2 text-xs"
-                          />
-                          <Button
-                            size="sm"
-                            className="h-7 px-2 text-xs"
-                            onClick={saveGoal}
-                            disabled={savingGoal}
-                          >
-                            <Check className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2 text-xs"
-                            onClick={() => setEditingGoal(false)}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      )}
-
-                      <Progress value={goalPct} className="groove-inset h-1.5 bg-border/40" />
-
-                      <div className="flex items-center justify-between pt-0.5 text-[11px] text-text-muted">
-                        <span>{goalPct}% Achieved</span>
-                        <span>Pace: {avgPacePerMonth} bks/mo</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Widget 2 Footer Badges */}
-                  <div className="mt-2 grid grid-cols-2 gap-2 border-border/40 border-t pt-2.5 text-xs">
-                    <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface/70 p-2 shadow-2xs">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-card-bg text-text-muted">
-                        <Trophy className="h-3.5 w-3.5 text-amber-500" />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-medium text-[10px] text-text-muted leading-tight">
-                          Annual Goal
-                        </span>
-                        <span className="font-bold text-xs text-text leading-tight">
-                          {completedThisYear} / {targetGoal}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface/70 p-2 shadow-2xs">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-card-bg text-text-muted">
-                        <Flame className="h-3.5 w-3.5 text-rose-500" />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-medium text-[10px] text-text-muted leading-tight">
-                          Pace Needed
-                        </span>
-                        <span className="font-bold text-xs text-text leading-tight">
-                          {requiredPace} bks/mo
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* WIDGET 3: RATING DISTRIBUTION */}
-                <motion.div
-                  whileHover={{ y: -2.5 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                  className="surface-t2 group relative flex flex-col justify-between overflow-hidden rounded-2xl p-4"
-                >
-                  <div className="flex items-center justify-between font-bold text-text-muted text-xs uppercase tracking-wider">
-                    <span className="flex items-center gap-1.5">
-                      <motion.div
-                        whileHover={{ scale: 1.3, rotate: 15 }}
-                        transition={{ type: 'spring', stiffness: 450, damping: 15 }}
-                        className="inline-flex cursor-pointer"
-                      >
-                        <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 drop-shadow-xs" />
-                      </motion.div>
-                      Rating Breakdown
-                    </span>
-                  </div>
-
-                  <div className="my-2 space-y-1.5">
-                    {ratingDistribution.map(({ star, count, percentage }) => (
-                      <div
-                        key={star}
-                        className="grid grid-cols-[24px_1fr_60px] items-center gap-2 rounded-md px-1 py-0.5 text-xs transition-colors hover:bg-text/5"
-                      >
-                        <span className="flex items-center gap-0.5 font-semibold text-text">
-                          {star}
-                          <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                        </span>
-                        <div className="groove-inset relative h-3.5 overflow-hidden rounded-full border border-border/40 bg-border/40 p-0.5 shadow-inner">
-                          <motion.div
-                            className="relative h-full rounded-full border-white/35 border-t bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-400 shadow-2xs transition-opacity hover:opacity-90"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${percentage}%` }}
-                            transition={{
-                              type: 'spring',
-                              stiffness: 200,
-                              damping: 25,
-                              delay: (5 - star) * 0.04,
-                            }}
-                          >
-                            {/* Inner Satin Glass Reflection Line */}
-                            <div className="absolute inset-x-1 top-[1px] h-[1px] rounded-full bg-white/40" />
-                          </motion.div>
-                        </div>
-                        <span className="text-right font-mono text-[11px] text-text-muted">
-                          {count}x ({percentage}%)
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Widget 3 Footer Badges */}
-                  <div className="mt-2 grid grid-cols-2 gap-2 border-border/40 border-t pt-2.5 text-xs">
-                    <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface/70 p-2 shadow-2xs">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-card-bg text-text-muted">
-                        <Award className="h-3.5 w-3.5 text-emerald-500" />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-medium text-[10px] text-text-muted leading-tight">
-                          Top Rating
-                        </span>
-                        <span className="font-bold text-xs text-text leading-tight">
-                          5★ ({fiveStarPct}%)
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface/70 p-2 shadow-2xs">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-card-bg text-text-muted">
-                        <BarChart2 className="h-3.5 w-3.5 text-sky-500" />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-medium text-[10px] text-text-muted leading-tight">
-                          Rated Books
-                        </span>
-                        <span className="font-bold text-xs text-text leading-tight">
-                          {ratedCount} / {totalCount}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              </div>
-            </CardContent>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="collapsed-dashboard"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-          >
-            <CardContent className="py-2">
-              <div className="flex flex-wrap items-center gap-4 text-text-muted text-xs">
-                <span>
-                  Total: <strong className="text-text">{animatedTotalCount}</strong>
+        {/* Goal Gauge & Monthly Bar Chart Grid */}
+        <div className="pt-5 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          {/* Left Column: Big Numbers & Gauge */}
+          <div className="lg:col-span-5 space-y-3">
+            <div className="flex items-baseline justify-between">
+              <div>
+                <span className="font-anton text-4xl sm:text-5xl text-text tracking-wide">
+                  {actualProgress.toLocaleString()}
                 </span>
-                <span>
-                  Completed ({thisYear}):{' '}
-                  <strong className="text-text">{animatedCompletedThisYear}</strong>
-                </span>
-                <span>
-                  Reading: <strong className="text-text">{animatedReadingCount}</strong>
-                </span>
-                <span>
-                  Avg Rating: <strong className="text-text">{avgRating}★</strong>
-                </span>
-                <span>
-                  Goal:{' '}
-                  <strong className="text-text">
-                    {completedThisYear}/{targetGoal} ({goalPct}%)
-                  </strong>
+                <span className="ml-2 font-mono text-sm font-bold text-text-muted uppercase">
+                  / {targetGoal > 0 ? targetGoal.toLocaleString() : '—'} {selectedMetric}
                 </span>
               </div>
-            </CardContent>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </Card>
+              <span className="font-mono text-base font-bold text-accent-color">
+                {targetGoal > 0 ? `${goalProgressPct}%` : ''}
+              </span>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="h-4 w-full bg-border/40 border-2 border-border overflow-hidden p-0.5">
+              <div
+                className="h-full bg-accent-color transition-all duration-700 shadow-sm"
+                style={{ width: `${goalProgressPct}%` }}
+              />
+            </div>
+
+            <p className="font-mono text-xs text-text-muted">
+              {isGoalAchieved
+                ? `🎉 Target exceeded by ${(actualProgress - targetGoal).toLocaleString()} ${selectedMetric}!`
+                : targetGoal > 0
+                  ? `${(targetGoal - actualProgress).toLocaleString()} ${selectedMetric} remaining to achieve goal.`
+                  : 'No specific goal set for this period.'}
+            </p>
+          </div>
+
+          {/* Right Column: 12-Month Completion History */}
+          <div className="lg:col-span-7 space-y-2">
+            <div className="flex items-center justify-between font-mono text-xs font-bold text-text-muted">
+              <span>
+                {isLifetime ? `${thisYear} MONTHLY ACTIVITY` : `${selectedYear} MONTHLY BREAKDOWN`}
+              </span>
+              <span>
+                {actualProgress} {selectedMetric} TOTAL
+              </span>
+            </div>
+
+            <div className="h-28 flex items-end justify-between gap-1.5 pt-4 px-2 border-2 border-border bg-surface shadow-[2px_2px_0px_var(--border)]">
+              {monthlyData.map((m) => {
+                const heightPct = Math.round((m.count / maxMonthCount) * 100);
+                return (
+                  <div key={m.monthName} className="flex-1 flex flex-col items-center gap-1 group">
+                    <span className="font-mono text-[10px] font-bold text-text opacity-0 group-hover:opacity-100 transition-opacity">
+                      {m.count}
+                    </span>
+                    <div className="w-full bg-border/30 h-16 flex items-end overflow-hidden border border-border/40">
+                      <div
+                        className={`w-full transition-all duration-500 ${
+                          m.count > 0 ? 'bg-accent-color' : 'bg-transparent'
+                        }`}
+                        style={{ height: `${heightPct}%` }}
+                      />
+                    </div>
+                    <span className="font-mono text-[10px] font-bold text-text-muted">
+                      {m.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* 3. READING PASSPORT & MILESTONES */}
+      <ReadingPassport books={books} />
+
+      {/* 4. GITHUB-STYLE STREAK & DAILY HEATMAP */}
+      <StreakHeatmap logs={logs} />
+
+      {/* 5. LIBRARY DISTRIBUTIONS (FORMATS, GENRES, RATINGS) */}
+      <DistributionTabs books={books} />
+
+      {/* SET GOAL MODAL */}
+      <Dialog open={goalModalOpen} onOpenChange={setGoalModalOpen}>
+        <DialogContent className="max-w-md border-2 border-border bg-card-bg shadow-[4px_4px_0px_var(--border)]">
+          <DialogHeader>
+            <DialogTitle className="font-anton text-xl tracking-wide text-text uppercase">
+              SET {selectedYear} {selectedMetric} GOAL
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+            <p className="font-hanken text-xs text-text-muted">
+              Target number of {selectedMetric} you aim to finish in {selectedYear}. This will
+              automatically sync across all your devices and client sessions.
+            </p>
+
+            <div className="space-y-2">
+              <label className="block font-mono text-xs font-bold uppercase text-text-muted">
+                {selectedMetric} TARGET
+              </label>
+              <Input
+                type="number"
+                min="1"
+                step="1"
+                value={goalInputVal}
+                onChange={(e) => setGoalInputVal(e.target.value)}
+                placeholder="e.g. 25"
+                className="border-2 border-border font-mono font-bold text-lg"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setGoalModalOpen(false)}
+                className="border-2 border-border font-mono text-xs font-bold"
+              >
+                CANCEL
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                disabled={savingGoal || !goalInputVal.trim()}
+                onClick={handleSaveGoal}
+                className="font-mono text-xs font-bold bg-accent-color text-accent-text border-2 border-border shadow-[2px_2px_0px_var(--border)]"
+              >
+                {savingGoal ? 'SAVING...' : 'SAVE GOAL'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

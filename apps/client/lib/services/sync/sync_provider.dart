@@ -45,4 +45,6 @@ abstract class RemoteSyncProvider {
   Future<List<ReadingLogEntry>> fetchRemoteReadingLogs({DateTime? since, List<String>? bookIds});
   Future<int?> fetchYearlyGoal();
   Future<bool> pushYearlyGoal(int goal);
+  Future<Map<String, int>?> fetchGoals() async => null;
+  Future<bool> pushGoalTarget({required int year, required String metric, required int target}) async => false;
 }

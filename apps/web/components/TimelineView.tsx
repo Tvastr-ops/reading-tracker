@@ -15,10 +15,10 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { useLibraryData } from '@/contexts/LibraryDataContext';
 import type { Book, ReadingLogEntry } from '@/lib/types';
-import { formatDisplayDate, parseLocalDate } from '@/lib/utils';
+import { parseLocalDate } from '@/lib/utils';
 
 interface DayBookGroup {
   bookId: string;

@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronLeft, History } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { TimelineView } from '@/components/TimelineView';
 import { Button } from '@/components/ui/button';

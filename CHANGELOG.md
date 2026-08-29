@@ -14,16 +14,35 @@ and this project adheres to the [Project Release Versioning Specification](.gemi
   - Rate-limiting protection with 3-attempt 30-second exponential lockout cooldown.
   - Hardened cryptographic key derivation using **600,000 PBKDF2 HMAC-SHA256 iterations** with a 32-byte CSPRNG salt.
 - **Hardware-Backed & Portable Secure Credential Storage**:
-  - Upgraded sync credentials storage from plaintext `SharedPreferences` to hardware-backed TEE / DPAPI / Keystore (`FlutterSecureStorage`).
+  - Upgraded sync credentials storage to latest `flutter_secure_storage` (v11.0.0) hardware-backed TEE / DPAPI / Keystore.
   - Unified Desktop Portable Mode: Self-contained AES-256-GCM encrypted storage in `portable_data/secure_config.dat` using the user's PIN/password as the master key.
   - Zero-friction auto-migration: Automatically migrates existing plaintext credentials on first boot and purges them from disk.
-- **Configurable Auto-Lock Timeouts**:
+- **Configurable Auto-Lock Timeouts & Native Privacy Screen**:
   - Added configurable background auto-lock durations (Instant, 1m, 5m, 10m, 15m, Cold start only).
-- **Privacy Mode & App Switcher Masking**:
-  - Added `FLAG_SECURE` integration on Android to mask app previews in the Recent Apps overview screen and prevent screenshots/screen recording.
+  - Native Kotlin `FLAG_SECURE` window management on Android to mask app previews in the Recent Apps overview screen and prevent screenshots/screen recording.
 - **Modernized Multi-Page Web Frontend (`apps/web`)**:
   - Converted single-page web app into dedicated Next.js App Router routes: `/` (Library), `/books/[id]` (Book Inspector & Log Manager), `/journal` (Reading Timeline), `/analytics` (Stats & Reading Velocity), and `/settings`.
   - Added client-side library pagination and desktop/mobile responsive navigation shells (`AppNavbar`, `MobileBottomNav`).
+- **Unified Multi-Unit Atomic Goals Sync (Flutter Client & Web App)**:
+  - Unified goal engine across both platforms with multi-unit selector tabs (`BOOKS`, `PAGES`, `CHAPTERS`, `VOLUMES`) and multi-year selector (`2026`, `2025`, etc., and `Lifetime`).
+  - Added real-time cloud synchronization for all unit targets via `app_settings` with backward-compatible single-count support.
+  - Added unified tactile pace status stamps (`GOAL ACHIEVED! 🏆`, `+X AHEAD`, `ON TRACK`, `X BEHIND`, `NO GOAL SET`).
+- **GitHub-Style Daily Reading Streak & Heatmap Matrix (Web)**:
+  - Added interactive 20-week daily commit grid rendering all reading sessions with intensity levels, session count tooltips, and real-time streak badges (**Current Streak**, **Best Streak**, **Total Active Days**).
+- **Reading Velocity & Pacing Matrix (Web)**:
+  - Added dedicated velocity cards for **This Week (7D)**, **This Month (30D)**, **Annual Volume**, and **Active Reading Velocity** speed calculations.
+- **Segmented Distribution Tabs & Reading Passport (Web)**:
+  - Added interactive tabs for **Publication Formats**, ranked **Genres**, and **1–5 Star Rating** distribution histogram.
+  - Added library completion health rate %, total re-reads logged, and average reading duration from start to finish date.
+
+### Fixed
+- **Multi-Platform CI/CD Release Compilation (Android, Windows, Linux)**:
+  - **Android**: Replaced legacy `flutter_windowmanager` with zero-dependency native Kotlin `MethodChannel`, upgraded `MainActivity` to `FlutterFragmentActivity`, and set `minSdk = 24`.
+  - **Windows**: Added `-D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS` in CMake to resolve MSVC 2022 STL1011 compilation errors with `local_auth_windows`.
+  - **Linux**: Added `libsecret-1-dev` and `libjsoncpp-dev` system packages to GitHub Actions release workflow.
+- **Empty Ghost Journey Cleanup & Auto-Gen Journey Deduplication**:
+  - Fixed an issue where duplicate empty `Journey #1` records appeared after auto-generating completed books on the web app.
+  - Added deduplication by `journey_index` across Web API routes, `ReadingLog.tsx`, and Flutter client SQLite queries.
 
 ---
 

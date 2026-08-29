@@ -261,7 +261,39 @@ class GenericRestSyncProvider implements RemoteSyncProvider {
   }
 
   @override
-  Future<bool> pushYearlyGoal(int goal) async {
+  Future<Map<String, int>?> fetchGoals() async {
+    if (serverUrl.isEmpty) return null;
+    try {
+      final uri = Uri.parse(_cleanUrl('/api/settings'));
+      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 6));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final dynamic data = jsonDecode(res.body);
+        if (data is Map) {
+          final result = <String, int>{};
+          if (data['yearlyGoal'] != null) {
+            final count = (data['yearlyGoal'] as num).toInt();
+            result['${DateTime.now().year}_books'] = count;
+          }
+          if (data['goals'] is Map) {
+            final goalsMap = data['goals'] as Map;
+            goalsMap.forEach((k, v) {
+              if (v is num) {
+                result[k.toString()] = v.toInt();
+              }
+            });
+          }
+          return result;
+        }
+      }
+      return null;
+    } catch (e) {
+      debugPrint('GenericRestSyncProvider fetchGoals error: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<bool> pushGoalTarget({required int year, required String metric, required int target}) async {
     if (serverUrl.isEmpty) return false;
     try {
       final uri = Uri.parse(_cleanUrl('/api/settings'));
@@ -269,13 +301,22 @@ class GenericRestSyncProvider implements RemoteSyncProvider {
           .patch(
             uri,
             headers: _headers,
-            body: jsonEncode({'yearlyGoal': goal}),
+            body: jsonEncode({
+              'year': year,
+              'metric': metric,
+              'target': target,
+            }),
           )
           .timeout(const Duration(seconds: 6));
       return res.statusCode >= 200 && res.statusCode < 300;
     } catch (e) {
-      debugPrint('GenericRestSyncProvider pushYearlyGoal error: $e');
+      debugPrint('GenericRestSyncProvider pushGoalTarget error: $e');
       return false;
     }
+  }
+
+  @override
+  Future<bool> pushYearlyGoal(int goal) async {
+    return pushGoalTarget(year: DateTime.now().year, metric: 'books', target: goal);
   }
 }
