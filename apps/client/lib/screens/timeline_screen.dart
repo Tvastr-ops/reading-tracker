@@ -333,16 +333,24 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
     final now = DateTime.now();
     final sevenDaysAgo = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 6));
+    final thirtyDaysAgo = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 29));
     double weekUnits = 0.0;
+    double monthUnits = 0.0;
     for (final g in _dayGroups) {
       final gDay = DateTime(g.date.year, g.date.month, g.date.day);
       if (!gDay.isBefore(sevenDaysAgo)) {
         weekUnits += g.bookMilestones.fold(0.0, (sum, m) => sum + m.totalDelta);
       }
+      if (!gDay.isBefore(thirtyDaysAgo)) {
+        monthUnits += g.bookMilestones.fold(0.0, (sum, m) => sum + m.totalDelta);
+      }
     }
     final weekUnitsStr = weekUnits >= 1000
         ? '${(weekUnits / 1000).toStringAsFixed(1)}k'
         : (weekUnits % 1 == 0 ? weekUnits.toInt().toString() : weekUnits.toStringAsFixed(1));
+    final monthUnitsStr = monthUnits >= 1000
+        ? '${(monthUnits / 1000).toStringAsFixed(1)}k'
+        : (monthUnits % 1 == 0 ? monthUnits.toInt().toString() : monthUnits.toStringAsFixed(1));
 
     if (isVertical) {
       return Container(
@@ -431,6 +439,20 @@ class _TimelineScreenState extends State<TimelineScreen> {
                     'UNITS THIS WEEK',
                     style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: mutedInk),
                   ),
+                  const SizedBox(height: 16),
+                  Text(
+                    '+$monthUnitsStr',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? const Color(0xFF80D8FF) : const Color(0xFF0288D1),
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  Text(
+                    'UNITS THIS MONTH',
+                    style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: mutedInk),
+                  ),
                 ],
               ),
             ),
@@ -463,7 +485,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   Text(
                     '$todayBooks',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.w900,
                       color: inkColor,
                       letterSpacing: -0.5,
@@ -472,13 +494,13 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   const SizedBox(height: 2),
                   Text(
                     'BOOKS TODAY',
-                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: mutedInk),
+                    style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800, color: mutedInk),
                   ),
                 ],
               ),
             ),
             Container(height: 32, width: 1, color: borderColor.withValues(alpha: 0.2)),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -486,7 +508,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   Text(
                     '+$todayUnitsStr',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.w900,
                       color: accentColor,
                       letterSpacing: -0.5,
@@ -495,13 +517,13 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   const SizedBox(height: 2),
                   Text(
                     'UNITS TODAY',
-                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: mutedInk),
+                    style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800, color: mutedInk),
                   ),
                 ],
               ),
             ),
             Container(height: 32, width: 1, color: borderColor.withValues(alpha: 0.2)),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -509,7 +531,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   Text(
                     '+$weekUnitsStr',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.w900,
                       color: isDark ? const Color(0xFF69F0AE) : const Color(0xFF00897B),
                       letterSpacing: -0.5,
@@ -518,7 +540,30 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   const SizedBox(height: 2),
                   Text(
                     'THIS WEEK',
-                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: mutedInk),
+                    style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800, color: mutedInk),
+                  ),
+                ],
+              ),
+            ),
+            Container(height: 32, width: 1, color: borderColor.withValues(alpha: 0.2)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '+$monthUnitsStr',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? const Color(0xFF80D8FF) : const Color(0xFF0288D1),
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'THIS MONTH',
+                    style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800, color: mutedInk),
                   ),
                 ],
               ),

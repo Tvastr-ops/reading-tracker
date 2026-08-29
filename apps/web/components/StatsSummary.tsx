@@ -1,6 +1,15 @@
 'use client';
 
-import { Award, CheckCircle2, Edit2, Target, TrendingDown, TrendingUp, Trophy } from 'lucide-react';
+import {
+  Award,
+  Calendar,
+  CheckCircle2,
+  Edit2,
+  Target,
+  TrendingDown,
+  TrendingUp,
+  Trophy,
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -52,9 +61,11 @@ export default function StatsSummary({
   const [goalInputVal, setGoalInputVal] = useState('');
   const [savingGoal, setSavingGoal] = useState(false);
 
-  // Available Years
+  // Available Years - scan books, journeys, logs, and saved goal keys
   const availableYears = useMemo(() => {
     const yearsSet = new Set<number>([thisYear]);
+
+    // 1. Scan books
     for (const b of books) {
       if (b.date_finished) {
         const d = parseLocalDate(b.date_finished);
@@ -64,9 +75,44 @@ export default function StatsSummary({
         const d = parseLocalDate(b.date_started);
         if (d) yearsSet.add(d.getFullYear());
       }
+      if (b.updated_at) {
+        const d = new Date(b.updated_at);
+        if (!Number.isNaN(d.getTime())) yearsSet.add(d.getFullYear());
+      }
     }
-    return Array.from(yearsSet).sort((a, b) => b - a);
-  }, [books, thisYear]);
+
+    // 2. Scan journeys
+    for (const j of journeys) {
+      if (j.date_finished) {
+        const d = parseLocalDate(j.date_finished);
+        if (d) yearsSet.add(d.getFullYear());
+      }
+      if (j.date_started) {
+        const d = parseLocalDate(j.date_started);
+        if (d) yearsSet.add(d.getFullYear());
+      }
+    }
+
+    // 3. Scan logs
+    for (const log of logs) {
+      if (log.logged_at) {
+        const d = new Date(log.logged_at);
+        if (!Number.isNaN(d.getTime())) yearsSet.add(d.getFullYear());
+      }
+    }
+
+    // 4. Scan configured goals
+    for (const key of Object.keys(goalsMap)) {
+      const yearPart = parseInt(key.split('_')[0], 10);
+      if (Number.isFinite(yearPart) && yearPart >= 1947 && yearPart <= thisYear + 1) {
+        yearsSet.add(yearPart);
+      }
+    }
+
+    return Array.from(yearsSet)
+      .filter((y) => y >= 1947 && y <= thisYear + 1)
+      .sort((a, b) => b - a);
+  }, [books, journeys, logs, goalsMap, thisYear]);
 
   // Load cloud synced goals on mount
   useEffect(() => {
@@ -200,7 +246,11 @@ export default function StatsSummary({
       for (const log of logs) {
         if (!isLifetime && targetYearNum) {
           const logDate = log.logged_at ? new Date(log.logged_at) : null;
-          if (!logDate || Number.isNaN(logDate.getTime()) || logDate.getFullYear() !== targetYearNum) {
+          if (
+            !logDate ||
+            Number.isNaN(logDate.getTime()) ||
+            logDate.getFullYear() !== targetYearNum
+          ) {
             continue;
           }
         }
@@ -314,33 +364,46 @@ export default function StatsSummary({
 
   return (
     <div className="space-y-6">
+      {/* TOP HEADER TIMEFRAME SELECTOR (ON THE LEFT NEAR HEADER) */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 border-2 border-border bg-surface px-3 py-1.5 shadow-[2px_2px_0px_var(--border)]">
+          <Calendar className="h-4 w-4 text-accent-color shrink-0" />
+          <span className="font-mono text-xs font-bold text-text-muted uppercase hidden sm:inline">
+            TIMEFRAME:
+          </span>
+          <select
+            value={selectedYear}
+            onChange={(e) =>
+              setSelectedYear(
+                e.target.value === 'lifetime' ? 'lifetime' : parseInt(e.target.value, 10),
+              )
+            }
+            className="bg-transparent font-anton text-base sm:text-lg text-text focus:outline-none cursor-pointer pr-1"
+          >
+            {availableYears.map((y) => (
+              <option key={y} value={y} className="bg-card-bg text-text">
+                {y} ARCHIVE
+              </option>
+            ))}
+            <option value="lifetime" className="bg-card-bg text-text">
+              LIFETIME ARCHIVES
+            </option>
+          </select>
+        </div>
+      </div>
+
       {/* 1. VELOCITY CARDS DASHBOARD */}
       <VelocityCards books={books} logs={logs} />
 
       {/* 2. MAIN ANNUAL GOAL & MONTHLY PACING CARD */}
       <Card className="surface-t1 border-2 border-border p-4 sm:p-6 shadow-[3px_3px_0px_var(--border)]">
-        {/* Year Selector & Goal Metric Selector */}
+        {/* Goal Metric Selector & Pace Badge */}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b-2 border-border/30 pb-4">
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-1 border-2 border-border bg-surface p-1 shadow-[2px_2px_0px_var(--border)]">
-              <select
-                value={selectedYear}
-                onChange={(e) =>
-                  setSelectedYear(
-                    e.target.value === 'lifetime' ? 'lifetime' : parseInt(e.target.value, 10),
-                  )
-                }
-                className="bg-transparent font-anton text-sm sm:text-base text-text focus:outline-none cursor-pointer pr-1"
-              >
-                {availableYears.map((y) => (
-                  <option key={y} value={y} className="bg-card-bg text-text">
-                    {y} ANNUAL GOAL
-                  </option>
-                ))}
-                <option value="lifetime" className="bg-card-bg text-text">
-                  LIFETIME ARCHIVES
-                </option>
-              </select>
+            <div className="flex items-center gap-1.5">
+              <span className="font-anton text-base sm:text-lg tracking-wide text-text uppercase">
+                {isLifetime ? 'LIFETIME' : `${selectedYear}`} GOAL:
+              </span>
             </div>
 
             {/* Metric Chips */}
@@ -459,7 +522,16 @@ export default function StatsSummary({
       </Card>
 
       {/* 3. READING PASSPORT & MILESTONES */}
-      <ReadingPassport books={books} />
+      <ReadingPassport
+        books={books}
+        journeys={journeys}
+        selectedYear={selectedYear}
+        yearlyGoal={
+          selectedYear === 'lifetime'
+            ? 0
+            : (goalsMap[`${selectedYear}_books`] ?? (selectedYear === thisYear ? 25 : 0))
+        }
+      />
 
       {/* 4. GITHUB-STYLE STREAK & DAILY HEATMAP */}
       <StreakHeatmap logs={logs} />
