@@ -5,6 +5,17 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.6.1] - 2026-08-30
+
+### Added
+- **Timeline Rolling 30-Day Velocity**:
+  - Added rolling 30-day velocity metric (**`THIS MONTH`**) to the Reading Timeline screen across both horizontal mobile metric row and desktop sidebar overview card.
+  - Enhanced velocity calculations with real-time reading progress tracking.
+
+### Fixed
+- **Analytics & Timeframe Parity**:
+  - Improved lifetime vs yearly macro velocity calculations and journey-aware historical records across platforms.
+
 ## [2.6.0] - 2026-08-29
 
 ### Added
