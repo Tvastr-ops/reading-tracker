@@ -1,7 +1,7 @@
 'use client';
 
 import { Calendar, ChevronDown, ChevronRight, Clock, Loader2, Plus, Sparkles } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { simulateReadingHistoryLogs } from '@/lib/progress';
 import type { ReadingJourney, ReadingLogEntry } from '@/lib/types';
@@ -153,7 +153,8 @@ export default function ReadingLog({
   }, [journeys, entries]);
 
   // Active Journey Detection & Journey-Aware Grouping
-  const activeJourney = dedupedJourneys.find((j) => j.status === 'reading') || dedupedJourneys[0];
+  const activeJourney =
+    dedupedJourneys.find((j: ReadingJourney) => j.status === 'reading') || dedupedJourneys[0];
   const activeJourneyId = activeJourney?.id;
 
   // Logs for the active journey specifically for main header pace calculation
@@ -354,7 +355,7 @@ export default function ReadingLog({
 
           {hasMultipleJourneys ? (
             <div className="space-y-2.5">
-              {dedupedJourneys.map((j) => {
+              {dedupedJourneys.map((j: ReadingJourney) => {
                 const isCurrentActive = j.status === 'reading' && status === 'Reading';
                 const journeyEntries = entries.filter(
                   (e) =>
