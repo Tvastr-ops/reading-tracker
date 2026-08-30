@@ -91,7 +91,7 @@ export function LibraryToolbar() {
             placeholder={`Search title, author, series, tags... (Press / to focus)`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-10 w-full border-2 border-border bg-card-bg pr-9 pl-9 text-text text-xs sm:text-sm font-medium shadow-[2px_2px_0px_var(--border)] transition-all duration-150 focus:outline-none focus:border-border focus:shadow-[3.5px_3.5px_0px_var(--border)] focus:translate-x-[-1px] focus:translate-y-[-1px] focus:bg-surface/90"
+            className="h-10 w-full border-2 border-border bg-card-bg pr-9 pl-9 text-text text-xs sm:text-sm font-medium shadow-[2px_2px_0px_var(--border)] transition-all duration-150 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 focus:border-border focus:shadow-[3.5px_3.5px_0px_var(--border)] focus:translate-x-[-1px] focus:translate-y-[-1px] focus:bg-surface/90"
           />
           {search ? (
             <button

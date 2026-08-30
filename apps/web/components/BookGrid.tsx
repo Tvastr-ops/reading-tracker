@@ -125,7 +125,7 @@ function BookGrid({
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.25, delay, ease: [0.16, 1, 0.3, 1] }}
               whileHover={{ y: -3, scale: 1.008 }}
-              whileTap={{ scale: 0.99 }}
+              whileTap={{ scale: 0.96 }}
               className="h-full"
             >
               <Card

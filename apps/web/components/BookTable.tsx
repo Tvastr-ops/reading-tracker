@@ -184,7 +184,7 @@ function BookTable({
                     }
                   }
                 }}
-                className={`surface-t2 group relative overflow-hidden rounded-2xl p-3 transition-[border-color,box-shadow] hover:border-accent-color/60 active:scale-[0.99] ${idx >= 4 ? 'cv-mobile-card' : ''} ${
+                className={`surface-t2 group relative overflow-hidden rounded-2xl p-3 transition-all duration-75 ease-out hover:border-accent-color/60 active:scale-[0.97] ${idx >= 4 ? 'cv-mobile-card' : ''} ${
                   isSelected
                     ? 'border-accent-color bg-accent-color/10 ring-2 ring-accent-color/30'
                     : ''
