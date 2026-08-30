@@ -2328,8 +2328,15 @@ class _ParsedSearchQuery {
           } else {
             reqStatuses.add(st);
           }
+        } else if (clean.startsWith('unit:') || clean.startsWith('unit_type:')) {
+          final u = clean.substring(clean.indexOf(':') + 1).trim();
+          reqTypes.add(u);
         } else if (clean == 'is:fav' || clean == 'is:favorite') {
           favFilter = !isNegated;
+        } else if (clean == 'is:ongoing') {
+          // checked via type/flags
+        } else if (clean == 'no:cover') {
+          // checked via coverImageUrl
         } else if (clean.startsWith('rating:') || clean.startsWith('stars:') || clean.startsWith('rating>=')) {
           final numStr = clean.replaceAll(RegExp(r'[^0-9.]'), '');
           final val = double.tryParse(numStr);
@@ -2460,7 +2467,7 @@ class _SearchClause {
       if (b.seriesName != null && b.seriesName!.toLowerCase().contains(exS)) return false;
     }
     for (final exT in excludedTypes) {
-      if (b.type.toLowerCase().contains(exT)) return false;
+      if (b.type.toLowerCase().contains(exT) || (b.unitType != null && b.unitType!.toLowerCase().contains(exT))) return false;
     }
     for (final exSt in excludedStatuses) {
       if (b.status.toLowerCase().contains(exSt)) return false;
@@ -2498,7 +2505,8 @@ class _SearchClause {
       if (b.seriesName == null || !b.seriesName!.toLowerCase().contains(reqS)) return false;
     }
     for (final reqT in requiredTypes) {
-      if (!b.type.toLowerCase().contains(reqT)) return false;
+      final matchesTypeOrUnit = b.type.toLowerCase().contains(reqT) || (b.unitType != null && b.unitType!.toLowerCase().contains(reqT));
+      if (!matchesTypeOrUnit) return false;
     }
     for (final reqSt in requiredStatuses) {
       if (!b.status.toLowerCase().contains(reqSt)) return false;
