@@ -5,6 +5,26 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.6.2] - 2026-08-30
+
+### Added
+- **Unified Boolean & Structured Search Engine (Web & Mobile)**:
+  - Added full boolean query parsing across both web and mobile clients: `OR` / `|` union, multi-token `AND`, exact phrase matching (`"..."`), and negation (`-tag`, `!manga`).
+  - Added structured field qualifiers: `author:` / `by:`, `series:`, `tag:` / `#`, `shelf:`, `type:`, `status:`, `rating:` / `stars:`, `pages:`, and boolean flags (`is:fav`, `is:ongoing`, `no:cover`, `has:notes`).
+  - Added in-progress typing resilience so trailing pipe symbols or uncompleted operators do not zero out search results while typing.
+- **View Switch Animation Preferences (Web App)**:
+  - Added configurable view transition styles under *Settings & Preferences*: **Instant (0ms — Notion / Linear)** for zero-latency 60fps view swapping, and **Smooth Fade (100ms)** for soft GPU keyframe transitions.
+- **High-Clarity GPU Paper Grain & Stylesheet Optimization**:
+  - Upgraded hardware-accelerated SVG fractal noise (`<feTurbulence>`) paper grain with zero scroll lag and automatic dark mode balance.
+  - Purged ~600 lines of obsolete prototype CSS from `globals.css` (reducing CSS payload by ~40%).
+
+### Fixed
+- **Mobile Touch Responsiveness & Tactile Press Polish**:
+  - Added client-side `touchstart` listener in `AppShell` to immediately unlock instant mobile `:active` states on iOS and Android.
+  - Added universal active compression (`active:scale-[0.97]`) and snappy `duration-75` feedback to all buttons and cards.
+  - Fixed mobile bottom navigation overlap on floating bulk selection action bar with dynamic safe-area offsets.
+  - Replaced solid focus rings with zero-ring tactile cardstock elevation shadows.
+
 ## [2.6.1] - 2026-08-30
 
 ### Added

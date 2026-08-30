@@ -1,22 +1,7 @@
-'use client';
-
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { compileSearchQuery, parseShelves } from '@/lib/searchParser';
 import { type Book, type SortDir, type SortField, STATUSES } from '@/lib/types';
-
-function parseShelves(shelfNames?: string | null): string[] {
-  if (!shelfNames) return [];
-  try {
-    const parsed = JSON.parse(shelfNames);
-    if (Array.isArray(parsed)) return parsed.map((s) => String(s).trim()).filter(Boolean);
-  } catch {
-    // fallback comma separated
-  }
-  return shelfNames
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
 
 export function useLibraryFilters(books: Book[]) {
   const [statusFilter, setStatusFilter] = useState('All');
@@ -132,31 +117,8 @@ export function useLibraryFilters(books: Book[]) {
     }
 
     if (deferredSearch.trim()) {
-      const q = deferredSearch.trim().toLowerCase();
-      if (q.startsWith('series:')) {
-        const sq = q.substring(7).trim();
-        list = list.filter((b) => !sq || (b.series_name?.toLowerCase().includes(sq) ?? false));
-      } else if (q.startsWith('shelf:')) {
-        const shq = q.substring(6).trim();
-        list = list.filter(
-          (b) => !shq || parseShelves(b.shelf_names).some((s) => s.toLowerCase().includes(shq)),
-        );
-      } else if (q.startsWith('#') || q.startsWith('tag:')) {
-        const tq = (q.startsWith('#') ? q.substring(1) : q.substring(4)).trim();
-        list = list.filter((b) => !tq || (b.genre_tags?.toLowerCase().includes(tq) ?? false));
-      } else {
-        list = list.filter((b) => {
-          const shelves = parseShelves(b.shelf_names);
-          return (
-            b.title.toLowerCase().includes(q) ||
-            (b.author?.toLowerCase().includes(q) ?? false) ||
-            (b.series_name?.toLowerCase().includes(q) ?? false) ||
-            (b.genre_tags?.toLowerCase().includes(q) ?? false) ||
-            shelves.some((s) => s.toLowerCase().includes(q)) ||
-            (b.type?.toLowerCase().includes(q) ?? false)
-          );
-        });
-      }
+      const matcher = compileSearchQuery(deferredSearch);
+      list = list.filter(matcher);
     }
 
     return [...list].sort((a, b) => {

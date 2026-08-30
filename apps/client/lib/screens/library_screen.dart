@@ -2253,8 +2253,18 @@ class _ParsedSearchQuery {
       final exTags = <String>[];
       final reqShelves = <String>[];
       final exShelves = <String>[];
+      final reqAuthors = <String>[];
+      final exAuthors = <String>[];
+      final reqSeries = <String>[];
+      final exSeries = <String>[];
+      final reqTypes = <String>[];
+      final exTypes = <String>[];
+      final reqStatuses = <String>[];
+      final exStatuses = <String>[];
       final reqKw = <String>[];
       final exKw = <String>[];
+      bool? favFilter;
+      double? minRating;
 
       for (final tok in tokens) {
         final tLow = tok.toLowerCase();
@@ -2283,6 +2293,47 @@ class _ParsedSearchQuery {
           } else {
             reqShelves.add(shelf);
           }
+        } else if (clean.startsWith('author:') && clean.length > 7) {
+          final a = clean.substring(7);
+          if (isNegated) {
+            exAuthors.add(a);
+          } else {
+            reqAuthors.add(a);
+          }
+        } else if (clean.startsWith('by:') && clean.length > 3) {
+          final a = clean.substring(3);
+          if (isNegated) {
+            exAuthors.add(a);
+          } else {
+            reqAuthors.add(a);
+          }
+        } else if (clean.startsWith('series:') && clean.length > 7) {
+          final s = clean.substring(7);
+          if (isNegated) {
+            exSeries.add(s);
+          } else {
+            reqSeries.add(s);
+          }
+        } else if (clean.startsWith('type:') && clean.length > 5) {
+          final t = clean.substring(5);
+          if (isNegated) {
+            exTypes.add(t);
+          } else {
+            reqTypes.add(t);
+          }
+        } else if (clean.startsWith('status:') && clean.length > 7) {
+          final st = clean.substring(7);
+          if (isNegated) {
+            exStatuses.add(st);
+          } else {
+            reqStatuses.add(st);
+          }
+        } else if (clean == 'is:fav' || clean == 'is:favorite') {
+          favFilter = !isNegated;
+        } else if (clean.startsWith('rating:') || clean.startsWith('stars:') || clean.startsWith('rating>=')) {
+          final numStr = clean.replaceAll(RegExp(r'[^0-9.]'), '');
+          final val = double.tryParse(numStr);
+          if (val != null) minRating = val;
         } else {
           if (isNegated) {
             exKw.add(clean);
@@ -2297,9 +2348,28 @@ class _ParsedSearchQuery {
         excludedTags: exTags,
         requiredShelves: reqShelves,
         excludedShelves: exShelves,
+        requiredAuthors: reqAuthors,
+        excludedAuthors: exAuthors,
+        requiredSeries: reqSeries,
+        excludedSeries: exSeries,
+        requiredTypes: reqTypes,
+        excludedTypes: exTypes,
+        requiredStatuses: reqStatuses,
+        excludedStatuses: exStatuses,
         textKeywords: reqKw,
         excludedKeywords: exKw,
+        favoriteFilter: favFilter,
+        minRating: minRating,
       ));
+    }
+
+    if (clauses.isEmpty) {
+      return const _ParsedSearchQuery._(
+        isEmpty: true,
+        singleSeriesPrefix: null,
+        singleShelfPrefix: null,
+        orClauses: [],
+      );
     }
 
     return _ParsedSearchQuery._(
@@ -2332,19 +2402,43 @@ class _SearchClause {
   final List<String> excludedTags;
   final List<String> requiredShelves;
   final List<String> excludedShelves;
+  final List<String> requiredAuthors;
+  final List<String> excludedAuthors;
+  final List<String> requiredSeries;
+  final List<String> excludedSeries;
+  final List<String> requiredTypes;
+  final List<String> excludedTypes;
+  final List<String> requiredStatuses;
+  final List<String> excludedStatuses;
   final List<String> textKeywords;
   final List<String> excludedKeywords;
+  final bool? favoriteFilter;
+  final double? minRating;
 
   const _SearchClause({
     required this.requiredTags,
     required this.excludedTags,
     required this.requiredShelves,
     required this.excludedShelves,
+    required this.requiredAuthors,
+    required this.excludedAuthors,
+    required this.requiredSeries,
+    required this.excludedSeries,
+    required this.requiredTypes,
+    required this.excludedTypes,
+    required this.requiredStatuses,
+    required this.excludedStatuses,
     required this.textKeywords,
     required this.excludedKeywords,
+    this.favoriteFilter,
+    this.minRating,
   });
 
   bool matches(Book b) {
+    // 0. Favorite & Rating filters
+    if (favoriteFilter != null && b.isFavorite != favoriteFilter) return false;
+    if (minRating != null && (b.rating == null || b.rating! < minRating!)) return false;
+
     // 1. Exclude if book matches any excluded tag
     for (final exTag in excludedTags) {
       final hasTag = b.tagsList.any((t) => t.toLowerCase().contains(exTag)) ||
@@ -2358,7 +2452,21 @@ class _SearchClause {
       if (hasShelf) return false;
     }
 
-    // 3. Exclude if book matches any excluded keyword
+    // 3. Exclude author / series / type / status
+    for (final exA in excludedAuthors) {
+      if (b.author != null && b.author!.toLowerCase().contains(exA)) return false;
+    }
+    for (final exS in excludedSeries) {
+      if (b.seriesName != null && b.seriesName!.toLowerCase().contains(exS)) return false;
+    }
+    for (final exT in excludedTypes) {
+      if (b.type.toLowerCase().contains(exT)) return false;
+    }
+    for (final exSt in excludedStatuses) {
+      if (b.status.toLowerCase().contains(exSt)) return false;
+    }
+
+    // 4. Exclude if book matches any excluded keyword
     for (final exKw in excludedKeywords) {
       final matchesEx = b.title.toLowerCase().contains(exKw) ||
           (b.author != null && b.author!.toLowerCase().contains(exKw)) ||
@@ -2369,20 +2477,34 @@ class _SearchClause {
       if (matchesEx) return false;
     }
 
-    // 4. Must match all required tags in this clause
+    // 5. Must match all required tags in this clause
     for (final tag in requiredTags) {
       final hasTag = b.tagsList.any((t) => t.toLowerCase().contains(tag)) ||
           (b.genreTags != null && b.genreTags!.toLowerCase().contains(tag));
       if (!hasTag) return false;
     }
 
-    // 5. Must match all required shelves in this clause
+    // 6. Must match all required shelves in this clause
     for (final shelf in requiredShelves) {
       final hasShelf = b.shelvesList.any((s) => s.toLowerCase().contains(shelf));
       if (!hasShelf) return false;
     }
 
-    // 6. Must match all required keywords in this clause
+    // 7. Must match required author / series / type / status
+    for (final reqA in requiredAuthors) {
+      if (b.author == null || !b.author!.toLowerCase().contains(reqA)) return false;
+    }
+    for (final reqS in requiredSeries) {
+      if (b.seriesName == null || !b.seriesName!.toLowerCase().contains(reqS)) return false;
+    }
+    for (final reqT in requiredTypes) {
+      if (!b.type.toLowerCase().contains(reqT)) return false;
+    }
+    for (final reqSt in requiredStatuses) {
+      if (!b.status.toLowerCase().contains(reqSt)) return false;
+    }
+
+    // 8. Must match all required keywords in this clause
     for (final kw in textKeywords) {
       final matchesKw = b.title.toLowerCase().contains(kw) ||
           (b.author != null && b.author!.toLowerCase().contains(kw)) ||
