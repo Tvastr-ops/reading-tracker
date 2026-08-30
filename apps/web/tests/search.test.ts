@@ -238,4 +238,73 @@ describe('Boolean & Structured Search Query Engine', () => {
       ['4'],
     );
   });
+
+  it('supports smart unit-aware and progress comparison operators', () => {
+    // book1: 1000 pages, progress 450 (pages)
+    const book2Completed = createMockBook({
+      id: '2',
+      title: 'Dune',
+      total_units: 500,
+      progress: 500,
+      status: 'Completed',
+    });
+    const book3WithChapters = createMockBook({
+      id: '3',
+      title: 'Solo Leveling',
+      unit_type: 'chapters',
+      total_units: 179,
+      progress: 179,
+      type: 'Manhwa',
+    });
+    const sample = [book1, book2Completed, book3WithChapters];
+
+    // pages>400 should ONLY match book1 (1000 pages) and book2 (500 pages), NOT book3 (179 chapters)
+    const matchPages = compileSearchQuery('pages>400');
+    assert.deepStrictEqual(
+      sample.filter(matchPages).map((b) => b.id),
+      ['1', '2'],
+    );
+
+    // ch>100 should ONLY match book3 (179 chapters)
+    const matchChapters = compileSearchQuery('ch>100');
+    assert.deepStrictEqual(
+      sample.filter(matchChapters).map((b) => b.id),
+      ['3'],
+    );
+
+    // units>150 matches any book with >150 total units regardless of unit_type
+    const matchUniversal = compileSearchQuery('units>150');
+    assert.deepStrictEqual(
+      sample.filter(matchUniversal).map((b) => b.id),
+      ['1', '2', '3'],
+    );
+
+    // progress>=450 checks current read progress
+    const matchProgress = compileSearchQuery('progress>=450');
+    assert.deepStrictEqual(
+      sample.filter(matchProgress).map((b) => b.id),
+      ['1', '2'],
+    );
+
+    // percent=100% or progress:100% matches completed works
+    const matchPercent = compileSearchQuery('percent=100%');
+    assert.deepStrictEqual(
+      sample.filter(matchPercent).map((b) => b.id),
+      ['2', '3'],
+    );
+
+    // unread>0 matches works with remaining units
+    const matchUnread = compileSearchQuery('unread>0');
+    assert.deepStrictEqual(
+      sample.filter(matchUnread).map((b) => b.id),
+      ['1'],
+    );
+
+    // unit:chapters filters by active unit type
+    const matchUnitFilter = compileSearchQuery('unit:chapters');
+    assert.deepStrictEqual(
+      sample.filter(matchUnitFilter).map((b) => b.id),
+      ['3'],
+    );
+  });
 });

@@ -5,12 +5,24 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.6.3] - 2026-08-30
+
+### Added
+- **Smart Unit-Aware & Progress Search Operators (Web & Mobile)**:
+  - Added strict unit-aware length filtering: `pages>400` / `p<200` (strictly matches pages), `chapters>100` / `ch>50` (strictly matches serialized chapters/manga), `volumes>=10` / `vol>5` (volume-tier works), and `words>50000` (word-count works).
+  - Added universal length comparison: `units>100` / `length>300` / `total<=50` across all format types.
+  - Added read progress and milestone operators: current read progress (`progress>450`, `read>100`), percentage completion (`percent>=50%`, `pct=100%`), and remaining unread count (`unread>0`, `left>10`).
+  - Added direct unit mode filter (`unit:pages`, `unit:chapters`, `unit:volumes`, `unit:words`).
+- **Dependency & SDK Modernization**:
+  - Upgraded `flutter_secure_storage` to `^11.0.0` with `DarwinOptions` and modern Android hardware encryption.
+  - Upgraded `package_info_plus` to `^10.2.1` and `win32` to `6.4.0`.
+
 ## [2.6.2] - 2026-08-30
 
 ### Added
 - **Unified Boolean & Structured Search Engine (Web & Mobile)**:
   - Added full boolean query parsing across both web and mobile clients: `OR` / `|` union, multi-token `AND`, exact phrase matching (`"..."`), and negation (`-tag`, `!manga`).
-  - Added structured field qualifiers: `author:` / `by:`, `series:`, `tag:` / `#`, `shelf:`, `type:`, `status:`, `rating:` / `stars:`, `pages:`, and boolean flags (`is:fav`, `is:ongoing`, `no:cover`, `has:notes`).
+  - Added structured field qualifiers: `author:` / `by:`, `series:`, `tag:` / `#`, `shelf:`, `type:`, `status:`, `rating:` / `stars:`, and boolean flags (`is:fav`, `is:ongoing`, `no:cover`, `has:notes`).
   - Added in-progress typing resilience so trailing pipe symbols or uncompleted operators do not zero out search results while typing.
 - **View Switch Animation Preferences (Web App)**:
   - Added configurable view transition styles under *Settings & Preferences*: **Instant (0ms — Notion / Linear)** for zero-latency 60fps view swapping, and **Smooth Fade (100ms)** for soft GPU keyframe transitions.

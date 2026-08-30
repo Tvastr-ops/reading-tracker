@@ -86,11 +86,9 @@ class SecureStorageService {
 
     if (!_isPortable) {
       _secureStorage = const FlutterSecureStorage(
-        aOptions: AndroidOptions(encryptedSharedPreferences: true),
+        aOptions: AndroidOptions(resetOnError: true),
         wOptions: WindowsOptions(),
         lOptions: LinuxOptions(),
-        mOptions: MacOsOptions(),
-        iOptions: IOSOptions(),
       );
     }
 

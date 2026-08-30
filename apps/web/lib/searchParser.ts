@@ -197,8 +197,21 @@ function buildTokenPredicate(
     }
   }
 
-  // 9. Page count / Units: pages>500, pages<=200, pages:500
-  const pagesMatch = /^(?:pages|units)(?::|>=|<=|>|<|=)(.+)$/i.exec(token);
+  // 9. Unit Type filter: unit:pages, unit:chapters, unit:volumes, unit:words
+  if (lower.startsWith('unit:') || lower.startsWith('unit_type:')) {
+    const unit = stripQuotes(token.substring(token.indexOf(':') + 1)).toLowerCase();
+    return {
+      isNegative,
+      predicate: (b) => {
+        const u = b.unit_type?.toLowerCase() || 'pages';
+        return u.includes(unit);
+      },
+    };
+  }
+
+  // 10. Smart Unit-Specific & Length Operators
+  // 10a. Pages (Strict): pages>400, pages<=200, p>300
+  const pagesMatch = /^(?:pages|page|p)(?::|>=|<=|>|<|=)(.+)$/i.exec(token);
   if (pagesMatch) {
     const opAndVal = token.substring(token.search(/[:<>=]/));
     const cleanExpr = opAndVal.startsWith(':') ? opAndVal.substring(1) : opAndVal;
@@ -206,12 +219,145 @@ function buildTokenPredicate(
     if (comp) {
       return {
         isNegative,
-        predicate: (b) => comp(b.total_units || b.progress),
+        predicate: (b) => {
+          const isPages = !b.unit_type || b.unit_type.toLowerCase() === 'pages';
+          return isPages && comp(b.total_units ?? b.progress);
+        },
       };
     }
   }
 
-  // 10. Boolean flags: is:fav, is:favorite, is:ongoing, is:reread, no:cover, has:cover, has:notes, no:notes
+  // 10b. Chapters (Strict): chapters>100, chapter>=50, ch>20
+  const chaptersMatch = /^(?:chapters|chapter|ch)(?::|>=|<=|>|<|=)(.+)$/i.exec(token);
+  if (chaptersMatch) {
+    const opAndVal = token.substring(token.search(/[:<>=]/));
+    const cleanExpr = opAndVal.startsWith(':') ? opAndVal.substring(1) : opAndVal;
+    const comp = parseNumericComparison(stripQuotes(cleanExpr));
+    if (comp) {
+      return {
+        isNegative,
+        predicate: (b) => {
+          const isChapters =
+            b.unit_type?.toLowerCase() === 'chapters' ||
+            b.type?.toLowerCase().includes('manga') ||
+            b.type?.toLowerCase().includes('web novel') ||
+            b.type?.toLowerCase().includes('manhwa');
+          return isChapters && comp(b.total_units ?? b.progress);
+        },
+      };
+    }
+  }
+
+  // 10c. Volumes (Strict): volumes>=10, volume>5, vol>3, vols>5
+  const volumesMatch = /^(?:volumes|volume|vols|vol)(?::|>=|<=|>|<|=)(.+)$/i.exec(token);
+  if (volumesMatch) {
+    const opAndVal = token.substring(token.search(/[:<>=]/));
+    const cleanExpr = opAndVal.startsWith(':') ? opAndVal.substring(1) : opAndVal;
+    const comp = parseNumericComparison(stripQuotes(cleanExpr));
+    if (comp) {
+      return {
+        isNegative,
+        predicate: (b) => {
+          const isVolumeTier =
+            b.unit_type?.toLowerCase() === 'volumes' ||
+            b.progress_structure === 'volume_chapter' ||
+            b.parent_total != null;
+          const volCount = b.parent_total ?? b.parent_progress ?? b.total_units ?? b.progress;
+          return isVolumeTier && comp(volCount);
+        },
+      };
+    }
+  }
+
+  // 10d. Words (Strict): words>50000, word>=10000, w>100000
+  const wordsMatch = /^(?:words|word|w)(?::|>=|<=|>|<|=)(.+)$/i.exec(token);
+  if (wordsMatch) {
+    const opAndVal = token.substring(token.search(/[:<>=]/));
+    const cleanExpr = opAndVal.startsWith(':') ? opAndVal.substring(1) : opAndVal;
+    const comp = parseNumericComparison(stripQuotes(cleanExpr));
+    if (comp) {
+      return {
+        isNegative,
+        predicate: (b) => {
+          const isWords = b.unit_type?.toLowerCase() === 'words';
+          return isWords && comp(b.total_units ?? b.progress);
+        },
+      };
+    }
+  }
+
+  // 10e. Universal Length/Units (Any Format): units>50, length>300, total>500, size>100
+  const universalUnitsMatch = /^(?:units|unit|length|total|size)(?::|>=|<=|>|<|=)(.+)$/i.exec(
+    token,
+  );
+  if (universalUnitsMatch) {
+    const opAndVal = token.substring(token.search(/[:<>=]/));
+    const cleanExpr = opAndVal.startsWith(':') ? opAndVal.substring(1) : opAndVal;
+    const comp = parseNumericComparison(stripQuotes(cleanExpr));
+    if (comp) {
+      return {
+        isNegative,
+        predicate: (b) => comp(b.total_units ?? b.progress),
+      };
+    }
+  }
+
+  // 10f. Current Read Progress: progress>50, read>=100, progress<=20
+  const progressMatch = /^(?:progress|read)(?::|>=|<=|>|<|=)(.+)$/i.exec(token);
+  if (progressMatch && !token.includes('%')) {
+    const opAndVal = token.substring(token.search(/[:<>=]/));
+    const cleanExpr = opAndVal.startsWith(':') ? opAndVal.substring(1) : opAndVal;
+    const comp = parseNumericComparison(stripQuotes(cleanExpr));
+    if (comp) {
+      return {
+        isNegative,
+        predicate: (b) => comp(b.progress),
+      };
+    }
+  }
+
+  // 10g. Percentage Completion: percent>=50, pct>=50, progress:100%
+  const percentMatch = /^(?:percent|pct|progress)(?::|>=|<=|>|<|=)(.+)$/i.exec(token);
+  if (
+    percentMatch &&
+    (token.includes('%') || lower.startsWith('percent') || lower.startsWith('pct'))
+  ) {
+    const opAndVal = token.substring(token.search(/[:<>=]/));
+    const rawVal = opAndVal.startsWith(':') ? opAndVal.substring(1) : opAndVal;
+    const cleanExpr = stripQuotes(rawVal).replace('%', '').trim();
+    const comp = parseNumericComparison(cleanExpr);
+    if (comp) {
+      return {
+        isNegative,
+        predicate: (b) => {
+          const total = b.total_units || 0;
+          const current = b.progress || 0;
+          const pct = total > 0 ? (current / total) * 100 : current > 0 ? 100 : 0;
+          return comp(pct);
+        },
+      };
+    }
+  }
+
+  // 10h. Unread / Remaining Left: unread>0, left>10, unread>=5, left<=0
+  const unreadMatch = /^(?:unread|left|remaining)(?::|>=|<=|>|<|=)(.+)$/i.exec(token);
+  if (unreadMatch) {
+    const opAndVal = token.substring(token.search(/[:<>=]/));
+    const cleanExpr = opAndVal.startsWith(':') ? opAndVal.substring(1) : opAndVal;
+    const comp = parseNumericComparison(stripQuotes(cleanExpr));
+    if (comp) {
+      return {
+        isNegative,
+        predicate: (b) => {
+          const total = b.latest_units || b.total_units || 0;
+          const unread = Math.max(0, total - (b.progress || 0));
+          return comp(unread);
+        },
+      };
+    }
+  }
+
+  // 11. Boolean flags: is:fav, is:favorite, is:ongoing, is:reread, no:cover, has:cover, has:notes, no:notes
   if (lower === 'is:fav' || lower === 'is:favorite') {
     return { isNegative, predicate: (b) => Boolean(b.is_favorite) };
   }
