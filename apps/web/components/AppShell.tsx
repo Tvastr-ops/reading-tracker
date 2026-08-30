@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
 import { AppNavbar } from '@/components/AppNavbar';
 import { BookFormModal } from '@/components/BookFormModal';
 import { CommandPaletteModal } from '@/components/CommandPaletteModal';
@@ -11,6 +12,12 @@ import { LibraryProvider } from '@/contexts/LibraryContext';
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isLoginPage = pathname === '/login';
+
+  useEffect(() => {
+    const handler = () => {};
+    document.body.addEventListener('touchstart', handler, { passive: true });
+    return () => document.body.removeEventListener('touchstart', handler);
+  }, []);
 
   if (isLoginPage) {
     return <>{children}</>;
