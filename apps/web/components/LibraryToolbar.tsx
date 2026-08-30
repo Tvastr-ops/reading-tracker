@@ -8,7 +8,6 @@ import {
   Heart,
   LayoutGrid,
   List,
-  Plus,
   Search,
   Sparkles,
   Trash2,
@@ -57,7 +56,6 @@ export function LibraryToolbar() {
     clearFilters,
   } = useLibraryFiltersContext();
   const {
-    modKey,
     searchInputRef,
     selectMode,
     setSelectMode,
@@ -65,7 +63,6 @@ export function LibraryToolbar() {
     toggleSelectAll,
     resetSelection,
     pickUpNext,
-    onAddEntry,
   } = useLibraryUI();
 
   const totalCount = books.length;
@@ -80,165 +77,112 @@ export function LibraryToolbar() {
   };
 
   return (
-    <div className="mb-4 space-y-3">
-      {/* Row 1: Add Entry / Search / View Toggle */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center justify-between gap-2 sm:justify-start">
-          {!showTrash ? (
-            <Button onClick={onAddEntry} className="shadow-sm">
-              <Plus className="mr-1.5 h-4 w-4" />
-              <span>Add Entry</span>
-              <kbd className="ml-2 hidden rounded bg-accent-text/15 px-1.5 py-0.5 text-[10px] text-accent-text/70 sm:inline-block">
-                n
-              </kbd>
-            </Button>
-          ) : (
-            <Button variant="outline" onClick={() => setShowTrash(false)}>
-              <ArrowLeft className="mr-1.5 h-4 w-4" />
-              <span>Back to Library</span>
-            </Button>
-          )}
-
-          {/* View Mode & Trash toggle for Mobile */}
-          <div className="flex items-center gap-1.5 sm:hidden">
-            {!showTrash && (
-              <div className="relative flex items-center rounded-xl border border-border/80 bg-surface/80 p-0.5 backdrop-blur-md">
-                <div
-                  className={cn(
-                    'absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] rounded-lg bg-accent-color shadow-xs transition-all duration-200 ease-out',
-                    viewMode === 'grid' ? 'left-0.5' : 'left-[calc(50%+1px)]',
-                  )}
-                />
-                <button
-                  type="button"
-                  onClick={() => handleToggleViewMode('grid')}
-                  className={cn(
-                    'relative z-10 flex h-7 cursor-pointer items-center justify-center rounded-lg px-2.5 font-semibold text-xs transition-colors',
-                    viewMode === 'grid' ? 'text-accent-text' : 'text-text-muted hover:text-text',
-                  )}
-                  title="Grid view"
-                  aria-label="Grid view"
-                >
-                  <LayoutGrid className="relative z-10 h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleToggleViewMode('table')}
-                  className={cn(
-                    'relative z-10 flex h-7 cursor-pointer items-center justify-center rounded-lg px-2.5 font-semibold text-xs transition-colors',
-                    viewMode === 'table' ? 'text-accent-text' : 'text-text-muted hover:text-text',
-                  )}
-                  title="Table view"
-                  aria-label="Table view"
-                >
-                  <List className="relative z-10 h-4 w-4" />
-                </button>
-              </div>
-            )}
-            {!showTrash && (
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 rounded-lg"
-                onClick={() => setShowTrash(true)}
-                title="Trash"
-                aria-label="View Trash"
-              >
-                <Trash2 className="h-4 w-4 text-text-muted" />
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Search Input */}
-        <div className="relative w-full sm:max-w-md sm:flex-1">
+    <div className="mb-5 space-y-3">
+      {/* Row 1: Search Bar & View Mode Controls */}
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+        {/* Search Input (Expands across available space) */}
+        <div className="relative flex-1">
           <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-text-muted" />
           <input
             ref={searchInputRef}
             type="text"
-            placeholder={`Search title, author, tags... (/ or ${modKey})`}
+            placeholder={`Search title, author, series, tags... (Press / to focus)`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-9 w-full rounded-lg border border-border bg-card-bg pr-8 pl-9 text-text text-xs transition-all focus:outline-none focus:ring-2 focus:ring-accent-color sm:text-sm"
+            className="h-10 w-full border-2 border-border bg-card-bg pr-9 pl-9 text-text text-xs sm:text-sm font-medium shadow-[2px_2px_0px_var(--border)] transition-all duration-150 focus:outline-none focus:border-border focus:shadow-[3.5px_3.5px_0px_var(--border)] focus:translate-x-[-1px] focus:translate-y-[-1px] focus:bg-surface/90"
           />
-          {search && (
+          {search ? (
             <button
               type="button"
               onClick={() => setSearch('')}
-              className="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer text-text-muted hover:text-text"
+              className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-text-muted hover:text-text"
               aria-label="Clear search"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-4 w-4" />
             </button>
+          ) : (
+            <kbd className="absolute top-1/2 right-3 -translate-y-1/2 hidden sm:inline-flex items-center rounded border border-border/80 bg-surface px-1.5 py-0.5 font-mono text-[10px] font-bold text-text-muted">
+              /
+            </kbd>
           )}
         </div>
 
-        {/* Controls Right Group (Desktop) */}
-        <div className="hidden sm:flex sm:items-center sm:gap-2">
-          {!showTrash && (
-            <div className="relative flex items-center rounded-xl border border-border/80 bg-surface/80 p-1 shadow-xs backdrop-blur-md">
-              <div
-                className={cn(
-                  'absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-accent-color shadow-xs transition-all duration-200 ease-out',
-                  viewMode === 'grid' ? 'left-1' : 'left-[calc(50%+2px)]',
-                )}
-              />
-              <button
-                type="button"
-                onClick={() => handleToggleViewMode('grid')}
-                className={cn(
-                  'relative z-10 flex h-7 cursor-pointer items-center gap-1.5 rounded-lg px-3 font-semibold text-xs transition-colors',
-                  viewMode === 'grid' ? 'text-accent-text' : 'text-text-muted hover:text-text',
-                )}
-                title="Grid view"
-                aria-label="Grid view"
-              >
-                <LayoutGrid className="relative z-10 h-3.5 w-3.5" />
-                <span className="relative z-10 hidden sm:inline">Grid</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleToggleViewMode('table')}
-                className={cn(
-                  'relative z-10 flex h-7 cursor-pointer items-center gap-1.5 rounded-lg px-3 font-semibold text-xs transition-colors',
-                  viewMode === 'table' ? 'text-accent-text' : 'text-text-muted hover:text-text',
-                )}
-                title="Table view"
-                aria-label="Table view"
-              >
-                <List className="relative z-10 h-3.5 w-3.5" />
-                <span className="relative z-10 hidden sm:inline">Table</span>
-              </button>
-            </div>
-          )}
-
-          {!showTrash && (
+        {/* View Mode & Utility Controls */}
+        <div className="flex items-center justify-between gap-2 sm:justify-end">
+          {showTrash ? (
             <Button
               variant="outline"
               size="sm"
-              className="h-8 gap-1.5 text-text-muted text-xs hover:text-text"
-              onClick={() => setShowTrash(true)}
-              title="View Trash"
-              aria-label="View Trash"
+              onClick={() => setShowTrash(false)}
+              className="h-10 border-2 border-border font-black text-xs uppercase shadow-[2px_2px_0px_var(--border)]"
             >
-              <Trash2 className="h-3.5 w-3.5" />
-              <span>Trash</span>
+              <ArrowLeft className="mr-1.5 h-4 w-4" />
+              <span>Back to Library</span>
             </Button>
+          ) : (
+            <>
+              {/* Neo-Brutalist Grid / Table Switcher */}
+              <div className="flex items-center border-2 border-border bg-surface p-1 shadow-[2px_2px_0px_var(--border)]">
+                <button
+                  type="button"
+                  onClick={() => handleToggleViewMode('grid')}
+                  className={cn(
+                    'flex h-7 cursor-pointer items-center gap-1.5 px-3 font-black text-xs uppercase tracking-wider transition-all',
+                    viewMode === 'grid'
+                      ? 'bg-accent-bg text-accent-text shadow-[1.5px_1.5px_0px_var(--border)]'
+                      : 'text-text-muted hover:text-text',
+                  )}
+                  title="Grid view"
+                  aria-label="Grid view"
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Grid</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleViewMode('table')}
+                  className={cn(
+                    'flex h-7 cursor-pointer items-center gap-1.5 px-3 font-black text-xs uppercase tracking-wider transition-all',
+                    viewMode === 'table'
+                      ? 'bg-accent-bg text-accent-text shadow-[1.5px_1.5px_0px_var(--border)]'
+                      : 'text-text-muted hover:text-text',
+                  )}
+                  title="Table view"
+                  aria-label="Table view"
+                >
+                  <List className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Table</span>
+                </button>
+              </div>
+
+              {/* Trash View Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9.5 border-2 border-border px-3 text-text-muted text-xs shadow-[2px_2px_0px_var(--border)] hover:text-rose-500 hover:border-rose-500/80 transition-all"
+                onClick={() => setShowTrash(true)}
+                title="View Trash"
+                aria-label="View Trash"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline font-bold uppercase">Trash</span>
+              </Button>
+            </>
           )}
         </div>
       </div>
 
       {/* Row 2: Filter Pills Bar */}
-      <div className="flex items-center justify-between gap-2 border-border/40 border-t pt-2">
-        <div className="no-scrollbar flex flex-1 items-center gap-1 overflow-x-auto py-0.5 sm:flex-wrap sm:gap-2">
+      <div className="flex items-center justify-between gap-2 border-t-2 border-border/40 pt-2.5">
+        <div className="no-scrollbar flex flex-1 items-center gap-1.5 overflow-x-auto py-0.5 sm:flex-wrap sm:gap-2">
           {/* When Selection Mode is ACTIVE, show Done & Select All at the FRONT */}
           {selectMode && (
             <>
               <Button
                 variant="default"
                 size="sm"
-                className="h-7 shrink-0 px-2.5 font-semibold text-xs shadow-xs sm:px-3"
+                className="h-8 shrink-0 border-2 border-border px-3 font-black text-xs uppercase shadow-[2px_2px_0px_var(--border)]"
                 onClick={resetSelection}
               >
                 <Check className="mr-1 h-3.5 w-3.5" />
@@ -247,7 +191,7 @@ export function LibraryToolbar() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 shrink-0 px-2 text-accent-color text-xs hover:bg-accent-color/10 sm:px-2.5"
+                className="h-8 shrink-0 border-2 border-border px-2.5 text-accent-color font-bold text-xs uppercase shadow-[1.5px_1.5px_0px_var(--border)] hover:bg-accent-color/10"
                 onClick={() => toggleSelectAll(filteredBooks)}
               >
                 {allSelected ? 'Deselect All' : `Select All (${filteredCount})`}
@@ -261,7 +205,7 @@ export function LibraryToolbar() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 min-w-0 flex-1 justify-center px-2 text-xs sm:flex-none sm:px-3"
+                className="h-8 min-w-0 flex-1 justify-center border-2 border-border px-3 font-bold text-xs uppercase shadow-[1.5px_1.5px_0px_var(--border)] sm:flex-none"
                 title={statusFilter === 'All' ? 'Filter Status' : statusFilter}
               >
                 <Filter className="h-3.5 w-3.5 text-text-muted sm:mr-1.5" />
@@ -325,12 +269,12 @@ export function LibraryToolbar() {
             <Button
               variant="secondary"
               size="sm"
-              className="h-7 shrink-0 gap-1 bg-accent-color/15 px-2 font-semibold text-accent-color text-xs hover:bg-accent-color/25 sm:px-2.5"
+              className="h-8 shrink-0 gap-1.5 border-2 border-border bg-accent-color/15 px-2.5 font-bold text-accent-color text-xs uppercase shadow-[1.5px_1.5px_0px_var(--border)] hover:bg-accent-color/25"
               onClick={() => setShelfFilter(null)}
               title="Clear shelf filter"
             >
               <span>🔖 {shelfFilter.toUpperCase()}</span>
-              <X className="h-3 w-3" />
+              <X className="h-3.5 w-3.5" />
             </Button>
           )}
 
@@ -340,7 +284,7 @@ export function LibraryToolbar() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 min-w-0 flex-1 justify-center px-2 text-xs sm:flex-none sm:px-3"
+                className="h-8 min-w-0 flex-1 justify-center border-2 border-border px-3 font-bold text-xs uppercase shadow-[1.5px_1.5px_0px_var(--border)] sm:flex-none"
                 title={
                   ratingFilter === 'All'
                     ? 'Filter by Rating'
@@ -349,7 +293,7 @@ export function LibraryToolbar() {
                       : `${ratingFilter}+ Stars`
                 }
               >
-                <Sparkles className="h-3.5 w-3.5 text-amber-400 sm:mr-1.5" />
+                <Sparkles className="h-3.5 w-3.5 text-amber-500 sm:mr-1.5" />
                 <span className="hidden sm:inline">
                   {ratingFilter === 'All'
                     ? 'Rating'
@@ -387,7 +331,7 @@ export function LibraryToolbar() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 min-w-0 flex-1 justify-center px-2 text-xs sm:flex-none sm:px-3"
+                className="h-8 min-w-0 flex-1 justify-center border-2 border-border px-3 font-bold text-xs uppercase shadow-[1.5px_1.5px_0px_var(--border)] sm:flex-none"
                 title="Sort entries"
               >
                 <ArrowUpDown className="h-3.5 w-3.5 text-text-muted sm:mr-1.5" />
@@ -421,10 +365,10 @@ export function LibraryToolbar() {
             <Button
               variant={showFavoritesOnly ? 'default' : 'outline'}
               size="sm"
-              className={`h-7 min-w-0 flex-1 justify-center px-2 text-xs sm:flex-none sm:px-3 transition-all ${
+              className={`h-8 min-w-0 flex-1 justify-center border-2 px-3 text-xs uppercase font-bold shadow-[1.5px_1.5px_0px_var(--border)] sm:flex-none transition-all ${
                 showFavoritesOnly
-                  ? 'bg-amber-500/90 text-amber-950 hover:bg-amber-400 border-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.35)] font-semibold'
-                  : 'text-amber-500 hover:bg-amber-500/10 hover:text-amber-400 border-amber-500/30'
+                  ? 'bg-amber-500 text-amber-950 border-amber-600 font-black'
+                  : 'border-border text-amber-500 hover:bg-amber-500/10'
               }`}
               onClick={() => setShowFavoritesOnly((v) => !v)}
               title={showFavoritesOnly ? 'Show All' : 'Show Favorites Only'}
@@ -434,7 +378,9 @@ export function LibraryToolbar() {
                   showFavoritesOnly ? 'fill-amber-950 text-amber-950' : 'text-amber-500'
                 }`}
               />
-              <span className="hidden sm:inline">{showFavoritesOnly ? 'Fav ✓' : 'Favorites'}</span>
+              <span className="hidden sm:inline">
+                {showFavoritesOnly ? 'Favorites ✓' : 'Favorites'}
+              </span>
             </Button>
           )}
 
@@ -443,7 +389,7 @@ export function LibraryToolbar() {
             <Button
               variant="outline"
               size="sm"
-              className="h-7 min-w-0 flex-1 justify-center px-2 text-accent-color text-xs hover:bg-accent-color/10 sm:flex-none sm:px-3"
+              className="h-8 min-w-0 flex-1 justify-center border-2 border-border px-3 text-accent-color font-bold text-xs uppercase shadow-[1.5px_1.5px_0px_var(--border)] hover:bg-accent-color/10 sm:flex-none"
               onClick={pickUpNext}
               title="Random Up Next"
             >
@@ -457,7 +403,7 @@ export function LibraryToolbar() {
             <Button
               variant="outline"
               size="sm"
-              className="h-7 min-w-0 flex-1 justify-center px-2.5 font-medium text-xs sm:flex-none sm:px-3"
+              className="h-8 min-w-0 flex-1 justify-center border-2 border-border px-3 font-bold text-xs uppercase shadow-[1.5px_1.5px_0px_var(--border)] sm:flex-none"
               onClick={() => {
                 setSelectMode(true);
                 resetSelection();
@@ -468,23 +414,28 @@ export function LibraryToolbar() {
           )}
         </div>
 
-        <div className="hidden shrink-0 items-center gap-2 text-text-muted text-xs sm:flex">
+        {/* Entries Counter Badge */}
+        <div className="hidden shrink-0 items-center border-2 border-border bg-surface px-2.5 py-1 text-xs font-mono font-bold shadow-[1.5px_1.5px_0px_var(--border)] text-text sm:flex">
           <span>
-            <strong>{filteredCount}</strong>
+            {filteredCount}
             {filteredCount !== totalCount && <span> / {totalCount}</span>}{' '}
-            {filteredCount === 1 ? 'entry' : 'entries'}
+            <span className="text-text-muted text-[10px] uppercase font-sans font-black">
+              {filteredCount === 1 ? 'Entry' : 'Entries'}
+            </span>
           </span>
         </div>
       </div>
 
       {/* Filters Quick Action Bar */}
       {filtersActive && (
-        <div className="flex items-center justify-between rounded-lg border border-border bg-surface/50 p-2 text-xs">
+        <div className="flex items-center justify-between border-2 border-border bg-surface p-2 text-xs shadow-[2px_2px_0px_var(--border)]">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold text-text-muted">Active Filters:</span>
+            <span className="font-bold uppercase tracking-wider text-text-muted text-[10.5px]">
+              Active:
+            </span>
             {statusFilter !== 'All' && (
-              <span className="inline-flex items-center gap-1 rounded-md border border-border bg-card-bg px-2 py-0.5">
-                Status: <strong>{statusFilter}</strong>
+              <span className="inline-flex items-center gap-1.5 border-1.5 border-border bg-card-bg px-2 py-0.5 font-bold uppercase text-[11px] shadow-[1px_1px_0px_var(--border)]">
+                Status: <strong className="text-text">{statusFilter}</strong>
                 <X
                   className="h-3 w-3 cursor-pointer text-text-muted hover:text-text"
                   onClick={() => setStatusFilter('All')}
@@ -492,8 +443,8 @@ export function LibraryToolbar() {
               </span>
             )}
             {search.trim() !== '' && (
-              <span className="inline-flex items-center gap-1 rounded-md border border-border bg-card-bg px-2 py-0.5">
-                Search: <strong>"{search}"</strong>
+              <span className="inline-flex items-center gap-1.5 border-1.5 border-border bg-card-bg px-2 py-0.5 font-bold text-[11px] shadow-[1px_1px_0px_var(--border)]">
+                Search: <strong className="text-text">"{search}"</strong>
                 <X
                   className="h-3 w-3 cursor-pointer text-text-muted hover:text-text"
                   onClick={() => setSearch('')}
@@ -501,8 +452,8 @@ export function LibraryToolbar() {
               </span>
             )}
             {showFavoritesOnly && (
-              <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 font-medium text-amber-500 dark:text-amber-400">
-                <Heart className="h-3 w-3 fill-amber-500 text-amber-500" /> Favorites
+              <span className="inline-flex items-center gap-1.5 border-1.5 border-amber-500/50 bg-amber-500/15 px-2 py-0.5 font-bold text-[11px] text-amber-600 dark:text-amber-400 shadow-[1px_1px_0px_var(--border)]">
+                <Heart className="h-3 w-3 fill-current text-amber-500" /> Favorites
                 <X
                   className="h-3 w-3 cursor-pointer text-amber-500/70 hover:text-amber-500 dark:hover:text-amber-300"
                   onClick={() => setShowFavoritesOnly(false)}
@@ -512,10 +463,10 @@ export function LibraryToolbar() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 text-accent-color text-xs"
+              className="h-6 px-2 text-accent-color font-black text-xs uppercase hover:bg-accent-color/10"
               onClick={clearFilters}
             >
-              Clear
+              Clear All
             </Button>
           </div>
         </div>
