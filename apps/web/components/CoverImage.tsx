@@ -4,6 +4,27 @@ import { BookOpen } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
+const OPTIMIZED_HOSTNAMES = new Set([
+  'covers.openlibrary.org',
+  'm.media-amazon.com',
+  'images-na.ssl-images-amazon.com',
+  'i.gr-assets.com',
+  'cdn.thestorygraph.com',
+  'assets.thestorygraph.com',
+  'cdn.novelupdates.com',
+  'www.novelupdates.com',
+]);
+
+export function isOptimizedDomain(url: string | null | undefined): boolean {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    return OPTIMIZED_HOSTNAMES.has(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
 export function sanitizeCoverUrl(url: string | null | undefined): string | null {
   if (!url?.trim()) return null;
   let clean = url.trim();
@@ -38,6 +59,7 @@ export default function CoverImage({
 }) {
   const [error, setError] = useState(false);
   const cleanUrl = sanitizeCoverUrl(src);
+  const isOptimized = isOptimizedDomain(cleanUrl);
 
   useEffect(() => {
     setError(false);
@@ -65,6 +87,7 @@ export default function CoverImage({
         fill
         sizes={sizes}
         priority={priority}
+        unoptimized={!isOptimized}
         referrerPolicy="no-referrer"
         onError={() => setError(true)}
         className={className}
@@ -79,6 +102,7 @@ export default function CoverImage({
       width={width || 56}
       height={height || 84}
       priority={priority}
+      unoptimized={!isOptimized}
       referrerPolicy="no-referrer"
       onError={() => setError(true)}
       className={className}

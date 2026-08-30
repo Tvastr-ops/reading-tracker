@@ -2,6 +2,7 @@
 
 import { Calendar, ChevronDown, ChevronRight, Clock, Loader2, Plus, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { simulateReadingHistoryLogs } from '@/lib/progress';
 import type { ReadingJourney, ReadingLogEntry } from '@/lib/types';
@@ -53,7 +54,7 @@ export default function ReadingLog({
         setJourneys(jData.journeys || []);
       }
     } catch {
-      // ignore
+      toast.error('Failed to load reading logs');
     } finally {
       setLoading(false);
     }
@@ -64,20 +65,29 @@ export default function ReadingLog({
     const val = parseFloat(toProgress);
     if (!Number.isFinite(val) || val < 0) return;
     setSaving(true);
-    const res = await fetch(`/api/books/${bookId}/log`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to_progress: val,
-        note: note || null,
-      }),
-    });
-    setSaving(false);
-    if (res.ok) {
-      setToProgress('');
-      setNote('');
-      onProgressUpdated(val);
-      load();
+    try {
+      const res = await fetch(`/api/books/${bookId}/log`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to_progress: val,
+          note: note || null,
+        }),
+      });
+      if (res.ok) {
+        setToProgress('');
+        setNote('');
+        onProgressUpdated(val);
+        load();
+        toast.success('Reading session logged');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || 'Failed to log progress');
+      }
+    } catch {
+      toast.error('Network error: failed to log progress');
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -172,29 +182,35 @@ export default function ReadingLog({
   async function backfillSimulatedLogs() {
     if (!totalUnits || totalUnits <= 0 || !startDate || !endDate) return;
     setBackfilling(true);
-    const simulated = simulateReadingHistoryLogs({
-      totalUnits,
-      startDate,
-      endDate,
-    });
-
-    for (const log of simulated) {
-      await fetch(`/api/books/${bookId}/log`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: crypto.randomUUID(),
-          journey_id: activeJourneyId,
-          from_progress: log.from_progress,
-          to_progress: log.to_progress,
-          note: log.note || null,
-          logged_at: log.logged_at,
-        }),
+    try {
+      const simulated = simulateReadingHistoryLogs({
+        totalUnits,
+        startDate,
+        endDate,
       });
+
+      for (const log of simulated) {
+        await fetch(`/api/books/${bookId}/log`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: crypto.randomUUID(),
+            journey_id: activeJourneyId,
+            from_progress: log.from_progress,
+            to_progress: log.to_progress,
+            note: log.note || null,
+            logged_at: log.logged_at,
+          }),
+        });
+      }
+      onProgressUpdated(totalUnits);
+      load();
+      toast.success('Reading history simulated');
+    } catch {
+      toast.error('Failed to generate simulated reading logs');
+    } finally {
+      setBackfilling(false);
     }
-    setBackfilling(false);
-    onProgressUpdated(totalUnits);
-    load();
   }
 
   const canBackfill =
@@ -239,8 +255,19 @@ export default function ReadingLog({
             type="button"
             onClick={async () => {
               if (!confirm('Delete this reading log entry?')) return;
-              await fetch(`/api/books/${bookId}/log?log_id=${e.id}`, { method: 'DELETE' });
-              load();
+              try {
+                const res = await fetch(`/api/books/${bookId}/log?log_id=${e.id}`, {
+                  method: 'DELETE',
+                });
+                if (res.ok) {
+                  toast.success('Log entry deleted');
+                  load();
+                } else {
+                  toast.error('Failed to delete log entry');
+                }
+              } catch {
+                toast.error('Network error deleting log');
+              }
             }}
             className="opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"
             title="Delete entry"
@@ -344,8 +371,17 @@ export default function ReadingLog({
               type="button"
               onClick={async () => {
                 if (!confirm('Clear all reading log entries for this book?')) return;
-                await fetch(`/api/books/${bookId}/log`, { method: 'DELETE' });
-                load();
+                try {
+                  const res = await fetch(`/api/books/${bookId}/log`, { method: 'DELETE' });
+                  if (res.ok) {
+                    toast.success('All logs cleared');
+                    load();
+                  } else {
+                    toast.error('Failed to clear logs');
+                  }
+                } catch {
+                  toast.error('Network error clearing logs');
+                }
               }}
               className="text-[10px] font-medium text-rose-500 hover:underline"
             >

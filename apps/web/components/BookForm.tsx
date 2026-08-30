@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -164,11 +165,21 @@ export default function BookForm({
     if (!form.title.trim()) return;
     setCoverSearching(true);
     setCoverResults([]);
-    const res = await fetch(`/api/covers?title=${encodeURIComponent(form.title.trim())}`);
-    setCoverSearching(false);
-    if (res.ok) {
-      const data = await res.json();
-      setCoverResults(data.results || []);
+    try {
+      const res = await fetch(`/api/covers?title=${encodeURIComponent(form.title.trim())}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCoverResults(data.results || []);
+        if (!data.results || data.results.length === 0) {
+          toast.info('No covers found for this title');
+        }
+      } else {
+        toast.error('Failed to search covers');
+      }
+    } catch {
+      toast.error('Network error while searching covers');
+    } finally {
+      setCoverSearching(false);
     }
   }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { normalizeStatusTransition } from '@/lib/progress';
 import { type Book, type BookInput, STATUSES } from '@/lib/types';
@@ -71,12 +71,22 @@ export function useLibrary() {
     });
   }, []);
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const load = useCallback(
     async (quiet = false) => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       if (!quiet) setLoading(true);
       setError('');
       try {
-        const res = await fetch(`/api/books${showTrash ? '?trash=1' : ''}`);
+        const res = await fetch(`/api/books${showTrash ? '?trash=1' : ''}`, {
+          signal: controller.signal,
+        });
         if (res.status === 401) {
           router.push('/login');
           return;
@@ -89,6 +99,7 @@ export function useLibrary() {
         }
         setBooks(data.books || []);
       } catch (err: any) {
+        if (err?.name === 'AbortError') return;
         setError(err.message || 'Failed to load books');
       } finally {
         if (!quiet) setLoading(false);
@@ -99,11 +110,19 @@ export function useLibrary() {
 
   useEffect(() => {
     load();
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [load]);
 
   const logout = useCallback(async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/login');
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } finally {
+      router.push('/login');
+    }
   }, [router]);
 
   const saveBook = useCallback(
@@ -117,40 +136,51 @@ export function useLibrary() {
         if (!payload.date_started) payload.date_started = today;
       }
 
-      const res = await fetch(targetId ? `/api/books/${targetId}` : '/api/books', {
-        method: targetId ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || 'Save failed');
-
-      if (result.book) {
-        setBooks((prev) => {
-          const exists = prev.some((x) => x.id === result.book.id);
-          if (exists) {
-            return prev.map((x) => (x.id === result.book.id ? result.book : x));
-          }
-          return [result.book, ...prev];
+      try {
+        const res = await fetch(targetId ? `/api/books/${targetId}` : '/api/books', {
+          method: targetId ? 'PATCH' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
         });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || 'Save failed');
+
+        if (result.book) {
+          setBooks((prev) => {
+            const exists = prev.some((x) => x.id === result.book.id);
+            if (exists) {
+              return prev.map((x) => (x.id === result.book.id ? result.book : x));
+            }
+            return [result.book, ...prev];
+          });
+        }
+        toast.success(targetId ? `Updated "${data.title}"` : `Added "${data.title}" to library`);
+        load(true);
+        return result.book as Book;
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to save book');
+        throw err;
       }
-      toast.success(targetId ? `Updated "${data.title}"` : `Added "${data.title}" to library`);
-      load(true);
-      return result.book as Book;
     },
     [load],
   );
 
   const restoreBook = useCallback(
     async (b: Book) => {
-      const res = await fetch(`/api/books/${b.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ restore: true }),
-      });
-      if (res.ok) {
-        toast.success(`Restored "${b.title}"`);
-        load(true);
+      try {
+        const res = await fetch(`/api/books/${b.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ restore: true }),
+        });
+        if (res.ok) {
+          toast.success(`Restored "${b.title}"`);
+          load(true);
+        } else {
+          toast.error(`Failed to restore "${b.title}"`);
+        }
+      } catch {
+        toast.error(`Network error restoring "${b.title}"`);
       }
     },
     [load],
@@ -159,15 +189,21 @@ export function useLibrary() {
   const deleteBook = useCallback(
     async (b: Book) => {
       if (!confirm(`Move "${b.title}" to trash?`)) return;
-      const res = await fetch(`/api/books/${b.id}`, { method: 'DELETE' });
-      if (res.ok) {
-        load(true);
-        toast(`Moved "${b.title}" to trash`, {
-          action: {
-            label: 'Undo',
-            onClick: () => restoreBook(b),
-          },
-        });
+      try {
+        const res = await fetch(`/api/books/${b.id}`, { method: 'DELETE' });
+        if (res.ok) {
+          load(true);
+          toast(`Moved "${b.title}" to trash`, {
+            action: {
+              label: 'Undo',
+              onClick: () => restoreBook(b),
+            },
+          });
+        } else {
+          toast.error(`Failed to delete "${b.title}"`);
+        }
+      } catch {
+        toast.error(`Network error deleting "${b.title}"`);
       }
     },
     [load, restoreBook],
@@ -176,10 +212,16 @@ export function useLibrary() {
   const permanentlyDeleteBook = useCallback(
     async (b: Book) => {
       if (!confirm(`Permanently delete "${b.title}"? This can't be undone.`)) return;
-      const res = await fetch(`/api/books/${b.id}?permanent=1`, { method: 'DELETE' });
-      if (res.ok) {
-        toast.success(`Permanently deleted "${b.title}"`);
-        load(true);
+      try {
+        const res = await fetch(`/api/books/${b.id}?permanent=1`, { method: 'DELETE' });
+        if (res.ok) {
+          toast.success(`Permanently deleted "${b.title}"`);
+          load(true);
+        } else {
+          toast.error(`Failed to permanently delete "${b.title}"`);
+        }
+      } catch {
+        toast.error(`Network error deleting "${b.title}"`);
       }
     },
     [load],
@@ -192,16 +234,21 @@ export function useLibrary() {
       const patchData: Partial<Book> = normalizeStatusTransition(b, next, today);
 
       setBooks((prev) => prev.map((x) => (x.id === b.id ? { ...x, ...patchData } : x)));
-      const res = await fetch(`/api/books/${b.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patchData),
-      });
-      if (!res.ok) {
-        toast.error('Failed to update status');
+      try {
+        const res = await fetch(`/api/books/${b.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(patchData),
+        });
+        if (!res.ok) {
+          toast.error('Failed to update status');
+          load(true);
+        } else {
+          toast.success(`Updated "${b.title}" to ${next}`);
+        }
+      } catch {
+        toast.error('Network error updating status');
         load(true);
-      } else {
-        toast.success(`Updated "${b.title}" to ${next}`);
       }
       return patchData;
     },
@@ -223,25 +270,30 @@ export function useLibrary() {
 
       setBooks((prev) => prev.map((x) => (x.id === draft.id ? { ...x, ...patchData } : x)));
 
-      const res = await fetch(`/api/books/${draft.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patchData),
-      });
+      try {
+        const res = await fetch(`/api/books/${draft.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(patchData),
+        });
 
-      if (!res.ok) {
-        toast.error('Failed to save changes');
-        load(true);
-      } else {
-        const { book: updatedBook } = await res.json();
-        if (updatedBook) {
-          setBooks((prev) => prev.map((x) => (x.id === draft.id ? updatedBook : x)));
+        if (!res.ok) {
+          toast.error('Failed to save changes');
+          load(true);
+        } else {
+          const { book: updatedBook } = await res.json();
+          if (updatedBook) {
+            setBooks((prev) => prev.map((x) => (x.id === draft.id ? updatedBook : x)));
+          }
+          toast.success(`Saved changes for "${draft.title}"`);
+          return updatedBook as Book;
         }
-        toast.success(`Saved changes for "${draft.title}"`);
-        return updatedBook as Book;
+      } catch {
+        toast.error('Network error saving changes');
+        load(true);
       }
     },
-    [books, load],
+    [load],
   );
 
   const handleToggleFavorite = useCallback(
@@ -250,18 +302,23 @@ export function useLibrary() {
       const patchData = { is_favorite: newVal };
       setBooks((prev) => prev.map((x) => (x.id === b.id ? { ...x, is_favorite: newVal } : x)));
 
-      const res = await fetch(`/api/books/${b.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patchData),
-      });
-      if (!res.ok) {
-        toast.error('Failed to update favorite');
+      try {
+        const res = await fetch(`/api/books/${b.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(patchData),
+        });
+        if (!res.ok) {
+          toast.error('Failed to update favorite');
+          load(true);
+        } else {
+          toast.success(
+            newVal ? `Added "${b.title}" to Favorites ❤️` : `Removed "${b.title}" from Favorites`,
+          );
+        }
+      } catch {
+        toast.error('Network error updating favorite');
         load(true);
-      } else {
-        toast.success(
-          newVal ? `Added "${b.title}" to Favorites ❤️` : `Removed "${b.title}" from Favorites`,
-        );
       }
       return patchData;
     },
