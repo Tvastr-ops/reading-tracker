@@ -194,10 +194,21 @@ export function LibraryToolbar() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 shrink-0 border-2 border-border px-2.5 text-accent-color font-bold text-xs uppercase shadow-[1.5px_1.5px_0px_var(--border)] hover:bg-accent-color/10"
+                className="h-8 shrink-0 border-2 border-border px-2 text-accent-color font-bold text-xs uppercase shadow-[1.5px_1.5px_0px_var(--border)] hover:bg-accent-color/10 sm:px-2.5"
                 onClick={() => toggleSelectAll(filteredBooks)}
+                title={allSelected ? 'Deselect All Entries' : 'Select All Filtered Entries'}
               >
-                {allSelected ? 'Deselect All' : `Select All (${filteredCount})`}
+                {allSelected ? (
+                  <>
+                    <span className="inline sm:hidden">None</span>
+                    <span className="hidden sm:inline">Deselect All</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="inline sm:hidden">All ({filteredCount})</span>
+                    <span className="hidden sm:inline">Select All ({filteredCount})</span>
+                  </>
+                )}
               </Button>
             </>
           )}
