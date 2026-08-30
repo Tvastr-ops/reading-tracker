@@ -13,6 +13,7 @@ import {
   Sun,
   Table,
   Upload,
+  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
@@ -37,17 +38,27 @@ export default function SettingsPage() {
   } = useLibraryData();
 
   const [defaultViewMode, setDefaultViewMode] = useState<'grid' | 'table'>('grid');
+  const [viewTransitionStyle, setViewTransitionStyle] = useState<'instant' | 'fade'>('instant');
 
   useEffect(() => {
     const saved = window.localStorage.getItem('viewMode');
     if (saved === 'grid' || saved === 'table') {
       setDefaultViewMode(saved);
     }
+    const savedTransition = window.localStorage.getItem('view_transition_style');
+    if (savedTransition === 'instant' || savedTransition === 'fade') {
+      setViewTransitionStyle(savedTransition);
+    }
   }, []);
 
   const handleSetDefaultViewMode = (mode: 'grid' | 'table') => {
     setDefaultViewMode(mode);
     window.localStorage.setItem('viewMode', mode);
+  };
+
+  const handleSetViewTransitionStyle = (style: 'instant' | 'fade') => {
+    setViewTransitionStyle(style);
+    window.localStorage.setItem('view_transition_style', style);
   };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -193,6 +204,74 @@ export default function SettingsPage() {
                   </div>
                   <p className="mt-0.5 text-xs text-text-muted">
                     Compact spreadsheet tabular view with sortable columns and inline quick-chips.
+                  </p>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* View Switch Animation Switcher */}
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-wider text-text-muted">
+              View Switch Animation (Grid ↔ Table)
+            </label>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => handleSetViewTransitionStyle('instant')}
+                className={`flex items-start gap-3 rounded-lg border-2 p-3.5 text-left transition-all ${
+                  viewTransitionStyle === 'instant'
+                    ? 'border-accent-bg bg-accent-bg/10 shadow-[2.5px_2.5px_0px_var(--border)]'
+                    : 'border-border bg-card-bg/60 hover:border-border-soft hover:bg-surface/50'
+                }`}
+              >
+                <Zap className="mt-0.5 h-5 w-5 text-amber-500 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="font-anton text-sm tracking-wide text-text">
+                      INSTANT (0MS — NOTION / LINEAR)
+                    </span>
+                    {viewTransitionStyle === 'instant' && (
+                      <Badge
+                        variant="outline"
+                        className="border-border text-[10px] font-black uppercase"
+                      >
+                        Active
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-xs text-text-muted">
+                    Immediate 60fps view swap with zero transition delay or frame pause.
+                  </p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSetViewTransitionStyle('fade')}
+                className={`flex items-start gap-3 rounded-lg border-2 p-3.5 text-left transition-all ${
+                  viewTransitionStyle === 'fade'
+                    ? 'border-accent-bg bg-accent-bg/10 shadow-[2.5px_2.5px_0px_var(--border)]'
+                    : 'border-border bg-card-bg/60 hover:border-border-soft hover:bg-surface/50'
+                }`}
+              >
+                <Sparkles className="mt-0.5 h-5 w-5 text-accent-color shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="font-anton text-sm tracking-wide text-text">
+                      SMOOTH FADE (100MS)
+                    </span>
+                    {viewTransitionStyle === 'fade' && (
+                      <Badge
+                        variant="outline"
+                        className="border-border text-[10px] font-black uppercase"
+                      >
+                        Active
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-xs text-text-muted">
+                    Lightweight, soft GPU crossfade between Grid and Table views.
                   </p>
                 </div>
               </button>

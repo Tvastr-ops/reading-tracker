@@ -28,6 +28,9 @@ export function useLibraryFilters(books: Book[]) {
   const [sortField, setSortField] = useState<SortField>('updated_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid');
+  const [viewTransitionStyle, setViewTransitionStyleState] = useState<'instant' | 'fade'>(
+    'instant',
+  );
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSizeState] = useState<number | 'all'>(50);
 
@@ -35,6 +38,10 @@ export function useLibraryFilters(books: Book[]) {
   useEffect(() => {
     const savedView = window.localStorage.getItem('viewMode');
     if (savedView === 'grid' || savedView === 'table') setViewMode(savedView);
+    const savedTransition = window.localStorage.getItem('view_transition_style');
+    if (savedTransition === 'instant' || savedTransition === 'fade') {
+      setViewTransitionStyleState(savedTransition);
+    }
     const savedStatus = window.localStorage.getItem('statusFilter');
     if (savedStatus) setStatusFilter(savedStatus);
     const savedSearch = window.localStorage.getItem('search');
@@ -71,16 +78,13 @@ export function useLibraryFilters(books: Book[]) {
   }, [sortDir]);
 
   const toggleViewMode = (mode: 'table' | 'grid') => {
-    if (typeof document !== 'undefined' && 'startViewTransition' in document) {
-      (
-        document as unknown as { startViewTransition: (cb: () => void) => void }
-      ).startViewTransition(() => {
-        setViewMode(mode);
-      });
-    } else {
-      setViewMode(mode);
-    }
+    setViewMode(mode);
     window.localStorage.setItem('viewMode', mode);
+  };
+
+  const setViewTransitionStyle = (style: 'instant' | 'fade') => {
+    setViewTransitionStyleState(style);
+    window.localStorage.setItem('view_transition_style', style);
   };
 
   const toggleRatingMode = () => {
@@ -300,6 +304,8 @@ export function useLibraryFilters(books: Book[]) {
     setSortDir,
     viewMode,
     toggleViewMode,
+    viewTransitionStyle,
+    setViewTransitionStyle,
     filteredBooks,
     paginatedBooks,
     currentPage,
