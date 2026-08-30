@@ -168,12 +168,12 @@ export function AppNavbar() {
         <Button
           variant="outline"
           size="sm"
-          className="h-9 gap-2 px-3 text-xs text-text-muted shadow-[1.5px_1.5px_0px_var(--border)] hover:text-text"
+          className="h-9 gap-2 border-2 border-border px-3 text-xs text-text-muted shadow-[1.5px_1.5px_0px_var(--border)] hover:text-text active:translate-x-[1px] active:translate-y-[1px] focus-visible:ring-0 focus-visible:outline-none"
           onClick={() => setIsCommandPaletteOpen(true)}
         >
           <Search className="h-3.5 w-3.5" />
-          <span>Search</span>
-          <kbd className="ml-1 inline-flex items-center rounded border border-border/80 bg-surface-container px-1.5 py-0.5 font-mono text-[10px] font-bold text-text-muted">
+          <span className="font-bold">Search</span>
+          <kbd className="ml-1 inline-flex items-center border border-border bg-surface px-1.5 py-0.5 font-mono text-[10px] font-bold text-text-muted">
             {modKey || 'Ctrl+K'}
           </kbd>
         </Button>
