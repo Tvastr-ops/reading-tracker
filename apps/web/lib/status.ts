@@ -1,4 +1,4 @@
-import type { Status } from './types';
+import type { BookStatus } from './types';
 
 export type StatusVariant = 'reading' | 'completed' | 'plan' | 'hold' | 'dropped' | 'secondary';
 export type StatusColor = 'sky' | 'emerald' | 'amber' | 'orange' | 'rose' | 'slate';
@@ -9,7 +9,7 @@ export interface StatusConfig {
   dotColor: string;
   sideGradient: string;
   glowShadow: string;
-  label: Status;
+  label: BookStatus;
 }
 
 export function getStatusConfig(status: string): StatusConfig {
@@ -66,7 +66,7 @@ export function getStatusConfig(status: string): StatusConfig {
         dotColor: 'bg-text-muted',
         sideGradient: 'from-text-muted/40 via-text-muted/20 to-transparent',
         glowShadow: 'group-hover:shadow-accent-color/10',
-        label: status as Status,
+        label: status as BookStatus,
       };
   }
 }

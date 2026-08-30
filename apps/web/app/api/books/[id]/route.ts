@@ -78,9 +78,12 @@ export const PATCH = withAuth(async (req: NextRequest, { params }: RouteContext)
     return NextResponse.json({ error: 'Title cannot be empty' }, { status: 400 });
   }
   if ('rating' in update) {
-    const r = update.rating as number | null;
-    if (r != null && (r < 0.5 || r > 5)) {
-      return NextResponse.json({ error: 'Rating must be between 0.5 and 5' }, { status: 400 });
+    if (update.rating !== null) {
+      const r = typeof update.rating === 'number' ? update.rating : Number(update.rating);
+      if (Number.isNaN(r) || r < 0.5 || r > 5) {
+        return NextResponse.json({ error: 'Rating must be between 0.5 and 5' }, { status: 400 });
+      }
+      update.rating = r;
     }
   }
 
@@ -145,7 +148,7 @@ export const PATCH = withAuth(async (req: NextRequest, { params }: RouteContext)
 
     if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
 
-    // Keep the latest reading journey dates and rating in sync if modified
+    // Keep the latest reading journey dates and rating in sync if modified (F-05)
     if (
       'date_started' in update ||
       'date_finished' in update ||
@@ -167,7 +170,17 @@ export const PATCH = withAuth(async (req: NextRequest, { params }: RouteContext)
         if ('date_started' in update) jUpdate.date_started = update.date_started;
         if ('date_finished' in update) jUpdate.date_finished = update.date_finished;
         if ('rating' in update) jUpdate.rating = update.rating;
-        if (update.status === 'Completed') jUpdate.status = 'completed';
+        if ('status' in update && typeof update.status === 'string') {
+          if (update.status === 'Completed') {
+            jUpdate.status = 'completed';
+          } else if (update.status === 'Reading') {
+            jUpdate.status = 'reading';
+          } else if (update.status === 'On Hold') {
+            jUpdate.status = 'on_hold';
+          } else if (update.status === 'Dropped') {
+            jUpdate.status = 'dropped';
+          }
+        }
 
         await supabase.from('reading_journeys').update(jUpdate).eq('id', jId);
       }

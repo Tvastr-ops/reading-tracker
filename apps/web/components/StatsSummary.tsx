@@ -11,6 +11,7 @@ import {
   Trophy,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -140,21 +141,30 @@ export default function StatsSummary({
     const key = `${selectedYear}_${selectedMetric}`;
     const updatedMap = { ...goalsMap, [key]: target };
 
-    const res = await fetch('/api/settings', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        year: selectedYear,
-        metric: selectedMetric,
-        target,
-        goals: updatedMap,
-      }),
-    });
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          year: selectedYear,
+          metric: selectedMetric,
+          target,
+          goals: updatedMap,
+        }),
+      });
 
-    setSavingGoal(false);
-    if (res.ok) {
-      setGoalsMap(updatedMap);
-      setGoalModalOpen(false);
+      if (res.ok) {
+        setGoalsMap(updatedMap);
+        setGoalModalOpen(false);
+        toast.success('Reading goal updated');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || 'Failed to save goal');
+      }
+    } catch {
+      toast.error('Network error saving goal');
+    } finally {
+      setSavingGoal(false);
     }
   }
 

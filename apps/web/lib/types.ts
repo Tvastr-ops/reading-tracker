@@ -1,5 +1,4 @@
 export type BookStatus = 'Plan to Read' | 'Reading' | 'On Hold' | 'Completed' | 'Dropped';
-export type Status = BookStatus;
 
 export type UnitType = 'pages' | 'chapters' | 'words' | 'percent' | 'volumes' | 'units';
 export type ProgressStructure = 'single' | 'volume_chapter' | 'part_chapter';
@@ -19,8 +18,6 @@ export const PUBLICATION_TYPES = [
 ] as const;
 
 export type PublicationType = (typeof PUBLICATION_TYPES)[number] | (string & {});
-
-export type BookFormatType = PublicationType;
 
 export interface Book {
   id: string;
@@ -108,15 +105,4 @@ export interface ReadingLogEntry {
   to_progress: number;
   note: string | null;
   logged_at: string;
-}
-
-export type ReadingLog = ReadingLogEntry;
-
-export interface PaginationMeta {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
 }

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -610,9 +611,13 @@ export default function BookInspectorDrawer({
                           if (data.journey) {
                             setJourneys((prev) => [data.journey, ...prev]);
                           }
+                          toast.success('Started new reading journey (Re-read)');
+                        } else {
+                          const err = await res.json().catch(() => ({}));
+                          toast.error(err.error || 'Failed to start re-read');
                         }
-                      } catch (e) {
-                        console.error('Failed to start re-read:', e);
+                      } catch {
+                        toast.error('Network error starting re-read');
                       }
                     }}
                     className="inline-flex items-center gap-1 rounded bg-blue-500/20 px-2 py-0.5 text-[10.5px] font-bold text-blue-500 hover:bg-blue-500/30 transition-colors"

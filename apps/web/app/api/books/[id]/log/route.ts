@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
 import { recordProgressChange } from '@/lib/progressMutation';
 import { supabaseServer } from '@/lib/supabase';
+import { validateProgressionFields } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,6 +49,27 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
   const note = typeof body?.note === 'string' ? body.note : null;
 
   const supabase = supabaseServer();
+
+  // Validate book exists and enforce progression domain bounds (F-06)
+  const { data: book, error: bookError } = await supabase
+    .from('books')
+    .select(
+      'id, progress, total_units, latest_units, is_ongoing, unit_type, progress_structure, parent_progress, parent_total',
+    )
+    .eq('id', id)
+    .single();
+
+  if (bookError || !book) {
+    return NextResponse.json({ error: 'Book not found' }, { status: 404 });
+  }
+
+  const validationError = validateProgressionFields({
+    ...book,
+    progress: toProgress,
+  });
+  if (validationError) {
+    return NextResponse.json({ error: validationError }, { status: 400 });
+  }
 
   if (!journeyId) {
     const { data: latestJourneys } = await supabase

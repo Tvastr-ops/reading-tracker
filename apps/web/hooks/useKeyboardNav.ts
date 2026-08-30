@@ -38,6 +38,8 @@ export function useKeyboardNav({
   filteredRef.current = filteredBooks;
   const inspectedRef = useRef(inspectedBook);
   inspectedRef.current = inspectedBook;
+  const focusedIndexRef = useRef(focusedIndex);
+  focusedIndexRef.current = focusedIndex;
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -57,6 +59,7 @@ export function useKeyboardNav({
 
       const currentFiltered = filteredRef.current;
       const currentInspected = inspectedRef.current;
+      const currentFocused = focusedIndexRef.current;
       const navActive = !showTrash && !isEditing;
 
       if (navActive && ['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft'].includes(e.key)) {
@@ -83,15 +86,20 @@ export function useKeyboardNav({
         return;
       }
 
-      if (navActive && e.key === 'Enter' && focusedIndex >= 0 && currentFiltered[focusedIndex]) {
+      if (
+        navActive &&
+        e.key === 'Enter' &&
+        currentFocused >= 0 &&
+        currentFiltered[currentFocused]
+      ) {
         e.preventDefault();
-        onEditBook(currentFiltered[focusedIndex]);
+        onEditBook(currentFiltered[currentFocused]);
         return;
       }
 
       if ((e.key === 'e' || e.key === 'E') && !showTrash && !isEditing) {
         const target =
-          currentInspected || (focusedIndex >= 0 ? currentFiltered[focusedIndex] : null);
+          currentInspected || (currentFocused >= 0 ? currentFiltered[currentFocused] : null);
         if (target) {
           e.preventDefault();
           onEditBook(target);
@@ -109,7 +117,7 @@ export function useKeyboardNav({
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [showTrash, viewMode, isEditing, focusedIndex, onAddEntry, onEditBook, searchInputRef]);
+  }, [showTrash, viewMode, isEditing, onAddEntry, onEditBook, searchInputRef]);
 
   return {
     focusedIndex,

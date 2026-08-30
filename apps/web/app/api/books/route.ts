@@ -48,9 +48,13 @@ export const GET = withAuth(async (req: NextRequest) => {
   }
 
   if (search) {
-    query = query.or(
-      `title.ilike.%${search}%,author.ilike.%${search}%,series_name.ilike.%${search}%,genre_tags.ilike.%${search}%,shelf_names.ilike.%${search}%`,
-    );
+    // Strip PostgREST control characters to prevent filter syntax injection (F-03)
+    const cleanSearch = search.replace(/[,().:%]/g, '').trim();
+    if (cleanSearch) {
+      query = query.or(
+        `title.ilike.%${cleanSearch}%,author.ilike.%${cleanSearch}%,series_name.ilike.%${cleanSearch}%,genre_tags.ilike.%${cleanSearch}%,shelf_names.ilike.%${cleanSearch}%`,
+      );
+    }
   }
 
   // Safe sort field whitelist
@@ -247,15 +251,29 @@ export const POST = withAuth(async (req: NextRequest) => {
     }
 
     if (journeyData && Array.isArray(body.simulated_logs) && body.simulated_logs.length > 0) {
-      const logsToInsert = body.simulated_logs.map((log: any) => ({
-        book_id: data.id,
-        journey_id: journeyData.id,
-        from_progress: log.from_progress ?? 0,
-        to_progress: log.to_progress,
-        note: log.note || null,
-        logged_at: log.logged_at || new Date().toISOString(),
-      }));
-      await supabase.from('reading_log').insert(logsToInsert);
+      const logsToInsert = body.simulated_logs
+        .filter(
+          (log: any) =>
+            log &&
+            typeof log === 'object' &&
+            Number.isFinite(Number(log.to_progress)) &&
+            Number(log.to_progress) >= 0,
+        )
+        .map((log: any) => ({
+          book_id: data.id,
+          journey_id: journeyData.id,
+          from_progress: Number.isFinite(Number(log.from_progress)) ? Number(log.from_progress) : 0,
+          to_progress: Number(log.to_progress),
+          note: typeof log.note === 'string' ? log.note.slice(0, 1000) : null,
+          logged_at:
+            typeof log.logged_at === 'string' && !Number.isNaN(Date.parse(log.logged_at))
+              ? log.logged_at
+              : new Date().toISOString(),
+        }));
+
+      if (logsToInsert.length > 0) {
+        await supabase.from('reading_log').insert(logsToInsert);
+      }
     }
   }
 

@@ -94,10 +94,17 @@ export const POST = withAuth(async (req: NextRequest) => {
     return NextResponse.json({ error: 'No CSV content provided' }, { status: 400 });
   }
 
+  const MAX_IMPORT_ROWS = 5000;
   const rows = parseCSV(csvText);
   if (rows.length < 2) {
     return NextResponse.json(
       { error: 'CSV needs a header row plus at least one data row' },
+      { status: 400 },
+    );
+  }
+  if (rows.length - 1 > MAX_IMPORT_ROWS) {
+    return NextResponse.json(
+      { error: `CSV exceeds maximum limit of ${MAX_IMPORT_ROWS} rows per import` },
       { status: 400 },
     );
   }

@@ -55,7 +55,17 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
   const now = new Date().toISOString();
   const currentReread = Number(book.reread_count) || 0;
   const nextReread = currentReread + 1;
-  const nextJourneyIndex = nextReread + 1;
+
+  // Determine next journey index from existing journeys or reread count (F-10)
+  const { data: maxJ } = await supabase
+    .from('reading_journeys')
+    .select('journey_index')
+    .eq('book_id', id)
+    .order('journey_index', { ascending: false })
+    .limit(1);
+
+  const maxIndex = maxJ?.[0]?.journey_index ?? currentReread + 1;
+  const nextJourneyIndex = Math.max(maxIndex + 1, nextReread + 1);
 
   // 2. Finalize any active journey
   await supabase
@@ -91,11 +101,12 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
     return NextResponse.json({ error: journeyErr.message }, { status: 500 });
   }
 
-  // 4. Update book state (reset progress to 0, status to Reading, increment reread_count)
+  // 4. Update book state (reset progress to 0, status to Reading, increment reread_count, reset reading_pace) (F-11)
   const { data: updatedBook, error: updateErr } = await supabase
     .from('books')
     .update({
       progress: 0,
+      reading_pace: null,
       parent_progress: book.progress_structure !== 'single' ? 1 : null,
       status: 'Reading',
       reread_count: nextReread,
