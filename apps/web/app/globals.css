@@ -550,6 +550,19 @@ html[data-pattern="true"][data-theme="nordic"] body {
 /* ==========================================
    VIEW TRANSITIONS API & MOTION UTILITIES
    ========================================== */
+@keyframes viewFadeIn {
+  from {
+    opacity: 0.88;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.view-transition-fade {
+  animation: viewFadeIn 100ms ease-out both;
+}
+
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation-duration: 220ms;

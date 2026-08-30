@@ -31,6 +31,7 @@ export function LibraryView() {
     setPageSize,
     totalPages,
     viewMode,
+    viewTransitionStyle,
     ratingMode,
     sortField,
     sortDir,
@@ -65,7 +66,10 @@ export function LibraryView() {
 
   return (
     <div className="flex items-start gap-4">
-      <div className="view-transition-shelf min-w-0 flex-1">
+      <div
+        key={viewTransitionStyle === 'fade' ? viewMode : undefined}
+        className={`min-w-0 flex-1 ${viewTransitionStyle === 'fade' ? 'view-transition-fade' : ''}`}
+      >
         {filteredBooks.length === 0 ? (
           <EmptyState
             hasAnyBooks={books.length > 0}
