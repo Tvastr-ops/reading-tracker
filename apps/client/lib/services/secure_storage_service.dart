@@ -89,6 +89,8 @@ class SecureStorageService {
         aOptions: AndroidOptions(resetOnError: true),
         wOptions: WindowsOptions(),
         lOptions: LinuxOptions(),
+        mOptions: MacOsOptions(),
+        iOptions: IOSOptions(),
       );
     }
 
