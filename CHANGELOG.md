@@ -14,7 +14,7 @@ and this project adheres to the [Project Release Versioning Specification](.gemi
   - Added read progress and milestone operators: current read progress (`progress>450`, `read>100`), percentage completion (`percent>=50%`, `pct=100%`), and remaining unread count (`unread>0`, `left>10`).
   - Added direct unit mode filter (`unit:pages`, `unit:chapters`, `unit:volumes`, `unit:words`).
 - **Dependency & SDK Modernization**:
-  - Upgraded `flutter_secure_storage` to `^11.0.0` with `DarwinOptions` and modern Android hardware encryption.
+  - Upgraded `flutter_secure_storage` to `^10.3.1` with custom hardware Keystore ciphers (AES-GCM / RSA-OAEP) and unified Darwin support.
   - Upgraded `package_info_plus` to `^10.2.1` and `win32` to `6.4.0`.
 
 ## [2.6.2] - 2026-08-30
