@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowUpDown,
   Check,
+  CheckSquare,
   Filter,
   Heart,
   LayoutGrid,
@@ -62,6 +63,7 @@ export function LibraryToolbar() {
     allSelected,
     toggleSelectAll,
     resetSelection,
+    deselectAll,
     pickUpNext,
   } = useLibraryUI();
 
@@ -182,11 +184,12 @@ export function LibraryToolbar() {
               <Button
                 variant="default"
                 size="sm"
-                className="h-8 shrink-0 border-2 border-border px-3 font-black text-xs uppercase shadow-[2px_2px_0px_var(--border)]"
+                className="h-8 shrink-0 border-2 border-border px-2.5 font-black text-xs uppercase shadow-[2px_2px_0px_var(--border)] sm:px-3"
                 onClick={resetSelection}
+                title="Done Selecting"
               >
-                <Check className="mr-1 h-3.5 w-3.5" />
-                <span>Done</span>
+                <Check className="h-3.5 w-3.5 sm:mr-1" />
+                <span className="hidden sm:inline">Done</span>
               </Button>
               <Button
                 variant="outline"
@@ -403,13 +406,16 @@ export function LibraryToolbar() {
             <Button
               variant="outline"
               size="sm"
-              className="h-8 min-w-0 flex-1 justify-center border-2 border-border px-3 font-bold text-xs uppercase shadow-[1.5px_1.5px_0px_var(--border)] sm:flex-none"
+              className="h-8 min-w-0 flex-1 justify-center border-2 border-border px-2.5 font-bold text-xs uppercase shadow-[1.5px_1.5px_0px_var(--border)] sm:flex-none sm:px-3"
               onClick={() => {
+                deselectAll();
                 setSelectMode(true);
-                resetSelection();
               }}
+              title="Select Multiple Entries"
+              aria-label="Select Multiple Entries"
             >
-              Select
+              <CheckSquare className="h-3.5 w-3.5 text-text-muted sm:mr-1" />
+              <span className="hidden sm:inline">Select</span>
             </Button>
           )}
         </div>
