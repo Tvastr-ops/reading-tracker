@@ -604,10 +604,11 @@ html[data-pattern="true"][data-theme="nordic"] body {
 }
 
 .font-editorial-ligatures {
-  font-feature-settings: "liga" 1, "dlig" 1;
+  font-feature-settings:
+    "liga" 1,
+    "dlig" 1;
 }
 
 .tracking-badge {
   letter-spacing: 0.07em;
 }
-

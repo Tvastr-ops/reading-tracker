@@ -311,7 +311,9 @@ function BookGrid({
                     <div className="flex items-center justify-between text-[11px]">
                       <RatingDisplay rating={b.rating} mode={ratingMode} />
                       {pct != null && (
-                        <span className="font-semibold text-[10px] text-text-muted font-tabular">{pct}%</span>
+                        <span className="font-semibold text-[10px] text-text-muted font-tabular">
+                          {pct}%
+                        </span>
                       )}
                     </div>
 
