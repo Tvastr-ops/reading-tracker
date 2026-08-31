@@ -195,7 +195,7 @@ class BookTableRow extends StatelessWidget {
                   Expanded(
                     child: Text(
                       formatProgressDisplay(book),
-                      style: TextStyle(
+                      style: AppTypography.tabularStyle(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w700,
                         color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
@@ -207,7 +207,11 @@ class BookTableRow extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     '${book.completionPercentage.toInt()}%',
-                    style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900),
+                    style: AppTypography.tabularStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w900,
+                      color: accentColor,
+                    ),
                   ),
                 ],
               ),
@@ -340,7 +344,7 @@ class BookTableRow extends StatelessWidget {
                       (book.author != null && book.author!.isNotEmpty)
                           ? '${book.author} • ${formatProgressDisplay(book)}'
                           : formatProgressDisplay(book),
-                      style: TextStyle(
+                      style: AppTypography.tabularStyle(
                         fontSize: isCompact ? 9.5 : 10.5,
                         fontWeight: FontWeight.w600,
                         color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,
@@ -352,7 +356,7 @@ class BookTableRow extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     '${book.completionPercentage.toInt()}%',
-                    style: TextStyle(
+                    style: AppTypography.tabularStyle(
                       fontSize: isCompact ? 10.0 : 10.5,
                       fontWeight: FontWeight.w900,
                       color: accentColor,

@@ -94,11 +94,9 @@ class BookCoverCard extends StatelessWidget {
                       ),
                       child: Text(
                         isCompact ? getFormatShorthand(book.type) : book.type.toUpperCase(),
-                        style: TextStyle(
+                        style: AppTypography.badgeStyle(
                           fontSize: isCompact ? 7.5 : 8.5,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.3,
-                          color: Colors.white,
+                          letterSpacing: 0.6,
                         ),
                       ),
                     ),
@@ -128,7 +126,7 @@ class BookCoverCard extends StatelessWidget {
                                 const SizedBox(width: 1),
                                 Text(
                                   book.rating!.toStringAsFixed(1),
-                                  style: TextStyle(
+                                  style: AppTypography.tabularStyle(
                                     fontSize: isCompact ? 7.5 : 8.5,
                                     fontWeight: FontWeight.w900,
                                     color: AppColors.inkBlack,
@@ -224,7 +222,7 @@ class BookCoverCard extends StatelessWidget {
                       // Progress String (Line 2 - Full 100% Width!)
                       Text(
                         formatProgressDisplay(book, compact: isCompact),
-                        style: TextStyle(
+                        style: AppTypography.tabularStyle(
                           fontSize: isCompact ? 9 : 9.5,
                           fontWeight: FontWeight.w700,
                           color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.75) : AppColors.inkMuted,

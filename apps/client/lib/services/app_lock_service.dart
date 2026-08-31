@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -51,14 +52,21 @@ class AppLockService extends ChangeNotifier {
 
   static const int _pbkdf2Iterations = 600000;
 
-  String _hashSecret(String secret, Uint8List salt) {
+  static String _computePbkdf2Hash(String secret, Uint8List salt, int iterations) {
     final keyBytes = SecureStorageService.pbkdf2HmacSha256(
       Uint8List.fromList(utf8.encode(secret)),
       salt,
-      iterations: _pbkdf2Iterations,
+      iterations: iterations,
       keyLength: 32,
     );
     return base64Encode(keyBytes);
+  }
+
+  Future<String> _hashSecret(String secret, Uint8List salt) async {
+    if (kIsWeb) {
+      return _computePbkdf2Hash(secret, salt, _pbkdf2Iterations);
+    }
+    return Isolate.run(() => _computePbkdf2Hash(secret, salt, _pbkdf2Iterations));
   }
 
   Future<void> init() async {
@@ -152,7 +160,7 @@ class AppLockService extends ChangeNotifier {
 
     try {
       final saltBytes = base64Decode(_verifySalt!);
-      final computedHash = _hashSecret(secret, saltBytes);
+      final computedHash = await _hashSecret(secret, saltBytes);
 
       if (computedHash == _verifyHash) {
         _failedAttempts = 0;
@@ -183,7 +191,9 @@ class AppLockService extends ChangeNotifier {
     try {
       final authenticated = await _localAuth.authenticate(
         localizedReason: 'Authenticate to unlock Paperback Reader',
+        biometricOnly: true,
         persistAcrossBackgrounding: true,
+        sensitiveTransaction: false,
       );
 
       if (authenticated) {
@@ -207,7 +217,7 @@ class AppLockService extends ChangeNotifier {
   }) async {
     final saltBytes = SecureStorageService.generateRandomBytes(32);
     final saltStr = base64Encode(saltBytes);
-    final hashStr = _hashSecret(secret, saltBytes);
+    final hashStr = await _hashSecret(secret, saltBytes);
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('app_lock_enabled', true);

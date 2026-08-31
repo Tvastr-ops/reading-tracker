@@ -28,6 +28,86 @@ class AppColors {
   static const Color darkInkWhite = Color(0xFFF6F4E8);
 }
 
+enum HeadlineTypographyStyle {
+  serif,
+  sans,
+  mono,
+}
+
+extension HeadlineTypographyStyleMeta on HeadlineTypographyStyle {
+  String get id => name;
+
+  String get label {
+    switch (this) {
+      case HeadlineTypographyStyle.serif:
+        return 'Literary Serif (Lora)';
+      case HeadlineTypographyStyle.sans:
+        return 'Modern Sans (Jakarta)';
+      case HeadlineTypographyStyle.mono:
+        return 'Brutalist Mono (Space)';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case HeadlineTypographyStyle.serif:
+        return 'Warm editorial bookbinding serif with ligatures';
+      case HeadlineTypographyStyle.sans:
+        return 'Clean, crisp contemporary geometric sans';
+      case HeadlineTypographyStyle.mono:
+        return 'Tactile technical monospace with fixed alignment';
+    }
+  }
+}
+
+class AppTypography {
+  static const List<FontFeature> tabularFigures = [
+    FontFeature.tabularFigures(),
+  ];
+
+  static TextStyle tabularStyle({
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+    double? letterSpacing,
+    TextStyle? baseStyle,
+  }) {
+    if (baseStyle != null) {
+      return baseStyle.copyWith(
+        fontSize: fontSize ?? baseStyle.fontSize,
+        fontWeight: fontWeight ?? baseStyle.fontWeight,
+        color: color ?? baseStyle.color,
+        letterSpacing: letterSpacing ?? baseStyle.letterSpacing,
+        fontFeatures: [
+          ...?baseStyle.fontFeatures?.where((f) => f.feature != 'tnum'),
+          const FontFeature.tabularFigures(),
+        ],
+      );
+    }
+    return TextStyle(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+      letterSpacing: letterSpacing,
+      fontFeatures: tabularFigures,
+    );
+  }
+
+  static TextStyle badgeStyle({
+    double fontSize = 8.5,
+    FontWeight fontWeight = FontWeight.w900,
+    Color color = Colors.white,
+    double letterSpacing = 0.6,
+  }) {
+    return TextStyle(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+      letterSpacing: letterSpacing,
+    );
+  }
+}
+
 enum AppThemeVariant {
   // Light Variants (8)
   classicPaperback,
@@ -610,12 +690,58 @@ class AppTheme {
     }
   }
 
-  static ThemeData buildTheme(AppThemeVariant variant) {
-    final d = getDetails(variant);
-    return _buildThemeFromDetails(d, variant.isDark);
+  static TextStyle _resolveHeadlineFont(
+    HeadlineTypographyStyle style, {
+    required double fontSize,
+    required FontWeight fontWeight,
+    required Color color,
+    double? letterSpacing,
+  }) {
+    switch (style) {
+      case HeadlineTypographyStyle.sans:
+        return GoogleFonts.plusJakartaSans(
+          fontSize: fontSize,
+          fontWeight: fontWeight,
+          color: color,
+          letterSpacing: letterSpacing,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        );
+      case HeadlineTypographyStyle.mono:
+        return GoogleFonts.spaceMono(
+          fontSize: fontSize * 0.92,
+          fontWeight: fontWeight,
+          color: color,
+          letterSpacing: (letterSpacing ?? 0) - 0.5,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        );
+      case HeadlineTypographyStyle.serif:
+        return GoogleFonts.lora(
+          fontSize: fontSize,
+          fontWeight: fontWeight,
+          color: color,
+          letterSpacing: letterSpacing,
+          fontFeatures: const [
+            FontFeature.enable('dlig'),
+            FontFeature.enable('liga'),
+            FontFeature.tabularFigures(),
+          ],
+        );
+    }
   }
 
-  static ThemeData buildDynamicTheme(ColorScheme dynamicScheme, {required bool isDark}) {
+  static ThemeData buildTheme(
+    AppThemeVariant variant, {
+    HeadlineTypographyStyle headlineStyle = HeadlineTypographyStyle.serif,
+  }) {
+    final d = getDetails(variant);
+    return _buildThemeFromDetails(d, variant.isDark, headlineStyle: headlineStyle);
+  }
+
+  static ThemeData buildDynamicTheme(
+    ColorScheme dynamicScheme, {
+    required bool isDark,
+    HeadlineTypographyStyle headlineStyle = HeadlineTypographyStyle.serif,
+  }) {
     final d = AppThemeDetails(
       canvasColor: isDark
           ? (dynamicScheme.surfaceContainerLowest)
@@ -633,28 +759,35 @@ class AppTheme {
       borderColor: isDark ? dynamicScheme.outline : AppColors.inkBlack,
     );
 
-    return _buildThemeFromDetails(d, isDark);
+    return _buildThemeFromDetails(d, isDark, headlineStyle: headlineStyle);
   }
 
-  static ThemeData _buildThemeFromDetails(AppThemeDetails d, bool isDark) {
+  static ThemeData _buildThemeFromDetails(
+    AppThemeDetails d,
+    bool isDark, {
+    HeadlineTypographyStyle headlineStyle = HeadlineTypographyStyle.serif,
+  }) {
     final baseTextTheme = isDark
         ? ThemeData.dark().textTheme
         : ThemeData.light().textTheme;
 
     final textTheme = GoogleFonts.plusJakartaSansTextTheme(baseTextTheme).copyWith(
-      headlineLarge: GoogleFonts.lora(
+      headlineLarge: _resolveHeadlineFont(
+        headlineStyle,
         fontSize: 32,
         fontWeight: FontWeight.w900,
         color: d.inkColor,
         letterSpacing: -0.5,
       ),
-      headlineMedium: GoogleFonts.lora(
+      headlineMedium: _resolveHeadlineFont(
+        headlineStyle,
         fontSize: 24,
         fontWeight: FontWeight.w800,
         color: d.inkColor,
         letterSpacing: -0.3,
       ),
-      titleLarge: GoogleFonts.lora(
+      titleLarge: _resolveHeadlineFont(
+        headlineStyle,
         fontSize: 20,
         fontWeight: FontWeight.w800,
         color: d.inkColor,
@@ -663,21 +796,25 @@ class AppTheme {
         fontSize: 16,
         fontWeight: FontWeight.w700,
         color: d.inkColor,
+        fontFeatures: const [FontFeature.tabularFigures()],
       ),
       bodyLarge: GoogleFonts.plusJakartaSans(
         fontSize: 14,
         color: d.inkColor,
         fontWeight: FontWeight.w600,
+        fontFeatures: const [FontFeature.tabularFigures()],
       ),
       bodyMedium: GoogleFonts.plusJakartaSans(
         fontSize: 13,
         color: d.inkColor,
         fontWeight: FontWeight.w500,
+        fontFeatures: const [FontFeature.tabularFigures()],
       ),
       bodySmall: GoogleFonts.plusJakartaSans(
         fontSize: 11,
         color: d.inkMutedColor,
         fontWeight: FontWeight.w500,
+        fontFeatures: const [FontFeature.tabularFigures()],
       ),
     );
 

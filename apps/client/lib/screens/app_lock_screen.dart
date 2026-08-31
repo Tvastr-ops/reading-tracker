@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/app_lock_service.dart';
+import '../services/theme_service.dart';
 import '../widgets/paper_texture_canvas.dart';
 
 class AppLockScreen extends StatefulWidget {
@@ -53,7 +54,11 @@ class _AppLockScreenState extends State<AppLockScreen>
       if (_appLockService.isBiometricEnabled &&
           _appLockService.isBiometricAvailable &&
           !_appLockService.isLockedOut) {
-        _triggerBiometric();
+        Future.delayed(const Duration(milliseconds: 150), () {
+          if (mounted && _appLockService.isCurrentlyLocked.value) {
+            _triggerBiometric();
+          }
+        });
       }
     });
   }
@@ -307,6 +312,7 @@ class _AppLockScreenState extends State<AppLockScreen>
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
                                       color: theme.colorScheme.onErrorContainer,
+                                      fontFeatures: const [FontFeature.tabularFigures()],
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
@@ -372,10 +378,12 @@ class _AppLockScreenState extends State<AppLockScreen>
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(maxDots, (index) {
         final isFilled = index < length;
-        return Container(
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOutBack,
           margin: const EdgeInsets.symmetric(horizontal: 6),
-          width: 14,
-          height: 14,
+          width: isFilled ? 15 : 13,
+          height: isFilled ? 15 : 13,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: isFilled ? theme.colorScheme.primary : Colors.transparent,
@@ -385,6 +393,15 @@ class _AppLockScreenState extends State<AppLockScreen>
                   : (isDark ? Colors.white38 : Colors.black45),
               width: 2,
             ),
+            boxShadow: isFilled
+                ? [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.35),
+                      blurRadius: 3,
+                      offset: const Offset(0, 1),
+                    )
+                  ]
+                : null,
           ),
         );
       }),
@@ -455,35 +472,24 @@ class _AppLockScreenState extends State<AppLockScreen>
     ThemeData theme,
     bool isDark,
   ) {
-    final disabled = _remainingSeconds > 0;
-    return SizedBox(
-      width: 68,
-      height: 68,
-      child: Material(
-        color: isDark ? const Color(0xFF222222) : const Color(0xFFF2F2F2),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
-          side: BorderSide(
-            color: isDark ? Colors.white30 : Colors.black45,
-            width: 2,
-          ),
-        ),
-        elevation: 0,
-        child: InkWell(
-          onTap: disabled ? null : onTap,
-          splashColor: theme.colorScheme.primary.withValues(alpha: 0.3),
-          child: Center(
-            child: Text(
-              label,
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: disabled
-                    ? theme.disabledColor
-                    : theme.textTheme.bodyLarge?.color,
-              ),
-            ),
-          ),
+    final disabled = _remainingSeconds > 0 || _isChecking;
+    final borderColor = isDark ? Colors.white38 : Colors.black87;
+    final bg = isDark ? const Color(0xFF222222) : const Color(0xFFF4F2EB);
+
+    return _BrutalistKeypadKey(
+      onTap: onTap,
+      disabled: disabled,
+      backgroundColor: bg,
+      borderColor: borderColor,
+      child: Text(
+        label,
+        style: GoogleFonts.spaceGrotesk(
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          color: disabled
+              ? theme.disabledColor
+              : theme.textTheme.bodyLarge?.color,
+          fontFeatures: const [FontFeature.tabularFigures()],
         ),
       ),
     );
@@ -497,36 +503,25 @@ class _AppLockScreenState extends State<AppLockScreen>
     required bool isDark,
     bool isPrimary = false,
   }) {
-    final disabled = onTap == null || _remainingSeconds > 0;
-    return SizedBox(
-      width: 68,
-      height: 68,
-      child: Material(
-        color: isPrimary
-            ? theme.colorScheme.primary
-            : (isDark ? const Color(0xFF1E1E1E) : const Color(0xFFE8E8E8)),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
-          side: BorderSide(
-            color: isDark ? Colors.white30 : Colors.black45,
-            width: 2,
-          ),
-        ),
-        elevation: 0,
-        child: InkWell(
-          onTap: disabled ? null : onTap,
-          onLongPress: disabled ? null : onLongPress,
-          splashColor: theme.colorScheme.primary.withValues(alpha: 0.3),
-          child: Center(
-            child: Icon(
-              icon,
-              size: 22,
-              color: disabled
-                  ? theme.disabledColor
-                  : (isPrimary ? Colors.white : theme.iconTheme.color),
-            ),
-          ),
-        ),
+    final disabled = onTap == null || _remainingSeconds > 0 || _isChecking;
+    final borderColor = isDark ? Colors.white38 : Colors.black87;
+    final bg = isPrimary
+        ? theme.colorScheme.primary
+        : (isDark ? const Color(0xFF1E1E1E) : const Color(0xFFE8E5DC));
+
+    return _BrutalistKeypadKey(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      disabled: disabled,
+      isPrimary: isPrimary,
+      backgroundColor: bg,
+      borderColor: borderColor,
+      child: Icon(
+        icon,
+        size: 22,
+        color: disabled
+            ? theme.disabledColor
+            : (isPrimary ? Colors.white : theme.iconTheme.color),
       ),
     );
   }
@@ -603,6 +598,93 @@ class _AppLockScreenState extends State<AppLockScreen>
           ),
         ),
       ],
+    );
+  }
+}
+
+class _BrutalistKeypadKey extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  final bool isPrimary;
+  final bool disabled;
+  final Color? backgroundColor;
+  final Color borderColor;
+
+  const _BrutalistKeypadKey({
+    required this.child,
+    required this.onTap,
+    this.onLongPress,
+    this.isPrimary = false,
+    this.disabled = false,
+    this.backgroundColor,
+    required this.borderColor,
+  });
+
+  @override
+  State<_BrutalistKeypadKey> createState() => _BrutalistKeypadKeyState();
+}
+
+class _BrutalistKeypadKeyState extends State<_BrutalistKeypadKey> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final offset = (_isPressed && !widget.disabled)
+        ? const Offset(1.0, 1.0)
+        : const Offset(2.5, 2.5);
+
+    return MouseRegion(
+      cursor: widget.disabled ? SystemMouseCursors.basic : SystemMouseCursors.click,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: widget.disabled
+            ? null
+            : (_) {
+                ThemeService.instance.triggerHapticClick();
+                setState(() => _isPressed = true);
+              },
+        onTapUp: widget.disabled
+            ? null
+            : (_) {
+                setState(() => _isPressed = false);
+                widget.onTap?.call();
+              },
+        onTapCancel: () {
+          if (_isPressed) setState(() => _isPressed = false);
+        },
+        onLongPress: widget.disabled
+            ? null
+            : () {
+                ThemeService.instance.triggerHapticImpact();
+                widget.onLongPress?.call();
+              },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 50),
+          width: 68,
+          height: 68,
+          transform: Matrix4.translationValues(
+            _isPressed && !widget.disabled ? 1.5 : 0.0,
+            _isPressed && !widget.disabled ? 1.5 : 0.0,
+            0.0,
+          ),
+          decoration: BoxDecoration(
+            color: widget.backgroundColor,
+            border: Border.all(color: widget.borderColor, width: 2),
+            boxShadow: widget.disabled
+                ? null
+                : [
+                    BoxShadow(
+                      color: widget.borderColor,
+                      offset: offset,
+                      blurRadius: 0,
+                    ),
+                  ],
+          ),
+          alignment: Alignment.center,
+          child: widget.child,
+        ),
+      ),
     );
   }
 }
