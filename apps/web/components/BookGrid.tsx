@@ -305,13 +305,13 @@ function BookGrid({
                   </div>
 
                   <div className="mt-auto space-y-1.5 pt-1">
-                    <p className="truncate font-medium text-[10px] text-text-muted">
+                    <p className="truncate font-medium text-[10px] text-text-muted font-tabular">
                       {formattedProgress}
                     </p>
                     <div className="flex items-center justify-between text-[11px]">
                       <RatingDisplay rating={b.rating} mode={ratingMode} />
                       {pct != null && (
-                        <span className="font-semibold text-[10px] text-text-muted">{pct}%</span>
+                        <span className="font-semibold text-[10px] text-text-muted font-tabular">{pct}%</span>
                       )}
                     </div>
 

@@ -2131,6 +2131,75 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ],
+
+          // 4. Headline Typography Style
+          const SizedBox(height: 16),
+          Text(
+            'HEADLINE TYPOGRAPHY',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildLayoutOption(
+                  'SERIF',
+                  Icons.menu_book_rounded,
+                  _themeService.headlineFont == HeadlineTypographyStyle.serif,
+                  () => _themeService.setHeadlineFont(HeadlineTypographyStyle.serif),
+                  isDark,
+                  borderColor,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _buildLayoutOption(
+                  'SANS',
+                  Icons.font_download_rounded,
+                  _themeService.headlineFont == HeadlineTypographyStyle.sans,
+                  () => _themeService.setHeadlineFont(HeadlineTypographyStyle.sans),
+                  isDark,
+                  borderColor,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _buildLayoutOption(
+                  'MONO',
+                  Icons.terminal_rounded,
+                  _themeService.headlineFont == HeadlineTypographyStyle.mono,
+                  () => _themeService.setHeadlineFont(HeadlineTypographyStyle.mono),
+                  isDark,
+                  borderColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+              border: Border.all(
+                color: borderColor.withValues(alpha: 0.25),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              '${_themeService.headlineFont.label} — ${_themeService.headlineFont.description}',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.85) : AppColors.inkBlack.withValues(alpha: 0.85),
+              ),
+            ),
+          ),
         ],
       ),
     );

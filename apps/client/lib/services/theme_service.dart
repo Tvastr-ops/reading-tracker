@@ -26,10 +26,12 @@ class ThemeService extends ChangeNotifier {
   static const String _keyPromptNoteOnQuickLog = 'app_prompt_note_on_quick_log';
   static const String _keyAlwaysShowAllShelves = 'app_always_show_all_shelves';
   static const String _keyHapticFeedback = 'app_haptic_feedback';
+  static const String _keyHeadlineFont = 'app_headline_font';
 
   ThemeMode _themeMode = ThemeMode.system;
   AppThemeVariant _lightVariant = AppThemeVariant.classicPaperback;
   AppThemeVariant _darkVariant = AppThemeVariant.charcoalLedger;
+  HeadlineTypographyStyle _headlineFont = HeadlineTypographyStyle.serif;
   bool _stickyStatusFilter = false;
   bool _useDynamicColor = false;
   String _defaultViewMode = 'cards'; // 'cards', 'covers', 'table'
@@ -49,6 +51,7 @@ class ThemeService extends ChangeNotifier {
   ThemeMode get themeMode => _themeMode;
   AppThemeVariant get lightVariant => _lightVariant;
   AppThemeVariant get darkVariant => _darkVariant;
+  HeadlineTypographyStyle get headlineFont => _headlineFont;
   bool get stickyStatusFilter => _stickyStatusFilter;
   bool get useDynamicColor => _useDynamicColor;
   bool get isDynamicColorAvailable => _lightDynamic != null || _darkDynamic != null;
@@ -66,16 +69,16 @@ class ThemeService extends ChangeNotifier {
 
   ThemeData get currentLightTheme {
     if (_useDynamicColor && _lightDynamic != null) {
-      return AppTheme.buildDynamicTheme(_lightDynamic!, isDark: false);
+      return AppTheme.buildDynamicTheme(_lightDynamic!, isDark: false, headlineStyle: _headlineFont);
     }
-    return AppTheme.buildTheme(_lightVariant);
+    return AppTheme.buildTheme(_lightVariant, headlineStyle: _headlineFont);
   }
 
   ThemeData get currentDarkTheme {
     if (_useDynamicColor && _darkDynamic != null) {
-      return AppTheme.buildDynamicTheme(_darkDynamic!, isDark: true);
+      return AppTheme.buildDynamicTheme(_darkDynamic!, isDark: true, headlineStyle: _headlineFont);
     }
-    return AppTheme.buildTheme(_darkVariant);
+    return AppTheme.buildTheme(_darkVariant, headlineStyle: _headlineFont);
   }
 
   void updateDynamicColorSchemes(ColorScheme? light, ColorScheme? dark) {
@@ -125,6 +128,14 @@ class ThemeService extends ChangeNotifier {
     _promptNoteOnQuickLog = prefs.getBool(_keyPromptNoteOnQuickLog) ?? false;
     _alwaysShowAllShelves = prefs.getBool(_keyAlwaysShowAllShelves) ?? false;
     _hapticFeedback = prefs.getBool(_keyHapticFeedback) ?? true;
+
+    final savedFont = prefs.getString(_keyHeadlineFont);
+    if (savedFont != null) {
+      _headlineFont = HeadlineTypographyStyle.values.firstWhere(
+        (f) => f.name == savedFont,
+        orElse: () => HeadlineTypographyStyle.serif,
+      );
+    }
 
     // Apply native edge-to-edge transparent system UI
     if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
@@ -333,6 +344,15 @@ class ThemeService extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyAlwaysShowAllShelves, val);
+  }
+
+  Future<void> setHeadlineFont(HeadlineTypographyStyle style) async {
+    if (_headlineFont == style) return;
+    _headlineFont = style;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyHeadlineFont, style.name);
   }
 }
 

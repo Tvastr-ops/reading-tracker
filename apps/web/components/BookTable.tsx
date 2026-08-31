@@ -498,7 +498,7 @@ function BookTable({
                             <div className="h-full w-2/3 animate-pulse rounded-full bg-accent-color/60" />
                           </div>
                         ) : null}
-                        <div className="flex items-center justify-between font-medium text-[11px] text-text-muted">
+                        <div className="flex items-center justify-between font-medium text-[11px] text-text-muted font-tabular">
                           <span>{formattedProgress}</span>
                           {pct != null && (
                             <span className="ml-1 font-semibold text-text">{pct}%</span>

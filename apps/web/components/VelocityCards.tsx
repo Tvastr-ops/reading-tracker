@@ -176,8 +176,8 @@ export function VelocityCards({
             </span>
             <Activity className="h-4 w-4 text-accent-color" />
           </div>
-          <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="font-anton text-2xl sm:text-3xl tracking-wide text-text">
+          <div className="mt-2 flex items-baseline gap-1.5 font-tabular">
+            <span className="font-anton text-2xl sm:text-3xl tracking-wide text-text font-tabular">
               {stats.unitsAllTime.toLocaleString()}
             </span>
             <span className="font-mono text-xs font-bold text-text-muted">UNITS</span>
@@ -193,8 +193,8 @@ export function VelocityCards({
             </span>
             <Trophy className="h-4 w-4 text-purple-500" />
           </div>
-          <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="font-anton text-2xl sm:text-3xl tracking-wide text-text">
+          <div className="mt-2 flex items-baseline gap-1.5 font-tabular">
+            <span className="font-anton text-2xl sm:text-3xl tracking-wide text-text font-tabular">
               {stats.peakYear}
             </span>
             <span className="font-mono text-xs font-bold text-text-muted">
@@ -217,13 +217,13 @@ export function VelocityCards({
           </span>
           <Zap className="h-4 w-4 text-amber-500" />
         </div>
-        <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="font-anton text-2xl sm:text-3xl tracking-wide text-text">
+        <div className="mt-2 flex items-baseline gap-1.5 font-tabular">
+          <span className="font-anton text-2xl sm:text-3xl tracking-wide text-text font-tabular">
             {stats.unitsWeek.toLocaleString()}
           </span>
           <span className="font-mono text-xs font-bold text-text-muted">UNITS</span>
         </div>
-        <p className="mt-1 font-mono text-[11px] text-text-muted">
+        <p className="mt-1 font-mono text-[11px] text-text-muted font-tabular">
           ~{stats.avgDailyWeek} units / day
         </p>
       </Card>
@@ -236,13 +236,13 @@ export function VelocityCards({
           </span>
           <Activity className="h-4 w-4 text-emerald-500" />
         </div>
-        <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="font-anton text-2xl sm:text-3xl tracking-wide text-text">
+        <div className="mt-2 flex items-baseline gap-1.5 font-tabular">
+          <span className="font-anton text-2xl sm:text-3xl tracking-wide text-text font-tabular">
             {stats.unitsMonth.toLocaleString()}
           </span>
           <span className="font-mono text-xs font-bold text-text-muted">UNITS</span>
         </div>
-        <p className="mt-1 font-mono text-[11px] text-text-muted">
+        <p className="mt-1 font-mono text-[11px] text-text-muted font-tabular">
           ~{stats.avgDailyMonth} units / day
         </p>
       </Card>
@@ -255,13 +255,13 @@ export function VelocityCards({
           </span>
           <TrendingUp className="h-4 w-4 text-accent-color" />
         </div>
-        <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="font-anton text-2xl sm:text-3xl tracking-wide text-text">
+        <div className="mt-2 flex items-baseline gap-1.5 font-tabular">
+          <span className="font-anton text-2xl sm:text-3xl tracking-wide text-text font-tabular">
             {stats.unitsYear.toLocaleString()}
           </span>
           <span className="font-mono text-xs font-bold text-text-muted">UNITS</span>
         </div>
-        <p className="mt-1 font-mono text-[11px] text-text-muted">
+        <p className="mt-1 font-mono text-[11px] text-text-muted font-tabular">
           Lifetime: {stats.unitsAllTime.toLocaleString()} units
         </p>
       </Card>
@@ -274,8 +274,8 @@ export function VelocityCards({
           </span>
           <Gauge className="h-4 w-4 text-sky-500" />
         </div>
-        <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="font-anton text-2xl sm:text-3xl tracking-wide text-text">
+        <div className="mt-2 flex items-baseline gap-1.5 font-tabular">
+          <span className="font-anton text-2xl sm:text-3xl tracking-wide text-text font-tabular">
             {stats.avgWeeklyPace ? `~${stats.avgWeeklyPace}` : '—'}
           </span>
           <span className="font-mono text-xs font-bold text-text-muted">

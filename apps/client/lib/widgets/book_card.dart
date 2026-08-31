@@ -176,7 +176,10 @@ class BookCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       formatProgressDisplay(book).toUpperCase(),
-                      style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800),
+                      style: AppTypography.tabularStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -184,7 +187,7 @@ class BookCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     '${book.completionPercentage.toInt()}%',
-                    style: TextStyle(
+                    style: AppTypography.tabularStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w900,
                       color: Theme.of(context).extension<AppThemeDetails>()?.accentColor ?? Theme.of(context).colorScheme.primary,

@@ -594,3 +594,20 @@ html[data-pattern="true"][data-theme="nordic"] body {
     animation: none;
   }
 }
+
+/* ==========================================
+   EDITORIAL & TACTILE TYPOGRAPHY UTILITIES
+   ========================================== */
+.font-tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.font-editorial-ligatures {
+  font-feature-settings: "liga" 1, "dlig" 1;
+}
+
+.tracking-badge {
+  letter-spacing: 0.07em;
+}
+

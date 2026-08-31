@@ -5,6 +5,25 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.6.4] - 2026-08-31
+
+### Added
+- **Editorial & Tactile Typography System (Web & Mobile)**:
+  - **Tabular Lining Figures (`tnum`)**: Enabled OpenType `FontFeature.tabularFigures()` (Flutter) and `.font-tabular` / `font-variant-numeric: tabular-nums` (Web) across all progress displays, velocity cards, ratings, PIN keypad buttons, and cooldown timers for rock-solid, jitter-free numeric alignment.
+  - **Classic Book Ligatures (`dlig` & `liga`)**: Enabled discretionary and standard ligatures on `Lora` (Flutter) and `Newsreader` (Web) editorial headlines, joining character pairs like **fi**, **fl**, **ff**, **st**, and **Th** into elegant print glyphs.
+  - **Authentic Print Badges & Micro-Tracking**: Added calibrated optical letter-spacing (`letterSpacing: 0.6–0.7px` / `.tracking-badge`) and bold weights for format tags (`LIGHT NOVEL`, `MANGA`, `BOOK`) and shelf indicators.
+  - **Reader Headline Typography Selector (Mobile & Desktop)**: Added user preference under *Settings > Appearance* allowing readers to choose between **Literary Serif (Lora)**, **Modern Sans (Plus Jakarta Sans)**, and **Brutalist Mono (Space Mono)** with instant reactive theme rebuilding.
+
+### Fixed & Security
+- **Lock Screen 120 FPS Performance & Background PBKDF2 (`Isolate.run`)**:
+  - Offloaded 600,000-iteration PBKDF2 HMAC-SHA256 secret hashing to a background worker isolate, completely eliminating UI frame stalls during PIN and password verification.
+- **Biometric Isolation (`biometricOnly: true`)**:
+  - Enforced `biometricOnly: true` on `local_auth` prompt to prevent Android OS device lock full-screen overlays and preserve strict in-app secret isolation.
+- **Tactile Keypad Press Depression & Animated Spring PIN Dots**:
+  - Replaced static lock screen buttons with `_BrutalistKeypadKey` featuring interactive physical push translation (`translate(1.5px, 1.5px)` with shadow collapse) and immediate haptic feedback on touch down.
+  - Added elastic spring-pop animations on PIN dots as digits are entered.
+  - Added smooth 150ms staging buffer on startup before triggering biometric prompt.
+
 ## [2.6.3] - 2026-08-30
 
 ### Added
