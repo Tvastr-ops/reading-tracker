@@ -87,10 +87,10 @@ export function AppNavbar() {
 
   const navTabs: NavTabItem[] = [
     {
-      href: '/' as Route,
+      href: '/library' as Route,
       label: 'LIBRARY',
       icon: BookOpen,
-      active: pathname === '/' || pathname.startsWith('/books'),
+      active: pathname === '/' || pathname.startsWith('/library') || pathname.startsWith('/books'),
     },
     {
       href: '/analytics' as Route,
@@ -117,7 +117,7 @@ export function AppNavbar() {
       {/* Brand / Logo */}
       <div className="flex items-center justify-between">
         <Link
-          href="/"
+          href="/library"
           className="group flex items-center gap-3 transition-transform active:scale-95"
         >
           <div className="flex h-9 w-9 items-center justify-center border-2 border-border bg-accent-bg text-accent-text shadow-[2px_2px_0px_var(--border)] transition-transform group-hover:translate-x-[-1px] group-hover:translate-y-[-1px]">

@@ -17,11 +17,12 @@ export function MobileBottomNav() {
 
   const navTabs: NavTabItem[] = [
     {
-      href: '/' as Route,
+      href: '/library' as Route,
       label: 'LIBRARY',
       icon: BookOpen,
-      active: pathname === '/' || pathname.startsWith('/books'),
+      active: pathname === '/' || pathname.startsWith('/library') || pathname.startsWith('/books'),
     },
+
     {
       href: '/analytics' as Route,
       label: 'ANALYTICS',

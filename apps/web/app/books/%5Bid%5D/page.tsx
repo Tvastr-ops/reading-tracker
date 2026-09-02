@@ -96,7 +96,7 @@ export default function BookDetailPage() {
         <p className="mt-1 text-xs text-text-muted">
           This book may have been deleted or moved to trash.
         </p>
-        <Link href="/" className="mt-4 inline-block">
+        <Link href="/library" className="mt-4 inline-block">
           <Button variant="outline" size="sm">
             Return to Library
           </Button>
@@ -163,14 +163,14 @@ export default function BookDetailPage() {
   const handleDelete = async () => {
     if (!book) return;
     deleteBook(book);
-    router.push('/');
+    router.push('/library');
   };
 
   return (
     <div className="space-y-6">
       {/* Top Breadcrumb & Action Bar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Link href="/">
+        <Link href="/library">
           <Button
             variant="outline"
             size="sm"
