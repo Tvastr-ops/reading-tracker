@@ -130,8 +130,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${newsreader.variable} ${jakarta.variable} ${anton.variable} ${hanken.variable}`}
     >
       <head>
+        <link rel="preconnect" href="https://covers.openlibrary.org" crossOrigin="anonymous" />
+        <link
+          rel="preconnect"
+          href="https://images-na.ssl-images-amazon.com"
+          crossOrigin="anonymous"
+        />
+        <link rel="preconnect" href="https://m.media-amazon.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://i.gr-assets.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://cdn.novelupdates.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://covers.openlibrary.org" />
+        <link rel="dns-prefetch" href="https://images-na.ssl-images-amazon.com" />
+        <link rel="dns-prefetch" href="https://m.media-amazon.com" />
+        <link rel="dns-prefetch" href="https://i.gr-assets.com" />
+        <link rel="dns-prefetch" href="https://cdn.novelupdates.com" />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
+
       <body className="bg-bg font-sans text-text antialiased transition-colors duration-200">
         <Providers>
           <Suspense fallback={null}>

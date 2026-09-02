@@ -1,4 +1,5 @@
 import {
+  parseAsArrayOf,
   parseAsBoolean,
   parseAsInteger,
   parseAsString,
@@ -11,17 +12,26 @@ import { compileSearchQuery, parseShelves } from '@/lib/searchParser';
 import { type Book, SORT_FIELDS, type SortDir, type SortField, STATUSES } from '@/lib/types';
 
 export function useLibraryFilters(books: Book[]) {
-  // 1. Type-Safe URL Query State via nuqs
-  const [statusFilter, setStatusFilterState] = useQueryState(
+  // 1. Type-Safe Multi-Select URL Query State via nuqs
+  const [statusFilterArray, setStatusFilterArrayState] = useQueryState(
     'status',
-    parseAsStringLiteral(['All', ...STATUSES] as const).withDefault('All'),
+    parseAsArrayOf(parseAsString, ',').withDefault([]),
   );
 
-  const [shelfFilter, setShelfFilterState] = useQueryState('shelf', parseAsString);
+  const [shelfFilterArray, setShelfFilterArrayState] = useQueryState(
+    'shelf',
+    parseAsArrayOf(parseAsString, ',').withDefault([]),
+  );
 
-  const [typeFilter, setTypeFilterState] = useQueryState('type', parseAsString);
+  const [typeFilterArray, setTypeFilterArrayState] = useQueryState(
+    'type',
+    parseAsArrayOf(parseAsString, ',').withDefault([]),
+  );
 
-  const [tagFilter, setTagFilterState] = useQueryState('tag', parseAsString);
+  const [tagFilterArray, setTagFilterArrayState] = useQueryState(
+    'tag',
+    parseAsArrayOf(parseAsString, ',').withDefault([]),
+  );
 
   const [ongoingFilter, setOngoingFilterState] = useQueryState(
     'ongoing',
@@ -122,7 +132,51 @@ export function useLibraryFilters(books: Book[]) {
 
   const deferredSearch = useDeferredValue(search);
 
-  // 4. Multi-Dimensional Composable Filter Pipeline
+  // Multi-Select Toggle Helpers
+  const toggleStatusFilter = (status: string) => {
+    if (status === 'All') {
+      setStatusFilterArrayState([]);
+    } else {
+      setStatusFilterArrayState((prev) => {
+        const current = prev || [];
+        const clean = current.filter((s) => s !== 'All');
+        return clean.includes(status) ? clean.filter((s) => s !== status) : [...clean, status];
+      });
+    }
+    setCurrentPageState(1);
+  };
+
+  const toggleTypeFilter = (type: string) => {
+    setTypeFilterArrayState((prev) => {
+      const current = prev || [];
+      return current.some((t) => t.toLowerCase() === type.toLowerCase())
+        ? current.filter((t) => t.toLowerCase() !== type.toLowerCase())
+        : [...current, type];
+    });
+    setCurrentPageState(1);
+  };
+
+  const toggleShelfFilter = (shelf: string) => {
+    setShelfFilterArrayState((prev) => {
+      const current = prev || [];
+      return current.some((s) => s.toLowerCase() === shelf.toLowerCase())
+        ? current.filter((s) => s.toLowerCase() !== shelf.toLowerCase())
+        : [...current, shelf];
+    });
+    setCurrentPageState(1);
+  };
+
+  const toggleTagFilter = (tag: string) => {
+    setTagFilterArrayState((prev) => {
+      const current = prev || [];
+      return current.some((t) => t.toLowerCase() === tag.toLowerCase())
+        ? current.filter((t) => t.toLowerCase() !== tag.toLowerCase())
+        : [...current, tag];
+    });
+    setCurrentPageState(1);
+  };
+
+  // 4. Multi-Dimensional Multi-Select Filter Pipeline
   const filteredBooks = useMemo(() => {
     let list = books;
 
@@ -131,29 +185,34 @@ export function useLibraryFilters(books: Book[]) {
       list = list.filter((b) => b.is_favorite);
     }
 
-    // Status
-    if (statusFilter !== 'All') {
-      list = list.filter((b) => b.status === statusFilter);
+    // Multi-Status Filter
+    if (statusFilterArray.length > 0 && !statusFilterArray.includes('All')) {
+      list = list.filter((b) => statusFilterArray.includes(b.status));
     }
 
-    // Shelf
-    if (shelfFilter) {
+    // Multi-Shelf Filter
+    if (shelfFilterArray.length > 0) {
       list = list.filter((b) => {
-        const shelves = parseShelves(b.shelf_names);
-        return shelves.some((s) => s.toLowerCase() === shelfFilter.toLowerCase());
+        const shelves = parseShelves(b.shelf_names).map((s) => s.toLowerCase());
+        return shelfFilterArray.some((sh) => shelves.includes(sh.toLowerCase()));
       });
     }
 
-    // Format / Publication Type
-    if (typeFilter) {
-      list = list.filter((b) => b.type?.trim().toLowerCase() === typeFilter.toLowerCase());
+    // Multi-Format / Type Filter
+    if (typeFilterArray.length > 0) {
+      list = list.filter((b) =>
+        b.type?.trim()
+          ? typeFilterArray.some((t) => t.toLowerCase() === b.type?.trim().toLowerCase())
+          : false,
+      );
     }
 
-    // Genre Tag
-    if (tagFilter) {
-      list = list.filter((b) =>
-        b.genre_tags?.split(',').some((t) => t.trim().toLowerCase() === tagFilter.toLowerCase()),
-      );
+    // Multi-Tag Filter
+    if (tagFilterArray.length > 0) {
+      list = list.filter((b) => {
+        const tags = b.genre_tags?.split(',').map((t) => t.trim().toLowerCase()) || [];
+        return tagFilterArray.some((tg) => tags.includes(tg.toLowerCase()));
+      });
     }
 
     // Serialization State
@@ -209,10 +268,10 @@ export function useLibraryFilters(books: Book[]) {
   }, [
     books,
     showFavoritesOnly,
-    statusFilter,
-    shelfFilter,
-    typeFilter,
-    tagFilter,
+    statusFilterArray,
+    shelfFilterArray,
+    typeFilterArray,
+    tagFilterArray,
     ongoingFilter,
     ratingFilter,
     deferredSearch,
@@ -220,6 +279,7 @@ export function useLibraryFilters(books: Book[]) {
     sortDir,
   ]);
 
+  // Single-pass O(N) Metadata and Filter Aggregation
   const {
     statusCounts,
     allShelves,
@@ -307,11 +367,13 @@ export function useLibraryFilters(books: Book[]) {
     return filteredBooks.slice(start, start + pageSize);
   }, [filteredBooks, currentPage, pageSize]);
 
+  const isStatusActive = statusFilterArray.length > 0 && !statusFilterArray.includes('All');
+
   const activeFilterCount =
-    (statusFilter !== 'All' ? 1 : 0) +
-    (shelfFilter ? 1 : 0) +
-    (typeFilter ? 1 : 0) +
-    (tagFilter ? 1 : 0) +
+    (isStatusActive ? statusFilterArray.length : 0) +
+    shelfFilterArray.length +
+    typeFilterArray.length +
+    tagFilterArray.length +
     (ongoingFilter !== 'all' ? 1 : 0) +
     (ratingFilter !== 'All' ? 1 : 0) +
     (showFavoritesOnly ? 1 : 0) +
@@ -320,10 +382,10 @@ export function useLibraryFilters(books: Book[]) {
   const filtersActive = activeFilterCount > 0;
 
   const clearFilters = () => {
-    setStatusFilterState('All');
-    setShelfFilterState(null);
-    setTypeFilterState(null);
-    setTagFilterState(null);
+    setStatusFilterArrayState([]);
+    setShelfFilterArrayState([]);
+    setTypeFilterArrayState([]);
+    setTagFilterArrayState([]);
     setOngoingFilterState('all');
     setRatingParamState('All');
     setShowFavoritesOnlyState(false);
@@ -332,53 +394,84 @@ export function useLibraryFilters(books: Book[]) {
   };
 
   return {
-    statusFilter,
-    setStatusFilter: (s: string) => {
-      setStatusFilterState(s as any);
+    // Status
+    statusFilter: statusFilterArray,
+    isStatusActive,
+    toggleStatusFilter,
+    setStatusFilter: (s: string[] | string | 'All') => {
+      if (Array.isArray(s)) setStatusFilterArrayState(s);
+      else if (s === 'All' || !s) setStatusFilterArrayState([]);
+      else setStatusFilterArrayState([s]);
       setCurrentPageState(1);
     },
-    shelfFilter,
-    setShelfFilter: (sh: string | null) => {
-      setShelfFilterState(sh);
+    statusCounts,
+
+    // Shelves
+    shelfFilter: shelfFilterArray,
+    toggleShelfFilter,
+    setShelfFilter: (sh: string[] | string | null) => {
+      if (Array.isArray(sh)) setShelfFilterArrayState(sh);
+      else if (!sh) setShelfFilterArrayState([]);
+      else setShelfFilterArrayState([sh]);
       setCurrentPageState(1);
     },
     allShelves,
     shelfCounts,
-    typeFilter,
-    setTypeFilter: (t: string | null) => {
-      setTypeFilterState(t);
+
+    // Types / Formats
+    typeFilter: typeFilterArray,
+    toggleTypeFilter,
+    setTypeFilter: (t: string[] | string | null) => {
+      if (Array.isArray(t)) setTypeFilterArrayState(t);
+      else if (!t) setTypeFilterArrayState([]);
+      else setTypeFilterArrayState([t]);
       setCurrentPageState(1);
     },
     allTypes,
     typeCounts,
-    tagFilter,
-    setTagFilter: (tag: string | null) => {
-      setTagFilterState(tag);
+
+    // Tags
+    tagFilter: tagFilterArray,
+    toggleTagFilter,
+    setTagFilter: (tag: string[] | string | null) => {
+      if (Array.isArray(tag)) setTagFilterArrayState(tag);
+      else if (!tag) setTagFilterArrayState([]);
+      else setTagFilterArrayState([tag]);
       setCurrentPageState(1);
     },
     allTags,
     tagCounts,
+
+    // Ongoing
     ongoingFilter,
     setOngoingFilter: (o: 'all' | 'ongoing' | 'standalone') => {
       setOngoingFilterState(o);
       setCurrentPageState(1);
     },
     ongoingCounts,
+
+    // Rating
     ratingFilter,
     setRatingFilter: (r: number | 'All' | 'Unrated') => {
       setRatingParamState(String(r));
       setCurrentPageState(1);
     },
+
+    // Favorites
     showFavoritesOnly,
     setShowFavoritesOnly: (f: boolean | ((prev: boolean) => boolean)) => {
       setShowFavoritesOnlyState(f);
       setCurrentPageState(1);
     },
+
+    // Search
     search,
     setSearch: (s: string) => {
       setSearchState(s);
       setCurrentPageState(1);
     },
+
+    // UI Preferences & Sorting
     ratingMode,
     toggleRatingMode,
     sortField,
@@ -408,7 +501,6 @@ export function useLibraryFilters(books: Book[]) {
     pageSize,
     setPageSize,
     totalPages,
-    statusCounts,
     activeFilterCount,
     filtersActive,
     clearFilters,
