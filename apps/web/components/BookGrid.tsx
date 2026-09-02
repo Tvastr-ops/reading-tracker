@@ -52,21 +52,61 @@ function BookGrid({
   focusedId?: string | null;
 }) {
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const isLongPressTriggeredRef = useRef(false);
 
-  const handleClick = (e: React.MouseEvent, b: Book) => {
-    if (selectMode && onToggleSelect) {
-      onToggleSelect(b.id);
-      return;
+  const handleTouchStart = (b: Book, e: React.TouchEvent) => {
+    if (selectMode) return;
+    isLongPressTriggeredRef.current = false;
+    const touch = e.touches[0];
+    if (touch) {
+      touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
     }
-
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
-
-    if (isMobile) {
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPressTriggeredRef.current = true;
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(40);
+      }
       if (onFullEdit) {
         onFullEdit(b);
       } else {
         onEdit(b);
       }
+    }, 500);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartPosRef.current) return;
+    const touch = e.touches[0];
+    if (touch) {
+      const dx = Math.abs(touch.clientX - touchStartPosRef.current.x);
+      const dy = Math.abs(touch.clientY - touchStartPosRef.current.y);
+      if (dx > 8 || dy > 8) {
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
+        }
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    touchStartPosRef.current = null;
+  };
+
+  const handleClick = (e: React.MouseEvent, b: Book) => {
+    if (isLongPressTriggeredRef.current) {
+      isLongPressTriggeredRef.current = false;
+      return;
+    }
+
+    if (selectMode && onToggleSelect) {
+      onToggleSelect(b.id);
       return;
     }
 
@@ -78,11 +118,12 @@ function BookGrid({
     if (e.detail === 1) {
       clickTimerRef.current = setTimeout(() => {
         onEdit(b);
-      }, 200);
+      }, 180);
     } else if (e.detail === 2 && onFullEdit) {
       onFullEdit(b);
     }
   };
+
   useEffect(() => {
     if (focusedId) {
       const el = document.querySelector(`[data-card-id="${focusedId}"]`);
@@ -136,6 +177,9 @@ function BookGrid({
                     : statusCfg.glowShadow
                 } ${isFocused ? 'ring-2 ring-amber-500 scale-[1.02] shadow-xl' : ''}`}
                 onClick={(e) => handleClick(e, b)}
+                onTouchStart={(e) => handleTouchStart(b, e)}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
               >
                 <div className="vignette-inset relative aspect-[2/3] w-full overflow-hidden bg-surface">
                   {/* Subtle Status Gradient Side Border */}

@@ -15,7 +15,9 @@ and this project adheres to the [Project Release Versioning Specification](.gemi
   - **PostgreSQL Database Schema Types (`database.types.ts`)**: Bound `Database` definitions to `createClient<Database>()` in `lib/supabase.ts`, guaranteeing compile-time column safety across all database queries.
   - **Atomic UI State Management (`zustand`)**: Migrated ephemeral in-memory UI state (modals, drafts, inspector drawer, up-next picker, and multi-selection) to atomic Zustand store (`stores/useUIStore.ts`), eliminating React Context re-render cascades and enabling fine-grained reactivity.
   - **Minimal Editorial Bookplate Footer & Shortcuts Cheat Sheet (`components/AppFooter.tsx`)**: Added clean, responsive footer with brand colophon, GitHub repository link, one-click smooth back-to-top scroll, and interactive keyboard shortcuts modal (`ShortcutsModal.tsx`) triggered via footer or pressing `?`.
+  - **Full-Height Responsive Book Inspector & Mobile Long-Press Touch UX (`components/BookInspectorDrawer.tsx`)**: Upgraded the inspector drawer to a 2026-standard full-height (`100vh`) right-anchored slide-over on desktop and a slide-up bottom sheet with tactile drag handle on mobile. Replaced the obsolete `isMobile` bypass hack with 0ms instant single-tap inspector and 500ms long-press haptic vibration (`navigator.vibrate`) to directly open the full edit modal.
   - **Stable Top-Level `typedRoutes: true`**: Configured compile-time route verification in `next.config.js` and typed all navigation links across navbar, drawer, and timeline components.
+
 
 
 ### Security & Hardening
