@@ -89,6 +89,7 @@ export default function CoverImage({
         priority={priority}
         unoptimized={!isOptimized}
         referrerPolicy="no-referrer"
+        decoding="async"
         onError={() => setError(true)}
         className={className}
       />
@@ -104,6 +105,7 @@ export default function CoverImage({
       priority={priority}
       unoptimized={!isOptimized}
       referrerPolicy="no-referrer"
+      decoding="async"
       onError={() => setError(true)}
       className={className}
     />

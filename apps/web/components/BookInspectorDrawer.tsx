@@ -206,6 +206,11 @@ export default function BookInspectorDrawer({
         dragElastic={{ top: 0.05, bottom: 0.6 }}
         onDragEnd={(_, info) => {
           if (info.offset.y > 80 || info.velocity.y > 350) {
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+              try {
+                navigator.vibrate(10);
+              } catch {}
+            }
             onClose();
           }
         }}
