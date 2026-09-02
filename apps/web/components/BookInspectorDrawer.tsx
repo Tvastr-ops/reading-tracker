@@ -186,17 +186,25 @@ export default function BookInspectorDrawer({
         className="fixed inset-0 z-40 bg-black/35 backdrop-blur-[2px]"
       />
 
-      {/* 2. Slide-Over Panel (Desktop Right / Mobile Bottom Sheet) */}
+      {/* 2. Slide-Over Panel (Desktop Right / Mobile Bottom Sheet with Swipe-to-Dismiss) */}
       <motion.aside
         initial={isDesktop ? { x: '100%' } : { y: '100%' }}
         animate={isDesktop ? { x: 0 } : { y: 0 }}
         exit={isDesktop ? { x: '100%' } : { y: '100%' }}
-        transition={{ type: 'spring', damping: 30, stiffness: 360 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 220, mass: 0.8 }}
+        drag={isDesktop ? false : 'y'}
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={{ top: 0.05, bottom: 0.6 }}
+        onDragEnd={(_, info) => {
+          if (info.offset.y > 80 || info.velocity.y > 350) {
+            onClose();
+          }
+        }}
         className="fixed z-50 flex flex-col bg-card-bg border-border shadow-2xl overflow-hidden inset-x-0 bottom-0 max-h-[88vh] rounded-t-2xl border-t-2 lg:inset-y-0 lg:right-0 lg:left-auto lg:h-screen lg:w-[430px] lg:max-h-screen lg:rounded-none lg:border-l-2 lg:border-t-0"
       >
-        {/* Mobile Drag Pill */}
-        <div className="flex shrink-0 justify-center pt-2.5 pb-1 lg:hidden">
-          <div className="h-1.5 w-12 rounded-full bg-border" />
+        {/* Mobile Tactile Drag Bar */}
+        <div className="flex shrink-0 justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing touch-none select-none lg:hidden">
+          <div className="h-1.5 w-12 rounded-full bg-border/90" />
         </div>
 
         {/* Top Header Controls */}
