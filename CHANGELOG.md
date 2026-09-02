@@ -13,7 +13,10 @@ and this project adheres to the [Project Release Versioning Specification](.gemi
   - **Type-Safe URL Search Parameters (`nuqs` v2)**: Refactored library filter hooks (`useLibraryFilters.ts`) using `nuqs` schema parsers (`parseAsInteger`, `parseAsStringLiteral`, `parseAsBoolean`, `parseAsString`). Every view and filter state is now bookmarkable, shareable, and integrated with native browser Back/Forward navigation.
   - **Server State & Hierarchical Caching (`@tanstack/react-query` v5)**: Migrated `useLibrary.ts` to TanStack Query with structured query keys (`['books', { showTrash }]`), automatic background revalidation on window focus, and instant optimistic cache updates with rollback for progress steppers, quick status transitions, and favorites.
   - **PostgreSQL Database Schema Types (`database.types.ts`)**: Bound `Database` definitions to `createClient<Database>()` in `lib/supabase.ts`, guaranteeing compile-time column safety across all database queries.
+  - **Atomic UI State Management (`zustand`)**: Migrated ephemeral in-memory UI state (modals, drafts, inspector drawer, up-next picker, and multi-selection) to atomic Zustand store (`stores/useUIStore.ts`), eliminating React Context re-render cascades and enabling fine-grained reactivity.
+  - **Minimal Editorial Bookplate Footer & Shortcuts Cheat Sheet (`components/AppFooter.tsx`)**: Added clean, responsive footer with brand colophon, GitHub repository link, one-click smooth back-to-top scroll, and interactive keyboard shortcuts modal (`ShortcutsModal.tsx`) triggered via footer or pressing `?`.
   - **Stable Top-Level `typedRoutes: true`**: Configured compile-time route verification in `next.config.js` and typed all navigation links across navbar, drawer, and timeline components.
+
 
 ### Security & Hardening
 - **Login Rate Limiting**: Added sliding-window rate limiting on `/api/auth/login` (maximum 10 attempts per 15 minutes per IP) to protect against brute-force attacks.

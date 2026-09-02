@@ -1,10 +1,11 @@
 'use client';
 
-import { createContext, useCallback, useContext, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useRef } from 'react';
 import { toast } from 'sonner';
 import { useBulkActions } from '@/hooks/useBulkActions';
 import { useKeyboardNav } from '@/hooks/useKeyboardNav';
 import type { Book } from '@/lib/types';
+import { useUIStore } from '@/stores/useUIStore';
 import { useLibraryData } from './LibraryDataContext';
 import { useLibraryFiltersContext } from './LibraryFiltersContext';
 
@@ -12,11 +13,19 @@ interface LibraryUIContextValue {
   // Multi-selection
   selected: Set<string>;
   selectMode: boolean;
-  setSelectMode: React.Dispatch<React.SetStateAction<boolean>>;
+  setSelectMode: (mode: boolean | ((prev: boolean) => boolean)) => void;
   pendingStatus: Book['status'] | '';
-  setPendingStatus: React.Dispatch<React.SetStateAction<Book['status'] | ''>>;
+  setPendingStatus: (
+    status: Book['status'] | '' | ((prev: Book['status'] | '') => Book['status'] | ''),
+  ) => void;
   pendingRating: number | 'unrated' | null;
-  setPendingRating: React.Dispatch<React.SetStateAction<number | 'unrated' | null>>;
+  setPendingRating: (
+    rating:
+      | number
+      | 'unrated'
+      | null
+      | ((prev: number | 'unrated' | null) => number | 'unrated' | null),
+  ) => void;
   toggleSelect: (id: string) => void;
   selectAll: (ids: string[]) => void;
   deselectAll: () => void;
@@ -30,17 +39,23 @@ interface LibraryUIContextValue {
   allSelected: boolean;
   // Keyboard nav
   focusedIndex: number;
-  setFocusedIndex: React.Dispatch<React.SetStateAction<number>>;
+  setFocusedIndex: (idx: number | ((prev: number) => number)) => void;
   isCommandPaletteOpen: boolean;
-  setIsCommandPaletteOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsCommandPaletteOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
   modKey: string;
   // Modal state
   editing: Partial<Book> | null | undefined;
-  setEditing: React.Dispatch<React.SetStateAction<Partial<Book> | null | undefined>>;
+  setEditing: (
+    editing:
+      | Partial<Book>
+      | null
+      | undefined
+      | ((prev: Partial<Book> | null | undefined) => Partial<Book> | null | undefined),
+  ) => void;
   inspectedBook: Book | null;
-  setInspectedBook: React.Dispatch<React.SetStateAction<Book | null>>;
+  setInspectedBook: (book: Book | null | ((prev: Book | null) => Book | null)) => void;
   upNext: Book | null;
-  setUpNext: React.Dispatch<React.SetStateAction<Book | null>>;
+  setUpNext: (book: Book | null | ((prev: Book | null) => Book | null)) => void;
   // Actions
   onAddEntry: () => void;
   onEditBook: (book: Book) => void;
@@ -53,22 +68,32 @@ interface LibraryUIContextValue {
 const LibraryUIContext = createContext<LibraryUIContextValue | null>(null);
 
 export function LibraryUIProvider({ children }: { children: React.ReactNode }) {
-  const { books, setBooks, load, showTrash, quickStatusChange } = useLibraryData();
+  const { books, setBooks, load, showTrash, quickStatusChange, handleToggleFavorite } =
+    useLibraryData();
   const { filteredBooks, viewMode } = useLibraryFiltersContext();
 
-  // Modal state — undefined = closed, null = new entry, Book = edit existing
-  const [editing, setEditing] = useState<Partial<Book> | null | undefined>(undefined);
-  const [inspectedBook, setInspectedBook] = useState<Book | null>(null);
-  const [upNext, setUpNext] = useState<Book | null>(null);
+  // Zustand Store Slices & Actions
+  const editing = useUIStore((s) => s.editing);
+  const setEditing = useUIStore((s) => s.setEditing);
+  const openAddEntry = useUIStore((s) => s.openAddEntry);
+  const openEditBook = useUIStore((s) => s.openEditBook);
+
+  const inspectedBook = useUIStore((s) => s.inspectedBook);
+  const setInspectedBook = useUIStore((s) => s.setInspectedBook);
+
+  const upNext = useUIStore((s) => s.upNext);
+  const setUpNext = useUIStore((s) => s.setUpNext);
+
+  const focusedIndex = useUIStore((s) => s.focusedIndex);
+  const setFocusedIndex = useUIStore((s) => s.setFocusedIndex);
+
+  const isCommandPaletteOpen = useUIStore((s) => s.isCommandPaletteOpen);
+  const setIsCommandPaletteOpen = useUIStore((s) => s.setIsCommandPaletteOpen);
 
   // Shared DOM ref owned here, attached by LibraryToolbar's search <input>
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Stable modal action callbacks
-  const onAddEntry = useCallback(() => setEditing(null), []);
-  const onEditBook = useCallback((b: Book) => setEditing(b), []);
-
-  // Up Next logic — extracted from page.tsx
+  // Up Next logic
   const pickUpNext = useCallback(() => {
     const candidates = books.filter((b) => b.status === 'Plan to Read');
     if (candidates.length === 0) {
@@ -76,33 +101,33 @@ export function LibraryUIProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     setUpNext(candidates[Math.floor(Math.random() * candidates.length)]);
-  }, [books]);
+  }, [books, setUpNext]);
 
   const startReadingUpNext = useCallback(async () => {
     if (!upNext) return;
     const b = upNext;
     setUpNext(null);
     await quickStatusChange(b);
-  }, [upNext, quickStatusChange]);
+  }, [upNext, setUpNext, quickStatusChange]);
 
-  // Bulk actions — correct signature: { setBooks, onReload }
+  // Bulk actions connected via Zustand
   const bulk = useBulkActions({ setBooks, onReload: load });
 
   const allSelected =
     filteredBooks.length > 0 && filteredBooks.every((b) => bulk.selected.has(b.id));
 
   // Keyboard navigation
-  const { focusedIndex, setFocusedIndex, isCommandPaletteOpen, setIsCommandPaletteOpen, modKey } =
-    useKeyboardNav({
-      filteredBooks,
-      inspectedBook,
-      showTrash,
-      isEditing: editing !== undefined,
-      viewMode,
-      onAddEntry,
-      onEditBook,
-      searchInputRef,
-    });
+  const { modKey } = useKeyboardNav({
+    filteredBooks,
+    inspectedBook,
+    showTrash,
+    isEditing: editing !== undefined,
+    viewMode,
+    onAddEntry: openAddEntry,
+    onEditBook: openEditBook,
+    onToggleFavorite: handleToggleFavorite,
+    searchInputRef,
+  });
 
   const value: LibraryUIContextValue = {
     // Bulk actions
@@ -134,8 +159,8 @@ export function LibraryUIProvider({ children }: { children: React.ReactNode }) {
     upNext,
     setUpNext,
     // Actions
-    onAddEntry,
-    onEditBook,
+    onAddEntry: openAddEntry,
+    onEditBook: openEditBook,
     pickUpNext,
     startReadingUpNext,
     // Refs
