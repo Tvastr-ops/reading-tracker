@@ -118,7 +118,9 @@ const THEME_INIT_SCRIPT = `
 })();
 `;
 
+import { Suspense } from 'react';
 import { AppShell } from '@/components/AppShell';
+import { Providers } from '@/components/Providers';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -131,9 +133,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="bg-bg font-sans text-text antialiased transition-colors duration-200">
-        <AppShell>
-          <main>{children}</main>
-        </AppShell>
+        <Providers>
+          <Suspense fallback={null}>
+            <AppShell>
+              <main>{children}</main>
+            </AppShell>
+          </Suspense>
+        </Providers>
         <Toaster position="bottom-right" richColors closeButton />
         <SpeedInsights />
       </body>

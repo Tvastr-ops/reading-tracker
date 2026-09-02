@@ -5,7 +5,23 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.7.0] - 2026-09-02
+
+### Added & Architecture (Web App)
+- **Full-Stack End-to-End Type Safety (2026 Standards)**:
+  - **Hono RPC Client (`hc`) & Zod Validation**: Built modular Hono v4 API layer (`lib/server/app.ts`) mounted on Next.js App Router with Zod schema validation and exported typed RPC client (`lib/client.ts`), replacing unverified raw fetch calls with 100% compile-time typed queries and mutations.
+  - **Type-Safe URL Search Parameters (`nuqs` v2)**: Refactored library filter hooks (`useLibraryFilters.ts`) using `nuqs` schema parsers (`parseAsInteger`, `parseAsStringLiteral`, `parseAsBoolean`, `parseAsString`). Every view and filter state is now bookmarkable, shareable, and integrated with native browser Back/Forward navigation.
+  - **Server State & Hierarchical Caching (`@tanstack/react-query` v5)**: Migrated `useLibrary.ts` to TanStack Query with structured query keys (`['books', { showTrash }]`), automatic background revalidation on window focus, and instant optimistic cache updates with rollback for progress steppers, quick status transitions, and favorites.
+  - **PostgreSQL Database Schema Types (`database.types.ts`)**: Bound `Database` definitions to `createClient<Database>()` in `lib/supabase.ts`, guaranteeing compile-time column safety across all database queries.
+  - **Stable Top-Level `typedRoutes: true`**: Configured compile-time route verification in `next.config.js` and typed all navigation links across navbar, drawer, and timeline components.
+
+### Security & Hardening
+- **Login Rate Limiting**: Added sliding-window rate limiting on `/api/auth/login` (maximum 10 attempts per 15 minutes per IP) to protect against brute-force attacks.
+- **Route-Group Auth Guards**: Centralized auth guard middleware protecting all library, journey, log, and settings endpoints by default.
+- **100% Mobile Client Sync Compatibility**: Preserved all dual auth mechanisms (`x-api-key`, `Authorization: Bearer <key>`, session cookies) and exact REST payload envelopes for Flutter mobile sync.
+
 ## [2.6.4] - 2026-08-31
+
 
 ### Added
 - **Editorial & Tactile Typography System (Web & Mobile)**:

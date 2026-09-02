@@ -14,6 +14,7 @@ import {
   Undo2,
   X,
 } from 'lucide-react';
+import type { Route } from 'next';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -176,13 +177,14 @@ export default function BookInspectorDrawer({
           </div>
           <div className="flex items-center gap-1">
             <Link
-              href={`/books/${book.id}`}
+              href={`/books/${book.id}` as Route}
               className="flex h-8 items-center gap-1 rounded-md px-2 text-xs font-semibold text-text-muted transition-colors hover:bg-surface hover:text-text"
               title="Open full page view"
             >
               <ExternalLink className="h-3.5 w-3.5" />
               <span className="hidden xl:inline">Full Page</span>
             </Link>
+
             <Button
               variant="ghost"
               size="sm"

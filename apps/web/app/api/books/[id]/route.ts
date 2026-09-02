@@ -144,7 +144,10 @@ export const PATCH = withAuth(async (req: NextRequest, { params }: RouteContext)
 
   // Update remaining metadata if any fields remain
   if (Object.keys(update).length > 0) {
-    const { error: updateError } = await supabase.from('books').update(update).eq('id', id);
+    const { error: updateError } = await supabase
+      .from('books')
+      .update(update as any)
+      .eq('id', id);
 
     if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
 
@@ -182,7 +185,10 @@ export const PATCH = withAuth(async (req: NextRequest, { params }: RouteContext)
           }
         }
 
-        await supabase.from('reading_journeys').update(jUpdate).eq('id', jId);
+        await supabase
+          .from('reading_journeys')
+          .update(jUpdate as any)
+          .eq('id', jId);
       }
     }
   }

@@ -86,8 +86,9 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
     .insert({
       id: newJourneyId,
       book_id: id,
-      user_id: book.user_id,
+      user_id: (book as any).user_id || null,
       journey_index: nextJourneyIndex,
+
       status: 'reading',
       date_started: now,
       date_finished: null,

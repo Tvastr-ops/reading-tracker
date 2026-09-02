@@ -11,6 +11,7 @@ import {
   Settings,
   Sun,
 } from 'lucide-react';
+import type { Route } from 'next';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+
 import { useLibraryData } from '@/contexts/LibraryDataContext';
 import { useLibraryUI } from '@/contexts/LibraryUIContext';
 import type { ThemePalette } from '@/hooks/useLibrary';
@@ -69,6 +71,13 @@ export const PALETTES: PaletteOption[] = [
   },
 ];
 
+interface NavTabItem {
+  href: Route;
+  label: string;
+  icon: any;
+  active: boolean;
+}
+
 export function AppNavbar() {
   const pathname = usePathname();
   const { themeMode, themePalette, setThemePalette, setThemeMode } = useLibraryData();
@@ -76,22 +85,27 @@ export function AppNavbar() {
 
   const activePalette = PALETTES.find((p) => p.id === themePalette) || PALETTES[0];
 
-  const navTabs = [
+  const navTabs: NavTabItem[] = [
     {
-      href: '/',
+      href: '/' as Route,
       label: 'LIBRARY',
       icon: BookOpen,
       active: pathname === '/' || pathname.startsWith('/books'),
     },
     {
-      href: '/analytics',
+      href: '/analytics' as Route,
       label: 'ANALYTICS',
       icon: BarChart3,
       active: pathname.startsWith('/analytics'),
     },
-    { href: '/journal', label: 'JOURNAL', icon: History, active: pathname.startsWith('/journal') },
     {
-      href: '/settings',
+      href: '/journal' as Route,
+      label: 'JOURNAL',
+      icon: History,
+      active: pathname.startsWith('/journal'),
+    },
+    {
+      href: '/settings' as Route,
       label: 'SETTINGS',
       icon: Settings,
       active: pathname.startsWith('/settings'),

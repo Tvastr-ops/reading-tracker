@@ -55,6 +55,26 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  text-wrap: balance;
+}
+
+p,
+blockquote,
+.pretty-text {
+  text-wrap: pretty;
+}
+
+.defer-render {
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 220px;
+}
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }

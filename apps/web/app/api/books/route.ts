@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase';
-import type { BookInput } from '@/lib/types';
+import type { BookInput, BookStatus } from '@/lib/types';
+
 import { validateProgressionFields } from '@/lib/validation';
 
 // See app/api/export/route.ts for why this is required.
@@ -40,7 +41,7 @@ export const GET = withAuth(async (req: NextRequest) => {
   }
 
   if (status && status !== 'All') {
-    query = query.eq('status', status);
+    query = query.eq('status', status as BookStatus);
   }
 
   if (favorite) {
