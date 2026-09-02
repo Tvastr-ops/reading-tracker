@@ -148,7 +148,7 @@ function BookGrid({
   }
 
   return (
-    <div className="grid 3xl:grid-cols-8 grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-7">
       <AnimatePresence mode="popLayout">
         {books.map((b, idx) => {
           const pct = calculateProgressPercentage(b);
@@ -199,112 +199,109 @@ function BookGrid({
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60 transition-opacity group-hover:opacity-40" />
                   )}
 
-                  {/* Checkbox for Select Mode */}
-                  {selectMode && (
-                    <div
-                      className="absolute top-2 left-2 z-20"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 cursor-pointer rounded border-border text-accent-color shadow-sm focus:ring-accent-color"
-                        checked={isSelected}
-                        onChange={() => onToggleSelect?.(b.id)}
-                      />
-                    </div>
-                  )}
-
-                  {/* Status Badge Overlay */}
-                  {!selectMode && (
-                    <div className="absolute top-2 left-2 z-10 max-w-[calc(100%-2.6rem)]">
-                      <Badge
-                        variant={statusCfg.variant}
-                        className="max-w-full gap-1.5 truncate px-2 py-0.5 font-medium text-[10px] shadow-xs backdrop-blur-md"
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusCfg.dotColor}`}
+                  {/* Top Overlay Header: Status Badge & Favorite/Action Pill */}
+                  <div className="pointer-events-none absolute inset-x-2 top-2 z-10 flex items-center justify-between gap-1">
+                    {/* Checkbox for Select Mode or Status Badge */}
+                    {selectMode ? (
+                      <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 cursor-pointer rounded border-border text-accent-color shadow-sm focus:ring-accent-color"
+                          checked={isSelected}
+                          onChange={() => onToggleSelect?.(b.id)}
                         />
-                        <span className="truncate">{b.status}</span>
-                      </Badge>
-                    </div>
-                  )}
-
-                  {/* Dropdown Action Menu & Favorite Pill */}
-                  <div
-                    className="absolute top-2 right-2 z-10 flex items-center rounded-full border border-white/20 bg-black/40 shadow-md backdrop-blur-md transition-all hover:scale-105"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {b.is_favorite && (
-                      <div
-                        className="flex items-center justify-center pl-2.5 pr-0.5"
-                        title="Favorite"
-                      >
-                        <Heart className="h-3 w-3 fill-amber-400 text-amber-400 drop-shadow-[0_0_4px_rgba(245,158,11,0.6)]" />
+                      </div>
+                    ) : (
+                      <div className="pointer-events-auto min-w-0 flex-1">
+                        <Badge
+                          variant={statusCfg.variant}
+                          className="inline-flex max-w-full gap-1 truncate px-1.5 py-0.5 font-medium text-[9.5px] shadow-xs backdrop-blur-md"
+                        >
+                          <span
+                            className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusCfg.dotColor}`}
+                          />
+                          <span className="truncate">{b.status}</span>
+                        </Badge>
                       </div>
                     )}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Actions for ${b.title}`}
-                          className="h-7 w-7 rounded-full text-white hover:bg-white/20"
+
+                    {/* Dropdown Action Menu & Favorite Pill */}
+                    <div
+                      className="pointer-events-auto flex shrink-0 items-center rounded-full border border-white/20 bg-black/40 shadow-md backdrop-blur-md transition-all hover:scale-105"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {b.is_favorite && (
+                        <div
+                          className="flex items-center justify-center pl-2 pr-0.5"
+                          title="Favorite"
                         >
-                          <MoreVertical className="h-3.5 w-3.5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {trashMode ? (
-                          <>
-                            <DropdownMenuItem onClick={() => onRestore?.(b)}>
-                              <RotateCcw className="mr-2 h-4 w-4 text-emerald-500" />
-                              <span>Restore</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => onPermanentDelete?.(b)}
-                              className="text-rose-600 focus:bg-rose-500/10 focus:text-rose-600 dark:text-rose-400"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              <span>Delete Permanently</span>
-                            </DropdownMenuItem>
-                          </>
-                        ) : (
-                          <>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                if (window.innerWidth < 1024) {
-                                  (onFullEdit ?? onEdit)(b);
-                                } else {
-                                  onEdit(b);
-                                }
-                              }}
-                            >
-                              <Edit3 className="mr-2 h-4 w-4 text-accent-color" />
-                              <span>Edit</span>
-                            </DropdownMenuItem>
-
-                            {onToggleFavorite && (
-                              <DropdownMenuItem onClick={() => onToggleFavorite(b)}>
-                                <Heart
-                                  className={`mr-2 h-4 w-4 ${b.is_favorite ? 'fill-rose-500 text-rose-500' : 'text-rose-400'}`}
-                                />
-                                <span>{b.is_favorite ? 'Unfavorite' : 'Favorite'}</span>
+                          <Heart className="h-3 w-3 fill-amber-400 text-amber-400 drop-shadow-[0_0_4px_rgba(245,158,11,0.6)]" />
+                        </div>
+                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Actions for ${b.title}`}
+                            className="h-6.5 w-6.5 rounded-full text-white hover:bg-white/20"
+                          >
+                            <MoreVertical className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {trashMode ? (
+                            <>
+                              <DropdownMenuItem onClick={() => onRestore?.(b)}>
+                                <RotateCcw className="mr-2 h-4 w-4 text-emerald-500" />
+                                <span>Restore</span>
                               </DropdownMenuItem>
-                            )}
+                              <DropdownMenuItem
+                                onClick={() => onPermanentDelete?.(b)}
+                                className="text-rose-600 focus:bg-rose-500/10 focus:text-rose-600 dark:text-rose-400"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                <span>Delete Permanently</span>
+                              </DropdownMenuItem>
+                            </>
+                          ) : (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  if (window.innerWidth < 1024) {
+                                    (onFullEdit ?? onEdit)(b);
+                                  } else {
+                                    onEdit(b);
+                                  }
+                                }}
+                              >
+                                <Edit3 className="mr-2 h-4 w-4 text-accent-color" />
+                                <span>Edit</span>
+                              </DropdownMenuItem>
 
-                            <DropdownMenuSeparator />
+                              {onToggleFavorite && (
+                                <DropdownMenuItem onClick={() => onToggleFavorite(b)}>
+                                  <Heart
+                                    className={`mr-2 h-4 w-4 ${b.is_favorite ? 'fill-rose-500 text-rose-500' : 'text-rose-400'}`}
+                                  />
+                                  <span>{b.is_favorite ? 'Unfavorite' : 'Favorite'}</span>
+                                </DropdownMenuItem>
+                              )}
 
-                            <DropdownMenuItem
-                              onClick={() => onDelete(b)}
-                              className="text-rose-600 focus:bg-rose-500/10 focus:text-rose-600 dark:text-rose-400"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              <span>Delete</span>
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                              <DropdownMenuSeparator />
+
+                              <DropdownMenuItem
+                                onClick={() => onDelete(b)}
+                                className="text-rose-600 focus:bg-rose-500/10 focus:text-rose-600 dark:text-rose-400"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                <span>Delete</span>
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
                 </div>
 

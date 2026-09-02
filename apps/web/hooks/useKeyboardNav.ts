@@ -143,7 +143,7 @@ export function useKeyboardNav({
 
           if (viewMode === 'grid') {
             const w = window.innerWidth;
-            const cols = w >= 1280 ? 6 : w >= 1024 ? 5 : w >= 768 ? 4 : w >= 640 ? 3 : 2;
+            const cols = w >= 1536 ? 6 : w >= 1280 ? 5 : w >= 1024 ? 4 : w >= 640 ? 3 : 2;
             if (isRight) delta = 1;
             else if (isLeft) delta = -1;
             else if (isDown) delta = cols;
