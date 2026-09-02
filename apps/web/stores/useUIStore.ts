@@ -65,12 +65,16 @@ export const useUIStore = create<UIState>((set) => ({
   pendingRating: null,
 
   setEditing: (updater) =>
-    set((state) => ({
-      editing: typeof updater === 'function' ? updater(state.editing) : updater,
-    })),
+    set((state) => {
+      const nextEditing = typeof updater === 'function' ? updater(state.editing) : updater;
+      return {
+        editing: nextEditing,
+        ...(nextEditing !== undefined ? { inspectedBook: null } : {}),
+      };
+    }),
 
-  openAddEntry: () => set({ editing: null }),
-  openEditBook: (book) => set({ editing: book }),
+  openAddEntry: () => set({ editing: null, inspectedBook: null }),
+  openEditBook: (book) => set({ editing: book, inspectedBook: null }),
   closeEditor: () => set({ editing: undefined }),
 
   setInspectedBook: (updater) =>

@@ -10,8 +10,8 @@ export function Providers({ children }: { children: ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 1000 * 60 * 2, // 2 minutes stale time
-            refetchOnWindowFocus: true, // Auto-syncs tab on focus when phone client makes edits
+            staleTime: 1000 * 60 * 5, // 5 minutes stale time
+            refetchOnWindowFocus: false, // Prevents background re-renders on window focus
             retry: 1,
           },
         },
