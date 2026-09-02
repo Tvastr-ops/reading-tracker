@@ -39,7 +39,7 @@ export default function AnalyticsPage() {
 
   const handleStatusSelect = (status: string) => {
     setStatusFilter(status as Book['status'] | 'All');
-    router.push('/');
+    router.push('/library');
   };
 
   if (loading) {
@@ -63,7 +63,7 @@ export default function AnalyticsPage() {
         <div>
           <div className="flex items-center gap-2">
             <Link
-              href="/"
+              href="/library"
               className="text-text-muted transition-colors hover:text-text md:hidden"
               aria-label="Back to Library"
             >
@@ -79,7 +79,7 @@ export default function AnalyticsPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link href="/">
+          <Link href="/library">
             <Button
               variant="outline"
               size="sm"
