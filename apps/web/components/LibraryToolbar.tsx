@@ -5,15 +5,16 @@ import {
   ArrowUpDown,
   Check,
   CheckSquare,
-  Filter,
   Heart,
   LayoutGrid,
   List,
   Search,
+  SlidersHorizontal,
   Sparkles,
   Trash2,
   X,
 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -128,7 +129,10 @@ export function LibraryToolbar() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowTrash(false)}
+              onClick={() => {
+                clearFilters();
+                setShowTrash(false);
+              }}
               className="h-10 border-2 border-border font-black text-xs uppercase shadow-[2px_2px_0px_var(--border)]"
             >
               <ArrowLeft className="mr-1.5 h-4 w-4" />
@@ -176,7 +180,10 @@ export function LibraryToolbar() {
                 variant="outline"
                 size="sm"
                 className="h-9.5 border-2 border-border px-3 text-text-muted text-xs shadow-[2px_2px_0px_var(--border)] hover:text-rose-500 hover:border-rose-500/80 transition-all"
-                onClick={() => setShowTrash(true)}
+                onClick={() => {
+                  clearFilters();
+                  setShowTrash(true);
+                }}
                 title="View Trash"
                 aria-label="View Trash"
               >
@@ -233,24 +240,24 @@ export function LibraryToolbar() {
                 variant={filtersActive ? 'default' : 'outline'}
                 size="sm"
                 className={cn(
-                  'h-8 min-w-0 flex-1 justify-center border-2 px-3 font-bold text-xs uppercase shadow-[1.5px_1.5px_0px_var(--border)] sm:flex-none transition-all',
+                  'h-8 min-w-0 flex-1 justify-center border-2 px-2.5 font-bold text-xs uppercase shadow-[1.5px_1.5px_0px_var(--border)] sm:flex-none sm:px-3 transition-all',
                   filtersActive
                     ? 'border-accent-color bg-accent-bg text-accent-text font-black shadow-[2px_2px_0px_var(--border)]'
                     : 'border-border text-text hover:bg-surface',
                 )}
                 title="Filter Library"
+                aria-label="Filter Library"
               >
-                <Filter className="h-3.5 w-3.5 text-current sm:mr-1.5" />
-                <span>
-                  Filter
-                  {activeFilterCount > 0 && (
-                    <span className="ml-1 rounded-full bg-accent-text/20 px-1.5 py-0.2 text-[10px] font-black">
-                      {activeFilterCount}
-                    </span>
-                  )}
-                </span>
+                <SlidersHorizontal className="h-3.5 w-3.5 text-current sm:mr-1.5" />
+                <span className="hidden sm:inline">Filter</span>
+                {activeFilterCount > 0 && (
+                  <span className="ml-1 rounded-full bg-accent-text/20 px-1.5 py-0.2 text-[10px] font-black">
+                    {activeFilterCount}
+                  </span>
+                )}
               </Button>
             </DropdownMenuTrigger>
+
             <DropdownMenuContent align="start" className="w-56">
               <DropdownMenuLabel className="flex items-center justify-between text-xs font-bold uppercase tracking-wider">
                 <span>Filter Library</span>
