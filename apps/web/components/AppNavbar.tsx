@@ -156,14 +156,14 @@ export function AppNavbar() {
       </div>
 
       {/* Desktop 4-Tab Switcher Strip */}
-      <nav className="hidden items-center gap-1.5 rounded-lg border-2 border-border/80 bg-surface/60 p-1.5 shadow-[2px_2px_0px_var(--border)] md:flex">
+      <nav className="hidden items-center gap-1 rounded-lg border-2 border-border/80 bg-surface/60 p-1 shadow-[2px_2px_0px_var(--border)] md:flex lg:gap-1.5 lg:p-1.5">
         {navTabs.map((tab) => {
           const Icon = tab.icon;
           return (
             <Link
               key={tab.href}
               href={tab.href}
-              className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-black tracking-wider transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-black tracking-wider transition-all lg:gap-2 lg:px-3.5 lg:py-1.5 ${
                 tab.active
                   ? 'border-1.5 border-border bg-accent-bg text-accent-text shadow-[2px_2px_0px_var(--border)]'
                   : 'text-text-muted hover:border-1.5 hover:border-border/40 hover:bg-surface hover:text-text'
@@ -177,17 +177,17 @@ export function AppNavbar() {
       </nav>
 
       {/* Desktop Right Companion Actions */}
-      <div className="hidden items-center gap-2 md:flex">
+      <div className="hidden items-center gap-1.5 md:flex lg:gap-2">
         {/* Global Search Cmd+K */}
         <Button
           variant="outline"
           size="sm"
-          className="h-9 gap-2 border-2 border-border px-3 text-xs text-text-muted shadow-[1.5px_1.5px_0px_var(--border)] hover:text-text active:translate-x-[1px] active:translate-y-[1px] focus-visible:ring-0 focus-visible:outline-none"
+          className="h-9 gap-1.5 border-2 border-border px-2.5 text-xs text-text-muted shadow-[1.5px_1.5px_0px_var(--border)] hover:text-text active:translate-x-[1px] active:translate-y-[1px] focus-visible:outline-none focus-visible:ring-0 lg:gap-2 lg:px-3"
           onClick={() => setIsCommandPaletteOpen(true)}
         >
           <Search className="h-3.5 w-3.5" />
           <span className="font-bold">Search</span>
-          <kbd className="ml-1 inline-flex items-center border border-border bg-surface px-1.5 py-0.5 font-mono text-[10px] font-bold text-text-muted">
+          <kbd className="ml-1 hidden items-center border border-border bg-surface px-1.5 py-0.5 font-mono text-[10px] font-bold text-text-muted lg:inline-flex">
             {modKey || 'Ctrl+K'}
           </kbd>
         </Button>
