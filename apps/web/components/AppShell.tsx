@@ -2,11 +2,13 @@
 
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
+import { AppFooter } from '@/components/AppFooter';
 import { AppNavbar } from '@/components/AppNavbar';
 import { BookFormModal } from '@/components/BookFormModal';
 import { CommandPaletteModal } from '@/components/CommandPaletteModal';
 import { ImportNotification } from '@/components/ImportNotification';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
+import { ShortcutsModal } from '@/components/ShortcutsModal';
 import { LibraryProvider } from '@/contexts/LibraryContext';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -30,8 +32,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <AppNavbar />
         <ImportNotification />
         {children}
+        <AppFooter />
         <BookFormModal />
         <CommandPaletteModal />
+        <ShortcutsModal />
         <MobileBottomNav />
       </div>
     </LibraryProvider>

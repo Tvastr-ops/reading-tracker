@@ -1,54 +1,30 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { toast } from 'sonner';
 import type { Book } from '@/lib/types';
 import { getLocalDateString } from '@/lib/utils';
+import { useUIStore } from '@/stores/useUIStore';
 
 interface UseBulkActionsProps {
-  setBooks: React.Dispatch<React.SetStateAction<Book[]>>;
+  setBooks: (updater: Book[] | ((prev: Book[]) => Book[])) => void;
   onReload: (quiet?: boolean) => Promise<void>;
 }
 
 export function useBulkActions({ setBooks, onReload }: UseBulkActionsProps) {
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [selectMode, setSelectMode] = useState(false);
-  const [pendingStatus, setPendingStatus] = useState<Book['status'] | ''>('');
-  const [pendingRating, setPendingRating] = useState<number | 'unrated' | null>(null);
+  const selected = useUIStore((s) => s.selected);
+  const selectMode = useUIStore((s) => s.selectMode);
+  const pendingStatus = useUIStore((s) => s.pendingStatus);
+  const pendingRating = useUIStore((s) => s.pendingRating);
 
-  const toggleSelect = useCallback((id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
-
-  const selectAll = useCallback((ids: string[]) => {
-    setSelected(new Set(ids));
-  }, []);
-
-  const deselectAll = useCallback(() => {
-    setSelected(new Set());
-  }, []);
-
-  const toggleSelectAll = useCallback((filteredBooks: Book[]) => {
-    setSelected((prev) => {
-      const allSelected = filteredBooks.length > 0 && filteredBooks.every((b) => prev.has(b.id));
-      if (allSelected) {
-        return new Set();
-      }
-      return new Set(filteredBooks.map((b) => b.id));
-    });
-  }, []);
-
-  const resetSelection = useCallback(() => {
-    setPendingStatus('');
-    setPendingRating(null);
-    setSelectMode(false);
-    setSelected(new Set());
-  }, []);
+  const toggleSelect = useUIStore((s) => s.toggleSelect);
+  const selectAll = useUIStore((s) => s.selectAll);
+  const deselectAll = useUIStore((s) => s.deselectAll);
+  const toggleSelectAll = useUIStore((s) => s.toggleSelectAll);
+  const resetSelection = useUIStore((s) => s.resetSelection);
+  const setSelectMode = useUIStore((s) => s.setSelectMode);
+  const setPendingStatus = useUIStore((s) => s.setPendingStatus);
+  const setPendingRating = useUIStore((s) => s.setPendingRating);
 
   const bulkAction = useCallback(
     async (
@@ -81,7 +57,7 @@ export function useBulkActions({ setBooks, onReload }: UseBulkActionsProps) {
       }
 
       if (!keepSelection) {
-        setSelected(new Set());
+        deselectAll();
       }
 
       const body: Record<string, unknown> = { action, ids: Array.from(targetIds) };
@@ -123,12 +99,11 @@ export function useBulkActions({ setBooks, onReload }: UseBulkActionsProps) {
         toast.error('Bulk update failed');
       }
     },
-    [selected, setBooks, onReload],
+    [selected, setBooks, onReload, deselectAll],
   );
 
   return {
     selected,
-    setSelected,
     selectMode,
     setSelectMode,
     pendingStatus,
