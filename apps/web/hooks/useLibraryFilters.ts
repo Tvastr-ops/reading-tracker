@@ -1,69 +1,82 @@
+import {
+  parseAsBoolean,
+  parseAsInteger,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryState,
+} from 'nuqs';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { compileSearchQuery, parseShelves } from '@/lib/searchParser';
-import { type Book, type SortDir, type SortField, STATUSES } from '@/lib/types';
+import { type Book, SORT_FIELDS, type SortDir, type SortField, STATUSES } from '@/lib/types';
 
 export function useLibraryFilters(books: Book[]) {
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [shelfFilter, setShelfFilter] = useState<string | null>(null);
-  const [ratingFilter, setRatingFilter] = useState<number | 'All' | 'Unrated'>('All');
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
-  const [search, setSearch] = useState('');
+  // 1. Type-Safe URL Query State via nuqs
+  const [statusFilter, setStatusFilterState] = useQueryState(
+    'status',
+    parseAsStringLiteral(['All', ...STATUSES] as const).withDefault('All'),
+  );
+
+  const [shelfFilter, setShelfFilterState] = useQueryState('shelf', parseAsString);
+
+  const [showFavoritesOnly, setShowFavoritesOnlyState] = useQueryState(
+    'fav',
+    parseAsBoolean.withDefault(false),
+  );
+
+  const [search, setSearchState] = useQueryState(
+    'q',
+    parseAsString.withDefault('').withOptions({ shallow: true, throttleMs: 150 }),
+  );
+
+  const [sortField, setSortFieldState] = useQueryState(
+    'sort',
+    parseAsStringLiteral(SORT_FIELDS).withDefault('updated_at'),
+  );
+
+  const [sortDir, setSortDirState] = useQueryState(
+    'dir',
+    parseAsStringLiteral(['asc', 'desc'] as const).withDefault('desc'),
+  );
+
+  const [viewMode, setViewModeState] = useQueryState(
+    'view',
+    parseAsStringLiteral(['grid', 'table'] as const).withDefault('grid'),
+  );
+
+  const [currentPage, setCurrentPageState] = useQueryState('page', parseAsInteger.withDefault(1));
+
+  const [pageSizeParam, setPageSizeParam] = useQueryState('size', parseAsString.withDefault('50'));
+
+  // 2. Local-only preferences (Rating mode, Transition style, Rating filter)
+  const [ratingFilter, setRatingFilterState] = useState<number | 'All' | 'Unrated'>('All');
   const [ratingMode, setRatingMode] = useState<'stars' | 'decimal'>('stars');
-  const [sortField, setSortField] = useState<SortField>('updated_at');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid');
   const [viewTransitionStyle, setViewTransitionStyleState] = useState<'instant' | 'fade'>(
     'instant',
   );
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [pageSize, setPageSizeState] = useState<number | 'all'>(50);
 
-  // Load saved preferences from localStorage on mount
+  // Load local preferences on mount
   useEffect(() => {
-    const savedView = window.localStorage.getItem('viewMode');
-    if (savedView === 'grid' || savedView === 'table') setViewMode(savedView);
     const savedTransition = window.localStorage.getItem('view_transition_style');
     if (savedTransition === 'instant' || savedTransition === 'fade') {
       setViewTransitionStyleState(savedTransition);
     }
-    const savedStatus = window.localStorage.getItem('statusFilter');
-    if (savedStatus) setStatusFilter(savedStatus);
-    const savedSearch = window.localStorage.getItem('search');
-    if (savedSearch != null) setSearch(savedSearch);
-    const savedSortField = window.localStorage.getItem('sortField');
-    if (savedSortField) setSortField(savedSortField as SortField);
-    const savedSortDir = window.localStorage.getItem('sortDir');
-    if (savedSortDir === 'asc' || savedSortDir === 'desc') setSortDir(savedSortDir);
     const savedRatingMode = window.localStorage.getItem('ratingMode');
     if (savedRatingMode === 'stars' || savedRatingMode === 'decimal') {
       setRatingMode(savedRatingMode);
     }
-    const savedPageSize = window.localStorage.getItem('pageSize');
-    if (savedPageSize === 'all') {
-      setPageSizeState('all');
-    } else if (savedPageSize) {
-      const num = parseInt(savedPageSize, 10);
-      if (Number.isFinite(num) && num > 0) setPageSizeState(num);
-    }
   }, []);
 
-  // Sync state to localStorage
-  useEffect(() => {
-    window.localStorage.setItem('statusFilter', statusFilter);
-  }, [statusFilter]);
-  useEffect(() => {
-    window.localStorage.setItem('search', search);
-  }, [search]);
-  useEffect(() => {
-    window.localStorage.setItem('sortField', sortField);
-  }, [sortField]);
-  useEffect(() => {
-    window.localStorage.setItem('sortDir', sortDir);
-  }, [sortDir]);
+  const pageSize: number | 'all' =
+    pageSizeParam === 'all' ? 'all' : parseInt(pageSizeParam, 10) || 50;
+
+  const setPageSize = (size: number | 'all') => {
+    setPageSizeParam(String(size));
+    setCurrentPageState(1);
+  };
 
   const toggleViewMode = (mode: 'table' | 'grid') => {
-    setViewMode(mode);
+    setViewModeState(mode);
     window.localStorage.setItem('viewMode', mode);
   };
 
@@ -81,11 +94,12 @@ export function useLibraryFilters(books: Book[]) {
 
   const handleSort = (field: SortField) => {
     if (field === sortField) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+      setSortDirState((d) => (d === 'asc' ? 'desc' : 'asc'));
     } else {
-      setSortField(field);
-      setSortDir('asc');
+      setSortFieldState(field);
+      setSortDirState('asc');
     }
+    setCurrentPageState(1);
   };
 
   const deferredSearch = useDeferredValue(search);
@@ -190,13 +204,6 @@ export function useLibraryFilters(books: Book[]) {
     return counts;
   }, [books, allShelves]);
 
-  const setPageSize = (size: number | 'all') => {
-    setPageSizeState(size);
-    setCurrentPage(1);
-    window.localStorage.setItem('pageSize', String(size));
-  };
-
-  // Reset to page 1 whenever filters change and current page is out of range
   const totalPages = useMemo(() => {
     if (pageSize === 'all') return 1;
     return Math.max(1, Math.ceil(filteredBooks.length / pageSize));
@@ -204,9 +211,9 @@ export function useLibraryFilters(books: Book[]) {
 
   useEffect(() => {
     if (currentPage > totalPages) {
-      setCurrentPage(1);
+      setCurrentPageState(1);
     }
-  }, [totalPages, currentPage]);
+  }, [totalPages, currentPage, setCurrentPageState]);
 
   const paginatedBooks = useMemo(() => {
     if (pageSize === 'all') return filteredBooks;
@@ -222,48 +229,54 @@ export function useLibraryFilters(books: Book[]) {
     search.trim() !== '';
 
   const clearFilters = () => {
-    setStatusFilter('All');
-    setShelfFilter(null);
-    setRatingFilter('All');
-    setShowFavoritesOnly(false);
-    setSearch('');
-    setCurrentPage(1);
+    setStatusFilterState('All');
+    setShelfFilterState(null);
+    setRatingFilterState('All');
+    setShowFavoritesOnlyState(false);
+    setSearchState('');
+    setCurrentPageState(1);
   };
 
   return {
     statusFilter,
     setStatusFilter: (s: string) => {
-      setStatusFilter(s);
-      setCurrentPage(1);
+      setStatusFilterState(s as any);
+      setCurrentPageState(1);
     },
     shelfFilter,
     setShelfFilter: (sh: string | null) => {
-      setShelfFilter(sh);
-      setCurrentPage(1);
+      setShelfFilterState(sh);
+      setCurrentPageState(1);
     },
     allShelves,
     shelfCounts,
     ratingFilter,
     setRatingFilter: (r: number | 'All' | 'Unrated') => {
-      setRatingFilter(r);
-      setCurrentPage(1);
+      setRatingFilterState(r);
+      setCurrentPageState(1);
     },
     showFavoritesOnly,
     setShowFavoritesOnly: (f: boolean | ((prev: boolean) => boolean)) => {
-      setShowFavoritesOnly(f);
-      setCurrentPage(1);
+      setShowFavoritesOnlyState(f);
+      setCurrentPageState(1);
     },
     search,
     setSearch: (s: string) => {
-      setSearch(s);
-      setCurrentPage(1);
+      setSearchState(s);
+      setCurrentPageState(1);
     },
     ratingMode,
     toggleRatingMode,
     sortField,
-    setSortField,
+    setSortField: (f: SortField) => {
+      setSortFieldState(f);
+      setCurrentPageState(1);
+    },
     sortDir,
-    setSortDir,
+    setSortDir: (d: SortDir) => {
+      setSortDirState(d);
+      setCurrentPageState(1);
+    },
     viewMode,
     toggleViewMode,
     viewTransitionStyle,
@@ -271,7 +284,13 @@ export function useLibraryFilters(books: Book[]) {
     filteredBooks,
     paginatedBooks,
     currentPage,
-    setCurrentPage,
+    setCurrentPage: (p: number | ((prev: number) => number)) => {
+      if (typeof p === 'function') {
+        setCurrentPageState((prev) => p(prev || 1));
+      } else {
+        setCurrentPageState(p);
+      }
+    },
     pageSize,
     setPageSize,
     totalPages,

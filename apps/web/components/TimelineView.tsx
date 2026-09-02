@@ -11,6 +11,7 @@ import {
   History,
   MessageSquare,
 } from 'lucide-react';
+import type { Route } from 'next';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -250,7 +251,7 @@ export function TimelineView() {
                           </span>
                           {b && (
                             <Link
-                              href={`/books/${b.id}`}
+                              href={`/books/${b.id}` as Route}
                               className="text-text-muted transition-colors hover:text-text"
                               title="Open Book Page"
                             >

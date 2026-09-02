@@ -1,8 +1,10 @@
 'use client';
 
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { client } from '@/lib/client';
 import { normalizeStatusTransition } from '@/lib/progress';
 import { type Book, type BookInput, STATUSES } from '@/lib/types';
 import { getLocalDateString } from '@/lib/utils';
@@ -11,16 +13,15 @@ export type ThemePalette = 'classic' | 'paperback' | 'matcha' | 'nordic';
 export type ThemeMode = 'light' | 'dark';
 
 export function useLibrary() {
-  const [books, setBooks] = useState<Book[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
   const [showTrash, setShowTrash] = useState(false);
   const [themePalette, setThemePaletteState] = useState<ThemePalette>('classic');
   const [themeMode, setThemeModeState] = useState<ThemeMode>('light');
   const [paperTexture, setPaperTextureState] = useState<boolean>(true);
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState('');
-  const router = useRouter();
 
   // Initialize theme state from DOM attributes initialized by layout script
   useEffect(() => {
@@ -71,59 +72,65 @@ export function useLibrary() {
     });
   }, []);
 
-  const abortControllerRef = useRef<AbortController | null>(null);
+  // 1. TanStack Query with Typed Hono RPC
+  const {
+    data: booksData,
+    isLoading: loading,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: ['books', { showTrash }],
+    queryFn: async () => {
+      const res = await client.api.books.$get({
+        query: {
+          all: '1',
+          trash: showTrash ? '1' : '0',
+        },
+      });
 
-  const load = useCallback(
-    async (quiet = false) => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
+      if ((res.status as number) === 401) {
+        router.push('/login');
+        throw new Error('Unauthorized');
       }
-      const controller = new AbortController();
-      abortControllerRef.current = controller;
 
-      if (!quiet) setLoading(true);
-      setError('');
-      try {
-        const res = await fetch(`/api/books${showTrash ? '?trash=1' : ''}`, {
-          signal: controller.signal,
-        });
-        if (res.status === 401) {
-          router.push('/login');
-          return;
-        }
-        const data = await res.json();
-        if (!res.ok) {
-          setError(data.error || 'Failed to load');
-          if (!quiet) setLoading(false);
-          return;
-        }
-        setBooks(data.books || []);
-      } catch (err: any) {
-        if (err?.name === 'AbortError') return;
-        setError(err.message || 'Failed to load books');
-      } finally {
-        if (!quiet) setLoading(false);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error((err as any)?.error || 'Failed to load books');
       }
+
+      const data = await res.json();
+      return (data.books as Book[]) || [];
     },
-    [showTrash, router],
+  });
+
+  const books: Book[] = booksData || [];
+  const error = queryError ? (queryError as Error).message : '';
+
+  const setBooks = useCallback(
+    (updater: Book[] | ((prev: Book[]) => Book[])) => {
+      queryClient.setQueryData<Book[]>(['books', { showTrash }], (prev) => {
+        const old = prev || [];
+        return typeof updater === 'function' ? updater(old) : updater;
+      });
+    },
+    [queryClient, showTrash],
   );
 
-  useEffect(() => {
-    load();
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, [load]);
+  const load = useCallback(
+    async (_quiet = false) => {
+      await refetch();
+    },
+    [refetch],
+  );
 
   const logout = useCallback(async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await client.api.auth.logout.$post();
     } finally {
+      queryClient.clear();
       router.push('/login');
     }
-  }, [router]);
+  }, [router, queryClient]);
 
   const saveBook = useCallback(
     async (data: BookInput, targetId?: string) => {
@@ -137,45 +144,52 @@ export function useLibrary() {
       }
 
       try {
-        const res = await fetch(targetId ? `/api/books/${targetId}` : '/api/books', {
-          method: targetId ? 'PATCH' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        const result = await res.json();
-        if (!res.ok) throw new Error(result.error || 'Save failed');
-
-        if (result.book) {
-          setBooks((prev) => {
-            const exists = prev.some((x) => x.id === result.book.id);
-            if (exists) {
-              return prev.map((x) => (x.id === result.book.id ? result.book : x));
-            }
-            return [result.book, ...prev];
+        let resultBook: Book;
+        if (targetId) {
+          const res = await client.api.books[':id'].$patch({
+            param: { id: targetId },
+            json: payload as any,
           });
+          const resJson = await res.json();
+          if (!res.ok) throw new Error((resJson as any)?.error || 'Save failed');
+          resultBook = (resJson as any).book;
+        } else {
+          const res = await client.api.books.$post({
+            json: payload as any,
+          });
+          const resJson = await res.json();
+          if (!res.ok) throw new Error((resJson as any)?.error || 'Save failed');
+          resultBook = (resJson as any).book;
         }
+
+        queryClient.setQueryData<Book[]>(['books', { showTrash: false }], (prev) => {
+          const old = prev || [];
+          const exists = old.some((x) => x.id === resultBook.id);
+          if (exists) return old.map((x) => (x.id === resultBook.id ? resultBook : x));
+          return [resultBook, ...old];
+        });
+
         toast.success(targetId ? `Updated "${data.title}"` : `Added "${data.title}" to library`);
-        load(true);
-        return result.book as Book;
+        queryClient.invalidateQueries({ queryKey: ['books'] });
+        return resultBook;
       } catch (err: any) {
         toast.error(err.message || 'Failed to save book');
         throw err;
       }
     },
-    [load],
+    [queryClient],
   );
 
   const restoreBook = useCallback(
     async (b: Book) => {
       try {
-        const res = await fetch(`/api/books/${b.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ restore: true }),
+        const res = await client.api.books[':id'].$patch({
+          param: { id: b.id },
+          json: { deleted_at: null } as any,
         });
         if (res.ok) {
           toast.success(`Restored "${b.title}"`);
-          load(true);
+          queryClient.invalidateQueries({ queryKey: ['books'] });
         } else {
           toast.error(`Failed to restore "${b.title}"`);
         }
@@ -183,16 +197,20 @@ export function useLibrary() {
         toast.error(`Network error restoring "${b.title}"`);
       }
     },
-    [load],
+    [queryClient],
   );
 
   const deleteBook = useCallback(
     async (b: Book) => {
       if (!confirm(`Move "${b.title}" to trash?`)) return;
       try {
-        const res = await fetch(`/api/books/${b.id}`, { method: 'DELETE' });
+        const res = await client.api.books[':id'].$delete({
+          param: { id: b.id },
+          query: {},
+        });
+
         if (res.ok) {
-          load(true);
+          queryClient.invalidateQueries({ queryKey: ['books'] });
           toast(`Moved "${b.title}" to trash`, {
             action: {
               label: 'Undo',
@@ -206,17 +224,20 @@ export function useLibrary() {
         toast.error(`Network error deleting "${b.title}"`);
       }
     },
-    [load, restoreBook],
+    [queryClient, restoreBook],
   );
 
   const permanentlyDeleteBook = useCallback(
     async (b: Book) => {
       if (!confirm(`Permanently delete "${b.title}"? This can't be undone.`)) return;
       try {
-        const res = await fetch(`/api/books/${b.id}?permanent=1`, { method: 'DELETE' });
+        const res = await client.api.books[':id'].$delete({
+          param: { id: b.id },
+          query: { permanent: '1' },
+        });
         if (res.ok) {
           toast.success(`Permanently deleted "${b.title}"`);
-          load(true);
+          queryClient.invalidateQueries({ queryKey: ['books'] });
         } else {
           toast.error(`Failed to permanently delete "${b.title}"`);
         }
@@ -224,7 +245,7 @@ export function useLibrary() {
         toast.error(`Network error deleting "${b.title}"`);
       }
     },
-    [load],
+    [queryClient],
   );
 
   const quickStatusChange = useCallback(
@@ -233,26 +254,29 @@ export function useLibrary() {
       const today = getLocalDateString();
       const patchData: Partial<Book> = normalizeStatusTransition(b, next, today);
 
-      setBooks((prev) => prev.map((x) => (x.id === b.id ? { ...x, ...patchData } : x)));
+      // Optimistic cache update
+      queryClient.setQueryData<Book[]>(['books', { showTrash: false }], (prev) => {
+        return (prev || []).map((x) => (x.id === b.id ? { ...x, ...patchData } : x));
+      });
+
       try {
-        const res = await fetch(`/api/books/${b.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(patchData),
+        const res = await client.api.books[':id'].$patch({
+          param: { id: b.id },
+          json: patchData as any,
         });
         if (!res.ok) {
           toast.error('Failed to update status');
-          load(true);
+          queryClient.invalidateQueries({ queryKey: ['books'] });
         } else {
           toast.success(`Updated "${b.title}" to ${next}`);
         }
       } catch {
         toast.error('Network error updating status');
-        load(true);
+        queryClient.invalidateQueries({ queryKey: ['books'] });
       }
       return patchData;
     },
-    [load],
+    [queryClient],
   );
 
   const handleSaveInspectorBook = useCallback(
@@ -268,49 +292,57 @@ export function useLibrary() {
         updated_at: new Date().toISOString(),
       };
 
-      setBooks((prev) => prev.map((x) => (x.id === draft.id ? { ...x, ...patchData } : x)));
+      // Optimistic cache update
+      queryClient.setQueryData<Book[]>(['books', { showTrash: false }], (prev) => {
+        return (prev || []).map((x) => (x.id === draft.id ? { ...x, ...patchData } : x));
+      });
 
       try {
-        const res = await fetch(`/api/books/${draft.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(patchData),
+        const res = await client.api.books[':id'].$patch({
+          param: { id: draft.id },
+          json: patchData as any,
         });
 
         if (!res.ok) {
           toast.error('Failed to save changes');
-          load(true);
+          queryClient.invalidateQueries({ queryKey: ['books'] });
         } else {
-          const { book: updatedBook } = await res.json();
+          const resJson = await res.json();
+          const updatedBook = (resJson as any)?.book;
           if (updatedBook) {
-            setBooks((prev) => prev.map((x) => (x.id === draft.id ? updatedBook : x)));
+            queryClient.setQueryData<Book[]>(['books', { showTrash: false }], (prev) => {
+              return (prev || []).map((x) => (x.id === draft.id ? updatedBook : x));
+            });
           }
           toast.success(`Saved changes for "${draft.title}"`);
           return updatedBook as Book;
         }
       } catch {
         toast.error('Network error saving changes');
-        load(true);
+        queryClient.invalidateQueries({ queryKey: ['books'] });
       }
     },
-    [load],
+    [queryClient],
   );
 
   const handleToggleFavorite = useCallback(
     async (b: Book) => {
       const newVal = !b.is_favorite;
       const patchData = { is_favorite: newVal };
-      setBooks((prev) => prev.map((x) => (x.id === b.id ? { ...x, is_favorite: newVal } : x)));
+
+      // Optimistic cache update
+      queryClient.setQueryData<Book[]>(['books', { showTrash: false }], (prev) => {
+        return (prev || []).map((x) => (x.id === b.id ? { ...x, is_favorite: newVal } : x));
+      });
 
       try {
-        const res = await fetch(`/api/books/${b.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(patchData),
+        const res = await client.api.books[':id'].$patch({
+          param: { id: b.id },
+          json: patchData as any,
         });
         if (!res.ok) {
           toast.error('Failed to update favorite');
-          load(true);
+          queryClient.invalidateQueries({ queryKey: ['books'] });
         } else {
           toast.success(
             newVal ? `Added "${b.title}" to Favorites ❤️` : `Removed "${b.title}" from Favorites`,
@@ -318,11 +350,11 @@ export function useLibrary() {
         }
       } catch {
         toast.error('Network error updating favorite');
-        load(true);
+        queryClient.invalidateQueries({ queryKey: ['books'] });
       }
       return patchData;
     },
-    [load],
+    [queryClient],
   );
 
   const handleImportFile = useCallback(
@@ -350,7 +382,7 @@ export function useLibrary() {
             parts.push(`skipped ${result.skippedDuplicates} duplicate title(s)`);
           setImportMsg(`${parts.join(', ')}.`);
           toast.success(`Successfully imported ${result.imported} books`);
-          load();
+          queryClient.invalidateQueries({ queryKey: ['books'] });
         }
       } catch {
         setImportMsg('Could not read that file.');
@@ -360,7 +392,7 @@ export function useLibrary() {
         e.target.value = '';
       }
     },
-    [load],
+    [queryClient],
   );
 
   return {

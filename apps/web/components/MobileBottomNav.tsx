@@ -1,28 +1,41 @@
 'use client';
 
 import { BarChart3, BookOpen, History, Settings } from 'lucide-react';
+import type { Route } from 'next';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+
+interface NavTabItem {
+  href: Route;
+  label: string;
+  icon: any;
+  active: boolean;
+}
 
 export function MobileBottomNav() {
   const pathname = usePathname();
 
-  const navTabs = [
+  const navTabs: NavTabItem[] = [
     {
-      href: '/',
+      href: '/' as Route,
       label: 'LIBRARY',
       icon: BookOpen,
       active: pathname === '/' || pathname.startsWith('/books'),
     },
     {
-      href: '/analytics',
+      href: '/analytics' as Route,
       label: 'ANALYTICS',
       icon: BarChart3,
       active: pathname.startsWith('/analytics'),
     },
-    { href: '/journal', label: 'JOURNAL', icon: History, active: pathname.startsWith('/journal') },
     {
-      href: '/settings',
+      href: '/journal' as Route,
+      label: 'JOURNAL',
+      icon: History,
+      active: pathname.startsWith('/journal'),
+    },
+    {
+      href: '/settings' as Route,
       label: 'SETTINGS',
       icon: Settings,
       active: pathname.startsWith('/settings'),

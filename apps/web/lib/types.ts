@@ -72,15 +72,18 @@ export const STATUS_COLOR_VAR: Record<BookStatus, string> = {
   Dropped: 'var(--status-dropped)',
 };
 
-export type SortField =
-  | 'updated_at'
-  | 'created_at'
-  | 'title'
-  | 'rating'
-  | 'date_finished'
-  | 'status'
-  | 'progress'
-  | 'author';
+export const SORT_FIELDS = [
+  'updated_at',
+  'created_at',
+  'title',
+  'rating',
+  'date_finished',
+  'status',
+  'progress',
+  'author',
+] as const;
+
+export type SortField = (typeof SORT_FIELDS)[number];
 export type SortDir = 'asc' | 'desc';
 
 export interface ReadingJourney {

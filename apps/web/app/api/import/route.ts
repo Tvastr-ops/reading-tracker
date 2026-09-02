@@ -266,7 +266,10 @@ export const POST = withAuth(async (req: NextRequest) => {
     return NextResponse.json({ imported: 0, skippedRows: skipped, skippedDuplicates });
   }
 
-  const { data, error } = await supabase.from('books').insert(deduped).select('id');
+  const { data, error } = await supabase
+    .from('books')
+    .insert(deduped as any)
+    .select('id');
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
