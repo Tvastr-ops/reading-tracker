@@ -1,6 +1,7 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
+
 import {
   CalendarDays,
   Clock,
@@ -55,12 +56,14 @@ export default function BookInspectorDrawer({
   const [showAllJourneys, setShowAllJourneys] = useState(false);
   const [_loadingJourneys, setLoadingJourneys] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const updateMedia = () => setIsDesktop(window.innerWidth >= 1024);
-    updateMedia();
-    window.addEventListener('resize', updateMedia);
-    return () => window.removeEventListener('resize', updateMedia);
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024);
+    checkDesktop();
+    setMounted(true);
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
   }, []);
 
   // Sync draft & fetch journeys when target book changes
@@ -175,24 +178,30 @@ export default function BookInspectorDrawer({
   const durationText = calculateReadingDuration(draft.date_started, draft.date_finished);
 
   return (
-    <AnimatePresence>
+    <>
       {/* 1. Backdrop Overlay */}
       <motion.div
+        key="inspector-backdrop"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
         onClick={onClose}
-        className="fixed inset-0 z-40 bg-black/35 backdrop-blur-[2px]"
+        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]"
       />
 
-      {/* 2. Slide-Over Panel (Desktop Right / Mobile Bottom Sheet with Swipe-to-Dismiss) */}
+      {/* 2. Slide-Over Panel (Desktop Right / Mobile Bottom Sheet) */}
       <motion.aside
-        initial={isDesktop ? { x: '100%' } : { y: '100%' }}
-        animate={isDesktop ? { x: 0 } : { y: 0 }}
-        exit={isDesktop ? { x: '100%' } : { y: '100%' }}
-        transition={{ type: 'spring', damping: 28, stiffness: 220, mass: 0.8 }}
-        drag={isDesktop ? false : 'y'}
+        key="inspector-aside"
+        initial={
+          mounted && isDesktop ? { x: '100%', y: 0, opacity: 1 } : { y: '100%', x: 0, opacity: 1 }
+        }
+        animate={{ x: 0, y: 0, opacity: 1 }}
+        exit={
+          mounted && isDesktop ? { x: '100%', y: 0, opacity: 0 } : { y: '100%', x: 0, opacity: 0 }
+        }
+        transition={{ type: 'spring', damping: 28, stiffness: 280, mass: 0.8 }}
+        drag={mounted && !isDesktop ? 'y' : false}
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={{ top: 0.05, bottom: 0.6 }}
         onDragEnd={(_, info) => {
@@ -200,10 +209,10 @@ export default function BookInspectorDrawer({
             onClose();
           }
         }}
-        className="fixed z-50 flex flex-col bg-card-bg border-border shadow-2xl overflow-hidden inset-x-0 bottom-0 max-h-[88vh] rounded-t-2xl border-t-2 lg:inset-y-0 lg:right-0 lg:left-auto lg:h-screen lg:w-[430px] lg:max-h-screen lg:rounded-none lg:border-l-2 lg:border-t-0"
+        className="fixed inset-x-0 bottom-0 z-50 flex max-h-[88vh] flex-col overflow-hidden rounded-t-2xl border-t-2 border-border bg-card-bg shadow-2xl lg:inset-y-0 lg:right-0 lg:left-auto lg:h-screen lg:max-h-screen lg:w-[430px] lg:rounded-none lg:border-t-0 lg:border-l-2"
       >
         {/* Mobile Tactile Drag Bar */}
-        <div className="flex shrink-0 justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing touch-none select-none lg:hidden">
+        <div className="flex shrink-0 cursor-grab touch-none select-none justify-center pt-3 pb-2 active:cursor-grabbing lg:hidden">
           <div className="h-1.5 w-12 rounded-full bg-border/90" />
         </div>
 
@@ -809,6 +818,6 @@ export default function BookInspectorDrawer({
           )}
         </div>
       </motion.aside>
-    </AnimatePresence>
+    </>
   );
 }

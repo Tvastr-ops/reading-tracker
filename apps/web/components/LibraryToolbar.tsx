@@ -41,10 +41,22 @@ export function LibraryToolbar() {
     toggleViewMode,
     statusFilter,
     setStatusFilter,
+    statusCounts,
     shelfFilter,
     setShelfFilter,
     allShelves,
     shelfCounts,
+    typeFilter,
+    setTypeFilter,
+    allTypes,
+    typeCounts,
+    tagFilter,
+    setTagFilter,
+    allTags,
+    tagCounts,
+    ongoingFilter,
+    setOngoingFilter,
+    ongoingCounts,
     ratingFilter,
     setRatingFilter,
     sortField,
@@ -53,6 +65,7 @@ export function LibraryToolbar() {
     showFavoritesOnly,
     setShowFavoritesOnly,
     filteredBooks,
+    activeFilterCount,
     filtersActive,
     clearFilters,
   } = useLibraryFiltersContext();
@@ -213,92 +226,294 @@ export function LibraryToolbar() {
             </>
           )}
 
-          {/* Status Filter */}
+          {/* Master Filter Hub Button */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="outline"
+                variant={filtersActive ? 'default' : 'outline'}
                 size="sm"
-                className="h-8 min-w-0 flex-1 justify-center border-2 border-border px-3 font-bold text-xs uppercase shadow-[1.5px_1.5px_0px_var(--border)] sm:flex-none"
-                title={statusFilter === 'All' ? 'Filter Status' : statusFilter}
+                className={cn(
+                  'h-8 min-w-0 flex-1 justify-center border-2 px-3 font-bold text-xs uppercase shadow-[1.5px_1.5px_0px_var(--border)] sm:flex-none transition-all',
+                  filtersActive
+                    ? 'border-accent-color bg-accent-bg text-accent-text font-black shadow-[2px_2px_0px_var(--border)]'
+                    : 'border-border text-text hover:bg-surface',
+                )}
+                title="Filter Library"
               >
-                <Filter className="h-3.5 w-3.5 text-text-muted sm:mr-1.5" />
-                <span className="hidden sm:inline">
-                  {statusFilter === 'All' ? 'Status' : statusFilter}
+                <Filter className="h-3.5 w-3.5 text-current sm:mr-1.5" />
+                <span>
+                  Filter
+                  {activeFilterCount > 0 && (
+                    <span className="ml-1 rounded-full bg-accent-text/20 px-1.5 py-0.2 text-[10px] font-black">
+                      {activeFilterCount}
+                    </span>
+                  )}
                 </span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+            <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuLabel className="flex items-center justify-between text-xs font-bold uppercase tracking-wider">
+                <span>Filter Library</span>
+                {filtersActive && (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="cursor-pointer text-[10px] font-bold text-rose-500 hover:underline"
+                  >
+                    Reset All
+                  </button>
+                )}
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => {
-                  setStatusFilter('All');
-                  setShelfFilter(null);
-                }}
-              >
-                All Statuses
-              </DropdownMenuItem>
-              {STATUSES.map((s) => (
-                <DropdownMenuItem key={s} onClick={() => setStatusFilter(s)}>
-                  {s}
-                </DropdownMenuItem>
-              ))}
 
+              {/* Status Section */}
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="cursor-pointer">
+                  <span className="mr-2">📊</span>
+                  <span className="flex-1">Status</span>
+                  {statusFilter !== 'All' && (
+                    <span className="ml-auto pr-1 text-[11px] font-bold text-accent-color">
+                      {statusFilter}
+                    </span>
+                  )}
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem
+                    onClick={() => setStatusFilter('All')}
+                    className="flex items-center justify-between"
+                  >
+                    <span>All Statuses</span>
+                    <span className="text-xs text-text-muted">({statusCounts.All})</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {STATUSES.map((s) => (
+                    <DropdownMenuItem
+                      key={s}
+                      onClick={() => setStatusFilter(s)}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        {statusFilter === s && <Check className="h-3.5 w-3.5 text-accent-color" />}
+                        <span className={statusFilter === s ? 'font-bold text-accent-color' : ''}>
+                          {s}
+                        </span>
+                      </div>
+                      <span className="text-xs text-text-muted">({statusCounts[s] ?? 0})</span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+
+              {/* Format / Type Submenu */}
+              {allTypes.length > 0 && (
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className="cursor-pointer">
+                    <span className="mr-2">📖</span>
+                    <span className="flex-1">Format</span>
+                    {typeFilter && (
+                      <span className="ml-auto max-w-[80px] truncate pr-1 text-[11px] font-bold text-accent-color">
+                        {typeFilter}
+                      </span>
+                    )}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => setTypeFilter(null)}>
+                      All Formats
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    {allTypes.map((t) => (
+                      <DropdownMenuItem
+                        key={t}
+                        onClick={() => setTypeFilter(t)}
+                        className="flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-2">
+                          {typeFilter?.toLowerCase() === t.toLowerCase() && (
+                            <Check className="h-3.5 w-3.5 text-accent-color" />
+                          )}
+                          <span
+                            className={
+                              typeFilter?.toLowerCase() === t.toLowerCase()
+                                ? 'font-bold text-accent-color'
+                                : ''
+                            }
+                          >
+                            {t}
+                          </span>
+                        </div>
+                        <span className="text-xs text-text-muted">({typeCounts[t] ?? 0})</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              )}
+
+              {/* Custom Shelves Submenu */}
               {allShelves.length > 0 && (
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className="cursor-pointer">
+                    <span className="mr-2">🔖</span>
+                    <span className="flex-1">Custom Shelves</span>
+                    {shelfFilter && (
+                      <span className="ml-auto max-w-[80px] truncate pr-1 text-[11px] font-bold text-accent-color">
+                        {shelfFilter}
+                      </span>
+                    )}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => setShelfFilter(null)}>
+                      All Shelves
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    {allShelves.map((sh) => (
+                      <DropdownMenuItem
+                        key={sh}
+                        onClick={() => setShelfFilter(sh)}
+                        className="flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-2">
+                          {shelfFilter?.toLowerCase() === sh.toLowerCase() && (
+                            <Check className="h-3.5 w-3.5 text-accent-color" />
+                          )}
+                          <span
+                            className={
+                              shelfFilter?.toLowerCase() === sh.toLowerCase()
+                                ? 'font-bold text-accent-color'
+                                : ''
+                            }
+                          >
+                            🔖 {sh}
+                          </span>
+                        </div>
+                        <span className="text-xs text-text-muted">({shelfCounts[sh] ?? 0})</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              )}
+
+              {/* Genres & Tags Submenu */}
+              {allTags.length > 0 && (
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className="cursor-pointer">
+                    <span className="mr-2">🏷️</span>
+                    <span className="flex-1">Genres & Tags</span>
+                    {tagFilter && (
+                      <span className="ml-auto max-w-[80px] truncate pr-1 text-[11px] font-bold text-accent-color">
+                        {tagFilter}
+                      </span>
+                    )}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="max-h-72 overflow-y-auto">
+                    <DropdownMenuItem onClick={() => setTagFilter(null)}>All Tags</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    {allTags.map((tag) => (
+                      <DropdownMenuItem
+                        key={tag}
+                        onClick={() => setTagFilter(tag)}
+                        className="flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-2">
+                          {tagFilter?.toLowerCase() === tag.toLowerCase() && (
+                            <Check className="h-3.5 w-3.5 text-accent-color" />
+                          )}
+                          <span
+                            className={
+                              tagFilter?.toLowerCase() === tag.toLowerCase()
+                                ? 'font-bold text-accent-color'
+                                : ''
+                            }
+                          >
+                            {tag}
+                          </span>
+                        </div>
+                        <span className="text-xs text-text-muted">({tagCounts[tag] ?? 0})</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              )}
+
+              {/* Serialization State Submenu */}
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="cursor-pointer">
+                  <span className="mr-2">⚡</span>
+                  <span className="flex-1">Serialization</span>
+                  {ongoingFilter !== 'all' && (
+                    <span className="ml-auto pr-1 text-[11px] font-bold text-accent-color">
+                      {ongoingFilter === 'ongoing' ? 'Ongoing' : 'Standalone'}
+                    </span>
+                  )}
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem onClick={() => setOngoingFilter('all')}>
+                    All Works ({ongoingCounts.all})
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setOngoingFilter('ongoing')}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      {ongoingFilter === 'ongoing' && (
+                        <Check className="h-3.5 w-3.5 text-accent-color" />
+                      )}
+                      <span
+                        className={ongoingFilter === 'ongoing' ? 'font-bold text-accent-color' : ''}
+                      >
+                        Ongoing Serializations
+                      </span>
+                    </div>
+                    <span className="text-xs text-text-muted">({ongoingCounts.ongoing})</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setOngoingFilter('standalone')}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      {ongoingFilter === 'standalone' && (
+                        <Check className="h-3.5 w-3.5 text-accent-color" />
+                      )}
+                      <span
+                        className={
+                          ongoingFilter === 'standalone' ? 'font-bold text-accent-color' : ''
+                        }
+                      >
+                        Completed / Standalone
+                      </span>
+                    </div>
+                    <span className="text-xs text-text-muted">({ongoingCounts.standalone})</span>
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+
+              {filtersActive && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger className="cursor-pointer">
-                      <span className="mr-2">🔖</span>
-                      <span>Custom Shelves</span>
-                      {shelfFilter && (
-                        <span className="ml-auto pr-2 text-accent-color text-xs font-semibold">
-                          ({shelfFilter})
-                        </span>
-                      )}
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
-                      <DropdownMenuItem onClick={() => setShelfFilter(null)}>
-                        All Shelves
-                      </DropdownMenuItem>
-                      {allShelves.map((sh) => (
-                        <DropdownMenuItem key={sh} onClick={() => setShelfFilter(sh)}>
-                          <span className="mr-1.5">🔖</span>
-                          <span className="flex-1 font-medium">{sh}</span>
-                          <span className="ml-2 text-text-muted text-xs">
-                            ({shelfCounts[sh] ?? 0})
-                          </span>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
+                  <DropdownMenuItem
+                    onClick={clearFilters}
+                    className="cursor-pointer font-bold text-rose-600 focus:bg-rose-500/10 focus:text-rose-600 dark:text-rose-400"
+                  >
+                    <X className="mr-2 h-3.5 w-3.5" />
+                    <span>Reset All Filters</span>
+                  </DropdownMenuItem>
                 </>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Active Shelf Filter Chip */}
-          {shelfFilter && (
-            <Button
-              variant="secondary"
-              size="sm"
-              className="h-8 shrink-0 gap-1.5 border-2 border-border bg-accent-color/15 px-2.5 font-bold text-accent-color text-xs uppercase shadow-[1.5px_1.5px_0px_var(--border)] hover:bg-accent-color/25"
-              onClick={() => setShelfFilter(null)}
-              title="Clear shelf filter"
-            >
-              <span>🔖 {shelfFilter.toUpperCase()}</span>
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          )}
-
           {/* Rating Filter */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="outline"
+                variant={ratingFilter !== 'All' ? 'default' : 'outline'}
                 size="sm"
-                className="h-8 min-w-0 flex-1 justify-center border-2 border-border px-3 font-bold text-xs uppercase shadow-[1.5px_1.5px_0px_var(--border)] sm:flex-none"
+                className={cn(
+                  'h-8 min-w-0 flex-1 justify-center border-2 px-3 font-bold text-xs uppercase shadow-[1.5px_1.5px_0px_var(--border)] sm:flex-none transition-all',
+                  ratingFilter !== 'All'
+                    ? 'border-amber-500/60 bg-amber-500/15 text-amber-600 dark:text-amber-400 font-black'
+                    : 'border-border',
+                )}
                 title={
                   ratingFilter === 'All'
                     ? 'Filter by Rating'
@@ -443,15 +658,15 @@ export function LibraryToolbar() {
         </div>
       </div>
 
-      {/* Filters Quick Action Bar */}
+      {/* Composable Active Filters Bar */}
       {filtersActive && (
         <div className="flex items-center justify-between border-2 border-border bg-surface p-2 text-xs shadow-[2px_2px_0px_var(--border)]">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-bold uppercase tracking-wider text-text-muted text-[10.5px]">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 text-[10.5px] font-bold uppercase tracking-wider text-text-muted">
               Active:
             </span>
             {statusFilter !== 'All' && (
-              <span className="inline-flex items-center gap-1.5 border-1.5 border-border bg-card-bg px-2 py-0.5 font-bold uppercase text-[11px] shadow-[1px_1px_0px_var(--border)]">
+              <span className="inline-flex items-center gap-1.5 border-1.5 border-border bg-card-bg px-2 py-0.5 text-[11px] font-bold uppercase shadow-[1px_1px_0px_var(--border)]">
                 Status: <strong className="text-text">{statusFilter}</strong>
                 <X
                   className="h-3 w-3 cursor-pointer text-text-muted hover:text-text"
@@ -459,8 +674,57 @@ export function LibraryToolbar() {
                 />
               </span>
             )}
+            {typeFilter && (
+              <span className="inline-flex items-center gap-1.5 border-1.5 border-border bg-card-bg px-2 py-0.5 text-[11px] font-bold shadow-[1px_1px_0px_var(--border)]">
+                Format: <strong className="text-text">{typeFilter}</strong>
+                <X
+                  className="h-3 w-3 cursor-pointer text-text-muted hover:text-text"
+                  onClick={() => setTypeFilter(null)}
+                />
+              </span>
+            )}
+            {shelfFilter && (
+              <span className="inline-flex items-center gap-1.5 border-1.5 border-accent-color/40 bg-accent-color/15 px-2 py-0.5 text-[11px] font-bold text-accent-color shadow-[1px_1px_0px_var(--border)]">
+                🔖 <strong className="text-accent-color">{shelfFilter}</strong>
+                <X
+                  className="h-3 w-3 cursor-pointer text-accent-color hover:opacity-70"
+                  onClick={() => setShelfFilter(null)}
+                />
+              </span>
+            )}
+            {tagFilter && (
+              <span className="inline-flex items-center gap-1.5 border-1.5 border-border bg-card-bg px-2 py-0.5 text-[11px] font-bold shadow-[1px_1px_0px_var(--border)]">
+                🏷️ <strong className="text-text">{tagFilter}</strong>
+                <X
+                  className="h-3 w-3 cursor-pointer text-text-muted hover:text-text"
+                  onClick={() => setTagFilter(null)}
+                />
+              </span>
+            )}
+            {ongoingFilter !== 'all' && (
+              <span className="inline-flex items-center gap-1.5 border-1.5 border-border bg-card-bg px-2 py-0.5 text-[11px] font-bold shadow-[1px_1px_0px_var(--border)]">
+                ⚡{' '}
+                <strong className="text-text">
+                  {ongoingFilter === 'ongoing' ? 'Ongoing Only' : 'Standalone'}
+                </strong>
+                <X
+                  className="h-3 w-3 cursor-pointer text-text-muted hover:text-text"
+                  onClick={() => setOngoingFilter('all')}
+                />
+              </span>
+            )}
+            {ratingFilter !== 'All' && (
+              <span className="inline-flex items-center gap-1.5 border-1.5 border-amber-500/50 bg-amber-500/15 px-2 py-0.5 text-[11px] font-bold text-amber-600 shadow-[1px_1px_0px_var(--border)] dark:text-amber-400">
+                <Sparkles className="h-3 w-3 fill-current text-amber-500" />
+                <strong>{ratingFilter === 'Unrated' ? 'Unrated' : `${ratingFilter}★+`}</strong>
+                <X
+                  className="h-3 w-3 cursor-pointer text-amber-500/70 hover:text-amber-500"
+                  onClick={() => setRatingFilter('All')}
+                />
+              </span>
+            )}
             {search.trim() !== '' && (
-              <span className="inline-flex items-center gap-1.5 border-1.5 border-border bg-card-bg px-2 py-0.5 font-bold text-[11px] shadow-[1px_1px_0px_var(--border)]">
+              <span className="inline-flex items-center gap-1.5 border-1.5 border-border bg-card-bg px-2 py-0.5 text-[11px] font-bold shadow-[1px_1px_0px_var(--border)]">
                 Search: <strong className="text-text">"{search}"</strong>
                 <X
                   className="h-3 w-3 cursor-pointer text-text-muted hover:text-text"
@@ -469,7 +733,7 @@ export function LibraryToolbar() {
               </span>
             )}
             {showFavoritesOnly && (
-              <span className="inline-flex items-center gap-1.5 border-1.5 border-amber-500/50 bg-amber-500/15 px-2 py-0.5 font-bold text-[11px] text-amber-600 dark:text-amber-400 shadow-[1px_1px_0px_var(--border)]">
+              <span className="inline-flex items-center gap-1.5 border-1.5 border-amber-500/50 bg-amber-500/15 px-2 py-0.5 text-[11px] font-bold text-amber-600 shadow-[1px_1px_0px_var(--border)] dark:text-amber-400">
                 <Heart className="h-3 w-3 fill-current text-amber-500" /> Favorites
                 <X
                   className="h-3 w-3 cursor-pointer text-amber-500/70 hover:text-amber-500 dark:hover:text-amber-300"
@@ -480,7 +744,7 @@ export function LibraryToolbar() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 px-2 text-accent-color font-black text-xs uppercase hover:bg-accent-color/10"
+              className="h-6 px-2 text-xs font-black uppercase text-accent-color hover:bg-accent-color/10"
               onClick={clearFilters}
             >
               Clear All

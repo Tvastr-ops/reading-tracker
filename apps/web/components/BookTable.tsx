@@ -75,7 +75,6 @@ function BookTable({
   onToggleFavorite?: (b: Book) => void;
   focusedId?: string | null;
 }) {
-  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const isLongPressTriggeredRef = useRef(false);
@@ -134,18 +133,13 @@ function BookTable({
       return;
     }
 
-    if (clickTimerRef.current) {
-      clearTimeout(clickTimerRef.current);
-      clickTimerRef.current = null;
+    if (e.detail === 2 && onFullEdit) {
+      onFullEdit(b);
+      return;
     }
 
-    if (e.detail === 1) {
-      clickTimerRef.current = setTimeout(() => {
-        onEdit(b);
-      }, 180);
-    } else if (e.detail === 2 && onFullEdit) {
-      onFullEdit(b);
-    }
+    // Instant 0ms response on single click
+    onEdit(b);
   };
 
   useEffect(() => {

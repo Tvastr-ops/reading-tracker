@@ -1,6 +1,8 @@
 'use client';
 
+import { AnimatePresence } from 'framer-motion';
 import BookGrid from '@/components/BookGrid';
+
 import BookInspectorDrawer from '@/components/BookInspectorDrawer';
 import BookTable from '@/components/BookTable';
 import EmptyState from '@/components/EmptyState';
@@ -140,18 +142,21 @@ export function LibraryView() {
         )}
       </div>
 
-      {inspectedBook && (
-        <BookInspectorDrawer
-          book={inspectedBook}
-          onClose={() => setInspectedBook(null)}
-          onEdit={(b) => setEditing(b)}
-          onSaveInspectorBook={async (draft) => {
-            const updated = await handleSaveInspectorBook(draft);
-            if (updated) setInspectedBook(updated);
-          }}
-          onDelete={deleteBook}
-        />
-      )}
+      <AnimatePresence>
+        {inspectedBook && (
+          <BookInspectorDrawer
+            key={inspectedBook.id}
+            book={inspectedBook}
+            onClose={() => setInspectedBook(null)}
+            onEdit={(b) => setEditing(b)}
+            onSaveInspectorBook={async (draft) => {
+              const updated = await handleSaveInspectorBook(draft);
+              if (updated) setInspectedBook(updated);
+            }}
+            onDelete={deleteBook}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
