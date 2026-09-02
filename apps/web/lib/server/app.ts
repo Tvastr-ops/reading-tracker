@@ -132,8 +132,10 @@ const booksApp = new Hono<{
           { count: 'exact' },
         );
 
-      if (!includeAll) {
-        query = showTrash ? query.not('deleted_at', 'is', null) : query.is('deleted_at', null);
+      if (showTrash) {
+        query = query.not('deleted_at', 'is', null);
+      } else if (q.sync !== '1') {
+        query = query.is('deleted_at', null);
       }
 
       if (q.since) {
