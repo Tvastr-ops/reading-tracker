@@ -76,21 +76,61 @@ function BookTable({
   focusedId?: string | null;
 }) {
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const isLongPressTriggeredRef = useRef(false);
 
-  const handleClick = (e: React.MouseEvent, b: Book) => {
-    if (selectMode) {
-      onToggleSelect(b.id);
-      return;
+  const handleTouchStart = (b: Book, e: React.TouchEvent) => {
+    if (selectMode) return;
+    isLongPressTriggeredRef.current = false;
+    const touch = e.touches[0];
+    if (touch) {
+      touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
     }
-
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
-
-    if (isMobile) {
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPressTriggeredRef.current = true;
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(40);
+      }
       if (onFullEdit) {
         onFullEdit(b);
       } else {
         onEdit(b);
       }
+    }, 500);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartPosRef.current) return;
+    const touch = e.touches[0];
+    if (touch) {
+      const dx = Math.abs(touch.clientX - touchStartPosRef.current.x);
+      const dy = Math.abs(touch.clientY - touchStartPosRef.current.y);
+      if (dx > 8 || dy > 8) {
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
+        }
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    touchStartPosRef.current = null;
+  };
+
+  const handleClick = (e: React.MouseEvent, b: Book) => {
+    if (isLongPressTriggeredRef.current) {
+      isLongPressTriggeredRef.current = false;
+      return;
+    }
+
+    if (selectMode) {
+      onToggleSelect(b.id);
       return;
     }
 
@@ -102,7 +142,7 @@ function BookTable({
     if (e.detail === 1) {
       clickTimerRef.current = setTimeout(() => {
         onEdit(b);
-      }, 200);
+      }, 180);
     } else if (e.detail === 2 && onFullEdit) {
       onFullEdit(b);
     }
@@ -173,18 +213,11 @@ function BookTable({
             return (
               <div
                 key={b.id}
-                onClick={() => {
-                  if (selectMode) {
-                    onToggleSelect(b.id);
-                  } else {
-                    if (onFullEdit) {
-                      onFullEdit(b);
-                    } else {
-                      onEdit(b);
-                    }
-                  }
-                }}
-                className={`surface-t2 group relative overflow-hidden rounded-2xl p-3 transition-all duration-75 ease-out hover:border-accent-color/60 active:scale-[0.97] ${idx >= 4 ? 'cv-mobile-card' : ''} ${
+                onClick={(e) => handleClick(e, b)}
+                onTouchStart={(e) => handleTouchStart(b, e)}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                className={`surface-t2 group relative cursor-pointer overflow-hidden rounded-2xl p-3 transition-all duration-75 ease-out hover:border-accent-color/60 active:scale-[0.97] ${idx >= 4 ? 'cv-mobile-card' : ''} ${
                   isSelected
                     ? 'border-accent-color bg-accent-color/10 ring-2 ring-accent-color/30'
                     : ''

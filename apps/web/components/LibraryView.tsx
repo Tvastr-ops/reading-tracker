@@ -65,10 +65,10 @@ export function LibraryView() {
   }
 
   return (
-    <div className="flex items-start gap-4">
+    <div>
       <div
         key={viewTransitionStyle === 'fade' ? viewMode : undefined}
-        className={`min-w-0 flex-1 ${viewTransitionStyle === 'fade' ? 'view-transition-fade' : ''}`}
+        className={viewTransitionStyle === 'fade' ? 'view-transition-fade' : ''}
       >
         {filteredBooks.length === 0 ? (
           <EmptyState

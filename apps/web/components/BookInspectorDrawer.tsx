@@ -54,6 +54,14 @@ export default function BookInspectorDrawer({
   const [journeys, setJourneys] = useState<ReadingJourney[]>([]);
   const [showAllJourneys, setShowAllJourneys] = useState(false);
   const [_loadingJourneys, setLoadingJourneys] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const updateMedia = () => setIsDesktop(window.innerWidth >= 1024);
+    updateMedia();
+    window.addEventListener('resize', updateMedia);
+    return () => window.removeEventListener('resize', updateMedia);
+  }, []);
 
   // Sync draft & fetch journeys when target book changes
   useEffect(() => {
@@ -69,6 +77,17 @@ export default function BookInspectorDrawer({
       setJourneys([]);
     }
   }, [book?.id, book?.updated_at]);
+
+  // Keyboard Escape listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   if (!book || !draft) return null;
 
@@ -157,63 +176,82 @@ export default function BookInspectorDrawer({
 
   return (
     <AnimatePresence>
+      {/* 1. Backdrop Overlay */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        onClick={onClose}
+        className="fixed inset-0 z-40 bg-black/35 backdrop-blur-[2px]"
+      />
+
+      {/* 2. Slide-Over Panel (Desktop Right / Mobile Bottom Sheet) */}
       <motion.aside
-        initial={{ opacity: 0, x: 40 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: 40 }}
-        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-        className="hidden lg:flex flex-col w-[380px] shrink-0 border-l border-border bg-card-bg/95 backdrop-blur-md h-[calc(100vh-4rem)] sticky top-16 right-0 overflow-y-auto shadow-2xl z-20"
+        initial={isDesktop ? { x: '100%' } : { y: '100%' }}
+        animate={isDesktop ? { x: 0 } : { y: 0 }}
+        exit={isDesktop ? { x: '100%' } : { y: '100%' }}
+        transition={{ type: 'spring', damping: 30, stiffness: 360 }}
+        className="fixed z-50 flex flex-col bg-card-bg border-border shadow-2xl overflow-hidden inset-x-0 bottom-0 max-h-[88vh] rounded-t-2xl border-t-2 lg:inset-y-0 lg:right-0 lg:left-auto lg:h-screen lg:w-[430px] lg:max-h-screen lg:rounded-none lg:border-l-2 lg:border-t-0"
       >
+        {/* Mobile Drag Pill */}
+        <div className="flex shrink-0 justify-center pt-2.5 pb-1 lg:hidden">
+          <div className="h-1.5 w-12 rounded-full bg-border" />
+        </div>
+
         {/* Top Header Controls */}
-        <div className="flex items-center justify-between p-4 border-b border-border bg-surface/40">
-          <div className="flex items-center gap-2 text-xs font-semibold text-text-muted">
+        <div className="flex shrink-0 items-center justify-between border-b border-border bg-surface/50 px-4 py-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-text-muted">
             <Sparkles className="h-4 w-4 text-amber-500" />
-            <span>Desktop Book Inspector</span>
+            <span className="font-serif tracking-tight text-text">Book Inspector</span>
             {isDirty && (
-              <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                Unsaved Draft
+              <span className="rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-amber-500 dark:text-amber-400">
+                Unsaved
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <Link
               href={`/books/${book.id}` as Route}
-              className="flex h-8 items-center gap-1 rounded-md px-2 text-xs font-semibold text-text-muted transition-colors hover:bg-surface hover:text-text"
+              className="flex h-8 items-center gap-1 rounded-md px-2 font-mono text-xs font-semibold text-text-muted transition-colors hover:bg-surface hover:text-text"
               title="Open full page view"
             >
               <ExternalLink className="h-3.5 w-3.5" />
-              <span className="hidden xl:inline">Full Page</span>
+              <span className="hidden sm:inline">Full Page</span>
             </Link>
 
             <Button
               variant="ghost"
               size="sm"
               onClick={() => onEdit(book)}
-              className="h-8 gap-1.5 text-xs font-medium"
+              className="h-8 gap-1 text-xs font-semibold"
               title="Press E to edit"
             >
               <Edit3 className="h-3.5 w-3.5" />
               <span>Edit</span>
-              <kbd className="font-mono text-[9px] font-semibold bg-surface border border-border px-1 rounded text-text-muted">
-                E
+              <kbd className="hidden font-mono text-[9px] font-semibold text-text-muted sm:inline">
+                [E]
               </kbd>
             </Button>
+
             <Button
               variant="ghost"
               size="icon"
               onClick={onClose}
               className="h-8 w-8 text-text-muted hover:text-text"
+              aria-label="Close inspector"
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        <div className="p-5 space-y-6 flex-1">
+        {/* Scrollable Content Body */}
+        <div className="flex-1 space-y-6 overflow-y-auto p-5">
           {/* Main Book Banner */}
           <div className="flex items-start gap-4">
-            <div className="relative h-28 w-20 shrink-0 overflow-hidden rounded-xl border border-border shadow-md bg-surface">
-              <CoverImage src={draft.cover_url} title={draft.title} fill sizes="80px" />
+            <div className="relative h-32 w-22 shrink-0 overflow-hidden rounded-xl border-2 border-border bg-surface shadow-[3px_3px_0px_var(--border)]">
+              <CoverImage src={draft.cover_url} title={draft.title} fill sizes="90px" />
             </div>
             <div className="min-w-0 flex-1 space-y-2">
               {/* Interactive Status Selector (Draft State) */}
@@ -223,8 +261,8 @@ export default function BookInspectorDrawer({
                   setDraft((prev) => (prev ? { ...prev, status: val as Book['status'] } : null))
                 }
               >
-                <SelectTrigger className="h-7 w-auto inline-flex rounded-full px-2.5 text-[11px] font-semibold tracking-wide gap-1 shadow-2xs border-border bg-surface">
-                  <span className={`h-1.5 w-1.5 rounded-full ${statusCfg.dotColor}`} />
+                <SelectTrigger className="inline-flex h-7 w-auto gap-1.5 rounded-full border-2 border-border bg-surface px-3 font-mono text-[11px] font-bold tracking-wide shadow-2xs">
+                  <span className={`h-2 w-2 rounded-full ${statusCfg.dotColor}`} />
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -236,20 +274,20 @@ export default function BookInspectorDrawer({
                 </SelectContent>
               </Select>
 
-              <h3 className="font-bold text-text text-base leading-snug tracking-tight">
+              <h3 className="font-serif text-lg font-bold leading-snug tracking-tight text-text">
                 {draft.title}
               </h3>
 
               {(draft.series_name || (draft.reread_count ?? 0) > 0) && (
                 <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                   {draft.series_name && (
-                    <span className="inline-block rounded bg-accent-color/10 px-1.5 py-0.5 text-[10px] font-bold text-accent-color">
+                    <span className="inline-block rounded border border-border/60 bg-accent-bg px-1.5 py-0.5 font-mono text-[10px] font-bold text-accent-text">
                       [{draft.series_name.toUpperCase()}
                       {draft.series_order != null ? ` #${draft.series_order}` : ''}]
                     </span>
                   )}
                   {(draft.reread_count ?? 0) > 0 && (
-                    <span className="inline-block rounded bg-blue-500/20 px-1.5 py-0.5 text-[9.5px] font-bold text-blue-500">
+                    <span className="inline-block rounded border border-blue-500/30 bg-blue-500/10 px-1.5 py-0.5 font-mono text-[9.5px] font-bold text-blue-500">
                       RE-READ ({draft.reread_count})
                     </span>
                   )}
@@ -274,7 +312,7 @@ export default function BookInspectorDrawer({
                     {shelves.map((sh) => (
                       <span
                         key={sh}
-                        className="inline-flex items-center rounded border border-border bg-surface px-1.5 py-0.2 font-medium text-[10px] text-text-muted"
+                        className="inline-flex items-center rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] font-medium text-text-muted"
                       >
                         🔖 {sh}
                       </span>
@@ -296,7 +334,7 @@ export default function BookInspectorDrawer({
                   }
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-600 dark:text-amber-400 hover:underline"
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-600 hover:underline dark:text-amber-400"
                 >
                   <span>Read Source</span>
                   <ExternalLink className="h-3 w-3" />
@@ -306,13 +344,13 @@ export default function BookInspectorDrawer({
           </div>
 
           {/* Interactive Rating Stars Selector (Draft State) */}
-          <div className="rounded-xl border border-border bg-surface/50 p-3.5 space-y-2">
+          <div className="space-y-2 rounded-xl border border-border bg-surface/50 p-3.5">
             <div className="flex items-center justify-between text-xs font-semibold text-text">
               <span className="inline-flex items-center gap-1.5">
-                <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                 <span>Rating</span>
               </span>
-              <span className="text-text-muted font-medium">
+              <span className="font-mono text-xs font-bold text-text-muted">
                 {draft.rating ? `${draft.rating.toFixed(1)} / 5.0` : 'Unrated'}
               </span>
             </div>
@@ -325,7 +363,7 @@ export default function BookInspectorDrawer({
                 <button
                   type="button"
                   onClick={() => setDraft((prev) => (prev ? { ...prev, rating: null } : null))}
-                  className="text-[10px] font-semibold text-rose-400 hover:underline"
+                  className="cursor-pointer text-[10px] font-bold text-rose-500 hover:underline"
                 >
                   Clear
                 </button>
@@ -334,29 +372,29 @@ export default function BookInspectorDrawer({
           </div>
 
           {/* Quick Progress Steppers (Draft State) */}
-          <div className="rounded-xl border border-border bg-surface/50 p-4 space-y-3">
+          <div className="space-y-3 rounded-xl border border-border bg-surface/50 p-4">
             <div className="flex items-center justify-between text-xs font-semibold">
               <span className="text-text">Reading Progress</span>
-              <span className="text-text-muted">{formattedProgress}</span>
+              <span className="font-mono font-bold text-text-muted">{formattedProgress}</span>
             </div>
 
             {pct != null && <Progress value={pct} className="h-2 rounded-full" />}
 
             {/* Multi-Tier Volume / Part Quick Advance Control */}
             {draft.progress_structure && draft.progress_structure !== 'single' && (
-              <div className="flex items-center justify-between p-2 rounded-lg bg-card-bg border border-border/60 text-xs">
+              <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card-bg p-2 text-xs">
                 <span className="font-semibold text-text-muted">
                   {draft.progress_structure === 'volume_chapter' ? 'Volume' : 'Part'}
                 </span>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-text text-xs">
+                  <span className="font-mono text-xs font-bold text-text">
                     {draft.parent_progress ?? 0}
                     {draft.parent_total != null ? ` / ${draft.parent_total}` : ''}
                   </span>
                   <button
                     type="button"
                     onClick={() => handleIncrementVolume(1)}
-                    className="px-2 py-0.5 text-[11px] font-semibold rounded-md border border-border bg-surface hover:bg-surface-hover text-accent-color transition-colors ml-2 shadow-2xs"
+                    className="ml-2 cursor-pointer rounded-md border border-border bg-surface px-2 py-0.5 font-mono text-[11px] font-bold text-accent-text shadow-2xs transition-colors hover:bg-surface-hover"
                     title={
                       draft.total_units == null
                         ? 'Advance to next volume and reset chapter to 0'
@@ -376,8 +414,10 @@ export default function BookInspectorDrawer({
                   type="button"
                   disabled={isCompletedWithTotal}
                   onClick={() => handleIncrementProgress(1)}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg border border-border bg-card-bg text-text transition-colors shadow-2xs ${
-                    isCompletedWithTotal ? 'opacity-40 cursor-not-allowed' : 'hover:bg-surface'
+                  className={`rounded-lg border-2 border-border bg-card-bg px-2.5 py-1 font-mono text-xs font-bold text-text shadow-[2px_2px_0px_var(--border)] transition-transform active:translate-y-0.5 active:shadow-none ${
+                    isCompletedWithTotal
+                      ? 'cursor-not-allowed opacity-40'
+                      : 'cursor-pointer hover:bg-surface'
                   }`}
                 >
                   +1
@@ -386,8 +426,10 @@ export default function BookInspectorDrawer({
                   type="button"
                   disabled={isCompletedWithTotal}
                   onClick={() => handleIncrementProgress(5)}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg border border-border bg-card-bg text-text transition-colors shadow-2xs ${
-                    isCompletedWithTotal ? 'opacity-40 cursor-not-allowed' : 'hover:bg-surface'
+                  className={`rounded-lg border-2 border-border bg-card-bg px-2.5 py-1 font-mono text-xs font-bold text-text shadow-[2px_2px_0px_var(--border)] transition-transform active:translate-y-0.5 active:shadow-none ${
+                    isCompletedWithTotal
+                      ? 'cursor-not-allowed opacity-40'
+                      : 'cursor-pointer hover:bg-surface'
                   }`}
                 >
                   +5
@@ -396,8 +438,10 @@ export default function BookInspectorDrawer({
                   type="button"
                   disabled={isCompletedWithTotal}
                   onClick={() => handleIncrementProgress(10)}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg border border-border bg-card-bg text-text transition-colors shadow-2xs ${
-                    isCompletedWithTotal ? 'opacity-40 cursor-not-allowed' : 'hover:bg-surface'
+                  className={`rounded-lg border-2 border-border bg-card-bg px-2.5 py-1 font-mono text-xs font-bold text-text shadow-[2px_2px_0px_var(--border)] transition-transform active:translate-y-0.5 active:shadow-none ${
+                    isCompletedWithTotal
+                      ? 'cursor-not-allowed opacity-40'
+                      : 'cursor-pointer hover:bg-surface'
                   }`}
                 >
                   +10
@@ -408,7 +452,7 @@ export default function BookInspectorDrawer({
                 <button
                   type="button"
                   onClick={() => handleIncrementProgress(-1)}
-                  className="px-2 py-1 text-xs font-semibold rounded-lg border border-border bg-card-bg hover:bg-surface text-text-muted hover:text-text transition-colors"
+                  className="cursor-pointer rounded-lg border border-border bg-card-bg px-2 py-1 font-mono text-xs font-semibold text-text-muted transition-colors hover:bg-surface hover:text-text"
                   title="Step Back -1"
                 >
                   -1
@@ -418,19 +462,19 @@ export default function BookInspectorDrawer({
           </div>
 
           {/* Quick Desktop Date Editor & Custom Date Pickers (Draft State) */}
-          <div className="rounded-xl border border-border bg-surface/50 p-4 space-y-4">
+          <div className="space-y-4 rounded-xl border border-border bg-surface/50 p-4">
             <div className="flex items-center justify-between text-xs font-semibold text-text">
               <span className="inline-flex items-center gap-1.5">
-                <CalendarDays className="h-4 w-4 text-sky-400" />
+                <CalendarDays className="h-4 w-4 text-sky-500" />
                 <span>Quick Date Editor</span>
               </span>
-              <span className="text-[10px] font-medium text-text-muted">Desktop Fast Chips</span>
+              <span className="text-[10px] font-medium text-text-muted">Fast Chips</span>
             </div>
 
             {/* Start Date Section */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-text-muted font-medium">Start Date</span>
+                <span className="font-medium text-text-muted">Start Date</span>
                 <input
                   type="date"
                   value={draft.date_started || ''}
@@ -439,7 +483,7 @@ export default function BookInspectorDrawer({
                       prev ? { ...prev, date_started: e.target.value || null } : null,
                     )
                   }
-                  className="bg-card-bg border border-border text-text rounded px-1.5 py-0.5 text-[11px] outline-none"
+                  className="rounded border border-border bg-card-bg px-1.5 py-0.5 text-[11px] text-text outline-none"
                 />
               </div>
 
@@ -450,7 +494,7 @@ export default function BookInspectorDrawer({
                   onClick={() =>
                     setDraft((prev) => (prev ? { ...prev, date_started: getTodayISO() } : null))
                   }
-                  className="px-2 py-0.5 text-[10px] font-semibold rounded-md border border-sky-500/30 bg-sky-500/10 text-sky-400 hover:bg-sky-500/20"
+                  className="cursor-pointer rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 font-mono text-[10px] font-bold text-sky-500 hover:bg-sky-500/20"
                 >
                   Today
                 </button>
@@ -459,7 +503,7 @@ export default function BookInspectorDrawer({
                   onClick={() =>
                     setDraft((prev) => (prev ? { ...prev, date_started: getYesterdayISO() } : null))
                   }
-                  className="px-2 py-0.5 text-[10px] font-semibold rounded-md border border-border bg-card-bg text-text-muted hover:text-text"
+                  className="cursor-pointer rounded-md border border-border bg-card-bg px-2 py-0.5 text-[10px] font-medium text-text-muted hover:text-text"
                 >
                   Yesterday
                 </button>
@@ -468,7 +512,7 @@ export default function BookInspectorDrawer({
                   onClick={() =>
                     setDraft((prev) => (prev ? { ...prev, date_started: getDaysAgoISO(7) } : null))
                   }
-                  className="px-2 py-0.5 text-[10px] font-semibold rounded-md border border-border bg-card-bg text-text-muted hover:text-text"
+                  className="cursor-pointer rounded-md border border-border bg-card-bg px-2 py-0.5 text-[10px] font-medium text-text-muted hover:text-text"
                 >
                   7 Days Ago
                 </button>
@@ -478,7 +522,7 @@ export default function BookInspectorDrawer({
                     onClick={() =>
                       setDraft((prev) => (prev ? { ...prev, date_started: null } : null))
                     }
-                    className="px-2 py-0.5 text-[10px] font-semibold rounded-md border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20"
+                    className="cursor-pointer rounded-md border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 font-bold text-[10px] text-rose-500 hover:bg-rose-500/20"
                   >
                     Clear
                   </button>
@@ -487,9 +531,9 @@ export default function BookInspectorDrawer({
             </div>
 
             {/* Finish Date Section */}
-            <div className="space-y-2 pt-3 border-t border-border/50">
+            <div className="space-y-2 border-t border-border/50 pt-3">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-text-muted font-medium">Finish Date</span>
+                <span className="font-medium text-text-muted">Finish Date</span>
                 <input
                   type="date"
                   value={draft.date_finished || ''}
@@ -498,7 +542,7 @@ export default function BookInspectorDrawer({
                       prev ? { ...prev, date_finished: e.target.value || null } : null,
                     )
                   }
-                  className="bg-card-bg border border-border text-emerald-400 rounded px-1.5 py-0.5 text-[11px] outline-none"
+                  className="rounded border border-border bg-card-bg px-1.5 py-0.5 text-[11px] text-emerald-500 outline-none"
                 />
               </div>
 
@@ -509,7 +553,7 @@ export default function BookInspectorDrawer({
                   onClick={() =>
                     setDraft((prev) => (prev ? { ...prev, date_finished: getTodayISO() } : null))
                   }
-                  className="px-2 py-0.5 text-[10px] font-semibold rounded-md border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                  className="cursor-pointer rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-500 hover:bg-emerald-500/20"
                 >
                   Completed Today
                 </button>
@@ -520,7 +564,7 @@ export default function BookInspectorDrawer({
                       prev ? { ...prev, date_finished: getYesterdayISO() } : null,
                     )
                   }
-                  className="px-2 py-0.5 text-[10px] font-semibold rounded-md border border-border bg-card-bg text-text-muted hover:text-text"
+                  className="cursor-pointer rounded-md border border-border bg-card-bg px-2 py-0.5 text-[10px] font-medium text-text-muted hover:text-text"
                 >
                   Yesterday
                 </button>
@@ -530,7 +574,7 @@ export default function BookInspectorDrawer({
                     onClick={() =>
                       setDraft((prev) => (prev ? { ...prev, date_finished: null } : null))
                     }
-                    className="px-2 py-0.5 text-[10px] font-semibold rounded-md border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20"
+                    className="cursor-pointer rounded-md border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 font-bold text-[10px] text-rose-500 hover:bg-rose-500/20"
                   >
                     Clear
                   </button>
@@ -541,17 +585,17 @@ export default function BookInspectorDrawer({
 
           {/* Reading Stats Grid */}
           <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="rounded-xl border border-border bg-surface/40 p-3 space-y-1">
-              <span className="text-text-muted text-[11px]">Total Duration</span>
-              <div className="font-semibold text-text flex items-center gap-1">
+            <div className="space-y-1 rounded-xl border border-border bg-surface/40 p-3">
+              <span className="text-[11px] text-text-muted">Total Duration</span>
+              <div className="flex items-center gap-1 font-semibold text-text">
                 <Clock className="h-3.5 w-3.5 text-amber-500" />
                 <span>{durationText}</span>
               </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-surface/40 p-3 space-y-1">
-              <span className="text-text-muted text-[11px]">Remaining</span>
-              <div className="font-semibold text-text flex items-center gap-1">
+            <div className="space-y-1 rounded-xl border border-border bg-surface/40 p-3">
+              <span className="text-[11px] text-text-muted">Remaining</span>
+              <div className="flex items-center gap-1 font-semibold text-text">
                 <TrendingUp className="h-3.5 w-3.5 text-sky-400" />
                 <span>
                   {remainingUnits > 0
@@ -577,7 +621,7 @@ export default function BookInspectorDrawer({
                 ).map((tag, idx) => (
                   <span
                     key={`${tag}-${idx}`}
-                    className="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-border bg-surface text-text-muted"
+                    className="rounded-full border border-border bg-surface px-2 py-0.5 text-[10px] font-semibold text-text-muted"
                   >
                     {tag}
                   </span>
@@ -622,7 +666,7 @@ export default function BookInspectorDrawer({
                         toast.error('Network error starting re-read');
                       }
                     }}
-                    className="inline-flex items-center gap-1 rounded bg-blue-500/20 px-2 py-0.5 text-[10.5px] font-bold text-blue-500 hover:bg-blue-500/30 transition-colors"
+                    className="inline-flex cursor-pointer items-center gap-1 rounded border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 font-mono text-[10.5px] font-bold text-blue-500 transition-colors hover:bg-blue-500/20"
                   >
                     <span>🔄</span>
                     <span>Start Re-read</span>
@@ -661,17 +705,17 @@ export default function BookInspectorDrawer({
                                   : `Read #${j.journey_index} (Re-read)`}
                               </span>
                               {isAct && (
-                                <span className="rounded bg-blue-500 px-1 py-0.2 text-[9px] font-bold text-white uppercase">
+                                <span className="rounded bg-blue-500 px-1 py-0.2 font-mono text-[9px] font-bold text-white uppercase">
                                   Current
                                 </span>
                               )}
                             </div>
-                            <div className="text-[10px] text-text-muted pt-0.5">
+                            <div className="pt-0.5 text-[10px] text-text-muted">
                               {startStr} → {finishStr}
                             </div>
                           </div>
                           {j.rating != null && j.rating > 0 && (
-                            <span className="inline-flex items-center rounded bg-amber-500/20 px-1.5 py-0.5 text-[10.5px] font-bold text-amber-500">
+                            <span className="inline-flex items-center rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 font-mono text-[10.5px] font-bold text-amber-500">
                               {j.rating} ★
                             </span>
                           )}
@@ -683,7 +727,7 @@ export default function BookInspectorDrawer({
                     <button
                       type="button"
                       onClick={() => setShowAllJourneys(!showAllJourneys)}
-                      className="w-full py-1 text-center text-[10.5px] font-bold text-blue-500 hover:text-blue-400 border border-border/40 rounded-md bg-surface/30 transition-colors"
+                      className="w-full cursor-pointer rounded-md border border-border/40 bg-surface/30 py-1 text-center font-mono text-[10.5px] font-bold text-blue-500 transition-colors hover:text-blue-400"
                     >
                       {showAllJourneys
                         ? '▴ Show Fewer Reads'
@@ -699,7 +743,7 @@ export default function BookInspectorDrawer({
           {draft.notes && (
             <div className="space-y-1.5">
               <span className="text-xs font-semibold text-text-muted">Notes</span>
-              <div className="p-3 rounded-xl border border-border bg-surface/40 text-xs text-text leading-relaxed whitespace-pre-wrap">
+              <div className="rounded-xl border border-border bg-surface/40 p-3 text-xs leading-relaxed text-text whitespace-pre-wrap">
                 {draft.notes}
               </div>
             </div>
@@ -707,7 +751,7 @@ export default function BookInspectorDrawer({
         </div>
 
         {/* Footer Actions — Staged Draft Save Bar */}
-        <div className="p-4 border-t border-border bg-surface/40 flex items-center justify-between gap-2">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border bg-surface/60 p-4">
           {isDirty ? (
             <>
               <Button
@@ -715,7 +759,7 @@ export default function BookInspectorDrawer({
                 size="sm"
                 onClick={handleDiscard}
                 disabled={saving}
-                className="text-xs gap-1.5 border-border text-text-muted hover:text-text"
+                className="gap-1.5 border-border text-xs text-text-muted hover:text-text"
               >
                 <Undo2 className="h-3.5 w-3.5" />
                 <span>Discard</span>
@@ -726,7 +770,7 @@ export default function BookInspectorDrawer({
                 size="sm"
                 onClick={handleSave}
                 disabled={saving}
-                className="text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-md"
+                className="gap-1.5 bg-emerald-600 font-bold text-xs text-white shadow-md hover:bg-emerald-500"
               >
                 <Save className="h-3.5 w-3.5" />
                 <span>{saving ? 'Saving...' : 'Save Changes'}</span>
@@ -738,7 +782,7 @@ export default function BookInspectorDrawer({
                 variant="outline"
                 size="sm"
                 onClick={() => onDelete(book)}
-                className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 border-rose-500/20 text-xs gap-1.5"
+                className="gap-1.5 border-rose-500/20 text-xs text-rose-500 hover:bg-rose-500/10 hover:text-rose-600"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 <span>Delete</span>
@@ -748,7 +792,7 @@ export default function BookInspectorDrawer({
                 variant="default"
                 size="sm"
                 onClick={() => onEdit(book)}
-                className="text-xs gap-1.5"
+                className="gap-1.5 font-semibold text-xs"
               >
                 <Edit3 className="h-3.5 w-3.5" />
                 <span>Edit Full Book</span>
