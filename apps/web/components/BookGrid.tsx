@@ -368,7 +368,7 @@ function BookGrid({
     const touch = e.touches[0];
     if (touch) {
       const dx = Math.abs(touch.clientX - touchStartPosRef.current.x);
-      const dy = Math.abs(touch.clientY - touchStartPosPosRef(e));
+      const dy = Math.abs(touch.clientY - touchStartPosRef.current.y);
       if (dx > 8 || dy > 8) {
         if (longPressTimerRef.current) {
           clearTimeout(longPressTimerRef.current);
@@ -377,10 +377,6 @@ function BookGrid({
       }
     }
   };
-
-  function touchStartPosPosRef(e: React.TouchEvent) {
-    return touchStartPosRef.current?.y ?? 0;
-  }
 
   const handleTouchEnd = () => {
     if (longPressTimerRef.current) {

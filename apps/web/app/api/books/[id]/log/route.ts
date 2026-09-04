@@ -37,11 +37,15 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
     );
   }
   const toParentProgress =
-    body?.parent_progress !== undefined && body?.parent_progress !== null && Number.isFinite(Number(body.parent_progress))
+    body?.parent_progress !== undefined &&
+    body?.parent_progress !== null &&
+    Number.isFinite(Number(body.parent_progress))
       ? Number(body.parent_progress)
       : null;
   const durationSeconds =
-    body?.duration_seconds !== undefined && body?.duration_seconds !== null && Number.isFinite(Number(body.duration_seconds))
+    body?.duration_seconds !== undefined &&
+    body?.duration_seconds !== null &&
+    Number.isFinite(Number(body.duration_seconds))
       ? Math.round(Number(body.duration_seconds))
       : null;
 
