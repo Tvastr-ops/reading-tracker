@@ -16,13 +16,14 @@ import type React from 'react';
 import { memo, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Progress } from '@/components/ui/progress';
 import { calculateProgressPercentage, getStatusAwareProgressText } from '@/lib/progress';
 import { getStatusConfig } from '@/lib/status';
 import type { Book } from '@/lib/types';
@@ -99,27 +100,27 @@ export const SeriesStackCard = memo(function SeriesStackCard({
       : null;
 
   return (
-    <div className="group/stack relative h-full select-none perspective-[1000px] transition-transform duration-300 ease-out hover:-translate-y-1.5">
+    <div className="group/stack relative z-0 h-full select-none perspective-[1000px] transition-all duration-300 ease-out hover:z-30 hover:-translate-y-2">
       {/* ================= 3D FANNED DECK LAYER 2 (Backmost Volume) ================= */}
       {totalVolumes > 2 && (
         <div
-          className="pointer-events-none absolute inset-0 z-0 origin-bottom-left overflow-hidden rounded-2xl border-2 border-border/80 bg-surface/90 shadow-[2px_2px_0px_var(--border)] transition-all duration-300 ease-out group-hover/stack:translate-x-3.5 group-hover/stack:-translate-y-2.5 group-hover/stack:rotate-[4.5deg]"
-          style={{ transform: 'translate(7px, -5px) rotate(2.5deg)' }}
+          className="pointer-events-none absolute inset-0 z-0 origin-bottom-left overflow-hidden rounded-2xl border-2 border-border bg-surface shadow-[3px_3px_0px_var(--border)] transition-all duration-300 ease-out group-hover/stack:translate-x-6 group-hover/stack:-translate-y-4 group-hover/stack:rotate-[6deg]"
+          style={{ transform: 'translate(10px, -8px) rotate(3.2deg)' }}
         >
           {layer2Book?.cover_url ? (
-            <div className="relative h-full w-full opacity-60">
+            <div className="relative h-full w-full opacity-85">
               <CoverImage
                 src={layer2Book.cover_url}
                 title={layer2Book.title}
                 fill
                 className="object-cover"
               />
-              <div className="absolute inset-0 bg-black/40" />
+              <div className="absolute inset-0 bg-black/20" />
             </div>
           ) : (
-            <div className="h-full w-full bg-surface-high/60" />
+            <div className="h-full w-full bg-surface-high/80" />
           )}
-          <div className="absolute top-2 right-2 rounded-md border border-white/20 bg-black/80 px-1.5 py-0.5 text-[9px] font-black text-amber-300 shadow-xs">
+          <div className="absolute top-2 right-2 rounded-md border border-white/30 bg-black/85 px-1.5 py-0.5 text-[9px] font-black text-amber-300 shadow-md">
             #{layer2Book?.series_order != null ? layer2Book.series_order : '3'}
           </div>
         </div>
@@ -128,23 +129,23 @@ export const SeriesStackCard = memo(function SeriesStackCard({
       {/* ================= 3D FANNED DECK LAYER 1 (Middle Volume) ================= */}
       {totalVolumes > 1 && (
         <div
-          className="pointer-events-none absolute inset-0 z-[1] origin-bottom-left overflow-hidden rounded-2xl border-2 border-border/90 bg-surface shadow-[3px_3px_0px_var(--border)] transition-all duration-300 ease-out group-hover/stack:translate-x-2 group-hover/stack:-translate-y-1.5 group-hover/stack:rotate-[2.2deg]"
-          style={{ transform: 'translate(3.5px, -2.5px) rotate(1.2deg)' }}
+          className="pointer-events-none absolute inset-0 z-[1] origin-bottom-left overflow-hidden rounded-2xl border-2 border-border bg-surface shadow-[3px_3px_0px_var(--border)] transition-all duration-300 ease-out group-hover/stack:translate-x-3 group-hover/stack:-translate-y-2 group-hover/stack:rotate-[3deg]"
+          style={{ transform: 'translate(5px, -4px) rotate(1.6deg)' }}
         >
           {layer1Book?.cover_url ? (
-            <div className="relative h-full w-full opacity-75">
+            <div className="relative h-full w-full opacity-90">
               <CoverImage
                 src={layer1Book.cover_url}
                 title={layer1Book.title}
                 fill
                 className="object-cover"
               />
-              <div className="absolute inset-0 bg-black/30" />
+              <div className="absolute inset-0 bg-black/10" />
             </div>
           ) : (
             <div className="h-full w-full bg-surface" />
           )}
-          <div className="absolute top-2 right-2 rounded-md border border-white/20 bg-black/80 px-1.5 py-0.5 text-[9px] font-black text-cyan-300 shadow-xs">
+          <div className="absolute top-2 right-2 rounded-md border border-white/30 bg-black/85 px-1.5 py-0.5 text-[9px] font-black text-cyan-300 shadow-md">
             #{layer1Book?.series_order != null ? layer1Book.series_order : '2'}
           </div>
         </div>
@@ -153,10 +154,10 @@ export const SeriesStackCard = memo(function SeriesStackCard({
       {/* ================= HARDCOVER PAGE EDGES UNDERNEATH ================= */}
       {totalVolumes > 1 && (
         <div
-          className="pointer-events-none absolute -right-1.5 bottom-0 top-3 z-[2] w-2 rounded-r-md border-r-2 border-y border-border/80 opacity-90 transition-all duration-300 group-hover/stack:translate-x-0.5"
+          className="pointer-events-none absolute -right-2.5 bottom-1 top-4 z-[2] w-2.5 rounded-r-md border-r-2 border-y border-border/90 opacity-95 shadow-sm transition-all duration-300 group-hover/stack:translate-x-1"
           style={{
             background:
-              'repeating-linear-gradient(to bottom, var(--paper-bg, #f5f0e6), var(--paper-bg, #f5f0e6) 2px, var(--border, #000000) 2px, var(--border, #000000) 3px)',
+              'repeating-linear-gradient(to bottom, var(--paper-bg, #f5f0e6), var(--paper-bg, #f5f0e6) 2px, var(--border, #000000) 2px, var(--border, #000000) 3.5px)',
           }}
         />
       )}
@@ -228,44 +229,51 @@ export const SeriesStackCard = memo(function SeriesStackCard({
             </div>
           )}
 
-          {/* Bottom Hero Info */}
-          <div className="pointer-events-none absolute inset-x-2.5 bottom-2 z-20 space-y-1">
-            <div className="flex items-center justify-between gap-1">
-              <span className="truncate text-[10px] font-bold text-amber-300 uppercase tracking-wide">
-                {activeBook?.series_order != null ? `#${activeBook.series_order} • ` : ''}
-                {activeBook?.title || seriesName}
+          {/* Bottom Active Volume Tag on Cover */}
+          <div className="pointer-events-none absolute inset-x-2.5 bottom-2 z-20 flex items-center justify-between">
+            <span className="rounded-sm bg-black/80 px-1.5 py-0.5 text-[9px] font-bold text-amber-300 backdrop-blur-xs">
+              {activeBook?.series_order != null ? `#${activeBook.series_order}` : 'Active'} •{' '}
+              {activeBook?.title || seriesName}
+            </span>
+            {activeBook?.status && (
+              <span className="shrink-0 rounded-sm bg-black/80 px-1.5 py-0.5 text-[8.5px] font-black text-emerald-400 border border-emerald-500/30">
+                {activeBook.status.toUpperCase()}
               </span>
-              {activeBook?.status && (
-                <span className="shrink-0 rounded-sm bg-black/80 px-1 py-0.2 text-[8.5px] font-black text-emerald-400 border border-emerald-500/30">
-                  {activeBook.status.toUpperCase()}
+            )}
+          </div>
+        </div>
+
+        {/* Card Content Body - Matches Standard BookCard Rhythm */}
+        <CardContent className="flex flex-1 flex-col justify-between gap-2 p-3 sm:p-3.5">
+          <div>
+            <h2 className="line-clamp-2 text-xs font-bold leading-snug tracking-tight text-text transition-colors group-hover:text-accent-color">
+              {seriesName}
+            </h2>
+            {activeBook?.author && (
+              <p className="mt-0.5 line-clamp-1 text-[11px] text-text-muted">{activeBook.author}</p>
+            )}
+            <div className="mt-1 flex flex-wrap items-center gap-1">
+              <span className="inline-block max-w-full truncate rounded bg-accent-color/10 px-1 py-0.2 text-[9.5px] font-bold text-accent-color">
+                [📚 {totalVolumes} VOLUMES IN SERIES]
+              </span>
+              {seriesProgressPct === 100 && (
+                <span className="inline-block rounded bg-emerald-500/20 px-1 py-0.2 text-[9px] font-bold text-emerald-500">
+                  COMPLETED
                 </span>
               )}
             </div>
-
-            <h3 className="line-clamp-1 font-black text-sm text-white drop-shadow-md sm:text-base">
-              {seriesName}
-            </h3>
-            <p className="line-clamp-1 text-[10.5px] font-medium text-white/80">
-              {activeBook?.author || `${totalVolumes} in Series`}
-            </p>
-
-            {/* Aggregate Progress Bar */}
-            <div className="pt-1">
-              <div className="flex items-center justify-between text-[9.5px] font-black text-white/90">
-                <span>
-                  {completedVolumes} of {totalVolumes} Finished
-                </span>
-                <span>{seriesProgressPct}%</span>
-              </div>
-              <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/20 border border-white/10">
-                <div
-                  className="h-full bg-emerald-400 transition-all duration-300 shadow-[0_0_8px_rgba(52,211,153,0.6)]"
-                  style={{ width: `${seriesProgressPct}%` }}
-                />
-              </div>
-            </div>
           </div>
-        </div>
+
+          <div className="mt-auto space-y-1.5 pt-1">
+            <div className="flex items-center justify-between text-[10px] font-mono font-medium text-text-muted">
+              <span>
+                {completedVolumes} of {totalVolumes} Finished
+              </span>
+              <span className="font-semibold text-text-muted">{seriesProgressPct}%</span>
+            </div>
+            <Progress value={seriesProgressPct} className="h-1.5" />
+          </div>
+        </CardContent>
 
         {/* Expandable Volume Drawer */}
         <AnimatePresence>
