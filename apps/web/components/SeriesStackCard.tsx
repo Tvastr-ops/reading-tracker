@@ -177,7 +177,7 @@ export const SeriesStackCard = memo(function SeriesStackCard({
             title={seriesName}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 15vw"
-            priority={idx < 2}
+            priority={idx < 4}
             className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
           />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />

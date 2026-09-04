@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { client } from '@/lib/client';
 import { normalizeStatusTransition } from '@/lib/progress';
@@ -37,38 +37,46 @@ export function useLibrary() {
   }, []);
 
   const setThemePalette = useCallback((palette: ThemePalette) => {
-    setThemePaletteState(palette);
+    startTransition(() => {
+      setThemePaletteState(palette);
+    });
     document.documentElement.setAttribute('data-theme', palette);
     window.localStorage.setItem('theme_palette', palette);
   }, []);
 
   const setThemeMode = useCallback((mode: ThemeMode) => {
-    setThemeModeState(mode);
+    startTransition(() => {
+      setThemeModeState(mode);
+    });
     document.documentElement.setAttribute('data-mode', mode);
     window.localStorage.setItem('theme_mode', mode);
     window.localStorage.setItem('theme', mode);
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setThemeModeState((prev) => {
-      const next = prev === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-mode', next);
-      window.localStorage.setItem('theme_mode', next);
-      window.localStorage.setItem('theme', next);
-      return next;
+    startTransition(() => {
+      setThemeModeState((prev) => {
+        const next = prev === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-mode', next);
+        window.localStorage.setItem('theme_mode', next);
+        window.localStorage.setItem('theme', next);
+        return next;
+      });
     });
   }, []);
 
   const togglePaperTexture = useCallback(() => {
-    setPaperTextureState((prev) => {
-      const next = !prev;
-      if (next) {
-        document.documentElement.setAttribute('data-pattern', 'true');
-      } else {
-        document.documentElement.removeAttribute('data-pattern');
-      }
-      window.localStorage.setItem('theme_pattern', String(next));
-      return next;
+    startTransition(() => {
+      setPaperTextureState((prev) => {
+        const next = !prev;
+        if (next) {
+          document.documentElement.setAttribute('data-pattern', 'true');
+        } else {
+          document.documentElement.removeAttribute('data-pattern');
+        }
+        window.localStorage.setItem('theme_pattern', String(next));
+        return next;
+      });
     });
   }, []);
 
@@ -395,32 +403,61 @@ export function useLibrary() {
     [queryClient],
   );
 
-  return {
-    books,
-    setBooks,
-    loading,
-    error,
-    showTrash,
-    setShowTrash,
-    theme: themeMode,
-    themePalette,
-    themeMode,
-    paperTexture,
-    setThemePalette,
-    setThemeMode,
-    toggleTheme,
-    togglePaperTexture,
-    importing,
-    importMsg,
-    handleImportFile,
-    load,
-    saveBook,
-    deleteBook,
-    restoreBook,
-    permanentlyDeleteBook,
-    quickStatusChange,
-    handleSaveInspectorBook,
-    handleToggleFavorite,
-    logout,
-  };
+  return useMemo(
+    () => ({
+      books,
+      setBooks,
+      loading,
+      error,
+      showTrash,
+      setShowTrash,
+      theme: themeMode,
+      themePalette,
+      themeMode,
+      paperTexture,
+      setThemePalette,
+      setThemeMode,
+      toggleTheme,
+      togglePaperTexture,
+      importing,
+      importMsg,
+      handleImportFile,
+      load,
+      saveBook,
+      deleteBook,
+      restoreBook,
+      permanentlyDeleteBook,
+      quickStatusChange,
+      handleSaveInspectorBook,
+      handleToggleFavorite,
+      logout,
+    }),
+    [
+      books,
+      setBooks,
+      loading,
+      error,
+      showTrash,
+      setShowTrash,
+      themeMode,
+      themePalette,
+      paperTexture,
+      setThemePalette,
+      setThemeMode,
+      toggleTheme,
+      togglePaperTexture,
+      importing,
+      importMsg,
+      handleImportFile,
+      load,
+      saveBook,
+      deleteBook,
+      restoreBook,
+      permanentlyDeleteBook,
+      quickStatusChange,
+      handleSaveInspectorBook,
+      handleToggleFavorite,
+      logout,
+    ],
+  );
 }
