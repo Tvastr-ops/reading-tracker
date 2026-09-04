@@ -9,6 +9,8 @@ import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../utils/progression_logic.dart';
 import 'brutalist_widgets.dart';
+import 'enrichment_dialog.dart';
+import 'external_links_row.dart';
 
 class BookDetailPanel extends StatefulWidget {
   final Book book;
@@ -197,6 +199,30 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
     widget.onUpdateBook(updated);
   }
 
+  Future<void> _openAutoEnrich() async {
+    final result = await showDialog<EnrichedDataSelection>(
+      context: context,
+      builder: (ctx) => EnrichmentDialog(initialQuery: widget.book.title),
+    );
+    if (result != null) {
+      final b = widget.book;
+      final updated = b.copyWith(
+        coverUrl: result.coverUrl ?? b.coverUrl,
+        title: result.title ?? b.title,
+        author: result.author ?? b.author,
+        totalUnits: result.totalUnits?.toDouble() ?? b.totalUnits,
+        unitType: result.unitType ?? b.unitType,
+        notes: result.notes ?? b.notes,
+        genreTags: result.genreTags ?? b.genreTags,
+        sourceLink: result.sourceLink ?? b.sourceLink,
+        isOngoing: result.isOngoing ?? b.isOngoing,
+      );
+      await _dbHelper.updateBook(updated);
+      SyncManager.instance.scheduleSyncSoon();
+      widget.onUpdateBook(updated);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -260,23 +286,57 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                     ),
                   ],
                 ),
-                MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: widget.onClose,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: borderColor, width: 1.5),
-                        color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
-                      ),
-                      child: Icon(
-                        Icons.close_rounded,
-                        size: 16,
-                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                Row(
+                  children: [
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: _openAutoEnrich,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: AppColors.warningAmber, width: 1.2),
+                            color: AppColors.warningAmber.withValues(alpha: 0.15),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.auto_awesome, size: 12, color: AppColors.warningAmber),
+                              const SizedBox(width: 4),
+                              Text(
+                                'AUTO-ENRICH',
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w900,
+                                  color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: widget.onClose,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: borderColor, width: 1.5),
+                            color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                          ),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 16,
+                            color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -509,10 +569,19 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                           );
                         },
                       ),
+                      _buildVelocityForecast(b, borderColor, accentColor, isDark),
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
+
+                // External Links & Resources
+                if (b.sourceLink != null && b.sourceLink!.trim().isNotEmpty) ...[
+                  _buildSectionLabel('EXTERNAL LINKS & RESOURCES', isDark),
+                  const SizedBox(height: 6),
+                  ExternalLinksRow(sourceLink: b.sourceLink),
+                  const SizedBox(height: 16),
+                ],
 
                 // Reading Dates
                 if (b.dateStarted != null || b.dateFinished != null) ...[
@@ -996,6 +1065,57 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildVelocityForecast(Book b, Color borderColor, Color accentColor, bool isDark) {
+    if (b.status != BookStatus.reading || b.totalUnits == null || b.progress >= b.totalUnits!) {
+      return const SizedBox.shrink();
+    }
+
+    final remaining = (b.totalUnits! - b.progress).clamp(0, double.infinity);
+    double dailyPace = 0;
+
+    if (b.readingPace != null && b.readingPace! > 0) {
+      dailyPace = b.readingPace! / 7.0;
+    } else if (b.dateStarted != null) {
+      final start = DateTime.tryParse(b.dateStarted!);
+      if (start != null) {
+        final days = DateTime.now().difference(start).inDays.clamp(1, 99999);
+        dailyPace = b.progress / days;
+      }
+    }
+
+    if (dailyPace <= 0) return const SizedBox.shrink();
+
+    final daysRemaining = (remaining / dailyPace).ceil();
+    final finishDate = DateTime.now().add(Duration(days: daysRemaining));
+    final formattedFinish = DateFormat('MMM d').format(finishDate);
+    final unit = b.unitType ?? 'pages';
+
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: 0.12),
+        border: Border.all(color: accentColor.withValues(alpha: 0.5), width: 1.2),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.local_fire_department, size: 16, color: accentColor),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Velocity: ~${dailyPace.toStringAsFixed(1)} $unit/day • Est. Finish: $formattedFinish ($daysRemaining days left)',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

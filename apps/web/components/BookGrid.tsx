@@ -1,6 +1,16 @@
 'use client';
 
-import { Clock, Edit3, Heart, MoreVertical, RotateCcw, Sparkles, Trash2 } from 'lucide-react';
+import {
+  BookOpen,
+  Clock,
+  Edit3,
+  Heart,
+  MoreVertical,
+  RotateCcw,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
+import Link from 'next/link';
 import { memo, useEffect, useMemo, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -161,6 +171,13 @@ const BookCard = memo(function BookCard({
                     </>
                   ) : (
                     <>
+                      <DropdownMenuItem asChild>
+                        <Link href={`/books/${b.id}`} className="cursor-pointer">
+                          <BookOpen className="mr-2 h-4 w-4 text-primary" />
+                          <span>View Full Details</span>
+                        </Link>
+                      </DropdownMenuItem>
+
                       <DropdownMenuItem onClick={() => onEdit(b)}>
                         <Sparkles className="mr-2 h-4 w-4 text-amber-500" />
                         <span>Quick Inspect</span>
@@ -394,6 +411,11 @@ function BookGrid({
 
     if (selectMode && onToggleSelect) {
       onToggleSelect(b.id);
+      return;
+    }
+
+    if (e.ctrlKey || e.metaKey) {
+      window.open(`/books/${b.id}`, '_blank');
       return;
     }
 

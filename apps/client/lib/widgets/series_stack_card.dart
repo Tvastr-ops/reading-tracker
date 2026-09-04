@@ -70,14 +70,18 @@ class _SeriesStackCardState extends State<SeriesStackCard> with SingleTickerProv
           // Background Layer 2 (3D stacked deck effect)
           if (totalVolumes > 2)
             Positioned(
-              top: 6,
-              left: 6,
-              right: -6,
-              bottom: -6,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurfaceHigh.withValues(alpha: 0.5) : AppColors.paperSurfaceHigh,
-                  border: Border.all(color: borderColor.withValues(alpha: 0.4), width: 1.5),
+              top: 4,
+              left: 5,
+              right: -5,
+              bottom: -4,
+              child: Transform(
+                transform: Matrix4.translationValues(5.0, -3.0, 0.0)..rotateZ(0.012),
+                alignment: Alignment.bottomLeft,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurfaceHigh.withValues(alpha: 0.6) : AppColors.paperSurfaceHigh,
+                    border: Border.all(color: borderColor.withValues(alpha: 0.5), width: 1.5),
+                  ),
                 ),
               ),
             ),
@@ -85,14 +89,18 @@ class _SeriesStackCardState extends State<SeriesStackCard> with SingleTickerProv
           // Background Layer 1 (3D stacked deck effect)
           if (totalVolumes > 1)
             Positioned(
-              top: 3,
-              left: 3,
-              right: -3,
-              bottom: -3,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
-                  border: Border.all(color: borderColor.withValues(alpha: 0.7), width: 1.5),
+              top: 2,
+              left: 2.5,
+              right: -2.5,
+              bottom: -2,
+              child: Transform(
+                transform: Matrix4.translationValues(2.5, -1.5, 0.0)..rotateZ(0.006),
+                alignment: Alignment.bottomLeft,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
+                    border: Border.all(color: borderColor.withValues(alpha: 0.8), width: 1.5),
+                  ),
                 ),
               ),
             ),
@@ -167,7 +175,7 @@ class _SeriesStackCardState extends State<SeriesStackCard> with SingleTickerProv
                                       border: Border.all(color: borderColor, width: 1),
                                     ),
                                     child: Text(
-                                      'SERIES • $totalVolumes VOLS',
+                                      'SERIES • $totalVolumes IN SERIES',
                                       style: const TextStyle(
                                         fontSize: 9,
                                         fontWeight: FontWeight.w900,
@@ -199,8 +207,8 @@ class _SeriesStackCardState extends State<SeriesStackCard> with SingleTickerProv
                               const SizedBox(height: 2),
                               Text(
                                 readingBooks.isNotEmpty
-                                    ? 'Currently on ${activeBook.seriesOrder != null ? "Vol. ${formatNum(activeBook.seriesOrder!)}" : activeBook.title}'
-                                    : (completedVolumes == totalVolumes ? 'Series Complete' : '$completedVolumes of $totalVolumes volumes finished'),
+                                    ? 'Currently on ${activeBook.seriesOrder != null ? "#${formatNum(activeBook.seriesOrder!)}" : activeBook.title}'
+                                    : (completedVolumes == totalVolumes ? 'Series Complete' : '$completedVolumes of $totalVolumes finished'),
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,

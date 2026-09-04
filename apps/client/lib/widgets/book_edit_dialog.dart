@@ -9,6 +9,7 @@ import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../utils/progression_logic.dart';
 import 'brutalist_widgets.dart';
+import 'enrichment_dialog.dart';
 
 class BookEditDialog extends StatefulWidget {
   final Book? book;
@@ -256,6 +257,26 @@ class _BookEditDialogState extends State<BookEditDialog> {
     }
   }
 
+  Future<void> _openAutoEnrich() async {
+    final result = await showDialog<EnrichedDataSelection>(
+      context: context,
+      builder: (ctx) => EnrichmentDialog(initialQuery: _titleController.text),
+    );
+    if (result != null) {
+      setState(() {
+        if (result.title != null) _titleController.text = result.title!;
+        if (result.author != null) _authorController.text = result.author!;
+        if (result.coverUrl != null) _coverUrlController.text = result.coverUrl!;
+        if (result.totalUnits != null) _totalUnitsController.text = formatNum(result.totalUnits!);
+        if (result.unitType != null) _unitType = result.unitType!;
+        if (result.notes != null) _notesController.text = result.notes!;
+        if (result.genreTags != null) _genreTagsController.text = result.genreTags!;
+        if (result.sourceLink != null) _sourceLinkController.text = result.sourceLink!;
+        if (result.isOngoing != null) _isOngoing = result.isOngoing!;
+      });
+    }
+  }
+
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
@@ -397,11 +418,43 @@ class _BookEditDialogState extends State<BookEditDialog> {
                           color: inkColor,
                         ),
                       ),
-                      IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: Icon(Icons.close_rounded, size: 20, color: inkColor),
-                        onPressed: () => Navigator.pop(context),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: _openAutoEnrich,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              margin: const EdgeInsets.only(right: 12),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: AppColors.warningAmber, width: 1.2),
+                                color: AppColors.warningAmber.withValues(alpha: 0.15),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.auto_awesome, size: 13, color: AppColors.warningAmber),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'AUTO-ENRICH',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                      color: inkColor,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            icon: Icon(Icons.close_rounded, size: 20, color: inkColor),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
                       ),
                     ],
                   ),

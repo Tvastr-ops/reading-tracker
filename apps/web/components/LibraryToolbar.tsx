@@ -199,11 +199,7 @@ export function LibraryToolbar() {
                       : 'text-text-muted hover:text-text',
                   )}
                   onClick={toggleGroupBySeries}
-                  title={
-                    groupBySeries
-                      ? 'Ungroup Series Stacks'
-                      : 'Group Multi-Volume Series into Stacks'
-                  }
+                  title={groupBySeries ? 'Ungroup Series Stacks' : 'Stack Series Books'}
                   aria-label="Toggle Series Stacks"
                 >
                   <Layers className="h-3.5 w-3.5 sm:mr-1 text-amber-500" />
