@@ -9,7 +9,6 @@ import {
   Loader2,
   RotateCcw,
   Search,
-  Settings2,
   X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -30,14 +29,7 @@ import {
   normalizeStatusTransition,
   simulateReadingHistoryLogs,
 } from '@/lib/progress';
-import {
-  type Book,
-  type BookInput,
-  type ProgressStructure,
-  PUBLICATION_TYPES,
-  STATUSES,
-  type UnitType,
-} from '@/lib/types';
+import { type Book, type BookInput, PUBLICATION_TYPES, STATUSES, type UnitType } from '@/lib/types';
 import { getLocalDateString, normalizeGenreTag } from '@/lib/utils';
 import { RatingSelect } from './RatingInput';
 import ReadingLog from './ReadingLog';
@@ -50,35 +42,6 @@ const UNIT_OPTIONS: { label: string; value: UnitType }[] = [
   { label: 'Percent (%)', value: 'percent' },
   { label: 'Units', value: 'units' },
 ];
-
-function getStructureOptions(unitType: UnitType): { label: string; value: ProgressStructure }[] {
-  const singularUnit =
-    unitType === 'chapters'
-      ? 'Chapter'
-      : unitType === 'volumes'
-        ? 'Volume'
-        : unitType === 'words'
-          ? 'Word'
-          : unitType === 'percent'
-            ? '%'
-            : unitType === 'units'
-              ? 'Unit'
-              : 'Page';
-
-  if (unitType === 'volumes') {
-    return [
-      { label: 'Single Level (Volumes)', value: 'single' },
-      { label: 'Volume Hierarchy (Vol. X / Total)', value: 'volume_chapter' },
-      { label: 'Part → Volume (Part II • Vol. 3)', value: 'part_chapter' },
-    ];
-  }
-
-  return [
-    { label: `Single Level (${singularUnit}s)`, value: 'single' },
-    { label: `Volume → ${singularUnit} (Vol. X • ${singularUnit} Y)`, value: 'volume_chapter' },
-    { label: `Part → ${singularUnit} (Part X • ${singularUnit} Y)`, value: 'part_chapter' },
-  ];
-}
 
 export default function BookForm({
   initial,
@@ -122,16 +85,6 @@ export default function BookForm({
   const [shelfInput, setShelfInput] = useState('');
 
   const [activeTab, setActiveTab] = useState<'general' | 'metadata' | 'log'>('general');
-  const [showAdvanced, setShowAdvanced] = useState<boolean>(() => {
-    return (
-      (initial?.unit_type && initial.unit_type !== 'pages') ||
-      (initial?.progress_structure && initial.progress_structure !== 'single') ||
-      !!initial?.is_ongoing ||
-      initial?.latest_units != null ||
-      initial?.parent_progress != null
-    );
-  });
-
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [simulateDailyLogs, setSimulateDailyLogs] = useState(false);
@@ -470,14 +423,20 @@ export default function BookForm({
                       </label>
                       {form.total_units && form.total_units > 0 ? (
                         <span className="rounded-full bg-accent-color/10 px-2 py-0.5 text-[11px] font-semibold text-accent-color">
-                          {Math.min(100, Math.round(((form.progress || 0) / form.total_units) * 100))}% Completed
+                          {Math.min(
+                            100,
+                            Math.round(((form.progress || 0) / form.total_units) * 100),
+                          )}
+                          % Completed
                         </span>
                       ) : null}
                     </div>
 
                     {/* 1-Tap Unit Chips */}
                     <div className="space-y-1">
-                      <span className="block text-[11px] font-medium text-text-muted">Unit Type</span>
+                      <span className="block text-[11px] font-medium text-text-muted">
+                        Unit Type
+                      </span>
                       <div className="flex flex-wrap gap-1.5">
                         {UNIT_OPTIONS.map((u) => {
                           const isSelected = (form.unit_type || 'pages') === u.value;
@@ -502,9 +461,7 @@ export default function BookForm({
                     {/* Natural Counter: Progress of Total */}
                     <div className="grid grid-cols-2 gap-3 pt-1">
                       <div>
-                        <label className={labelClass}>
-                          Current ({unitLabel} read)
-                        </label>
+                        <label className={labelClass}>Current ({unitLabel} read)</label>
                         <input
                           className={inputClass}
                           type="number"
@@ -592,7 +549,8 @@ export default function BookForm({
                           <div className="grid grid-cols-2 gap-2.5">
                             <div>
                               <label className={labelClass}>
-                                Current {form.progress_structure === 'part_chapter' ? 'Part' : 'Volume'}
+                                Current{' '}
+                                {form.progress_structure === 'part_chapter' ? 'Part' : 'Volume'}
                               </label>
                               <input
                                 className={inputClass}
@@ -616,7 +574,8 @@ export default function BookForm({
                             </div>
                             <div>
                               <label className={labelClass}>
-                                Total {form.progress_structure === 'part_chapter' ? 'Parts' : 'Volumes'}
+                                Total{' '}
+                                {form.progress_structure === 'part_chapter' ? 'Parts' : 'Volumes'}
                               </label>
                               <input
                                 className={inputClass}
@@ -652,9 +611,7 @@ export default function BookForm({
                       {form.is_ongoing && (
                         <div className="grid grid-cols-1 gap-2.5 pt-1 sm:grid-cols-2">
                           <div>
-                            <label className={labelClass}>
-                              Latest Released ({unitLabel})
-                            </label>
+                            <label className={labelClass}>Latest Released ({unitLabel})</label>
                             <input
                               className={inputClass}
                               type="number"
@@ -678,7 +635,9 @@ export default function BookForm({
                                 className="w-full gap-1 text-sky-600 text-xs font-semibold dark:text-sky-400"
                                 onClick={() => set('progress', form.latest_units!)}
                               >
-                                <span>I'm Caught Up ({form.latest_units} {unitLabel})</span>
+                                <span>
+                                  I'm Caught Up ({form.latest_units} {unitLabel})
+                                </span>
                               </Button>
                             </div>
                           )}

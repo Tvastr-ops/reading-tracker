@@ -29,10 +29,20 @@ export interface RecordProgressResult {
 export async function recordProgressChange(
   opts: RecordProgressOptions,
 ): Promise<{ data: RecordProgressResult | null; error: string | null }> {
-  const { bookId, toProgress, createLog = true, note = null, parentProgress = null, durationSeconds = null } = opts;
+  const {
+    bookId,
+    toProgress,
+    createLog = true,
+    note = null,
+    parentProgress = null,
+    durationSeconds = null,
+  } = opts;
 
   // 1. Validate progression value
-  const validationError = validateProgressionFields({ progress: toProgress, parent_progress: parentProgress ?? undefined });
+  const validationError = validateProgressionFields({
+    progress: toProgress,
+    parent_progress: parentProgress ?? undefined,
+  });
   if (validationError) {
     return { data: null, error: validationError };
   }

@@ -5,15 +5,14 @@ import {
   BookOpen,
   ChevronDown,
   ChevronUp,
-  Clock,
   Edit3,
   Heart,
   Layers,
   MoreVertical,
-  Plus,
   Trash2,
 } from 'lucide-react';
-import React, { memo, useMemo, useState } from 'react';
+import type React from 'react';
+import { memo, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -23,7 +22,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Progress } from '@/components/ui/progress';
 import { calculateProgressPercentage, getStatusAwareProgressText } from '@/lib/progress';
 import { getStatusConfig } from '@/lib/status';
 import type { Book } from '@/lib/types';
@@ -189,9 +187,7 @@ export const SeriesStackCard = memo(function SeriesStackCard({
                             {book.title}
                           </p>
                           <div className="flex items-center gap-1.5 text-[10px] text-text-muted">
-                            <span className="font-medium">
-                              {getStatusAwareProgressText(book)}
-                            </span>
+                            <span className="font-medium">{getStatusAwareProgressText(book)}</span>
                             {progressPct != null && progressPct > 0 && progressPct < 100 && (
                               <span className="text-accent-color font-semibold">
                                 ({progressPct}%)
