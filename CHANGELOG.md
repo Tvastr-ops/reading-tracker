@@ -5,7 +5,35 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
-## [2.8.0 / 2.7.0] - 2026-09-04
+## [2.8.0] - 2026-09-04
+
+### 🌐 Next.js Web App (v2.8.0)
+- **Immersive Editorial Book Detail Page (`/books/[id]`)**:
+  - Full-page dedicated book view with ambient dynamic cover glow canvas backdrop and 3D tactile perspective cover.
+  - Active reading cockpit with live reading velocity calculator and completion date forecaster.
+  - Clamped synopsis with smooth expansion, interactive genre/mood tag clouds, comprehensive book specs grid, session history stream, and re-reads ledger.
+- **100% Free Metadata Auto-Enrichment Engine (`/api/enrich` & `EnrichmentModal.tsx`)**:
+  - Native multi-source aggregator combining Open Library, Google Books, and AniList GraphQL without paid dependencies.
+  - 1-Click preview and selective field merge modal for cover artwork, title/author, units, synopsis, tags, and source links.
+- **Smart Multi-External Links Hub (`ExternalLinksList.tsx`)**:
+  - Auto-domain parsing with branded interactive buttons for Wikipedia, Fandom Wiki, AniList, MyAnimeList, Goodreads, Royal Road, NovelUpdates, Amazon, etc.
+- **Tactile 3D Fanned Deck with Hardcover Page Edges (`SeriesStackCard.tsx`)**:
+  - Dynamic rotational fan-out physics on hover showing underlying volume covers.
+  - Striated paper page-edge ridges, spine fold shadows, universal `#` numbering, and in-place quick volume switcher pills.
+
+### 📱 Mobile & Desktop Client (v2.8.0)
+- **Native Metadata Auto-Enrichment Service (`enrichment_service.dart`)**:
+  - Direct HTTPS querying of Open Library, Google Books, and AniList GraphQL with deduplication and HTML tag stripping.
+- **Neo-Brutalist 1-Click Auto-Enrich Dialog (`enrichment_dialog.dart`)**:
+  - Integrated into Book Detail Panel and Book Edit Dialog with source scope filters and granular selective merge checkboxes.
+- **Smart External Links Row (`external_links_row.dart`)**:
+  - Dynamic domain recognition with browser launching via `url_launcher`.
+- **Reading Velocity Forecaster in Book Detail Panel**:
+  - Live pace calculation and estimated finish date projection.
+- **Tactile 3D Fanned Deck Layers in Series Stack (`series_stack_card.dart`)**:
+  - Rotated 3D transforms, hardcover page edges, and universal `#` volume numbering.
+
+## [2.7.0] - 2026-09-04
 
 ### 🌐 Next.js Web App (v2.8.0)
 - **3D Tactile Series Stack Deck (`SeriesStackCard.tsx`)**:
