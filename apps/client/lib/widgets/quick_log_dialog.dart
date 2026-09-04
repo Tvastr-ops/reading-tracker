@@ -7,7 +7,7 @@ import 'brutalist_widgets.dart';
 
 class QuickLogDialog extends StatefulWidget {
   final Book book;
-  final Function(double newProgress, String? note) onSave;
+  final Function(double newProgress, String? note, {num? parentProgress}) onSave;
 
   const QuickLogDialog({
     super.key,
@@ -21,7 +21,9 @@ class QuickLogDialog extends StatefulWidget {
 
 class _QuickLogDialogState extends State<QuickLogDialog> {
   late double _currentProgress;
+  num? _parentProgress;
   late TextEditingController _progressController;
+  late TextEditingController _parentProgressController;
   late TextEditingController _noteController;
   late FocusNode _dialogFocusNode;
 
@@ -29,8 +31,12 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
   void initState() {
     super.initState();
     _currentProgress = widget.book.progress;
+    _parentProgress = widget.book.parentProgress;
     _progressController = TextEditingController(
       text: _currentProgress % 1 == 0 ? _currentProgress.toInt().toString() : _currentProgress.toString(),
+    );
+    _parentProgressController = TextEditingController(
+      text: _parentProgress != null ? (_parentProgress! % 1 == 0 ? _parentProgress!.toInt().toString() : _parentProgress!.toString()) : '',
     );
     _noteController = TextEditingController();
     _dialogFocusNode = FocusNode();
@@ -39,6 +45,7 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
   @override
   void dispose() {
     _progressController.dispose();
+    _parentProgressController.dispose();
     _noteController.dispose();
     _dialogFocusNode.dispose();
     super.dispose();
@@ -46,7 +53,7 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
 
   void _save() {
     final note = _noteController.text.trim().isEmpty ? null : _noteController.text.trim();
-    widget.onSave(_currentProgress, note);
+    widget.onSave(_currentProgress, note, parentProgress: _parentProgress);
     Navigator.pop(context);
   }
 
@@ -217,6 +224,101 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
                         }).toList(),
                       ),
                       const SizedBox(height: 14),
+
+                      // Volume Stepper Row for multi-volume titles
+                      if (widget.book.progressStructure != 'single' || widget.book.parentProgress != null) ...[
+                        Text(
+                          'CURRENT VOLUME',
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                            color: inkColor,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: inputBg,
+                                  border: Border.all(color: borderColor, width: 1.5),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () {
+                                        if ((_parentProgress ?? 1) > 1) {
+                                          setState(() {
+                                            _parentProgress = (_parentProgress ?? 1) - 1;
+                                            _parentProgressController.text = _parentProgress!.toString();
+                                          });
+                                        }
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+                                          border: Border.all(color: borderColor.withValues(alpha: 0.4)),
+                                        ),
+                                        child: Icon(Icons.remove, size: 14, color: inkColor),
+                                      ),
+                                    ),
+                                    Text(
+                                      'Vol. ${_parentProgress?.toString() ?? "1"}${widget.book.parentTotal != null ? " / ${widget.book.parentTotal}" : ""}',
+                                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: inkColor),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _parentProgress = (_parentProgress ?? 0) + 1;
+                                          _parentProgressController.text = _parentProgress!.toString();
+                                          _currentProgress = 0;
+                                          _progressController.text = '0';
+                                        });
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+                                          border: Border.all(color: borderColor.withValues(alpha: 0.4)),
+                                        ),
+                                        child: Icon(Icons.add, size: 14, color: inkColor),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _parentProgress = (_parentProgress ?? 0) + 1;
+                                  _parentProgressController.text = _parentProgress!.toString();
+                                  _currentProgress = 0;
+                                  _progressController.text = '0';
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: details?.accentColor ?? Theme.of(context).colorScheme.primary,
+                                  border: Border.all(color: borderColor, width: 1.5),
+                                ),
+                                child: const Text(
+                                  '+1 VOL',
+                                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                      ],
 
                       // Exact Progress Input
                       Text(

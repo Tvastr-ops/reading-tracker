@@ -71,7 +71,7 @@ export function calculateProgressPercentage(book: Book): number | null {
 }
 
 export function formatProgressText(book: Book): string {
-  const unit = book.unit_type || 'pages';
+  const unit = book.unit_type || getDefaultUnitType(book.type);
   const structure = book.progress_structure || 'single';
   const current = book.progress ?? 0;
   const total = book.total_units;

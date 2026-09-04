@@ -40,6 +40,7 @@ export function LibraryView() {
     handleSort,
     filtersActive,
     clearFilters,
+    groupBySeries,
   } = useLibraryFiltersContext();
 
   const {
@@ -94,6 +95,7 @@ export function LibraryView() {
               onToggleSelect={toggleSelect}
               trashMode={showTrash}
               focusedId={focusedId}
+              groupBySeries={groupBySeries}
               onEdit={(b) => setInspectedBook(b)}
               onFullEdit={(b) => setEditing(b)}
               onDelete={deleteBook}

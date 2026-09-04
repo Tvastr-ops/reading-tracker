@@ -25,6 +25,7 @@ class ThemeService extends ChangeNotifier {
   static const String _keyPatternIntensity = 'app_pattern_intensity';
   static const String _keyPromptNoteOnQuickLog = 'app_prompt_note_on_quick_log';
   static const String _keyAlwaysShowAllShelves = 'app_always_show_all_shelves';
+  static const String _keyGroupBySeries = 'app_group_by_series';
   static const String _keyHapticFeedback = 'app_haptic_feedback';
   static const String _keyHeadlineFont = 'app_headline_font';
 
@@ -42,6 +43,7 @@ class ThemeService extends ChangeNotifier {
   double _patternIntensity = 1.0;
   bool _promptNoteOnQuickLog = false;
   bool _alwaysShowAllShelves = false;
+  bool _groupBySeries = false;
   bool _hapticFeedback = true;
   bool _isFullscreen = false;
 
@@ -64,6 +66,7 @@ class ThemeService extends ChangeNotifier {
   double get patternIntensity => _patternIntensity;
   bool get promptNoteOnQuickLog => _promptNoteOnQuickLog;
   bool get alwaysShowAllShelves => _alwaysShowAllShelves;
+  bool get groupBySeries => _groupBySeries;
   bool get hapticFeedback => _hapticFeedback;
   bool get isFullscreen => _isFullscreen;
 
@@ -127,6 +130,7 @@ class ThemeService extends ChangeNotifier {
     _patternIntensity = prefs.getDouble(_keyPatternIntensity) ?? 1.0;
     _promptNoteOnQuickLog = prefs.getBool(_keyPromptNoteOnQuickLog) ?? false;
     _alwaysShowAllShelves = prefs.getBool(_keyAlwaysShowAllShelves) ?? false;
+    _groupBySeries = prefs.getBool(_keyGroupBySeries) ?? false;
     _hapticFeedback = prefs.getBool(_keyHapticFeedback) ?? true;
 
     final savedFont = prefs.getString(_keyHeadlineFont);
@@ -344,6 +348,15 @@ class ThemeService extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyAlwaysShowAllShelves, val);
+  }
+
+  Future<void> setGroupBySeries(bool val) async {
+    if (_groupBySeries == val) return;
+    _groupBySeries = val;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyGroupBySeries, val);
   }
 
   Future<void> setHeadlineFont(HeadlineTypographyStyle style) async {

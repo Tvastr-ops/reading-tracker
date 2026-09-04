@@ -17,6 +17,7 @@ import '../widgets/brutalist_context_menu.dart';
 import '../widgets/brutalist_widgets.dart';
 import '../widgets/quick_log_dialog.dart';
 import '../widgets/reading_carousel.dart';
+import '../widgets/series_stack_card.dart';
 
 enum LibraryViewMode { cards, covers, table }
 
@@ -351,10 +352,11 @@ class LibraryScreenState extends State<LibraryScreen> {
       context: context,
       builder: (ctx) => QuickLogDialog(
         book: book,
-        onSave: (newProgress, note) async {
+        onSave: (newProgress, note, {parentProgress}) async {
           final updated = await _mutationService.setProgress(
             book: book,
             newProgress: newProgress,
+            parentProgress: parentProgress,
             note: note,
           );
           _updateBookInPlace(updated);
@@ -1293,6 +1295,8 @@ class LibraryScreenState extends State<LibraryScreen> {
     }
 
     // Default Cards View
+    final displayItems = _buildDisplayItems(filtered);
+
     if (isWideScreen) {
       return SliverPadding(
         padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 80),
@@ -1305,7 +1309,23 @@ class LibraryScreenState extends State<LibraryScreen> {
           ),
           delegate: SliverChildBuilderDelegate(
             (context, index) {
-              final book = filtered[index];
+              final item = displayItems[index];
+              if (item.isSeriesStack) {
+                return SeriesStackCard(
+                  key: ValueKey('series_${item.seriesName}'),
+                  seriesName: item.seriesName!,
+                  books: item.books,
+                  onBookTap: (b) => _onBookClick(b, isWideScreen),
+                  onLogProgress: (b) => _openQuickLog(b),
+                  onEdit: (b) => _openEditDialog(b),
+                  onDelete: (b) async {
+                    await _dbHelper.deleteBook(b.id);
+                    await _loadBooks();
+                  },
+                );
+              }
+
+              final book = item.singleBook!;
               return BookCard(
                 key: ValueKey(book.id),
                 book: book,
@@ -1326,7 +1346,7 @@ class LibraryScreenState extends State<LibraryScreen> {
                 },
               );
             },
-            childCount: filtered.length,
+            childCount: displayItems.length,
           ),
         ),
       );
@@ -1337,7 +1357,26 @@ class LibraryScreenState extends State<LibraryScreen> {
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
           (context, index) {
-            final book = filtered[index];
+            final item = displayItems[index];
+            if (item.isSeriesStack) {
+              return Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: isCompact ? 4 : 8),
+                child: SeriesStackCard(
+                  key: ValueKey('series_${item.seriesName}'),
+                  seriesName: item.seriesName!,
+                  books: item.books,
+                  onBookTap: (b) => _onBookClick(b, isWideScreen),
+                  onLogProgress: (b) => _openQuickLog(b),
+                  onEdit: (b) => _openEditDialog(b),
+                  onDelete: (b) async {
+                    await _dbHelper.deleteBook(b.id);
+                    await _loadBooks();
+                  },
+                ),
+              );
+            }
+
+            final book = item.singleBook!;
             return Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: isCompact ? 4 : 8),
               child: BookCard(
@@ -1361,12 +1400,46 @@ class LibraryScreenState extends State<LibraryScreen> {
               ),
             );
           },
-          childCount: filtered.length,
+          childCount: displayItems.length,
         ),
       ),
     );
   }
 
+  List<_LibraryDisplayItem> _buildDisplayItems(List<Book> filtered) {
+    if (!_themeService.groupBySeries) {
+      return filtered.map((b) => _LibraryDisplayItem.single(b)).toList();
+    }
+
+    final items = <_LibraryDisplayItem>[];
+    final processedSeries = <String>{};
+
+    final seriesClusters = <String, List<Book>>{};
+    for (final b in filtered) {
+      final sName = b.seriesName?.trim();
+      if (sName != null && sName.isNotEmpty) {
+        seriesClusters.putIfAbsent(sName.toLowerCase(), () => []).add(b);
+      }
+    }
+
+    for (final b in filtered) {
+      final sName = b.seriesName?.trim();
+      if (sName != null && sName.isNotEmpty) {
+        final key = sName.toLowerCase();
+        final cluster = seriesClusters[key]!;
+        if (cluster.length > 1) {
+          if (!processedSeries.contains(key)) {
+            processedSeries.add(key);
+            items.add(_LibraryDisplayItem.series(sName, cluster));
+          }
+          continue;
+        }
+      }
+      items.add(_LibraryDisplayItem.single(b));
+    }
+
+    return items;
+  }
 
   bool _matchesNonStatusFilters(Book b, [_ParsedSearchQuery? preParsed]) {
     final parsed = preParsed ?? _ParsedSearchQuery.parse(_searchQuery);
@@ -2164,6 +2237,43 @@ class LibraryScreenState extends State<LibraryScreen> {
               ],
             ),
           ),
+          const SizedBox(width: 6),
+
+          // 5. Group by Series Toggle
+          GestureDetector(
+            onTap: () {
+              _themeService.setGroupBySeries(!_themeService.groupBySeries);
+              setState(() {});
+            },
+            child: Container(
+              height: 42,
+              width: 38,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: _themeService.groupBySeries
+                    ? accentColor
+                    : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                border: Border.all(color: borderColor, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: borderColor,
+                    offset: AppTheme.shadowOffsetSm,
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              child: Tooltip(
+                message: _themeService.groupBySeries ? 'Grouped by Series (ON)' : 'Group by Series (OFF)',
+                child: Icon(
+                  Icons.layers_rounded,
+                  size: 18,
+                  color: _themeService.groupBySeries
+                      ? Colors.white
+                      : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -2525,4 +2635,20 @@ class _SearchClause {
 
     return true;
   }
+}
+
+class _LibraryDisplayItem {
+  final bool isSeriesStack;
+  final String? seriesName;
+  final List<Book> books;
+  final Book? singleBook;
+
+  _LibraryDisplayItem.series(this.seriesName, this.books)
+      : isSeriesStack = true,
+        singleBook = null;
+
+  _LibraryDisplayItem.single(this.singleBook)
+      : isSeriesStack = false,
+        seriesName = null,
+        books = const [];
 }

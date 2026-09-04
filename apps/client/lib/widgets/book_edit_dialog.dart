@@ -47,7 +47,8 @@ class _BookEditDialogState extends State<BookEditDialog> {
 
   late String _type;
   late String _status;
-  late String _progressStructure;
+  late String _unitType;
+  late bool _hasVolumes;
   late bool _isOngoing;
   double? _rating;
   String? _dateStarted;
@@ -61,20 +62,45 @@ class _BookEditDialogState extends State<BookEditDialog> {
   int _rereadCount = 0;
   bool _simulateDailyLogs = false;
 
+  String _getDefaultUnitType(String type) {
+    switch (type.toLowerCase()) {
+      case 'web novel':
+      case 'fanfiction':
+        return 'chapters';
+      case 'light novel':
+        return 'volumes';
+      default:
+        return 'pages';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     final b = widget.book;
+
     _titleController = TextEditingController(text: b?.title ?? '');
     _authorController = TextEditingController(text: b?.author ?? '');
     _seriesNameController = TextEditingController(text: b?.seriesName ?? '');
-    _seriesOrderController = TextEditingController(text: b?.seriesOrder != null ? formatNum(b!.seriesOrder!) : '');
+    _seriesOrderController = TextEditingController(
+      text: b?.seriesOrder != null ? b!.seriesOrder.toString() : '',
+    );
     _shelfInputController = TextEditingController();
-    _progressController = TextEditingController(text: b != null ? (b.progress % 1 == 0 ? b.progress.toInt().toString() : b.progress.toString()) : '0');
-    _totalUnitsController = TextEditingController(text: b?.totalUnits != null ? (b!.totalUnits! % 1 == 0 ? b.totalUnits!.toInt().toString() : b.totalUnits.toString()) : '');
-    _parentProgressController = TextEditingController(text: b?.parentProgress?.toString() ?? '');
-    _parentTotalController = TextEditingController(text: b?.parentTotal?.toString() ?? '');
-    _latestUnitsController = TextEditingController(text: b?.latestUnits?.toString() ?? '');
+    _progressController = TextEditingController(
+      text: b?.progress != null ? (b!.progress % 1 == 0 ? b.progress.toInt().toString() : b.progress.toString()) : '0',
+    );
+    _totalUnitsController = TextEditingController(
+      text: b?.totalUnits != null ? (b!.totalUnits! % 1 == 0 ? b.totalUnits!.toInt().toString() : b.totalUnits!.toString()) : '',
+    );
+    _parentProgressController = TextEditingController(
+      text: b?.parentProgress != null ? (b!.parentProgress! % 1 == 0 ? b.parentProgress!.toInt().toString() : b.parentProgress!.toString()) : '',
+    );
+    _parentTotalController = TextEditingController(
+      text: b?.parentTotal != null ? (b!.parentTotal! % 1 == 0 ? b.parentTotal!.toInt().toString() : b.parentTotal!.toString()) : '',
+    );
+    _latestUnitsController = TextEditingController(
+      text: b?.latestUnits != null ? (b!.latestUnits! % 1 == 0 ? b.latestUnits!.toInt().toString() : b.latestUnits!.toString()) : '',
+    );
     _coverUrlController = TextEditingController(text: b?.coverUrl ?? '');
     _genreTagsController = TextEditingController(text: b?.genreTags ?? '');
     _sourceLinkController = TextEditingController(text: b?.sourceLink ?? '');
@@ -83,7 +109,10 @@ class _BookEditDialogState extends State<BookEditDialog> {
 
     _type = b?.type ?? 'Novel';
     _status = b?.status ?? BookStatus.planToRead;
-    _progressStructure = b?.progressStructure ?? 'single';
+    _unitType = b?.unitType ?? _getDefaultUnitType(_type);
+    _hasVolumes = (b?.progressStructure != null && b!.progressStructure != 'single') ||
+        (b?.parentProgress != null && b!.parentProgress! > 0) ||
+        (b?.parentTotal != null && b!.parentTotal! > 0);
     _isOngoing = b?.isOngoing ?? false;
     _rating = b?.rating;
     _dateStarted = b?.dateStarted;
@@ -233,9 +262,9 @@ class _BookEditDialogState extends State<BookEditDialog> {
     final now = DateTime.now().toUtc().toIso8601String();
     final progressVal = double.tryParse(_progressController.text) ?? 0.0;
     final totalUnitsVal = double.tryParse(_totalUnitsController.text);
-    final parentProgVal = num.tryParse(_parentProgressController.text);
-    final parentTotalVal = num.tryParse(_parentTotalController.text);
-    final latestVal = num.tryParse(_latestUnitsController.text);
+    final parentProgVal = _hasVolumes ? num.tryParse(_parentProgressController.text) : null;
+    final parentTotalVal = _hasVolumes ? num.tryParse(_parentTotalController.text) : null;
+    final latestVal = _isOngoing ? num.tryParse(_latestUnitsController.text) : null;
     final seriesOrderVal = double.tryParse(_seriesOrderController.text);
     final shelfNamesJson = _shelves.isEmpty ? null : jsonEncode(_shelves);
 
@@ -244,8 +273,9 @@ class _BookEditDialogState extends State<BookEditDialog> {
       title: _titleController.text.trim(),
       author: _authorController.text.trim().isEmpty ? null : _authorController.text.trim(),
       type: _type,
+      unitType: _unitType,
       status: _status,
-      progressStructure: _progressStructure,
+      progressStructure: _hasVolumes ? 'volume_chapter' : 'single',
       parentProgress: parentProgVal,
       parentTotal: parentTotalVal,
       latestUnits: latestVal,
@@ -583,14 +613,22 @@ class _BookEditDialogState extends State<BookEditDialog> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  _buildFieldLabel('PUBLICATION TYPE', inkColor),
+                                   _buildFieldLabel('PUBLICATION TYPE', inkColor),
                                   _buildDropdown(
                                     value: _type,
                                     items: PublicationTypes.all,
                                     details: details,
                                     borderColor: borderColor,
                                     inkColor: inkColor,
-                                    onChanged: (val) => setState(() => _type = val!),
+                                    onChanged: (val) {
+                                      if (val == null) return;
+                                      setState(() {
+                                        _type = val;
+                                        if (widget.book == null) {
+                                          _unitType = _getDefaultUnitType(val);
+                                        }
+                                      });
+                                    },
                                   ),
                                 ],
                               ),
@@ -685,94 +723,198 @@ class _BookEditDialogState extends State<BookEditDialog> {
                           ),
                         ],
 
-                // Multi-Tier Progress Structure
-                _buildFieldLabel('PROGRESS STRUCTURE', inkColor),
-                _buildDropdown(
-                  value: _progressStructure,
-                  items: const ['single', 'volume_chapter', 'part_chapter'],
-                  itemLabels: const {
-                    'single': 'Single Tier (Chapters / Pages)',
-                    'volume_chapter': 'Multi-Tier (Volumes + Chapters)',
-                    'part_chapter': 'Multi-Tier (Parts + Chapters)',
-                  },
-                  details: details,
-                  borderColor: borderColor,
-                  inkColor: inkColor,
-                  onChanged: (val) => setState(() => _progressStructure = val!),
-                ),
-                const SizedBox(height: 12),
-
-                if (_progressStructure != 'single') ...[
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        // 1. Primary Reading Counter: Progress & Total
+                        _buildFieldLabel('CURRENT PROGRESS', inkColor),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            _buildFieldLabel(_progressStructure == 'volume_chapter' ? 'CURRENT VOLUME' : 'CURRENT PART', inkColor),
-                            _buildTextInput(_parentProgressController, 'e.g. 14', isNumber: true, details: details, borderColor: borderColor, inkColor: inkColor),
+                            Expanded(
+                              child: _buildTextInput(
+                                _progressController,
+                                '0',
+                                isNumber: true,
+                                details: details,
+                                borderColor: borderColor,
+                                inkColor: inkColor,
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              child: Text(
+                                'OF',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
+                                  color: details?.inkMutedColor ?? (isDark ? Colors.white60 : AppColors.inkMuted),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: _buildTextInput(
+                                _totalUnitsController,
+                                'Total (Optional)',
+                                isNumber: true,
+                                details: details,
+                                borderColor: borderColor,
+                                inkColor: inkColor,
+                              ),
+                            ),
                           ],
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildFieldLabel(_progressStructure == 'volume_chapter' ? 'TOTAL VOLUMES' : 'TOTAL PARTS', inkColor),
-                            _buildTextInput(_parentTotalController, 'e.g. 16', isNumber: true, details: details, borderColor: borderColor, inkColor: inkColor),
-                          ],
+                        const SizedBox(height: 10),
+
+                        // 1-Tap Unit Selector Chips:
+                        _buildFieldLabel('PROGRESS UNIT', inkColor),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: ['volumes', 'chapters', 'pages', 'words', 'percent'].map((u) {
+                            final isSelected = _unitType.toLowerCase() == u;
+                            final label = u == 'percent' ? '%' : u.toUpperCase();
+                            return GestureDetector(
+                              onTap: () => setState(() => _unitType = u),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? (details?.accentColor ?? Theme.of(context).colorScheme.primary)
+                                      : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                                  border: Border.all(
+                                    color: isSelected ? borderColor : borderColor.withValues(alpha: 0.4),
+                                    width: isSelected ? 2.0 : 1.2,
+                                  ),
+                                ),
+                                child: Text(
+                                  label,
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                                    letterSpacing: 0.5,
+                                    color: isSelected ? Colors.white : inkColor,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                ],
+                        const SizedBox(height: 14),
 
-                // Current & Total Progress Units
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildFieldLabel('CURRENT UNITS', inkColor),
-                          _buildTextInput(_progressController, '0', isNumber: true, details: details, borderColor: borderColor, inkColor: inkColor),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildFieldLabel('TOTAL UNITS', inkColor),
-                          _buildTextInput(_totalUnitsController, 'e.g. 388', isNumber: true, details: details, borderColor: borderColor, inkColor: inkColor),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
+                        // Volume / Part Checkbox Switch Card
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                            border: Border.all(color: borderColor.withValues(alpha: 0.3), width: 1.5),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.library_books_rounded, size: 16, color: inkColor),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Track Volume / Part Number',
+                                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: inkColor),
+                                      ),
+                                    ],
+                                  ),
+                                  Switch(
+                                    value: _hasVolumes,
+                                    activeThumbColor: Theme.of(context).colorScheme.primary,
+                                    onChanged: (val) {
+                                      setState(() {
+                                        _hasVolumes = val;
+                                        if (!val) {
+                                          _parentProgressController.clear();
+                                          _parentTotalController.clear();
+                                        }
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                              if (_hasVolumes) ...[
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          _buildFieldLabel('CURRENT VOLUME', inkColor),
+                                          _buildTextInput(_parentProgressController, 'e.g. 1', isNumber: true, details: details, borderColor: borderColor, inkColor: inkColor),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          _buildFieldLabel('TOTAL VOLUMES', inkColor),
+                                          _buildTextInput(_parentTotalController, 'e.g. 12', isNumber: true, details: details, borderColor: borderColor, inkColor: inkColor),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
 
-                // Serialization Ongoing Toggle
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Ongoing Serialization', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: inkColor)),
-                    Switch(
-                      value: _isOngoing,
-                      activeThumbColor: Theme.of(context).colorScheme.primary,
-                      onChanged: (val) => setState(() => _isOngoing = val),
-                    ),
-                  ],
-                ),
-                if (_isOngoing) ...[
-                  const SizedBox(height: 6),
-                  _buildFieldLabel('LATEST RELEASED CHAPTER', inkColor),
-                  _buildTextInput(_latestUnitsController, 'e.g. 1450', isNumber: true, details: details, borderColor: borderColor, inkColor: inkColor),
-                ],
-                const SizedBox(height: 18),
+                        // Serialization Ongoing Toggle Card
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                            border: Border.all(color: borderColor.withValues(alpha: 0.3), width: 1.5),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.autorenew_rounded, size: 16, color: inkColor),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Ongoing Serialization',
+                                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: inkColor),
+                                      ),
+                                    ],
+                                  ),
+                                  Switch(
+                                    value: _isOngoing,
+                                    activeThumbColor: Theme.of(context).colorScheme.primary,
+                                    onChanged: (val) {
+                                      setState(() {
+                                        _isOngoing = val;
+                                        if (!val) {
+                                          _latestUnitsController.clear();
+                                        }
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                              if (_isOngoing) ...[
+                                const SizedBox(height: 10),
+                                _buildFieldLabel('LATEST RELEASED CHAPTER / UNIT', inkColor),
+                                _buildTextInput(_latestUnitsController, 'e.g. 1450', isNumber: true, details: details, borderColor: borderColor, inkColor: inkColor),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 18),
 
                 _buildFormSectionHeader('3. RATING & COVER', details, inkColor, borderColor),
                 const SizedBox(height: 8),

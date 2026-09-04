@@ -1,7 +1,7 @@
 'use client';
 
 import { Clock, Edit3, Heart, MoreVertical, RotateCcw, Sparkles, Trash2 } from 'lucide-react';
-import { memo, useEffect, useRef } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,6 +20,7 @@ import type { Book } from '@/lib/types';
 import { calculateReadingDuration, formatShortDate } from '@/lib/utils';
 import CoverImage from './CoverImage';
 import { RatingDisplay } from './RatingInput';
+import { SeriesStackCard } from './SeriesStackCard';
 
 interface BookCardProps {
   book: Book;
@@ -276,6 +277,7 @@ function BookGrid({
   selected = new Set(),
   onToggleSelect,
   focusedId,
+  groupBySeries = false,
 }: {
   books: Book[];
   ratingMode?: 'stars' | 'decimal';
@@ -291,10 +293,55 @@ function BookGrid({
   selected?: Set<string>;
   onToggleSelect?: (id: string) => void;
   focusedId?: string | null;
+  groupBySeries?: boolean;
 }) {
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const isLongPressTriggeredRef = useRef(false);
+
+  const displayItems = useMemo(() => {
+    if (!groupBySeries || selectMode || trashMode) {
+      return books.map((b) => ({ type: 'book' as const, book: b }));
+    }
+
+    const seriesMap = new Map<string, Book[]>();
+    for (const b of books) {
+      const sName = b.series_name?.trim();
+      if (sName) {
+        const lower = sName.toLowerCase();
+        const existing = seriesMap.get(lower) || [];
+        existing.push(b);
+        seriesMap.set(lower, existing);
+      }
+    }
+
+    const seenSeries = new Set<string>();
+    const items: Array<
+      { type: 'book'; book: Book } | { type: 'series'; seriesName: string; books: Book[] }
+    > = [];
+
+    for (const b of books) {
+      const sName = b.series_name?.trim();
+      if (sName) {
+        const lower = sName.toLowerCase();
+        const cluster = seriesMap.get(lower) || [];
+        if (cluster.length > 1) {
+          if (!seenSeries.has(lower)) {
+            seenSeries.add(lower);
+            items.push({
+              type: 'series',
+              seriesName: sName,
+              books: cluster,
+            });
+          }
+          continue;
+        }
+      }
+      items.push({ type: 'book', book: b });
+    }
+
+    return items;
+  }, [books, groupBySeries, selectMode, trashMode]);
 
   const handleTouchStart = (b: Book, e: React.TouchEvent) => {
     if (selectMode) return;
@@ -321,7 +368,7 @@ function BookGrid({
     const touch = e.touches[0];
     if (touch) {
       const dx = Math.abs(touch.clientX - touchStartPosRef.current.x);
-      const dy = Math.abs(touch.clientY - touchStartPosRef.current.y);
+      const dy = Math.abs(touch.clientY - touchStartPosPosRef(e));
       if (dx > 8 || dy > 8) {
         if (longPressTimerRef.current) {
           clearTimeout(longPressTimerRef.current);
@@ -330,6 +377,10 @@ function BookGrid({
       }
     }
   };
+
+  function touchStartPosPosRef(e: React.TouchEvent) {
+    return touchStartPosRef.current?.y ?? 0;
+  }
 
   const handleTouchEnd = () => {
     if (longPressTimerRef.current) {
@@ -384,29 +435,49 @@ function BookGrid({
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-7">
-      {books.map((b, idx) => (
-        <BookCard
-          key={b.id}
-          book={b}
-          idx={idx}
-          isSelected={selected.has(b.id)}
-          isFocused={focusedId === b.id}
-          selectMode={selectMode}
-          trashMode={trashMode}
-          ratingMode={ratingMode}
-          onClick={handleClick}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onToggleSelect={onToggleSelect}
-          onEdit={onEdit}
-          onFullEdit={onFullEdit}
-          onToggleFavorite={onToggleFavorite}
-          onDelete={onDelete}
-          onRestore={onRestore}
-          onPermanentDelete={onPermanentDelete}
-        />
-      ))}
+      {displayItems.map((item, idx) => {
+        if (item.type === 'series') {
+          return (
+            <SeriesStackCard
+              key={`series-${item.seriesName}-${idx}`}
+              seriesName={item.seriesName}
+              books={item.books}
+              idx={idx}
+              ratingMode={ratingMode}
+              onBookClick={handleClick}
+              onEdit={onEdit}
+              onFullEdit={onFullEdit}
+              onToggleFavorite={onToggleFavorite}
+              onDelete={onDelete}
+            />
+          );
+        }
+
+        const b = item.book;
+        return (
+          <BookCard
+            key={b.id}
+            book={b}
+            idx={idx}
+            isSelected={selected.has(b.id)}
+            isFocused={focusedId === b.id}
+            selectMode={selectMode}
+            trashMode={trashMode}
+            ratingMode={ratingMode}
+            onClick={handleClick}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onToggleSelect={onToggleSelect}
+            onEdit={onEdit}
+            onFullEdit={onFullEdit}
+            onToggleFavorite={onToggleFavorite}
+            onDelete={onDelete}
+            onRestore={onRestore}
+            onPermanentDelete={onPermanentDelete}
+          />
+        );
+      })}
     </div>
   );
 }
