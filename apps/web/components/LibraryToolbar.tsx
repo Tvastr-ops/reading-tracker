@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Heart,
+  Layers,
   LayoutGrid,
   List,
   Search,
@@ -39,6 +40,8 @@ export function LibraryToolbar() {
     setSearch,
     viewMode,
     toggleViewMode,
+    groupBySeries,
+    toggleGroupBySeries,
     statusFilter,
     isStatusActive,
     toggleStatusFilter,
@@ -183,6 +186,26 @@ export function LibraryToolbar() {
                   <span className="hidden sm:inline">Table</span>
                 </button>
               </div>
+
+              {/* Group by Series Stack Toggle */}
+              {viewMode === 'grid' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    'h-9.5 border-2 border-border px-2.5 text-xs shadow-[2px_2px_0px_var(--border)] transition-all',
+                    groupBySeries
+                      ? 'bg-accent-bg text-accent-text font-black'
+                      : 'text-text-muted hover:text-text',
+                  )}
+                  onClick={toggleGroupBySeries}
+                  title={groupBySeries ? 'Ungroup Series Stacks' : 'Group Multi-Volume Series into Stacks'}
+                  aria-label="Toggle Series Stacks"
+                >
+                  <Layers className="h-3.5 w-3.5 sm:mr-1 text-amber-500" />
+                  <span className="hidden sm:inline font-bold uppercase">Series Stacks</span>
+                </Button>
+              )}
 
               {/* Trash View Button */}
               <Button

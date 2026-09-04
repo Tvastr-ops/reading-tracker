@@ -51,7 +51,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onConfigure: (db) async {
         try {
           await db.execute('PRAGMA journal_mode = WAL;');
@@ -140,6 +140,8 @@ class DatabaseHelper {
         journey_id TEXT,
         from_progress REAL,
         to_progress REAL NOT NULL,
+        parent_progress REAL,
+        duration_seconds INTEGER,
         note TEXT,
         logged_at TEXT NOT NULL,
         sync_status TEXT DEFAULT 'synced',
@@ -263,6 +265,14 @@ class DatabaseHelper {
       } catch (e) {
         debugPrint('Database migration v5 backfill error: $e');
       }
+    }
+    if (oldVersion < 6) {
+      try {
+        await db.execute('ALTER TABLE reading_log ADD COLUMN parent_progress REAL');
+      } catch (_) {}
+      try {
+        await db.execute('ALTER TABLE reading_log ADD COLUMN duration_seconds INTEGER');
+      } catch (_) {}
     }
   }
 

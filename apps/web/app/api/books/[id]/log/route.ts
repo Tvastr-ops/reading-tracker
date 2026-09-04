@@ -36,6 +36,15 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
       { status: 400 },
     );
   }
+  const toParentProgress =
+    body?.parent_progress !== undefined && body?.parent_progress !== null && Number.isFinite(Number(body.parent_progress))
+      ? Number(body.parent_progress)
+      : null;
+  const durationSeconds =
+    body?.duration_seconds !== undefined && body?.duration_seconds !== null && Number.isFinite(Number(body.duration_seconds))
+      ? Math.round(Number(body.duration_seconds))
+      : null;
+
   let journeyId =
     typeof body?.journey_id === 'string' && UUID_RE.test(body.journey_id) ? body.journey_id : null;
   const clientLogId = typeof body?.id === 'string' && UUID_RE.test(body.id) ? body.id : null;
@@ -66,6 +75,7 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
   const validationError = validateProgressionFields({
     ...book,
     progress: toProgress,
+    parent_progress: toParentProgress ?? book.parent_progress,
   });
   if (validationError) {
     return NextResponse.json({ error: validationError }, { status: 400 });
@@ -96,6 +106,8 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
           journey_id: journeyId,
           from_progress: fromProgress,
           to_progress: toProgress,
+          parent_progress: toParentProgress,
+          duration_seconds: durationSeconds,
           note: note,
           logged_at: loggedAt,
         },
@@ -112,6 +124,8 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
     const progressResult = await recordProgressChange({
       bookId: id,
       toProgress,
+      parentProgress: toParentProgress,
+      durationSeconds,
       createLog: false,
       note,
     });
@@ -126,6 +140,8 @@ export const POST = withAuth(async (req: NextRequest, { params }: RouteContext) 
   const result = await recordProgressChange({
     bookId: id,
     toProgress,
+    parentProgress: toParentProgress,
+    durationSeconds,
     createLog: true,
     note,
   });

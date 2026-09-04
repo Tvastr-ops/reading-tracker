@@ -150,6 +150,8 @@ export type Database = {
           journey_id: string | null;
           from_progress: number | null;
           to_progress: number;
+          parent_progress: number | null;
+          duration_seconds: number | null;
           note: string | null;
           logged_at: string;
         };
@@ -159,6 +161,8 @@ export type Database = {
           journey_id?: string | null;
           from_progress?: number | null;
           to_progress: number;
+          parent_progress?: number | null;
+          duration_seconds?: number | null;
           note?: string | null;
           logged_at?: string;
         };
@@ -168,6 +172,8 @@ export type Database = {
           journey_id?: string | null;
           from_progress?: number | null;
           to_progress?: number;
+          parent_progress?: number | null;
+          duration_seconds?: number | null;
           note?: string | null;
           logged_at?: string;
         };

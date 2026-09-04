@@ -344,6 +344,8 @@ class ReadingLogEntry {
   final String? journeyId;
   final double? fromProgress;
   final double toProgress;
+  final num? parentProgress;
+  final int? durationSeconds;
   final String? note;
   final String loggedAt;
   final String syncStatus;
@@ -354,6 +356,8 @@ class ReadingLogEntry {
     this.journeyId,
     this.fromProgress,
     required this.toProgress,
+    this.parentProgress,
+    this.durationSeconds,
     this.note,
     required this.loggedAt,
     this.syncStatus = 'synced',
@@ -366,6 +370,8 @@ class ReadingLogEntry {
       'journey_id': journeyId,
       'from_progress': fromProgress,
       'to_progress': toProgress,
+      'parent_progress': parentProgress,
+      'duration_seconds': durationSeconds,
       'note': note,
       'logged_at': loggedAt,
       'sync_status': syncStatus,
@@ -380,6 +386,8 @@ class ReadingLogEntry {
       'journey_id': journeyId,
       'from_progress': fromProgress,
       'to_progress': toProgress,
+      'parent_progress': parentProgress,
+      'duration_seconds': durationSeconds,
       'note': note,
       'logged_at': loggedAt,
     };
@@ -394,6 +402,8 @@ class ReadingLogEntry {
       journeyId: map['journey_id']?.toString(),
       fromProgress: map['from_progress'] != null ? (map['from_progress'] as num).toDouble() : null,
       toProgress: (map['to_progress'] as num?)?.toDouble() ?? 0.0,
+      parentProgress: map['parent_progress'] != null ? (map['parent_progress'] as num) : null,
+      durationSeconds: map['duration_seconds'] != null ? (map['duration_seconds'] as num).toInt() : null,
       note: map['note']?.toString(),
       loggedAt: map['logged_at']?.toString() ?? DateTime.now().toUtc().toIso8601String(),
       syncStatus: map['sync_status']?.toString() ?? 'synced',
@@ -407,6 +417,10 @@ class ReadingLogEntry {
     bool clearJourneyId = false,
     double? fromProgress,
     double? toProgress,
+    num? parentProgress,
+    bool clearParentProgress = false,
+    int? durationSeconds,
+    bool clearDurationSeconds = false,
     String? note,
     String? loggedAt,
     String? syncStatus,
@@ -417,6 +431,8 @@ class ReadingLogEntry {
       journeyId: clearJourneyId ? null : (journeyId ?? this.journeyId),
       fromProgress: fromProgress ?? this.fromProgress,
       toProgress: toProgress ?? this.toProgress,
+      parentProgress: clearParentProgress ? null : (parentProgress ?? this.parentProgress),
+      durationSeconds: clearDurationSeconds ? null : (durationSeconds ?? this.durationSeconds),
       note: note ?? this.note,
       loggedAt: loggedAt ?? this.loggedAt,
       syncStatus: syncStatus ?? this.syncStatus,

@@ -45,6 +45,11 @@ export function useLibraryFilters(books: Book[]) {
     parseAsBoolean.withDefault(false),
   );
 
+  const [groupBySeries, setGroupBySeriesState] = useQueryState(
+    'series',
+    parseAsBoolean.withDefault(false),
+  );
+
   const [search, setSearchState] = useQueryState(
     'q',
     parseAsString.withDefault('').withOptions({ shallow: true, throttleMs: 150 }),
@@ -457,10 +462,19 @@ export function useLibraryFilters(books: Book[]) {
       setCurrentPageState(1);
     },
 
-    // Favorites
+    // Favorites & Series Grouping
     showFavoritesOnly,
     setShowFavoritesOnly: (f: boolean | ((prev: boolean) => boolean)) => {
       setShowFavoritesOnlyState(f);
+      setCurrentPageState(1);
+    },
+    groupBySeries,
+    setGroupBySeries: (g: boolean | ((prev: boolean) => boolean)) => {
+      setGroupBySeriesState(g);
+      setCurrentPageState(1);
+    },
+    toggleGroupBySeries: () => {
+      setGroupBySeriesState((prev) => !prev);
       setCurrentPageState(1);
     },
 

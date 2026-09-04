@@ -462,43 +462,229 @@ export default function BookForm({
                     />
                   </div>
 
-                  <div>
-                    <label className={labelClass}>Current Progress ({unitLabel} read)</label>
-                    <input
-                      className={inputClass}
-                      type="number"
-                      min={0}
-                      step="0.5"
-                      value={form.progress ?? ''}
-                      onChange={(e) =>
-                        set('progress', e.target.value === '' ? 0 : parseFloat(e.target.value))
-                      }
-                    />
-                  </div>
+                  {/* Section: Reading Progression */}
+                  <div className="col-span-full space-y-3 rounded-xl border border-border/80 bg-surface/40 p-3.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold uppercase tracking-wider text-text">
+                        Reading Progression
+                      </label>
+                      {form.total_units && form.total_units > 0 ? (
+                        <span className="rounded-full bg-accent-color/10 px-2 py-0.5 text-[11px] font-semibold text-accent-color">
+                          {Math.min(100, Math.round(((form.progress || 0) / form.total_units) * 100))}% Completed
+                        </span>
+                      ) : null}
+                    </div>
 
-                  <div>
-                    <label className={labelClass}>
-                      Total {unitLabel} {form.is_ongoing ? '(expected)' : ''}
-                    </label>
-                    <input
-                      className={inputClass}
-                      type="number"
-                      min={0}
-                      step="0.5"
-                      value={form.total_units ?? ''}
-                      onChange={(e) =>
-                        set(
-                          'total_units',
-                          e.target.value === '' ? null : parseFloat(e.target.value),
-                        )
-                      }
-                      placeholder={form.is_ongoing ? 'Optional if ongoing' : 'e.g. 500'}
-                    />
-                    <p className="mt-1 text-[11px] text-text-muted/80">
-                      {form.progress_structure && form.progress_structure !== 'single'
-                        ? 'Leave blank if units reset per volume/part'
-                        : 'Total units in this work'}
-                    </p>
+                    {/* 1-Tap Unit Chips */}
+                    <div className="space-y-1">
+                      <span className="block text-[11px] font-medium text-text-muted">Unit Type</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {UNIT_OPTIONS.map((u) => {
+                          const isSelected = (form.unit_type || 'pages') === u.value;
+                          return (
+                            <button
+                              type="button"
+                              key={u.value}
+                              onClick={() => set('unit_type', u.value)}
+                              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+                                isSelected
+                                  ? 'bg-accent-color text-accent-foreground shadow-sm'
+                                  : 'border border-border bg-card-bg text-text-muted hover:border-accent-color/50 hover:text-text'
+                              }`}
+                            >
+                              {u.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Natural Counter: Progress of Total */}
+                    <div className="grid grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <label className={labelClass}>
+                          Current ({unitLabel} read)
+                        </label>
+                        <input
+                          className={inputClass}
+                          type="number"
+                          min={0}
+                          step="0.5"
+                          value={form.progress ?? ''}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                            set('progress', val);
+                            if (form.status === 'Plan to Read' && val > 0) {
+                              set('status', 'Reading');
+                              if (!form.date_started) set('date_started', getLocalDateString());
+                            }
+                          }}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass}>
+                          Total {unitLabel} {form.is_ongoing ? '(expected)' : ''}
+                        </label>
+                        <input
+                          className={inputClass}
+                          type="number"
+                          min={0}
+                          step="0.5"
+                          value={form.total_units ?? ''}
+                          onChange={(e) =>
+                            set(
+                              'total_units',
+                              e.target.value === '' ? null : parseFloat(e.target.value),
+                            )
+                          }
+                          placeholder={form.is_ongoing ? 'Ongoing / Unknown' : 'e.g. 500'}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Volume / Part Multi-tier Checkbox */}
+                    <div className="space-y-2 rounded-lg border border-border/50 bg-card-bg p-2.5">
+                      <label className="flex cursor-pointer items-center gap-2 font-semibold text-xs text-text">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-border text-accent-color focus:ring-accent-color"
+                          checked={form.progress_structure !== 'single'}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            set('progress_structure', checked ? 'volume_chapter' : 'single');
+                            if (!checked) {
+                              set('parent_progress', null);
+                              set('parent_total', null);
+                            }
+                          }}
+                        />
+                        <span>Track Volume / Part Number</span>
+                      </label>
+
+                      {form.progress_structure !== 'single' && (
+                        <div className="space-y-2.5 pt-1.5">
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => set('progress_structure', 'volume_chapter')}
+                              className={`rounded-md px-2.5 py-0.5 text-xs font-medium transition-all ${
+                                form.progress_structure === 'volume_chapter'
+                                  ? 'bg-accent-color/20 text-accent-color border border-accent-color/40'
+                                  : 'border border-border text-text-muted hover:text-text'
+                              }`}
+                            >
+                              Volume → {unitLabel}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => set('progress_structure', 'part_chapter')}
+                              className={`rounded-md px-2.5 py-0.5 text-xs font-medium transition-all ${
+                                form.progress_structure === 'part_chapter'
+                                  ? 'bg-accent-color/20 text-accent-color border border-accent-color/40'
+                                  : 'border border-border text-text-muted hover:text-text'
+                              }`}
+                            >
+                              Part → {unitLabel}
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2.5">
+                            <div>
+                              <label className={labelClass}>
+                                Current {form.progress_structure === 'part_chapter' ? 'Part' : 'Volume'}
+                              </label>
+                              <input
+                                className={inputClass}
+                                type="number"
+                                min={0}
+                                value={form.parent_progress ?? ''}
+                                onChange={(e) => {
+                                  const newVol =
+                                    e.target.value === '' ? null : parseFloat(e.target.value);
+                                  set('parent_progress', newVol);
+                                  if (
+                                    form.total_units == null &&
+                                    newVol != null &&
+                                    (form.parent_progress == null || newVol > form.parent_progress)
+                                  ) {
+                                    set('progress', 0);
+                                  }
+                                }}
+                                placeholder="e.g. 1"
+                              />
+                            </div>
+                            <div>
+                              <label className={labelClass}>
+                                Total {form.progress_structure === 'part_chapter' ? 'Parts' : 'Volumes'}
+                              </label>
+                              <input
+                                className={inputClass}
+                                type="number"
+                                min={0}
+                                value={form.parent_total ?? ''}
+                                onChange={(e) =>
+                                  set(
+                                    'parent_total',
+                                    e.target.value === '' ? null : parseFloat(e.target.value),
+                                  )
+                                }
+                                placeholder="e.g. 12"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Ongoing Serialization Checkbox */}
+                    <div className="space-y-2 rounded-lg border border-border/50 bg-card-bg p-2.5">
+                      <label className="flex cursor-pointer items-center gap-2 font-semibold text-xs text-text">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-border text-accent-color focus:ring-accent-color"
+                          checked={form.is_ongoing || false}
+                          onChange={(e) => set('is_ongoing', e.target.checked)}
+                        />
+                        <span>Ongoing Serialization (Actively Releasing)</span>
+                      </label>
+
+                      {form.is_ongoing && (
+                        <div className="grid grid-cols-1 gap-2.5 pt-1 sm:grid-cols-2">
+                          <div>
+                            <label className={labelClass}>
+                              Latest Released ({unitLabel})
+                            </label>
+                            <input
+                              className={inputClass}
+                              type="number"
+                              min={0}
+                              value={form.latest_units ?? ''}
+                              onChange={(e) =>
+                                set(
+                                  'latest_units',
+                                  e.target.value === '' ? null : parseFloat(e.target.value),
+                                )
+                              }
+                              placeholder="e.g. 250"
+                            />
+                          </div>
+                          {form.latest_units != null && (
+                            <div className="flex items-end pb-0.5">
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                className="w-full gap-1 text-sky-600 text-xs font-semibold dark:text-sky-400"
+                                onClick={() => set('progress', form.latest_units!)}
+                              >
+                                <span>I'm Caught Up ({form.latest_units} {unitLabel})</span>
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Reading Dates & Simulation Card directly in General tab when Completed */}
@@ -577,168 +763,6 @@ export default function BookForm({
                         )}
                     </div>
                   )}
-
-                  {/* Inline Compact Tracking Settings Expander */}
-                  <div className="col-span-full pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setShowAdvanced(!showAdvanced)}
-                      className="flex items-center gap-1.5 font-semibold text-accent-color text-xs hover:underline"
-                    >
-                      <Settings2 className="h-3.5 w-3.5" />
-                      <span>
-                        {showAdvanced
-                          ? 'Hide Units & Structure Settings'
-                          : 'Custom Units, Hierarchy & Serialization Settings'}
-                      </span>
-                    </button>
-
-                    {showAdvanced && (
-                      <div className="mt-2.5 space-y-3 rounded-xl border border-border/60 bg-surface/50 p-3 text-xs">
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          <div>
-                            <label className={labelClass}>Unit Type</label>
-                            <Select
-                              value={form.unit_type || 'pages'}
-                              onValueChange={(val) => set('unit_type', val as UnitType)}
-                            >
-                              <SelectTrigger className="h-8 w-full text-xs">
-                                <SelectValue placeholder="Select unit" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {UNIT_OPTIONS.map((u) => (
-                                  <SelectItem key={u.value} value={u.value}>
-                                    {u.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div>
-                            <label className={labelClass}>Progress Structure</label>
-                            <Select
-                              value={form.progress_structure || 'single'}
-                              onValueChange={(val) =>
-                                set('progress_structure', val as ProgressStructure)
-                              }
-                            >
-                              <SelectTrigger className="h-8 w-full text-xs">
-                                <SelectValue placeholder="Select structure" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {getStructureOptions(form.unit_type || 'pages').map((s) => (
-                                  <SelectItem key={s.value} value={s.value}>
-                                    {s.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        {form.progress_structure && form.progress_structure !== 'single' && (
-                          <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/40 bg-card-bg p-2.5">
-                            <div>
-                              <label className={labelClass}>
-                                {form.progress_structure === 'volume_chapter'
-                                  ? 'Current Volume'
-                                  : 'Current Part'}
-                              </label>
-                              <input
-                                className={inputClass}
-                                type="number"
-                                min={0}
-                                value={form.parent_progress ?? ''}
-                                onChange={(e) => {
-                                  const newVol =
-                                    e.target.value === '' ? null : parseFloat(e.target.value);
-                                  set('parent_progress', newVol);
-                                  if (
-                                    form.progress_structure !== 'single' &&
-                                    form.total_units == null &&
-                                    newVol != null &&
-                                    (form.parent_progress == null || newVol > form.parent_progress)
-                                  ) {
-                                    set('progress', 0);
-                                  }
-                                }}
-                                placeholder="e.g. 3"
-                              />
-                            </div>
-                            <div>
-                              <label className={labelClass}>
-                                {form.progress_structure === 'volume_chapter'
-                                  ? 'Total Volumes'
-                                  : 'Total Parts'}
-                              </label>
-                              <input
-                                className={inputClass}
-                                type="number"
-                                min={0}
-                                value={form.parent_total ?? ''}
-                                onChange={(e) =>
-                                  set(
-                                    'parent_total',
-                                    e.target.value === '' ? null : parseFloat(e.target.value),
-                                  )
-                                }
-                                placeholder="e.g. 10"
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="space-y-2 rounded-lg border border-border/40 bg-card-bg p-2.5">
-                          <label className="flex cursor-pointer items-center gap-2 font-semibold text-text">
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4 rounded border-border text-accent-color focus:ring-accent-color"
-                              checked={form.is_ongoing || false}
-                              onChange={(e) => set('is_ongoing', e.target.checked)}
-                            />
-                            <span>Ongoing Serialization (Actively Releasing)</span>
-                          </label>
-
-                          {form.is_ongoing && (
-                            <div className="grid grid-cols-1 gap-2.5 pt-1 sm:grid-cols-2">
-                              <div>
-                                <label className={labelClass}>
-                                  Latest Released by Author ({unitLabel})
-                                </label>
-                                <input
-                                  className={inputClass}
-                                  type="number"
-                                  min={0}
-                                  value={form.latest_units ?? ''}
-                                  onChange={(e) =>
-                                    set(
-                                      'latest_units',
-                                      e.target.value === '' ? null : parseFloat(e.target.value),
-                                    )
-                                  }
-                                  placeholder="e.g. 250"
-                                />
-                              </div>
-                              {form.latest_units != null && (
-                                <div className="flex items-end pb-0.5">
-                                  <Button
-                                    type="button"
-                                    variant="secondary"
-                                    size="sm"
-                                    className="w-full gap-1 text-sky-600 text-xs dark:text-sky-400"
-                                    onClick={() => set('progress', form.latest_units!)}
-                                  >
-                                    <span>I'm Caught Up</span>
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
 
                   <div className="col-span-full">
                     <label className={labelClass}>Notes</label>
