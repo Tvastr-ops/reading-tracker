@@ -643,14 +643,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Group Multi-Volume Series (Stack View)',
+                      'Series Stacks',
                       style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      _themeService.groupBySeries
-                          ? 'Multi-volume series collapse into 3D stacked deck cards with in-place expansion.'
-                          : 'Every book and volume appears as an individual card in the library grid.',
+                      'Stack series books into 3D cards in the library grid.',
                       style: TextStyle(
                         fontSize: 12,
                         color: isDark ? AppColors.darkInkWhite.withValues(alpha: 0.7) : AppColors.inkMuted,

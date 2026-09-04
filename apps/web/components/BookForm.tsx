@@ -9,10 +9,12 @@ import {
   Loader2,
   RotateCcw,
   Search,
+  Sparkles,
   X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import EnrichmentModal from '@/components/EnrichmentModal';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -92,12 +94,20 @@ export default function BookForm({
     { title: string; author: string | null; cover_url: string }[]
   >([]);
   const [coverSearching, setCoverSearching] = useState(false);
+  const [enrichOpen, setEnrichOpen] = useState(false);
 
   const isDuplicate = useMemo(() => {
     const t = form.title.trim().toLowerCase();
     if (!t) return false;
     return existingBooks.some((b) => b.id !== initial?.id && b.title.trim().toLowerCase() === t);
   }, [form.title, existingBooks, initial?.id]);
+
+  function handleApplyEnrichment(enriched: any) {
+    setForm((f) => ({
+      ...f,
+      ...enriched,
+    }));
+  }
 
   function set<K extends keyof BookInput>(key: K, val: BookInput[K]) {
     setForm((f) => ({ ...f, [key]: val }));
@@ -250,6 +260,16 @@ export default function BookForm({
               <DialogTitle className="font-bold text-lg sm:text-xl">
                 {initial?.id ? 'Edit Entry' : 'Add New Entry'}
               </DialogTitle>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setEnrichOpen(true)}
+                className="h-7 gap-1 px-2 font-mono text-[11px] font-bold shadow-[1.5px_1.5px_0px_var(--border)] hover:border-amber-500 hover:text-amber-500"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                <span>Auto-Enrich</span>
+              </Button>
             </div>
 
             <TabsList className="mt-2 grid w-full grid-cols-3 bg-surface/80 p-1">
@@ -1024,6 +1044,13 @@ export default function BookForm({
             </div>
           </form>
         </Tabs>
+
+        <EnrichmentModal
+          open={enrichOpen}
+          onOpenChange={setEnrichOpen}
+          initialQuery={form.title || ''}
+          onApply={handleApplyEnrichment}
+        />
       </DialogContent>
     </Dialog>
   );
