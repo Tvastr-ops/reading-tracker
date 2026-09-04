@@ -5,9 +5,55 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.8.0 / 2.7.0] - 2026-09-04
+
+### 🌐 Next.js Web App (v2.8.0)
+- **3D Tactile Series Stack Deck (`SeriesStackCard.tsx`)**:
+  - Automatically group multi-volume series into interactive 3D layered cardstock decks in the Library Grid.
+  - Features hero series cover, volume count badge (`STACK • X VOLS`), aggregate series completion progress bar, active volume indicator, and in-place expandable volume drawer with individual volume status pills, progress, and quick action menus.
+- **Natural Language Reading Progression Form (`BookForm.tsx`)**:
+  - Replaced raw inputs with a natural progression block: `[ Current Progress ] OF [ Total Units ]` with live completion percentage calculations.
+  - Added 1-tap unit chips (`[ Pages ] [ Chapters ] [ Volumes ] [ Words ] [ % ]`) for 0-friction unit configuration.
+  - Added dedicated **Volume / Part Number** tracking card (`Volume [ X ] of [ Total ]`) with automatic sub-progress resets on volume advance.
+  - Added dedicated **Ongoing Serialization** card with latest released unit tracking and `[ I'm Caught Up ]` quick action.
+- **Group by Series URL & Filter State (`useLibraryFilters.ts` & `LibraryToolbar.tsx`)**:
+  - Added `?series=true` URL query parameter via `nuqs` for persistent, bookmarkable series stack grouping.
+  - Added one-tap "Series Stacks" toggle button in the library toolbar.
+- **Multi-Tier Progress API & RPC Mutation (`app/api/books/[id]/log/route.ts` & `lib/progressMutation.ts`)**:
+  - Updated reading log POST endpoint to validate and accept `parent_progress` and `duration_seconds`.
+  - Bound to authoritative PostgreSQL `record_progress()` RPC v2 with row-level locking.
+
+### 📱 Mobile & Desktop Client (v2.7.0)
+- **Natural Language Book Progression Dialog (`BookEditDialog.dart`)**:
+  - Replaced legacy numeric fields with a natural counter: `[ Progress ] OF [ Total ]` with dynamic unit labels and percentage badges.
+  - Added 1-tap unit chips (`[ VOLUMES ] [ CHAPTERS ] [ PAGES ] [ WORDS ] [ % ]`) for instant format-unit alignment.
+  - Added tactile multi-volume hierarchy checkbox revealing Volume/Part number steppers and total volumes.
+  - Added Ongoing Serialization card with latest released unit counters and `[ I'M CAUGHT UP ]` quick button.
+  - Fixed unit type persistence bug to guarantee `unit_type` is saved with 100% fidelity.
+- **Multi-Tier Volume Quick Log Dialog (`QuickLogDialog.dart`)**:
+  - Added dedicated Volume Stepper (`Vol. [ - ] 3 [ + ]`) and `[ +1 VOL ]` quick-chip action with sub-progress auto-reset for multi-volume light novels and series.
+- **Neo-Brutalist 3D Series Stack Card (`SeriesStackCard.dart`)**:
+  - Tactile 3D layered cardstock deck for grouped series with volume badge, hero cover, and aggregate reading progress.
+  - Smooth in-place expandable volume tray displaying series books sorted by `#` order with status badges, reading progress, and quick log triggers.
+- **Library Toolbar & Preferences (`library_screen.dart`, `settings_screen.dart`, `theme_service.dart`)**:
+  - Added "Group by Series" toggle icon button in the library toolbar.
+  - Added "Group Multi-Volume Series (Stack View)" preference switch in Settings with local persistence.
+- **SQLite Database v6 Migration (`database_helper.dart`)**:
+  - Bumped schema to `v6` with non-destructive schema migrations adding `parent_progress` and `duration_seconds` to `reading_log`.
+
+### 🗄️ Database & Supabase Engine (Migration v14)
+- **Migration v14 (`supabase/migration_v14_smart_progression_and_series.sql`)**:
+  - Added `parent_progress` (NUMERIC) and `duration_seconds` (INTEGER) columns to `reading_log`.
+  - Added `search_vector` generated column & GIN index on `books` for full-text search across titles, authors, series, and tags.
+  - Created high-performance `v_series_overview` View calculating total books, completed count, units read, and active reading book ID.
+  - Upgraded `record_progress()` RPC v2 with row-level locks, multi-tier volume progress logging, 30-day sliding window reading pace calculations, and automatic status lifecycle transitions (`Plan to Read` $\to$ `Reading`, `Reading` $\to$ `Completed`).
+  - Added atomic `start_reread()` RPC managing journey indexing and resetting reading state.
+- **Master Schema Sync (`supabase/schema.sql`)**:
+  - Synchronized schema definition through migration v14.
+
 ## [2.7.0] - 2026-09-02
 
-### Added & Architecture (Web App)
+### 🌐 Next.js Web App (v2.7.0)
 - **Full-Stack End-to-End Type Safety (2026 Standards)**:
   - **Hono RPC Client (`hc`) & Zod Validation**: Built modular Hono v4 API layer (`lib/server/app.ts`) mounted on Next.js App Router with Zod schema validation and exported typed RPC client (`lib/client.ts`), replacing unverified raw fetch calls with 100% compile-time typed queries and mutations.
   - **Type-Safe URL Search Parameters (`nuqs` v2)**: Refactored library filter hooks (`useLibraryFilters.ts`) using `nuqs` schema parsers (`parseAsInteger`, `parseAsStringLiteral`, `parseAsBoolean`, `parseAsString`). Every view and filter state is now bookmarkable, shareable, and integrated with native browser Back/Forward navigation.
@@ -27,70 +73,69 @@ and this project adheres to the [Project Release Versioning Specification](.gemi
 
 ## [2.6.4] - 2026-08-31
 
-
-### Added
-- **Editorial & Tactile Typography System (Web & Mobile)**:
-  - **Tabular Lining Figures (`tnum`)**: Enabled OpenType `FontFeature.tabularFigures()` (Flutter) and `.font-tabular` / `font-variant-numeric: tabular-nums` (Web) across all progress displays, velocity cards, ratings, PIN keypad buttons, and cooldown timers for rock-solid, jitter-free numeric alignment.
-  - **Classic Book Ligatures (`dlig` & `liga`)**: Enabled discretionary and standard ligatures on `Lora` (Flutter) and `Newsreader` (Web) editorial headlines, joining character pairs like **fi**, **fl**, **ff**, **st**, and **Th** into elegant print glyphs.
-  - **Authentic Print Badges & Micro-Tracking**: Added calibrated optical letter-spacing (`letterSpacing: 0.6–0.7px` / `.tracking-badge`) and bold weights for format tags (`LIGHT NOVEL`, `MANGA`, `BOOK`) and shelf indicators.
-  - **Reader Headline Typography Selector (Mobile & Desktop)**: Added user preference under *Settings > Appearance* allowing readers to choose between **Literary Serif (Lora)**, **Modern Sans (Plus Jakarta Sans)**, and **Brutalist Mono (Space Mono)** with instant reactive theme rebuilding.
-
-### Fixed & Security
+### 📱 Mobile & Desktop Client (v2.6.4)
+- **Editorial & Tactile Typography System**:
+  - **Tabular Lining Figures (`tnum`)**: Enabled OpenType `FontFeature.tabularFigures()` across all progress displays, velocity cards, ratings, PIN keypad buttons, and cooldown timers for jitter-free numeric alignment.
+  - **Classic Book Ligatures (`dlig` & `liga`)**: Enabled discretionary and standard ligatures on `Lora` editorial headlines.
+  - **Authentic Print Badges & Micro-Tracking**: Added calibrated optical letter-spacing (`letterSpacing: 0.6–0.7px`) and bold weights for format tags (`LIGHT NOVEL`, `MANGA`, `BOOK`) and shelf indicators.
+  - **Reader Headline Typography Selector**: Added user preference under *Settings > Appearance* allowing readers to choose between **Literary Serif (Lora)**, **Modern Sans (Plus Jakarta Sans)**, and **Brutalist Mono (Space Mono)** with instant reactive theme rebuilding.
 - **Lock Screen 120 FPS Performance & Background PBKDF2 (`Isolate.run`)**:
   - Offloaded 600,000-iteration PBKDF2 HMAC-SHA256 secret hashing to a background worker isolate, completely eliminating UI frame stalls during PIN and password verification.
 - **Biometric Isolation (`biometricOnly: true`)**:
   - Enforced `biometricOnly: true` on `local_auth` prompt to prevent Android OS device lock full-screen overlays and preserve strict in-app secret isolation.
 - **Tactile Keypad Press Depression & Animated Spring PIN Dots**:
-  - Replaced static lock screen buttons with `_BrutalistKeypadKey` featuring interactive physical push translation (`translate(1.5px, 1.5px)` with shadow collapse) and immediate haptic feedback on touch down.
+  - Replaced static lock screen buttons with `_BrutalistKeypadKey` featuring interactive physical push translation and immediate haptic feedback on touch down.
   - Added elastic spring-pop animations on PIN dots as digits are entered.
   - Added smooth 150ms staging buffer on startup before triggering biometric prompt.
 
+### 🌐 Next.js Web App (v2.6.4)
+- **Tabular Lining Figures**: Enabled `.font-tabular` / `font-variant-numeric: tabular-nums` across all numeric readouts, analytics velocity cards, and countdown timers.
+- **Classic Book Ligatures**: Enabled discretionary ligatures on `Newsreader` editorial headlines.
+
 ## [2.6.3] - 2026-08-30
 
-### Added
-- **Smart Unit-Aware & Progress Search Operators (Web & Mobile)**:
+### 🌐 Next.js Web App & 📱 Mobile Client (v2.6.3)
+- **Smart Unit-Aware & Progress Search Operators**:
   - Added strict unit-aware length filtering: `pages>400` / `p<200` (strictly matches pages), `chapters>100` / `ch>50` (strictly matches serialized chapters/manga), `volumes>=10` / `vol>5` (volume-tier works), and `words>50000` (word-count works).
   - Added universal length comparison: `units>100` / `length>300` / `total<=50` across all format types.
   - Added read progress and milestone operators: current read progress (`progress>450`, `read>100`), percentage completion (`percent>=50%`, `pct=100%`), and remaining unread count (`unread>0`, `left>10`).
   - Added direct unit mode filter (`unit:pages`, `unit:chapters`, `unit:volumes`, `unit:words`).
-- **Dependency & SDK Modernization**:
+- **Mobile Dependency & SDK Modernization**:
   - Upgraded `flutter_secure_storage` to `^10.3.1` with custom hardware Keystore ciphers (AES-GCM / RSA-OAEP) and unified Darwin support.
   - Upgraded `package_info_plus` to `^10.2.1` and `win32` to `6.4.0`.
 
 ## [2.6.2] - 2026-08-30
 
-### Added
-- **Unified Boolean & Structured Search Engine (Web & Mobile)**:
-  - Added full boolean query parsing across both web and mobile clients: `OR` / `|` union, multi-token `AND`, exact phrase matching (`"..."`), and negation (`-tag`, `!manga`).
-  - Added structured field qualifiers: `author:` / `by:`, `series:`, `tag:` / `#`, `shelf:`, `type:`, `status:`, `rating:` / `stars:`, and boolean flags (`is:fav`, `is:ongoing`, `no:cover`, `has:notes`).
-  - Added in-progress typing resilience so trailing pipe symbols or uncompleted operators do not zero out search results while typing.
-- **View Switch Animation Preferences (Web App)**:
+### 🌐 Next.js Web App (v2.6.2)
+- **View Switch Animation Preferences**:
   - Added configurable view transition styles under *Settings & Preferences*: **Instant (0ms — Notion / Linear)** for zero-latency 60fps view swapping, and **Smooth Fade (100ms)** for soft GPU keyframe transitions.
 - **High-Clarity GPU Paper Grain & Stylesheet Optimization**:
   - Upgraded hardware-accelerated SVG fractal noise (`<feTurbulence>`) paper grain with zero scroll lag and automatic dark mode balance.
   - Purged ~600 lines of obsolete prototype CSS from `globals.css` (reducing CSS payload by ~40%).
-
-### Fixed
 - **Mobile Touch Responsiveness & Tactile Press Polish**:
   - Added client-side `touchstart` listener in `AppShell` to immediately unlock instant mobile `:active` states on iOS and Android.
   - Added universal active compression (`active:scale-[0.97]`) and snappy `duration-75` feedback to all buttons and cards.
   - Fixed mobile bottom navigation overlap on floating bulk selection action bar with dynamic safe-area offsets.
   - Replaced solid focus rings with zero-ring tactile cardstock elevation shadows.
 
+### 📱 Mobile & Desktop Client (v2.6.2)
+- **Unified Boolean & Structured Search Engine**:
+  - Added full boolean query parsing: `OR` / `|` union, multi-token `AND`, exact phrase matching (`"..."`), and negation (`-tag`, `!manga`).
+  - Added structured field qualifiers: `author:` / `by:`, `series:`, `tag:` / `#`, `shelf:`, `type:`, `status:`, `rating:` / `stars:`, and boolean flags (`is:fav`, `is:ongoing`, `no:cover`, `has:notes`).
+  - Added in-progress typing resilience so trailing pipe symbols or uncompleted operators do not zero out search results while typing.
+
 ## [2.6.1] - 2026-08-30
 
-### Added
+### 📱 Mobile & Desktop Client & 🌐 Web App (v2.6.1)
 - **Timeline Rolling 30-Day Velocity**:
   - Added rolling 30-day velocity metric (**`THIS MONTH`**) to the Reading Timeline screen across both horizontal mobile metric row and desktop sidebar overview card.
   - Enhanced velocity calculations with real-time reading progress tracking.
-
-### Fixed
 - **Analytics & Timeframe Parity**:
   - Improved lifetime vs yearly macro velocity calculations and journey-aware historical records across platforms.
 
 ## [2.6.0] - 2026-08-29
 
-### Added
+### 📱 Mobile & Desktop Client (v2.6.0)
 - **App Lock Authentication (Biometric, PIN, Password)**:
   - Added multi-tier app security with 6-digit minimum PIN mode (custom brutalist numeric keypad) and 12-character minimum password mode.
   - Native biometric & Windows Hello unlock on Android and supported desktop hardware.
@@ -103,28 +148,28 @@ and this project adheres to the [Project Release Versioning Specification](.gemi
 - **Configurable Auto-Lock Timeouts & Native Privacy Screen**:
   - Added configurable background auto-lock durations (Instant, 1m, 5m, 10m, 15m, Cold start only).
   - Native Kotlin `FLAG_SECURE` window management on Android to mask app previews in the Recent Apps overview screen and prevent screenshots/screen recording.
-- **Modernized Multi-Page Web Frontend (`apps/web`)**:
-  - Converted single-page web app into dedicated Next.js App Router routes: `/` (Library), `/books/[id]` (Book Inspector & Log Manager), `/journal` (Reading Timeline), `/analytics` (Stats & Reading Velocity), and `/settings`.
-  - Added client-side library pagination and desktop/mobile responsive navigation shells (`AppNavbar`, `MobileBottomNav`).
-- **Unified Multi-Unit Atomic Goals Sync (Flutter Client & Web App)**:
-  - Unified goal engine across both platforms with multi-unit selector tabs (`BOOKS`, `PAGES`, `CHAPTERS`, `VOLUMES`) and multi-year selector (`2026`, `2025`, etc., and `Lifetime`).
-  - Added real-time cloud synchronization for all unit targets via `app_settings` with backward-compatible single-count support.
-  - Added unified tactile pace status stamps (`GOAL ACHIEVED! 🏆`, `+X AHEAD`, `ON TRACK`, `X BEHIND`, `NO GOAL SET`).
-- **GitHub-Style Daily Reading Streak & Heatmap Matrix (Web)**:
-  - Added interactive 20-week daily commit grid rendering all reading sessions with intensity levels, session count tooltips, and real-time streak badges (**Current Streak**, **Best Streak**, **Total Active Days**).
-- **Reading Velocity & Pacing Matrix (Web)**:
-  - Added dedicated velocity cards for **This Week (7D)**, **This Month (30D)**, **Annual Volume**, and **Active Reading Velocity** speed calculations.
-- **Segmented Distribution Tabs & Reading Passport (Web)**:
-  - Added interactive tabs for **Publication Formats**, ranked **Genres**, and **1–5 Star Rating** distribution histogram.
-  - Added library completion health rate %, total re-reads logged, and average reading duration from start to finish date.
-
-### Fixed
 - **Multi-Platform CI/CD Release Compilation (Android, Windows, Linux)**:
   - **Android**: Replaced legacy `flutter_windowmanager` with zero-dependency native Kotlin `MethodChannel`, upgraded `MainActivity` to `FlutterFragmentActivity`, and set `minSdk = 24`.
   - **Windows**: Added `-D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS` in CMake to resolve MSVC 2022 STL1011 compilation errors with `local_auth_windows`.
   - **Linux**: Added `libsecret-1-dev` and `libjsoncpp-dev` system packages to GitHub Actions release workflow.
+
+### 🌐 Next.js Web App (v2.6.0)
+- **Modernized Multi-Page Web Frontend**:
+  - Converted single-page web app into dedicated Next.js App Router routes: `/` (Library), `/books/[id]` (Book Inspector & Log Manager), `/journal` (Reading Timeline), `/analytics` (Stats & Reading Velocity), and `/settings`.
+  - Added client-side library pagination and desktop/mobile responsive navigation shells (`AppNavbar`, `MobileBottomNav`).
+- **Unified Multi-Unit Atomic Goals Sync**:
+  - Unified goal engine across both platforms with multi-unit selector tabs (`BOOKS`, `PAGES`, `CHAPTERS`, `VOLUMES`) and multi-year selector (`2026`, `2025`, etc., and `Lifetime`).
+  - Added real-time cloud synchronization for all unit targets via `app_settings` with backward-compatible single-count support.
+  - Added unified tactile pace status stamps (`GOAL ACHIEVED! 🏆`, `+X AHEAD`, `ON TRACK`, `X BEHIND`, `NO GOAL SET`).
+- **GitHub-Style Daily Reading Streak & Heatmap Matrix**:
+  - Added interactive 20-week daily commit grid rendering all reading sessions with intensity levels, session count tooltips, and real-time streak badges (**Current Streak**, **Best Streak**, **Total Active Days**).
+- **Reading Velocity & Pacing Matrix**:
+  - Added dedicated velocity cards for **This Week (7D)**, **This Month (30D)**, **Annual Volume**, and **Active Reading Velocity** speed calculations.
+- **Segmented Distribution Tabs & Reading Passport**:
+  - Added interactive tabs for **Publication Formats**, ranked **Genres**, and **1–5 Star Rating** distribution histogram.
+  - Added library completion health rate %, total re-reads logged, and average reading duration from start to finish date.
 - **Empty Ghost Journey Cleanup & Auto-Gen Journey Deduplication**:
-  - Fixed an issue where duplicate empty `Journey #1` records appeared after auto-generating completed books on the web app.
+  - Fixed duplicate empty `Journey #1` records after auto-generating completed books on the web app.
   - Added deduplication by `journey_index` across Web API routes, `ReadingLog.tsx`, and Flutter client SQLite queries.
 
 ---
