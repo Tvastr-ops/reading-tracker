@@ -13,6 +13,11 @@ const OPTIMIZED_HOSTNAMES = new Set([
   'assets.thestorygraph.com',
   'cdn.novelupdates.com',
   'www.novelupdates.com',
+  's4.anilist.co',
+  'upload.wikimedia.org',
+  'books.google.com',
+  'cdn.myanimelist.net',
+  'uploads.mangadex.org',
 ]);
 
 export function isOptimizedDomain(url: string | null | undefined): boolean {

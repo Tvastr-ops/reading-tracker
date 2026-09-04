@@ -11,7 +11,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
-import { memo, useEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -102,7 +102,7 @@ const BookCard = memo(function BookCard({
             title={b.title}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 15vw"
-            priority={idx < 2}
+            priority={idx < 4}
             className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
           />
           {b.cover_url && (
@@ -360,27 +360,30 @@ function BookGrid({
     return items;
   }, [books, groupBySeries, selectMode, trashMode]);
 
-  const handleTouchStart = (b: Book, e: React.TouchEvent) => {
-    if (selectMode) return;
-    isLongPressTriggeredRef.current = false;
-    const touch = e.touches[0];
-    if (touch) {
-      touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
-    }
-    longPressTimerRef.current = setTimeout(() => {
-      isLongPressTriggeredRef.current = true;
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate(40);
+  const handleTouchStart = useCallback(
+    (b: Book, e: React.TouchEvent) => {
+      if (selectMode) return;
+      isLongPressTriggeredRef.current = false;
+      const touch = e.touches[0];
+      if (touch) {
+        touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
       }
-      if (onFullEdit) {
-        onFullEdit(b);
-      } else {
-        onEdit(b);
-      }
-    }, 500);
-  };
+      longPressTimerRef.current = setTimeout(() => {
+        isLongPressTriggeredRef.current = true;
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          navigator.vibrate(40);
+        }
+        if (onFullEdit) {
+          onFullEdit(b);
+        } else {
+          onEdit(b);
+        }
+      }, 500);
+    },
+    [selectMode, onFullEdit, onEdit],
+  );
 
-  const handleTouchMove = (e: React.TouchEvent) => {
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!touchStartPosRef.current) return;
     const touch = e.touches[0];
     if (touch) {
@@ -393,40 +396,43 @@ function BookGrid({
         }
       }
     }
-  };
+  }, []);
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = useCallback(() => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
     touchStartPosRef.current = null;
-  };
+  }, []);
 
-  const handleClick = (e: React.MouseEvent, b: Book) => {
-    if (isLongPressTriggeredRef.current) {
-      isLongPressTriggeredRef.current = false;
-      return;
-    }
+  const handleClick = useCallback(
+    (e: React.MouseEvent, b: Book) => {
+      if (isLongPressTriggeredRef.current) {
+        isLongPressTriggeredRef.current = false;
+        return;
+      }
 
-    if (selectMode && onToggleSelect) {
-      onToggleSelect(b.id);
-      return;
-    }
+      if (selectMode && onToggleSelect) {
+        onToggleSelect(b.id);
+        return;
+      }
 
-    if (e.ctrlKey || e.metaKey) {
-      window.open(`/books/${b.id}`, '_blank');
-      return;
-    }
+      if (e.ctrlKey || e.metaKey) {
+        window.open(`/books/${b.id}`, '_blank');
+        return;
+      }
 
-    if (e.detail === 2 && onFullEdit) {
-      onFullEdit(b);
-      return;
-    }
+      if (e.detail === 2 && onFullEdit) {
+        onFullEdit(b);
+        return;
+      }
 
-    // Instant 0ms response on single click
-    onEdit(b);
-  };
+      // Instant 0ms response on single click
+      onEdit(b);
+    },
+    [selectMode, onToggleSelect, onFullEdit, onEdit],
+  );
 
   useEffect(() => {
     if (focusedId) {

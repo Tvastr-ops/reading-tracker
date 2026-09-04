@@ -49,7 +49,41 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'www.novelupdates.com',
       },
+      // AniList
+      {
+        protocol: 'https',
+        hostname: 's4.anilist.co',
+      },
+      // Wikimedia / Wikipedia
+      {
+        protocol: 'https',
+        hostname: 'upload.wikimedia.org',
+      },
+      // Google Books
+      {
+        protocol: 'https',
+        hostname: 'books.google.com',
+      },
+      // MyAnimeList
+      {
+        protocol: 'https',
+        hostname: 'cdn.myanimelist.net',
+      },
+      // MangaDex
+      {
+        protocol: 'https',
+        hostname: 'uploads.mangadex.org',
+      },
     ],
+  },
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/library',
+        permanent: false,
+      },
+    ];
   },
   async headers() {
     return [
