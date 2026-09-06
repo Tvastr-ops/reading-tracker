@@ -21,7 +21,8 @@ create table if not exists books (
   reading_pace numeric,               -- denormalized units/week for Reading status
   date_started date,
   date_finished date,
-  notes text,
+  description text,                   -- publisher / editorial plot summary or blurb
+  notes text,                         -- reader personal review and notes
   is_favorite boolean not null default false,
   series_name text,
   series_order numeric,
@@ -32,6 +33,19 @@ create table if not exists books (
   updated_at timestamptz not null default now()
 );
 
+-- Migration v15: Full-Text Search tsvector column
+alter table books add column if not exists search_vector tsvector 
+  generated always as (
+    to_tsvector('english', 
+      coalesce(title, '') || ' ' || 
+      coalesce(author, '') || ' ' || 
+      coalesce(series_name, '') || ' ' || 
+      coalesce(genre_tags, '') || ' ' ||
+      coalesce(description, '')
+    )
+  ) stored;
+
+create index if not exists idx_books_search_vector on books using gin(search_vector);
 create index if not exists books_status_idx on books (status);
 create index if not exists books_updated_idx on books (updated_at desc);
 create index if not exists books_deleted_idx on books (deleted_at);
