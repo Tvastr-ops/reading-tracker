@@ -15,6 +15,8 @@ export function LibraryView() {
   const {
     books,
     loading,
+    error,
+    load,
     showTrash,
     deleteBook,
     restoreBook,
@@ -66,6 +68,26 @@ export function LibraryView() {
             className="aspect-[2/3] rounded-lg border-2 border-border/40 bg-surface/60 animate-pulse"
           />
         ))}
+      </div>
+    );
+  }
+
+  if (error && books.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="max-w-md rounded-lg border-2 border-red-500/40 bg-red-500/10 p-6 shadow-[3px_3px_0px_var(--border)]">
+          <h3 className="font-bold text-red-500 text-base">
+            Failed to connect to library database
+          </h3>
+          <p className="mt-2 text-xs text-text-muted">{error}</p>
+          <button
+            type="button"
+            onClick={() => load()}
+            className="mt-4 inline-flex items-center rounded border border-border bg-surface px-4 py-1.5 text-xs font-bold text-text hover:border-primary hover:text-primary cursor-pointer shadow-sm"
+          >
+            Retry Connection
+          </button>
+        </div>
       </div>
     );
   }

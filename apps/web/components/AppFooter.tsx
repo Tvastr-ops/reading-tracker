@@ -17,7 +17,7 @@ export function AppFooter() {
         <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
           <span className="font-serif font-bold tracking-tight text-text">Paperback</span>
           <span className="inline-flex items-center rounded border border-border/60 bg-surface/50 px-1.5 py-0.5 font-mono font-semibold text-[10px] text-text-muted">
-            v2.7.0
+            v2.9.0
           </span>
           <span className="hidden text-border sm:inline">•</span>
           <span className="text-text-muted/80">Personal Reading Archive</span>
