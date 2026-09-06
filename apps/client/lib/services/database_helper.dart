@@ -51,7 +51,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 6,
+      version: 7,
       onConfigure: (db) async {
         try {
           await db.execute('PRAGMA journal_mode = WAL;');
@@ -86,6 +86,7 @@ class DatabaseHelper {
         reading_pace REAL,
         date_started TEXT,
         date_finished TEXT,
+        description TEXT,
         notes TEXT,
         is_favorite INTEGER,
         series_name TEXT,
@@ -272,6 +273,11 @@ class DatabaseHelper {
       } catch (_) {}
       try {
         await db.execute('ALTER TABLE reading_log ADD COLUMN duration_seconds INTEGER');
+      } catch (_) {}
+    }
+    if (oldVersion < 7) {
+      try {
+        await db.execute('ALTER TABLE books ADD COLUMN description TEXT');
       } catch (_) {}
     }
   }

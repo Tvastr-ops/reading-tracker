@@ -199,6 +199,7 @@ export const POST = withAuth(async (req: NextRequest) => {
       cover_url: get('cover_url') || null,
       date_started: get('date_started') || null,
       date_finished: get('date_finished') || null,
+      description: get('description') || null,
       notes: get('notes') || null,
       is_favorite: Boolean(
         get('is_favorite')?.toLowerCase() === 'true' || get('is_favorite') === '1',

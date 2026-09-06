@@ -27,7 +27,7 @@ export const GET = withAuth(async (req: NextRequest) => {
   let query = supabase
     .from('books')
     .select(
-      'id, title, type, unit_type, progress_structure, parent_progress, parent_total, latest_units, is_ongoing, author, status, rating, progress, total_units, genre_tags, source_link, cover_url, reading_pace, date_started, date_finished, notes, is_favorite, series_name, series_order, shelf_names, reread_count, deleted_at, created_at, updated_at',
+      'id, title, type, unit_type, progress_structure, parent_progress, parent_total, latest_units, is_ongoing, author, status, rating, progress, total_units, genre_tags, source_link, cover_url, reading_pace, date_started, date_finished, description, notes, is_favorite, series_name, series_order, shelf_names, reread_count, deleted_at, created_at, updated_at',
       { count: 'exact' },
     );
 
@@ -130,6 +130,7 @@ function sanitize(input: Partial<BookInput> & { id?: string }) {
     cover_url,
     date_started,
     date_finished,
+    description,
     notes,
     is_favorite,
     series_name,
@@ -188,6 +189,7 @@ function sanitize(input: Partial<BookInput> & { id?: string }) {
     cover_url: cover_url || null,
     date_started: date_started || null,
     date_finished: date_finished || null,
+    description: description || null,
     notes: notes || null,
     is_favorite: Boolean(is_favorite),
     series_name: series_name?.trim() || null,

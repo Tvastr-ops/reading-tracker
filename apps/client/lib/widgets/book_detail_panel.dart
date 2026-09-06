@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/book.dart';
 import '../models/reading_journey.dart';
+import '../screens/book_detail_screen.dart';
 import '../services/database_helper.dart';
 import '../services/reading_mutation_service.dart';
 import '../services/sync/sync_manager.dart';
@@ -9,7 +10,6 @@ import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../utils/progression_logic.dart';
 import 'brutalist_widgets.dart';
-import 'enrichment_dialog.dart';
 import 'external_links_row.dart';
 
 class BookDetailPanel extends StatefulWidget {
@@ -199,30 +199,6 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
     widget.onUpdateBook(updated);
   }
 
-  Future<void> _openAutoEnrich() async {
-    final result = await showDialog<EnrichedDataSelection>(
-      context: context,
-      builder: (ctx) => EnrichmentDialog(initialQuery: widget.book.title),
-    );
-    if (result != null) {
-      final b = widget.book;
-      final updated = b.copyWith(
-        coverUrl: result.coverUrl ?? b.coverUrl,
-        title: result.title ?? b.title,
-        author: result.author ?? b.author,
-        totalUnits: result.totalUnits?.toDouble() ?? b.totalUnits,
-        unitType: result.unitType ?? b.unitType,
-        notes: result.notes ?? b.notes,
-        genreTags: result.genreTags ?? b.genreTags,
-        sourceLink: result.sourceLink ?? b.sourceLink,
-        isOngoing: result.isOngoing ?? b.isOngoing,
-      );
-      await _dbHelper.updateBook(updated);
-      SyncManager.instance.scheduleSyncSoon();
-      widget.onUpdateBook(updated);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -290,30 +266,33 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                   children: [
                     MouseRegion(
                       cursor: SystemMouseCursors.click,
-                      child: GestureDetector(
-                        onTap: _openAutoEnrich,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                          margin: const EdgeInsets.only(right: 8),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: AppColors.warningAmber, width: 1.2),
-                            color: AppColors.warningAmber.withValues(alpha: 0.15),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.auto_awesome, size: 12, color: AppColors.warningAmber),
-                              const SizedBox(width: 4),
-                              Text(
-                                'AUTO-ENRICH',
-                                style: TextStyle(
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w900,
-                                  color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-                                  letterSpacing: 0.3,
+                      child: Tooltip(
+                        message: 'Open Full Detailed Reader Page',
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => BookDetailScreen(
+                                  initialBook: widget.book,
+                                  onBookUpdated: widget.onUpdateBook,
+                                  onBookDeleted: widget.onDelete,
                                 ),
                               ),
-                            ],
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            margin: const EdgeInsets.only(right: 6),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: borderColor, width: 1.5),
+                              color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                            ),
+                            child: Icon(
+                              Icons.open_in_new_rounded,
+                              size: 16,
+                              color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                            ),
                           ),
                         ),
                       ),
@@ -621,9 +600,32 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                   const SizedBox(height: 16),
                 ],
 
-                // Personal Notes & Synopsis
+                // Editorial Synopsis (Public Description)
+                if (b.description != null && b.description!.isNotEmpty) ...[
+                  _buildSectionLabel('EDITORIAL SYNOPSIS', isDark),
+                  const SizedBox(height: 6),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+                      border: Border.all(color: borderColor, width: 1.5),
+                    ),
+                    child: Text(
+                      b.description!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.45,
+                        color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Reader's Personal Notes & Thoughts
                 if (b.notes != null && b.notes!.isNotEmpty) ...[
-                  _buildSectionLabel('NOTES & THOUGHTS', isDark),
+                  _buildSectionLabel('READER\'S NOTES & THOUGHTS', isDark),
                   const SizedBox(height: 6),
                   Container(
                     width: double.infinity,

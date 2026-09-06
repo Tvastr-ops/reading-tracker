@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/book.dart';
 import '../models/reading_journey.dart';
+import 'book_detail_screen.dart';
 import '../services/database_helper.dart';
 import '../services/reading_mutation_service.dart';
 import '../services/sync/sync_manager.dart';
@@ -276,7 +277,16 @@ class LibraryScreenState extends State<LibraryScreen> {
         }
       });
     } else {
-      _openEditDialog(book);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => BookDetailScreen(
+            initialBook: book,
+            onBookUpdated: _updateBookInPlace,
+            onBookDeleted: () => _loadBooks(),
+          ),
+        ),
+      );
     }
   }
 

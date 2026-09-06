@@ -40,6 +40,7 @@ export interface Book {
   reading_pace: number | null;
   date_started: string | null;
   date_finished: string | null;
+  description?: string | null;
   notes: string | null;
   is_favorite?: boolean | null;
   series_name?: string | null;

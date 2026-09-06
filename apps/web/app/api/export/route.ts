@@ -20,6 +20,7 @@ const COLUMNS = [
   'cover_url',
   'date_started',
   'date_finished',
+  'description',
   'notes',
   'unit_type',
   'progress_structure',

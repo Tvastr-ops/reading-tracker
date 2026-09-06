@@ -53,6 +53,7 @@ class Book {
   final double? readingPace;
   final String? dateStarted;
   final String? dateFinished;
+  final String? description;
   final String? notes;
   final bool? isFavorite;
   final String? seriesName;
@@ -85,6 +86,7 @@ class Book {
     this.readingPace,
     this.dateStarted,
     this.dateFinished,
+    this.description,
     this.notes,
     this.isFavorite,
     this.seriesName,
@@ -180,6 +182,8 @@ class Book {
     bool clearDateStarted = false,
     String? dateFinished,
     bool clearDateFinished = false,
+    String? description,
+    bool clearDescription = false,
     String? notes,
     bool clearNotes = false,
     bool? isFavorite,
@@ -217,6 +221,7 @@ class Book {
       readingPace: readingPace ?? this.readingPace,
       dateStarted: clearDateStarted ? null : (dateStarted ?? this.dateStarted),
       dateFinished: clearDateFinished ? null : (dateFinished ?? this.dateFinished),
+      description: clearDescription ? null : (description ?? this.description),
       notes: clearNotes ? null : (notes ?? this.notes),
       isFavorite: isFavorite ?? this.isFavorite,
       seriesName: clearSeriesName ? null : (seriesName ?? this.seriesName),
@@ -252,6 +257,7 @@ class Book {
       'reading_pace': readingPace,
       'date_started': dateStarted,
       'date_finished': dateFinished,
+      'description': description,
       'notes': notes,
       'is_favorite': isFavorite == null ? null : (isFavorite! ? 1 : 0),
       'series_name': seriesName,
@@ -288,6 +294,7 @@ class Book {
       'reading_pace': readingPace,
       'date_started': dateStarted,
       'date_finished': dateFinished,
+      'description': description,
       'notes': notes,
       'is_favorite': isFavorite ?? false,
       'series_name': seriesName,
@@ -322,6 +329,7 @@ class Book {
       readingPace: map['reading_pace'] != null ? (map['reading_pace'] as num).toDouble() : null,
       dateStarted: map['date_started']?.toString(),
       dateFinished: map['date_finished']?.toString(),
+      description: map['description']?.toString(),
       notes: map['notes']?.toString(),
       isFavorite: map['is_favorite'] == null ? null : (map['is_favorite'] == 1 || map['is_favorite'] == true),
       seriesName: map['series_name']?.toString(),

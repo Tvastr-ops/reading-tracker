@@ -119,3 +119,17 @@ export function normalizeGenreTag(rawTag: string): string {
     .map((word) => (word ? word[0].toUpperCase() + word.substring(1).toLowerCase() : ''))
     .join(' ');
 }
+
+export function parseShelves(shelfNames?: string | null): string[] {
+  if (!shelfNames) return [];
+  try {
+    const parsed = JSON.parse(shelfNames);
+    if (Array.isArray(parsed)) return parsed.map((s) => String(s).trim()).filter(Boolean);
+  } catch {
+    // fallback comma separated
+  }
+  return shelfNames
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}

@@ -9,7 +9,6 @@ import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../utils/progression_logic.dart';
 import 'brutalist_widgets.dart';
-import 'enrichment_dialog.dart';
 
 class BookEditDialog extends StatefulWidget {
   final Book? book;
@@ -43,6 +42,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
   late TextEditingController _coverUrlController;
   late TextEditingController _genreTagsController;
   late TextEditingController _sourceLinkController;
+  late TextEditingController _descriptionController;
   late TextEditingController _notesController;
   late FocusNode _dialogFocusNode;
 
@@ -105,6 +105,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
     _coverUrlController = TextEditingController(text: b?.coverUrl ?? '');
     _genreTagsController = TextEditingController(text: b?.genreTags ?? '');
     _sourceLinkController = TextEditingController(text: b?.sourceLink ?? '');
+    _descriptionController = TextEditingController(text: b?.description ?? '');
     _notesController = TextEditingController(text: b?.notes ?? '');
     _dialogFocusNode = FocusNode();
 
@@ -188,6 +189,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
     _coverUrlController.dispose();
     _genreTagsController.dispose();
     _sourceLinkController.dispose();
+    _descriptionController.dispose();
     _notesController.dispose();
     _dialogFocusNode.dispose();
     super.dispose();
@@ -257,26 +259,6 @@ class _BookEditDialogState extends State<BookEditDialog> {
     }
   }
 
-  Future<void> _openAutoEnrich() async {
-    final result = await showDialog<EnrichedDataSelection>(
-      context: context,
-      builder: (ctx) => EnrichmentDialog(initialQuery: _titleController.text),
-    );
-    if (result != null) {
-      setState(() {
-        if (result.title != null) _titleController.text = result.title!;
-        if (result.author != null) _authorController.text = result.author!;
-        if (result.coverUrl != null) _coverUrlController.text = result.coverUrl!;
-        if (result.totalUnits != null) _totalUnitsController.text = formatNum(result.totalUnits!);
-        if (result.unitType != null) _unitType = result.unitType!;
-        if (result.notes != null) _notesController.text = result.notes!;
-        if (result.genreTags != null) _genreTagsController.text = result.genreTags!;
-        if (result.sourceLink != null) _sourceLinkController.text = result.sourceLink!;
-        if (result.isOngoing != null) _isOngoing = result.isOngoing!;
-      });
-    }
-  }
-
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
@@ -309,6 +291,7 @@ class _BookEditDialogState extends State<BookEditDialog> {
       coverUrl: _coverUrlController.text.trim().isEmpty ? null : _coverUrlController.text.trim(),
       genreTags: _genreTagsController.text.trim().isEmpty ? null : _genreTagsController.text.trim(),
       sourceLink: _sourceLinkController.text.trim().isEmpty ? null : sanitizeSourceLink(_sourceLinkController.text),
+      description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
       notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
       seriesName: _seriesNameController.text.trim().isEmpty ? null : _seriesNameController.text.trim(),
       seriesOrder: seriesOrderVal,
@@ -418,43 +401,11 @@ class _BookEditDialogState extends State<BookEditDialog> {
                           color: inkColor,
                         ),
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            onTap: _openAutoEnrich,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              margin: const EdgeInsets.only(right: 12),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: AppColors.warningAmber, width: 1.2),
-                                color: AppColors.warningAmber.withValues(alpha: 0.15),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.auto_awesome, size: 13, color: AppColors.warningAmber),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'AUTO-ENRICH',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w900,
-                                      color: inkColor,
-                                      letterSpacing: 0.3,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            icon: Icon(Icons.close_rounded, size: 20, color: inkColor),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ],
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: Icon(Icons.close_rounded, size: 20, color: inkColor),
+                        onPressed: () => Navigator.pop(context),
                       ),
                     ],
                   ),
@@ -1263,22 +1214,40 @@ class _BookEditDialogState extends State<BookEditDialog> {
                 ),
                 const SizedBox(height: 18),
 
-                // Section 6: Notes & Metadata
-                _buildFormSectionHeader('6. NOTES & SOURCE LINK', details, inkColor, borderColor),
+                // Section 6: Synopsis, Notes & Metadata
+                _buildFormSectionHeader('6. SYNOPSIS, NOTES & LINKS', details, inkColor, borderColor),
                 const SizedBox(height: 8),
 
-                _buildFieldLabel('SOURCE / WEB LINK (OPTIONAL)', inkColor),
+                _buildFieldLabel('EDITORIAL SYNOPSIS / BLURB (PUBLIC DESCRIPTION)', inkColor),
                 _buildTextInput(
-                  _sourceLinkController,
-                  'e.g. royalroad.com or reading web link',
+                  _descriptionController,
+                  'Book synopsis, back-cover blurb, or plot premise...',
+                  maxLines: 3,
                   details: details,
                   borderColor: borderColor,
                   inkColor: inkColor,
                 ),
                 const SizedBox(height: 12),
 
-                _buildFieldLabel('NOTES / REVIEW', inkColor),
-                _buildTextInput(_notesController, 'Reading thoughts...', maxLines: 2, details: details, borderColor: borderColor, inkColor: inkColor),
+                _buildFieldLabel('NOTES & PERSONAL REVIEW (PRIVATE READER LOG)', inkColor),
+                _buildTextInput(
+                  _notesController,
+                  'Personal review, favorite quotes, pacing thoughts...',
+                  maxLines: 3,
+                  details: details,
+                  borderColor: borderColor,
+                  inkColor: inkColor,
+                ),
+                const SizedBox(height: 12),
+
+                _buildFieldLabel('SOURCE / WEB LINK (OPTIONAL)', inkColor),
+                _buildTextInput(
+                  _sourceLinkController,
+                  'e.g. royalroad.com, novelupdates.com, goodreads.com...',
+                  details: details,
+                  borderColor: borderColor,
+                  inkColor: inkColor,
+                ),
                 const SizedBox(height: 20),
 
                     ],

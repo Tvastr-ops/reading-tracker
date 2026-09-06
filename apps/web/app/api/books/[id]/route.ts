@@ -27,6 +27,7 @@ const ALLOWED_FIELDS = [
   'cover_url',
   'date_started',
   'date_finished',
+  'description',
   'notes',
   'is_favorite',
   'series_name',
