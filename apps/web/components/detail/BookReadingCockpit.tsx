@@ -107,7 +107,9 @@ export default function BookReadingCockpit({
                   </span>
                   <Edit2 className="h-4 w-4 text-text-muted opacity-0 transition-opacity group-hover:opacity-100" />
                 </button>
-                <span className="font-mono text-sm font-bold text-text-muted">({pct}%)</span>
+                {pct != null && (
+                  <span className="font-mono text-sm font-bold text-text-muted">({pct}%)</span>
+                )}
               </>
             )}
           </div>

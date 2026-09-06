@@ -54,6 +54,7 @@ class DatabaseHelper {
       version: 7,
       onConfigure: (db) async {
         try {
+          await db.execute('PRAGMA foreign_keys = ON;');
           await db.execute('PRAGMA journal_mode = WAL;');
           await db.execute('PRAGMA synchronous = NORMAL;');
         } catch (_) {}
@@ -419,6 +420,12 @@ class DatabaseHelper {
         where: 'book_id = ?',
         whereArgs: [oldId],
       );
+      await txn.update(
+        'reading_journeys',
+        {'book_id': newId},
+        where: 'book_id = ?',
+        whereArgs: [oldId],
+      );
     });
   }
 
@@ -433,9 +440,9 @@ class DatabaseHelper {
             id, title, type, unit_type, progress_structure, parent_progress, parent_total,
             latest_units, is_ongoing, author, status, rating, progress, total_units,
             genre_tags, source_link, cover_url, reading_pace, date_started,
-            date_finished, notes, is_favorite, series_name, series_order, shelf_names, reread_count,
+            date_finished, description, notes, is_favorite, series_name, series_order, shelf_names, reread_count,
             deleted_at, created_at, updated_at, sync_status
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')
           ON CONFLICT(id) DO UPDATE SET
             title = excluded.title,
             type = excluded.type,
@@ -456,6 +463,7 @@ class DatabaseHelper {
             reading_pace = excluded.reading_pace,
             date_started = excluded.date_started,
             date_finished = excluded.date_finished,
+            description = excluded.description,
             notes = excluded.notes,
             is_favorite = excluded.is_favorite,
             series_name = excluded.series_name,
@@ -486,6 +494,7 @@ class DatabaseHelper {
           b.readingPace,
           b.dateStarted,
           b.dateFinished,
+          b.description,
           b.notes,
           (b.isFavorite == true) ? 1 : 0,
           b.seriesName,
@@ -613,6 +622,8 @@ class DatabaseHelper {
     final db = await instance.database;
     await db.insert('sync_queue', {
       'id': id,
+      'table_name': 'reading_log',
+      'record_id': id,
       'action': 'delete_log',
       'payload': jsonEncode({'id': id}),
       'created_at': DateTime.now().toUtc().toIso8601String(),
@@ -627,6 +638,8 @@ class DatabaseHelper {
       final logId = l['id'] as String;
       await db.insert('sync_queue', {
         'id': logId,
+        'table_name': 'reading_log',
+        'record_id': logId,
         'action': 'delete_log',
         'payload': jsonEncode({'id': logId}),
         'created_at': DateTime.now().toUtc().toIso8601String(),

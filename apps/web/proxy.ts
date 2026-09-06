@@ -9,8 +9,10 @@ import { type NextRequest, NextResponse } from 'next/server';
 // if this file were skipped or bypassed entirely, no data route is exposed.
 async function isValidSession(token: string | undefined): Promise<boolean> {
   if (!token) return false;
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret || sessionSecret.length < 32) return false;
   try {
-    const secret = new TextEncoder().encode(process.env.SESSION_SECRET);
+    const secret = new TextEncoder().encode(sessionSecret);
     await jwtVerify(token, secret, {
       clockTolerance: '300s', // 300s clock skew tolerance to prevent premature token rejections
     });

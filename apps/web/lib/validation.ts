@@ -90,14 +90,12 @@ export function validateProgressionFields(fields: Partial<Book>): string | null 
     return `Progress (${fields.progress}) cannot exceed total units (${fields.total_units})`;
   }
 
-  // Ongoing work: progress <= latest_units (if latest_units is known)
-  if (
-    fields.is_ongoing &&
-    fields.progress != null &&
-    fields.latest_units != null &&
-    fields.progress > fields.latest_units
-  ) {
-    return `Progress (${fields.progress}) cannot exceed latest released units (${fields.latest_units})`;
+  // Ongoing work: progress <= latest_units (if known) or total_units (if known)
+  if (fields.is_ongoing && fields.progress != null) {
+    const maxBound = fields.latest_units ?? fields.total_units;
+    if (maxBound != null && fields.progress > maxBound) {
+      return `Progress (${fields.progress}) cannot exceed ${fields.latest_units != null ? 'latest released units' : 'total units'} (${maxBound})`;
+    }
   }
 
   // Hierarchy bound: parent_progress <= parent_total

@@ -234,7 +234,7 @@ export default function BookDetailPage() {
     if (!book) return;
     setStartingReread(true);
     try {
-      const res = await fetch('/api/journeys', {
+      const res = await fetch(`/api/books/${book.id}/journeys`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ book_id: book.id }),
@@ -254,6 +254,7 @@ export default function BookDetailPage() {
 
   const handleDelete = async () => {
     if (!book) return;
+    if (!window.confirm('Are you sure you want to delete this book?')) return;
     deleteBook(book);
     router.push('/library');
   };

@@ -1,4 +1,4 @@
-import { timingSafeEqual } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { jwtVerify, SignJWT } from 'jose';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -25,17 +25,10 @@ export function checkPassword(candidate: string): boolean {
     return false;
   }
 
-  // Hash both inputs to fixed length buffers so length mismatch doesn't leak via early return timing
-  const candidateBuf = Buffer.from(candidate);
-  const expectedBuf = Buffer.from(expected);
-
-  if (candidateBuf.length !== expectedBuf.length) {
-    // Perform dummy comparison to keep constant execution time
-    timingSafeEqual(expectedBuf, expectedBuf);
-    return false;
-  }
-
-  return timingSafeEqual(candidateBuf, expectedBuf);
+  // Hash both inputs to fixed 32-byte buffers so length mismatch cannot leak via timing
+  const candidateHash = createHash('sha256').update(candidate).digest();
+  const expectedHash = createHash('sha256').update(expected).digest();
+  return timingSafeEqual(candidateHash, expectedHash);
 }
 
 export async function createSessionToken(): Promise<string> {

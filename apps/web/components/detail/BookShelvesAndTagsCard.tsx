@@ -55,7 +55,7 @@ export default function BookShelvesAndTagsCard({ book }: BookShelvesAndTagsCardP
             {tagList.map((tag) => (
               <Link
                 key={tag}
-                href={`/library?search=${encodeURIComponent(tag)}`}
+                href={`/library?tag=${encodeURIComponent(tag)}`}
                 className="rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-bold text-text shadow-[1.5px_1.5px_0px_var(--border)] transition-all hover:border-primary hover:text-primary active:translate-x-[0.5px] active:translate-y-[0.5px]"
               >
                 #{tag}

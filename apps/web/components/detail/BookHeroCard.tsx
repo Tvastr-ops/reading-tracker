@@ -37,7 +37,7 @@ export default function BookHeroCard({ book, onRatingChange }: BookHeroCardProps
           <p className="mt-1.5 font-hanken text-sm font-bold text-text-muted">
             by{' '}
             <Link
-              href={`/library?search=${encodeURIComponent(book.author)}`}
+              href={`/library?q=${encodeURIComponent(book.author)}`}
               className="transition-colors hover:text-primary hover:underline"
             >
               {book.author}
@@ -50,7 +50,7 @@ export default function BookHeroCard({ book, onRatingChange }: BookHeroCardProps
           <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-bold text-text-muted shadow-[1.5px_1.5px_0px_var(--border)]">
             <Layers className="h-3.5 w-3.5 text-primary" />
             <Link
-              href={`/library?series=true&search=${encodeURIComponent(book.series_name)}`}
+              href={`/library?series=true&q=${encodeURIComponent(book.series_name)}`}
               className="hover:text-primary hover:underline"
             >
               {book.series_name} {book.series_order != null ? `#${book.series_order}` : ''}

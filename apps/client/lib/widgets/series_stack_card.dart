@@ -52,6 +52,10 @@ class _SeriesStackCardState extends State<SeriesStackCard> {
       return a.title.compareTo(b.title);
     });
 
+    if (sortedBooks.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     final totalVolumes = sortedBooks.length;
     final completedVolumes = sortedBooks.where((b) => b.status == BookStatus.completed).length;
     final readingBooks = sortedBooks.where((b) => b.status == BookStatus.reading).toList();

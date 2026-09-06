@@ -84,7 +84,7 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
     final isMobile = MediaQuery.of(context).size.width < 600;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final screenHeight = MediaQuery.of(context).size.height;
-    final maxDialogHeight = (screenHeight - keyboardHeight - (isMobile ? 32 : 80)).clamp(300.0, 580.0);
+    final maxDialogHeight = (screenHeight - keyboardHeight - (isMobile ? 32 : 80)).clamp(240.0, 580.0);
 
     return KeyboardListener(
       focusNode: _dialogFocusNode,
@@ -107,8 +107,7 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
           vertical: isMobile ? 16 : 24,
         ),
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 440),
-          height: maxDialogHeight,
+          constraints: BoxConstraints(maxWidth: 440, maxHeight: maxDialogHeight),
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: dialogBg,

@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useLibraryData } from '@/contexts/LibraryDataContext';
 import type { Book, ReadingLogEntry } from '@/lib/types';
-import { parseLocalDate } from '@/lib/utils';
+import { getLocalDateString, parseLocalDate } from '@/lib/utils';
 
 interface DayBookGroup {
   bookId: string;
@@ -84,8 +84,8 @@ export function TimelineView() {
     });
 
     const groups: DayTimelineGroup[] = [];
-    const todayStr = new Date().toISOString().split('T')[0];
-    const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const todayStr = getLocalDateString(new Date());
+    const yesterdayStr = getLocalDateString(new Date(Date.now() - 86400000));
 
     dayMap.forEach((dayLogs, dateKey) => {
       let displayDate = dateKey;
