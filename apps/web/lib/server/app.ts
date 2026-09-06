@@ -305,6 +305,7 @@ const booksApp = new Hono<{
       updates.cover_url = body.cover_url ? String(body.cover_url).trim() : null;
     if (typeof body.date_started !== 'undefined') updates.date_started = body.date_started;
     if (typeof body.date_finished !== 'undefined') updates.date_finished = body.date_finished;
+    if (typeof body.description !== 'undefined') updates.description = body.description;
     if (typeof body.notes !== 'undefined') updates.notes = body.notes;
     if (typeof body.is_favorite !== 'undefined') updates.is_favorite = Boolean(body.is_favorite);
     if (typeof body.series_name !== 'undefined')
