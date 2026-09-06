@@ -79,17 +79,23 @@ class GenericRestSyncProvider implements RemoteSyncProvider {
         return await deleteBook(book.id, permanent: false);
       }
 
-      final isCreate = book.syncStatus == 'pending_create';
-      final path = isCreate ? '/api/books' : '/api/books/${book.id}';
-      final uri = Uri.parse(_cleanUrl(path));
+      final isCreate = book.syncStatus == 'pending_create' || book.syncStatus == 'pending_upsert';
+      var path = isCreate ? '/api/books' : '/api/books/${book.id}';
+      var uri = Uri.parse(_cleanUrl(path));
       final payload = jsonEncode(book.toRemoteMap());
 
-      final res = isCreate
+      var res = isCreate
           ? await http.post(uri, headers: _headers, body: payload).timeout(const Duration(seconds: 8))
           : await http.patch(uri, headers: _headers, body: payload).timeout(const Duration(seconds: 8));
 
+      // Fallback: If PATCH returns 404 (book not found on remote server), send POST
+      if (!isCreate && res.statusCode == 404) {
+        uri = Uri.parse(_cleanUrl('/api/books'));
+        res = await http.post(uri, headers: _headers, body: payload).timeout(const Duration(seconds: 8));
+      }
+
       if (res.statusCode >= 200 && res.statusCode < 300) {
-        if (isCreate) {
+        if (isCreate || res.statusCode == 201) {
           try {
             final dynamic data = jsonDecode(res.body);
             final bookMap = data is Map ? (data['book'] as Map? ?? data) : null;
@@ -101,7 +107,7 @@ class GenericRestSyncProvider implements RemoteSyncProvider {
         }
         return true;
       }
-      debugPrint('GenericRestSyncProvider pushBook (${isCreate ? "POST" : "PATCH"}) failed [${res.statusCode}]: ${res.body}');
+      debugPrint('GenericRestSyncProvider pushBook failed [${res.statusCode}]: ${res.body}');
       return false;
     } catch (e) {
       debugPrint('GenericRestSyncProvider pushBook error: $e');
@@ -113,12 +119,11 @@ class GenericRestSyncProvider implements RemoteSyncProvider {
   Future<bool> deleteBook(String id, {bool permanent = false}) async {
     if (serverUrl.isEmpty) return false;
     try {
-      final path = permanent ? '/api/books/$id?permanent=1' : '/api/books/$id';
+      final path = permanent ? '/api/books/$id?permanent=true' : '/api/books/$id';
       final uri = Uri.parse(_cleanUrl(path));
       final res = await http.delete(uri, headers: _headers).timeout(const Duration(seconds: 8));
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        return true;
-      }
+      if (res.statusCode >= 200 && res.statusCode < 300) return true;
+      if (res.statusCode == 404) return true;
       debugPrint('GenericRestSyncProvider deleteBook failed [${res.statusCode}]: ${res.body}');
       return false;
     } catch (e) {
@@ -201,10 +206,26 @@ class GenericRestSyncProvider implements RemoteSyncProvider {
   Future<List<ReadingLogEntry>> fetchRemoteReadingLogs({DateTime? since, List<String>? bookIds}) async {
     if (serverUrl.isEmpty) return [];
     try {
-      var path = '/api/logs?limit=10000';
       if (bookIds != null && bookIds.isNotEmpty) {
-        path += '&book_ids=${Uri.encodeComponent(bookIds.join(','))}';
-      } else if (since != null) {
+        final List<ReadingLogEntry> allLogs = [];
+        const int chunkSize = 40;
+        for (var i = 0; i < bookIds.length; i += chunkSize) {
+          final chunk = bookIds.sublist(i, (i + chunkSize > bookIds.length) ? bookIds.length : i + chunkSize);
+          final path = '/api/logs?limit=10000&book_ids=${Uri.encodeComponent(chunk.join(','))}';
+          final uri = Uri.parse(_cleanUrl(path));
+          final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 8));
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            final dynamic data = jsonDecode(res.body);
+            final List<dynamic> list =
+                data is Map && data['entries'] != null ? data['entries'] : (data is List ? data : []);
+            allLogs.addAll(list.map((item) => ReadingLogEntry.fromMap(item as Map<String, dynamic>)));
+          }
+        }
+        return allLogs;
+      }
+
+      var path = '/api/logs?limit=10000';
+      if (since != null) {
         path += '&since=${Uri.encodeComponent(since.toIso8601String())}';
       }
       final uri = Uri.parse(_cleanUrl(path));

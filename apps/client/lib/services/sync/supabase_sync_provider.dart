@@ -245,15 +245,29 @@ class SupabaseSyncProvider implements RemoteSyncProvider {
   Future<List<ReadingLogEntry>> fetchRemoteReadingLogs({DateTime? since, List<String>? bookIds}) async {
     if (supabaseUrl.isEmpty || anonKey.isEmpty) return [];
     final List<ReadingLogEntry> allLogs = [];
-    int offset = 0;
     const int batchSize = 1000;
     try {
+      if (bookIds != null && bookIds.isNotEmpty) {
+        // Chunk bookIds into batches of 40 to avoid HTTP 414 URI Too Long
+        const int chunkSize = 40;
+        for (var i = 0; i < bookIds.length; i += chunkSize) {
+          final chunk = bookIds.sublist(i, (i + chunkSize > bookIds.length) ? bookIds.length : i + chunkSize);
+          final joined = chunk.map((id) => '"$id"').join(',');
+          final urlStr = '$supabaseUrl/rest/v1/reading_log?select=*&order=logged_at.desc&limit=$batchSize&book_id=in.($joined)';
+          final uri = Uri.parse(urlStr);
+          final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 12));
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            final List<dynamic> list = jsonDecode(res.body);
+            allLogs.addAll(list.map((item) => ReadingLogEntry.fromMap(item as Map<String, dynamic>)));
+          }
+        }
+        return allLogs;
+      }
+
+      int offset = 0;
       while (true) {
         var urlStr = '$supabaseUrl/rest/v1/reading_log?select=*&order=logged_at.desc&limit=$batchSize&offset=$offset';
-        if (bookIds != null && bookIds.isNotEmpty) {
-          final joined = bookIds.map((id) => '"$id"').join(',');
-          urlStr += '&book_id=in.($joined)';
-        } else if (since != null) {
+        if (since != null) {
           urlStr += '&logged_at=gt.${Uri.encodeComponent(since.toIso8601String())}';
         }
         final uri = Uri.parse(urlStr);
