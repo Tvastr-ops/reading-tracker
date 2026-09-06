@@ -128,7 +128,7 @@ const booksApp = new Hono<{
       let query = supabase
         .from('books')
         .select(
-          'id, title, type, unit_type, progress_structure, parent_progress, parent_total, latest_units, is_ongoing, author, status, rating, progress, total_units, genre_tags, source_link, cover_url, reading_pace, date_started, date_finished, notes, is_favorite, series_name, series_order, shelf_names, reread_count, deleted_at, created_at, updated_at',
+          'id, title, type, unit_type, progress_structure, parent_progress, parent_total, latest_units, is_ongoing, author, status, rating, progress, total_units, genre_tags, source_link, cover_url, reading_pace, date_started, date_finished, description, notes, is_favorite, series_name, series_order, shelf_names, reread_count, deleted_at, created_at, updated_at',
           { count: 'exact' },
         );
 
@@ -233,6 +233,7 @@ const booksApp = new Hono<{
       cover_url: typeof body.cover_url === 'string' ? body.cover_url.trim() || null : null,
       date_started: typeof body.date_started === 'string' ? body.date_started : null,
       date_finished: typeof body.date_finished === 'string' ? body.date_finished : null,
+      description: typeof body.description === 'string' ? body.description : null,
       notes: typeof body.notes === 'string' ? body.notes : null,
       is_favorite: typeof body.is_favorite === 'boolean' ? body.is_favorite : false,
       series_name: typeof body.series_name === 'string' ? body.series_name.trim() || null : null,
