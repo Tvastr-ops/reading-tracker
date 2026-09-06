@@ -6,7 +6,7 @@ import {
   ChevronDown,
   ChevronUp,
   Edit3,
-  Heart,
+  ExternalLink,
   Layers,
   MoreVertical,
   Trash2,
@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
 import { calculateProgressPercentage, getStatusAwareProgressText } from '@/lib/progress';
-import { getStatusConfig } from '@/lib/status';
+import { getStatusBadgeVariant } from '@/lib/status';
 import type { Book } from '@/lib/types';
 import CoverImage from './CoverImage';
 
@@ -44,11 +44,10 @@ export interface SeriesStackCardProps {
 export const SeriesStackCard = memo(function SeriesStackCard({
   seriesName,
   books,
-  idx,
+  idx: _idx,
   onBookClick,
   onEdit,
   onFullEdit,
-  onToggleFavorite,
   onDelete,
 }: SeriesStackCardProps) {
   const [expanded, setExpanded] = useState(false);
@@ -71,211 +70,199 @@ export const SeriesStackCard = memo(function SeriesStackCard({
   const readingVolumes = sortedBooks.filter((b) => b.status === 'Reading');
 
   // Default to currently reading book, or user's selected volume, or first volume
-  const activeBook =
-    selectedVolIndex !== null && sortedBooks[selectedVolIndex]
-      ? sortedBooks[selectedVolIndex]
+  const activeIndex =
+    selectedVolIndex !== null && selectedVolIndex >= 0 && selectedVolIndex < sortedBooks.length
+      ? selectedVolIndex
       : readingVolumes.length > 0
-        ? readingVolumes[0]
-        : sortedBooks[0];
+        ? sortedBooks.findIndex((b) => b.id === readingVolumes[0].id)
+        : 0;
+
+  const activeBook = sortedBooks[activeIndex] || sortedBooks[0];
 
   const seriesProgressPct =
     totalVolumes > 0 ? Math.round((completedVolumes / totalVolumes) * 100) : 0;
 
-  const heroCoverUrl =
-    activeBook?.cover_url ||
-    sortedBooks.find((b) => b.cover_url && b.cover_url.trim().length > 0)?.cover_url;
-
-  // Background layers metadata for 3D fanned deck
-  const layer1Book =
-    sortedBooks.length > 1
-      ? sortedBooks[1]?.id === activeBook?.id
-        ? sortedBooks[0]
-        : sortedBooks[1]
-      : null;
-  const layer2Book =
-    sortedBooks.length > 2
-      ? sortedBooks[2]?.id === activeBook?.id
-        ? sortedBooks[1]
-        : sortedBooks[2]
-      : null;
+  const activeProgressPct = calculateProgressPercentage(activeBook) ?? 0;
 
   return (
-    <div className="group/stack relative z-0 h-full select-none perspective-[1000px] transition-all duration-300 ease-out hover:z-30 hover:-translate-y-2">
-      {/* ================= 3D FANNED DECK LAYER 2 (Backmost Volume) ================= */}
-      {totalVolumes > 2 && (
-        <div
-          className="pointer-events-none absolute inset-0 z-0 origin-bottom-left overflow-hidden rounded-2xl border-2 border-border bg-surface shadow-[3px_3px_0px_var(--border)] transition-all duration-300 ease-out group-hover/stack:translate-x-6 group-hover/stack:-translate-y-4 group-hover/stack:rotate-[6deg]"
-          style={{ transform: 'translate(10px, -8px) rotate(3.2deg)' }}
-        >
-          {layer2Book?.cover_url ? (
-            <div className="relative h-full w-full opacity-85">
+    <Card className="surface-t1 relative flex h-full flex-col justify-between overflow-hidden border-2 border-border shadow-[3px_3px_0px_var(--border)] transition-all duration-200 hover:shadow-[4px_4px_0px_var(--border)]">
+      {/* Top Header Ribbon */}
+      <div className="flex items-center justify-between border-b-2 border-border bg-surface-raised px-3.5 py-2">
+        <div className="flex items-center gap-1.5">
+          <Badge
+            variant="outline"
+            className="border-primary/50 bg-primary/10 px-2 py-0.5 text-[10.5px] font-black uppercase tracking-wider text-primary"
+          >
+            <Layers className="mr-1 h-3 w-3 inline" />
+            Series • {totalVolumes} Vols
+          </Badge>
+        </div>
+        <div className="text-[11px] font-black text-text-muted">
+          <span className="text-text">{completedVolumes}</span>/{totalVolumes} Read (
+          {seriesProgressPct}%)
+        </div>
+      </div>
+
+      <CardContent className="flex flex-1 flex-col justify-between p-3.5 sm:p-4">
+        {/* Main Content Area: Cover + Details */}
+        <div className="flex gap-3 sm:gap-4">
+          {/* Active Volume Cover */}
+          <button
+            type="button"
+            onClick={(e) => onBookClick(e, activeBook)}
+            className="group/cover relative h-28 w-20 flex-shrink-0 cursor-pointer overflow-hidden rounded-md border-2 border-border bg-surface-raised text-left shadow-[2px_2px_0px_var(--border)] transition-transform hover:scale-[1.02] active:scale-[0.98] sm:h-32 sm:w-22"
+          >
+            {activeBook.cover_url ? (
               <CoverImage
-                src={layer2Book.cover_url}
-                title={layer2Book.title}
+                src={activeBook.cover_url}
+                title={activeBook.title}
                 fill
                 className="object-cover"
               />
-              <div className="absolute inset-0 bg-black/20" />
-            </div>
-          ) : (
-            <div className="h-full w-full bg-surface-high/80" />
-          )}
-          <div className="absolute top-2 right-2 rounded-md border border-white/30 bg-black/85 px-1.5 py-0.5 text-[9px] font-black text-amber-300 shadow-md">
-            #{layer2Book?.series_order != null ? layer2Book.series_order : '3'}
-          </div>
-        </div>
-      )}
-
-      {/* ================= 3D FANNED DECK LAYER 1 (Middle Volume) ================= */}
-      {totalVolumes > 1 && (
-        <div
-          className="pointer-events-none absolute inset-0 z-[1] origin-bottom-left overflow-hidden rounded-2xl border-2 border-border bg-surface shadow-[3px_3px_0px_var(--border)] transition-all duration-300 ease-out group-hover/stack:translate-x-3 group-hover/stack:-translate-y-2 group-hover/stack:rotate-[3deg]"
-          style={{ transform: 'translate(5px, -4px) rotate(1.6deg)' }}
-        >
-          {layer1Book?.cover_url ? (
-            <div className="relative h-full w-full opacity-90">
-              <CoverImage
-                src={layer1Book.cover_url}
-                title={layer1Book.title}
-                fill
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-black/10" />
-            </div>
-          ) : (
-            <div className="h-full w-full bg-surface" />
-          )}
-          <div className="absolute top-2 right-2 rounded-md border border-white/30 bg-black/85 px-1.5 py-0.5 text-[9px] font-black text-cyan-300 shadow-md">
-            #{layer1Book?.series_order != null ? layer1Book.series_order : '2'}
-          </div>
-        </div>
-      )}
-
-      {/* ================= HARDCOVER PAGE EDGES UNDERNEATH ================= */}
-      {totalVolumes > 1 && (
-        <div
-          className="pointer-events-none absolute -right-2.5 bottom-1 top-4 z-[2] w-2.5 rounded-r-md border-r-2 border-y border-border/90 opacity-95 shadow-sm transition-all duration-300 group-hover/stack:translate-x-1"
-          style={{
-            background:
-              'repeating-linear-gradient(to bottom, var(--paper-bg, #f5f0e6), var(--paper-bg, #f5f0e6) 2px, var(--border, #000000) 2px, var(--border, #000000) 3.5px)',
-          }}
-        />
-      )}
-
-      {/* ================= FOREGROUND MAIN STACK CARD ================= */}
-      <Card
-        className={`surface-t2 group relative z-10 flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border-2 border-border bg-card-bg shadow-[4px_4px_0px_var(--border)] transition-all duration-200 ${
-          expanded ? 'ring-2 ring-accent-color' : ''
-        }`}
-        onClick={() => setExpanded(!expanded)}
-      >
-        <div className="vignette-inset relative aspect-[2/3] w-full overflow-hidden bg-surface">
-          {/* Authentic Book Spine Shadow Gradient on Left Edge */}
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-4 bg-gradient-to-r from-black/50 via-black/15 to-transparent" />
-
-          <CoverImage
-            src={heroCoverUrl}
-            title={seriesName}
-            fill
-            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 15vw"
-            priority={idx < 4}
-            className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-          />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-
-          {/* Top Badges: Total volumes + Quick In-Place Volume Switcher */}
-          <div className="absolute inset-x-2 top-2 z-20 flex items-center justify-between gap-1">
-            <Badge className="inline-flex items-center gap-1.5 border border-white/20 bg-black/75 px-2 py-0.5 text-[10px] font-black text-white shadow-md backdrop-blur-md">
-              <Layers className="h-3 w-3 text-amber-400" />
-              <span>{totalVolumes} IN SERIES</span>
-            </Badge>
-
-            <div
-              className="pointer-events-auto flex items-center rounded-full border border-white/20 bg-black/70 px-2 py-0.5 text-[10px] font-black text-white backdrop-blur-md transition-colors hover:bg-black/90"
-              onClick={(e) => {
-                e.stopPropagation();
-                setExpanded(!expanded);
-              }}
-            >
-              <span className="mr-1">{expanded ? 'Close' : 'Volumes'}</span>
-              {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            </div>
-          </div>
-
-          {/* Quick Volume Switcher Pills on Card (up to 5 pills) */}
-          {totalVolumes > 1 && totalVolumes <= 6 && (
-            <div className="absolute top-9 left-2 z-20 flex flex-wrap gap-1">
-              {sortedBooks.map((b, i) => {
-                const isCur = b.id === activeBook?.id;
-                return (
-                  <button
-                    key={b.id}
-                    type="button"
-                    title={b.title}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedVolIndex(i);
-                    }}
-                    className={`rounded border px-1.5 py-0.2 text-[8.5px] font-black uppercase transition-all shadow-xs ${
-                      isCur
-                        ? 'border-accent-color bg-accent-color text-white scale-105 shadow-sm'
-                        : 'border-white/30 bg-black/60 text-white/90 hover:bg-black/85'
-                    }`}
-                  >
-                    #{b.series_order != null ? b.series_order : i + 1}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Bottom Active Volume Tag on Cover */}
-          <div className="pointer-events-none absolute inset-x-2.5 bottom-2 z-20 flex items-center justify-between">
-            <span className="rounded-sm bg-black/80 px-1.5 py-0.5 text-[9px] font-bold text-amber-300 backdrop-blur-xs">
-              {activeBook?.series_order != null ? `#${activeBook.series_order}` : 'Active'} •{' '}
-              {activeBook?.title || seriesName}
-            </span>
-            {activeBook?.status && (
-              <span className="shrink-0 rounded-sm bg-black/80 px-1.5 py-0.5 text-[8.5px] font-black text-emerald-400 border border-emerald-500/30">
-                {activeBook.status.toUpperCase()}
-              </span>
+            ) : (
+              <div className="flex h-full w-full flex-col items-center justify-center p-2 text-center text-text-muted">
+                <BookOpen className="h-6 w-6 text-primary" />
+                <span className="mt-1 line-clamp-2 text-[9px] font-bold">{activeBook.title}</span>
+              </div>
             )}
-          </div>
-        </div>
+            <div className="absolute top-1 left-1 rounded bg-black/80 px-1 py-0.5 text-[9px] font-black text-white">
+              #{activeBook.series_order != null ? activeBook.series_order : activeIndex + 1}
+            </div>
+          </button>
 
-        {/* Card Content Body - Matches Standard BookCard Rhythm */}
-        <CardContent className="flex flex-1 flex-col justify-between gap-2 p-3 sm:p-3.5">
-          <div>
-            <h2 className="line-clamp-2 text-xs font-bold leading-snug tracking-tight text-text transition-colors group-hover:text-accent-color">
-              {seriesName}
-            </h2>
-            {activeBook?.author && (
-              <p className="mt-0.5 line-clamp-1 text-[11px] text-text-muted">{activeBook.author}</p>
-            )}
-            <div className="mt-1 flex flex-wrap items-center gap-1">
-              <span className="inline-block max-w-full truncate rounded bg-accent-color/10 px-1 py-0.2 text-[9.5px] font-bold text-accent-color">
-                [📚 {totalVolumes} VOLUMES IN SERIES]
-              </span>
-              {seriesProgressPct === 100 && (
-                <span className="inline-block rounded bg-emerald-500/20 px-1 py-0.2 text-[9px] font-bold text-emerald-500">
-                  COMPLETED
-                </span>
+          {/* Active Volume Metadata */}
+          <div className="flex min-w-0 flex-1 flex-col justify-between">
+            <div>
+              <div className="flex items-start justify-between gap-1">
+                <Link
+                  href={`/books/${activeBook.id}`}
+                  className="line-clamp-2 text-sm font-black tracking-tight text-text hover:text-primary transition-colors"
+                >
+                  {seriesName}
+                </Link>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-text-muted hover:text-text"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44 border-2 border-border">
+                    <DropdownMenuItem
+                      onClick={() => (onFullEdit ? onFullEdit(activeBook) : onEdit(activeBook))}
+                      className="font-bold cursor-pointer"
+                    >
+                      <Edit3 className="mr-2 h-4 w-4" />
+                      Edit Active Book
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="font-bold cursor-pointer">
+                      <Link href={`/books/${activeBook.id}`}>
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Full Detail Page
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => onDelete(activeBook)}
+                      className="font-bold text-red-600 focus:text-red-600 cursor-pointer"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Trash Active Book
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {activeBook.author && (
+                <p className="line-clamp-1 text-xs font-semibold text-text-muted">
+                  {activeBook.author}
+                </p>
               )}
+
+              {/* Volume Title Subheader */}
+              <div className="mt-1.5 flex items-center gap-1.5">
+                <Badge
+                  variant={getStatusBadgeVariant(activeBook.status)}
+                  className="px-1.5 py-0 text-[10px] font-black"
+                >
+                  {activeBook.status}
+                </Badge>
+                <span className="line-clamp-1 text-[11px] font-bold text-text-muted">
+                  Vol {activeBook.series_order ?? activeIndex + 1}: {activeBook.title}
+                </span>
+              </div>
+            </div>
+
+            {/* Active Book Progress Bar & Info */}
+            <div className="mt-2 space-y-1">
+              <div className="flex items-center justify-between text-[11px] font-bold text-text-muted">
+                <span className="truncate">{getStatusAwareProgressText(activeBook)}</span>
+                <span className="font-black text-text">{activeProgressPct}%</span>
+              </div>
+              <Progress value={activeProgressPct} className="h-1.5" />
             </div>
           </div>
+        </div>
 
-          <div className="mt-auto space-y-1.5 pt-1">
-            <div className="flex items-center justify-between text-[10px] font-mono font-medium text-text-muted">
-              <span>
-                {completedVolumes} of {totalVolumes} Finished
-              </span>
-              <span className="font-semibold text-text-muted">{seriesProgressPct}%</span>
-            </div>
-            <Progress value={seriesProgressPct} className="h-1.5" />
+        {/* Volume Selector Horizontal Chip Strip */}
+        <div className="mt-3 border-t border-border/40 pt-2.5">
+          <div className="mb-1.5 flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-text-muted">
+            <span>Volumes in Series</span>
+            <button
+              type="button"
+              onClick={() => setExpanded(!expanded)}
+              className="flex items-center gap-0.5 text-primary hover:underline cursor-pointer"
+            >
+              {expanded ? (
+                <>
+                  <span>Hide Ledger</span>
+                  <ChevronUp className="h-3 w-3" />
+                </>
+              ) : (
+                <>
+                  <span>View All ({totalVolumes})</span>
+                  <ChevronDown className="h-3 w-3" />
+                </>
+              )}
+            </button>
           </div>
-        </CardContent>
 
-        {/* Expandable Volume Drawer */}
+          {/* Quick Volume Switcher Pills */}
+          <div className="no-scrollbar flex gap-1.5 overflow-x-auto pb-1">
+            {sortedBooks.map((vol, vIdx) => {
+              const isSelected = vIdx === activeIndex;
+              const isDone = vol.status === 'Completed';
+              const isReading = vol.status === 'Reading';
+
+              return (
+                <button
+                  key={vol.id}
+                  type="button"
+                  onClick={() => setSelectedVolIndex(vIdx)}
+                  className={`flex flex-shrink-0 items-center gap-1 rounded border px-2 py-1 text-[10.5px] font-black transition-all cursor-pointer ${
+                    isSelected
+                      ? 'border-primary bg-primary text-white shadow-[1px_1px_0px_var(--border)]'
+                      : isDone
+                        ? 'border-border bg-surface-raised text-text hover:border-primary/60'
+                        : isReading
+                          ? 'border-primary/60 bg-primary/10 text-primary hover:bg-primary/20'
+                          : 'border-border bg-surface text-text-muted hover:text-text'
+                  }`}
+                >
+                  <span>
+                    {isDone ? '✓ ' : ''}
+                    Vol {vol.series_order != null ? vol.series_order : vIdx + 1}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Expandable Full Volume Ledger Accordion */}
         <AnimatePresence>
           {expanded && (
             <motion.div
@@ -283,110 +270,63 @@ export const SeriesStackCard = memo(function SeriesStackCard({
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="border-t-2 border-border bg-surface/95 p-2"
-              onClick={(e) => e.stopPropagation()}
+              className="mt-2 space-y-1.5 overflow-hidden border-t border-border/50 pt-2"
             >
-              <div className="mb-2 flex items-center justify-between px-1 text-[11px] font-bold text-text-muted">
-                <span>SERIES VOLUMES</span>
-                <span>{totalVolumes} ENTRIES</span>
-              </div>
-              <div className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
-                {sortedBooks.map((book) => {
-                  const statusCfg = getStatusConfig(book.status);
-                  const progressPct = calculateProgressPercentage(book);
+              {sortedBooks.map((vol, vIdx) => {
+                const isSelected = vIdx === activeIndex;
 
-                  return (
-                    <div
-                      key={book.id}
-                      className="group/vol flex items-center justify-between rounded-lg border border-border/80 bg-card-bg p-2 transition-colors hover:border-accent-color/60 hover:bg-surface"
+                return (
+                  <div
+                    key={vol.id}
+                    className={`flex items-center justify-between rounded border p-2 text-xs transition-colors ${
+                      isSelected
+                        ? 'border-primary bg-primary/5 font-bold'
+                        : 'border-border/60 bg-surface-raised/40 hover:bg-surface-raised'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setSelectedVolIndex(vIdx)}
+                      className="flex min-w-0 flex-1 items-center gap-2 text-left cursor-pointer"
                     >
-                      <div
-                        className="flex min-w-0 flex-1 cursor-pointer items-center gap-2"
-                        onClick={(e) => onBookClick(e, book)}
+                      <span className="font-black text-text-muted">
+                        #{vol.series_order ?? vIdx + 1}
+                      </span>
+                      <span className="truncate font-bold text-text">{vol.title}</span>
+                    </button>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Badge
+                        variant={getStatusBadgeVariant(vol.status)}
+                        className="px-1.5 py-0 text-[9px] font-black"
                       >
-                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-[10.5px] font-bold text-text">
-                          {book.series_order != null ? `#${book.series_order}` : '•'}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-bold text-text group-hover/vol:text-accent-color">
-                            {book.title}
-                          </p>
-                          <div className="flex items-center gap-1.5 text-[10px] text-text-muted">
-                            <span className="font-medium">{getStatusAwareProgressText(book)}</span>
-                            {progressPct != null && progressPct > 0 && progressPct < 100 && (
-                              <span className="text-accent-color font-semibold">
-                                ({progressPct}%)
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1 pl-2">
-                        <Badge
-                          variant={statusCfg.variant}
-                          className="h-5 px-1.5 text-[9px] font-medium"
-                        >
-                          {book.status}
-                        </Badge>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 rounded-md text-text-muted hover:text-text"
-                            >
-                              <MoreVertical className="h-3.5 w-3.5" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <Link href={`/books/${book.id}`} className="cursor-pointer">
-                                <BookOpen className="mr-2 h-3.5 w-3.5 text-primary" />
-                                <span>View Full Details</span>
-                              </Link>
-                            </DropdownMenuItem>
-
-                            <DropdownMenuItem onClick={() => onEdit(book)}>
-                              <BookOpen className="mr-2 h-3.5 w-3.5 text-accent-color" />
-                              <span>Quick Inspect</span>
-                            </DropdownMenuItem>
-                            {onFullEdit && (
-                              <DropdownMenuItem onClick={() => onFullEdit(book)}>
-                                <Edit3 className="mr-2 h-3.5 w-3.5" />
-                                <span>Edit Details</span>
-                              </DropdownMenuItem>
-                            )}
-                            {onToggleFavorite && (
-                              <DropdownMenuItem onClick={() => onToggleFavorite(book)}>
-                                <Heart
-                                  className={`mr-2 h-3.5 w-3.5 ${
-                                    book.is_favorite ? 'fill-amber-400 text-amber-400' : ''
-                                  }`}
-                                />
-                                <span>
-                                  {book.is_favorite ? 'Remove Favorite' : 'Mark Favorite'}
-                                </span>
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem
-                              className="text-red-500 focus:text-red-500"
-                              onClick={() => onDelete(book)}
-                            >
-                              <Trash2 className="mr-2 h-3.5 w-3.5" />
-                              <span>Delete</span>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                        {vol.status}
+                      </Badge>
+                      <button
+                        type="button"
+                        onClick={() => onEdit(vol)}
+                        className="rounded border border-border bg-surface p-1 text-text-muted hover:border-primary hover:text-primary cursor-pointer"
+                        title="Quick Log"
+                      >
+                        <Edit3 className="h-3 w-3" />
+                      </button>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
             </motion.div>
           )}
         </AnimatePresence>
-      </Card>
-    </div>
+      </CardContent>
+
+      {/* Series Footer Progress Bar */}
+      <div className="border-t border-border bg-surface-raised/60 px-3.5 py-2">
+        <div className="flex items-center justify-between text-[10px] font-black uppercase text-text-muted mb-1">
+          <span>Total Series Completion</span>
+          <span className="text-text">{seriesProgressPct}%</span>
+        </div>
+        <Progress value={seriesProgressPct} className="h-1.5" />
+      </div>
+    </Card>
   );
 });

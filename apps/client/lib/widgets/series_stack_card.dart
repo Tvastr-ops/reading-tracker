@@ -27,7 +27,8 @@ class SeriesStackCard extends StatefulWidget {
   State<SeriesStackCard> createState() => _SeriesStackCardState();
 }
 
-class _SeriesStackCardState extends State<SeriesStackCard> with SingleTickerProviderStateMixin {
+class _SeriesStackCardState extends State<SeriesStackCard> {
+  int _selectedVolIndex = 0;
   bool _isExpanded = false;
 
   @override
@@ -54,346 +55,407 @@ class _SeriesStackCardState extends State<SeriesStackCard> with SingleTickerProv
     final totalVolumes = sortedBooks.length;
     final completedVolumes = sortedBooks.where((b) => b.status == BookStatus.completed).length;
     final readingBooks = sortedBooks.where((b) => b.status == BookStatus.reading).toList();
-    final activeBook = readingBooks.isNotEmpty ? readingBooks.first : sortedBooks.first;
 
-    final progressPct = totalVolumes > 0 ? (completedVolumes / totalVolumes) : 0.0;
-    final seriesCover = sortedBooks.firstWhere(
-      (b) => b.coverUrl != null && b.coverUrl!.isNotEmpty,
-      orElse: () => activeBook,
-    ).coverUrl;
+    // Default to active reading volume or selected volume
+    final activeIndex = (_selectedVolIndex >= 0 && _selectedVolIndex < sortedBooks.length)
+        ? _selectedVolIndex
+        : (readingBooks.isNotEmpty
+            ? sortedBooks.indexOf(readingBooks.first)
+            : 0);
+
+    final activeBook = sortedBooks[activeIndex.clamp(0, sortedBooks.length - 1)];
+    final seriesProgressPct = totalVolumes > 0 ? (completedVolumes / totalVolumes) : 0.0;
+    final seriesProgressInt = (seriesProgressPct * 100).toInt();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Stack(
-        clipBehavior: Clip.none,
+      decoration: BoxDecoration(
+        color: cardBg,
+        border: Border.all(color: borderColor, width: AppTheme.borderHeavy),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.black.withValues(alpha: 0.6) : borderColor,
+            offset: isDark ? const Offset(2, 2) : (details?.shadowOffset ?? AppTheme.shadowOffset),
+            blurRadius: isDark ? 3 : 0,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Background Layer 2 (3D stacked deck effect)
-          if (totalVolumes > 2)
-            Positioned(
-              top: 4,
-              left: 5,
-              right: -5,
-              bottom: -4,
-              child: Transform(
-                transform: Matrix4.translationValues(5.0, -3.0, 0.0)..rotateZ(0.012),
-                alignment: Alignment.bottomLeft,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurfaceHigh.withValues(alpha: 0.6) : AppColors.paperSurfaceHigh,
-                    border: Border.all(color: borderColor.withValues(alpha: 0.5), width: 1.5),
-                  ),
-                ),
-              ),
-            ),
-
-          // Background Layer 1 (3D stacked deck effect)
-          if (totalVolumes > 1)
-            Positioned(
-              top: 2,
-              left: 2.5,
-              right: -2.5,
-              bottom: -2,
-              child: Transform(
-                transform: Matrix4.translationValues(2.5, -1.5, 0.0)..rotateZ(0.006),
-                alignment: Alignment.bottomLeft,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
-                    border: Border.all(color: borderColor.withValues(alpha: 0.8), width: 1.5),
-                  ),
-                ),
-              ),
-            ),
-
-          // Foreground Interactive Card
+          // 1. Top Ribbon: Series Pill + Read Count
           Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: cardBg,
-              border: Border.all(color: borderColor, width: AppTheme.borderHeavy),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark ? Colors.black.withValues(alpha: 0.6) : borderColor,
-                  offset: isDark ? const Offset(2, 2) : (details?.shadowOffset ?? AppTheme.shadowOffset),
-                  blurRadius: isDark ? 3 : 0,
+              color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
+              border: Border(
+                bottom: BorderSide(color: borderColor, width: 1.5),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.collections_bookmark_rounded, size: 14, color: accentColor),
+                    const SizedBox(width: 6),
+                    Text(
+                      'SERIES • $totalVolumes VOLUMES',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
+                        color: accentColor,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  '$completedVolumes/$totalVolumes READ ($seriesProgressInt%)',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    color: inkColor.withValues(alpha: 0.75),
+                  ),
                 ),
               ],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+          ),
+
+          // 2. Active Volume Overview (Cover + Info)
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Header Banner
-                InkWell(
-                  onTap: () => setState(() => _isExpanded = !_isExpanded),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Series Cover Thumbnail
-                        if (seriesCover != null && seriesCover.isNotEmpty)
-                          Container(
-                            width: 48,
-                            height: 68,
-                            margin: const EdgeInsets.only(right: 12),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: borderColor, width: 1.5),
-                              color: cardHighBg,
-                            ),
-                            child: Image.network(
-                              seriesCover,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Center(
-                                child: Icon(Icons.auto_stories_rounded, size: 20, color: mutedInk),
-                              ),
-                            ),
+                // Active Volume Cover Thumbnail
+                GestureDetector(
+                  onTap: () => widget.onBookTap(activeBook),
+                  child: Container(
+                    width: 68,
+                    height: 98,
+                    margin: const EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+                      border: Border.all(color: borderColor, width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: borderColor,
+                          offset: const Offset(2, 2),
+                          blurRadius: 0,
+                        ),
+                      ],
+                    ),
+                    child: activeBook.coverUrl != null && activeBook.coverUrl!.isNotEmpty
+                        ? Image.network(
+                            activeBook.coverUrl!,
+                            fit: BoxFit.cover,
+                            cacheWidth: 240,
+                            errorBuilder: (_, __, ___) => _buildCoverFallback(activeBook, accentColor),
                           )
-                        else
+                        : _buildCoverFallback(activeBook, accentColor),
+                  ),
+                ),
+
+                // Active Volume Metadata & Actions
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.seriesName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          color: inkColor,
+                        ),
+                      ),
+                      if (activeBook.author != null && activeBook.author!.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          activeBook.author!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: mutedInk,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 6),
+
+                      // Active Volume Subtitle & Status
+                      Row(
+                        children: [
                           Container(
-                            width: 48,
-                            height: 68,
-                            margin: const EdgeInsets.only(right: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                             decoration: BoxDecoration(
-                              border: Border.all(color: borderColor, width: 1.5),
-                              color: cardHighBg,
+                              color: _getStatusBg(activeBook.status, accentColor, isDark),
+                              border: Border.all(color: borderColor.withValues(alpha: 0.5), width: 1),
                             ),
-                            child: Center(
-                              child: Icon(Icons.collections_bookmark_rounded, size: 24, color: accentColor),
+                            child: Text(
+                              activeBook.status.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.w900,
+                                color: activeBook.status == BookStatus.reading ? Colors.white : inkColor,
+                              ),
                             ),
                           ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Vol ${activeBook.seriesOrder != null ? formatNum(activeBook.seriesOrder!) : (activeIndex + 1)}: ${activeBook.title}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: inkColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
 
-                        // Series Info & Progress
+                      // Active Book Progress Bar
+                      ClipRRect(
+                        borderRadius: BorderRadius.zero,
+                        child: LinearProgressIndicator(
+                          value: (activeBook.completionPercentage / 100).clamp(0.0, 1.0),
+                          minHeight: 6,
+                          backgroundColor: isDark ? Colors.white10 : AppColors.paperSurfaceHighest,
+                          valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            formatProgressDisplay(activeBook),
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: mutedInk),
+                          ),
+                          Text(
+                            '${activeBook.completionPercentage.toInt()}%',
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: accentColor),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // 3. Quick Volume Chip Switcher Strip
+          Container(
+            padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: borderColor.withValues(alpha: 0.3), width: 1),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'VOLUMES IN SERIES',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
+                        color: mutedInk,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => setState(() => _isExpanded = !_isExpanded),
+                      child: Row(
+                        children: [
+                          Text(
+                            _isExpanded ? 'HIDE' : 'VIEW ALL ($totalVolumes)',
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w900,
+                              color: accentColor,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                          Icon(
+                            _isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                            size: 14,
+                            color: accentColor,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    children: List.generate(sortedBooks.length, (vIdx) {
+                      final vol = sortedBooks[vIdx];
+                      final isSel = vIdx == activeIndex;
+                      final isDone = vol.status == BookStatus.completed;
+                      final isReading = vol.status == BookStatus.reading;
+
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedVolIndex = vIdx),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isSel
+                                ? accentColor
+                                : (isReading
+                                    ? accentColor.withValues(alpha: 0.15)
+                                    : (isDark ? AppColors.darkSurfaceHigh : Colors.white)),
+                            border: Border.all(
+                              color: isSel ? accentColor : borderColor.withValues(alpha: 0.5),
+                              width: isSel ? 1.5 : 1.0,
+                            ),
+                          ),
+                          child: Text(
+                            '${isDone ? "✓ " : ""}Vol ${vol.seriesOrder != null ? formatNum(vol.seriesOrder!) : (vIdx + 1)}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              color: isSel
+                                  ? Colors.white
+                                  : (isReading ? accentColor : inkColor),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // 4. Expandable Full Volume List
+          if (_isExpanded)
+            Container(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurfaceHigh.withValues(alpha: 0.5) : AppColors.paperSurface.withValues(alpha: 0.5),
+                border: Border(
+                  top: BorderSide(color: borderColor.withValues(alpha: 0.3), width: 1),
+                ),
+              ),
+              child: Column(
+                children: List.generate(sortedBooks.length, (vIdx) {
+                  final vol = sortedBooks[vIdx];
+                  final isSel = vIdx == activeIndex;
+
+                  return Container(
+                    margin: const EdgeInsets.only(top: 6),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isSel ? accentColor.withValues(alpha: 0.08) : cardHighBg,
+                      border: Border.all(
+                        color: isSel ? accentColor : borderColor.withValues(alpha: 0.3),
+                        width: isSel ? 1.5 : 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          '#${vol.seriesOrder != null ? formatNum(vol.seriesOrder!) : (vIdx + 1)}',
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: mutedInk),
+                        ),
+                        const SizedBox(width: 8),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: accentColor,
-                                      border: Border.all(color: borderColor, width: 1),
-                                    ),
-                                    child: Text(
-                                      'SERIES • $totalVolumes IN SERIES',
-                                      style: const TextStyle(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w900,
-                                        color: Colors.white,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  Icon(
-                                    _isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                                    size: 20,
-                                    color: inkColor,
-                                  ),
-                                ],
+                          child: GestureDetector(
+                            onTap: () => widget.onBookTap(vol),
+                            child: Text(
+                              vol.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
+                                color: isSel ? accentColor : inkColor,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                widget.seriesName,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 15,
-                                  color: inkColor,
-                                  letterSpacing: -0.2,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                readingBooks.isNotEmpty
-                                    ? 'Currently on ${activeBook.seriesOrder != null ? "#${formatNum(activeBook.seriesOrder!)}" : activeBook.title}'
-                                    : (completedVolumes == totalVolumes ? 'Series Complete' : '$completedVolumes of $totalVolumes finished'),
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: mutedInk,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-
-                              // Progress Bar
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.zero,
-                                      child: Container(
-                                        height: 6,
-                                        decoration: BoxDecoration(
-                                          color: cardHighBg,
-                                          border: Border.all(color: borderColor.withValues(alpha: 0.3), width: 1),
-                                        ),
-                                        child: FractionallySizedBox(
-                                          alignment: Alignment.centerLeft,
-                                          widthFactor: progressPct.clamp(0.0, 1.0),
-                                          child: Container(color: accentColor),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '${(progressPct * 100).toInt()}%',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w900,
-                                      color: inkColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        GestureDetector(
+                          onTap: () => widget.onLogProgress(vol),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: accentColor,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                            child: const Text(
+                              'LOG',
+                              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.white),
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ),
-
-                // Expandable Volume Breakdown List
-                if (_isExpanded) ...[
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border(top: BorderSide(color: borderColor.withValues(alpha: 0.25), width: 1.5)),
-                      color: cardHighBg.withValues(alpha: 0.4),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Column(
-                      children: sortedBooks.map((book) {
-                        final isFinished = book.status == BookStatus.completed;
-                        final isReading = book.status == BookStatus.reading;
-                        final unitLabel = getUnitLabel(book.type, book.unitType);
-
-                        return InkWell(
-                          onTap: () => widget.onBookTap(book),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(color: borderColor.withValues(alpha: 0.15), width: 1),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                // Order Badge / Number
-                                Container(
-                                  width: 32,
-                                  alignment: Alignment.center,
-                                  padding: const EdgeInsets.symmetric(vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: isFinished
-                                        ? AppColors.successGreen.withValues(alpha: 0.2)
-                                        : (isReading ? accentColor.withValues(alpha: 0.15) : cardBg),
-                                    border: Border.all(
-                                      color: isFinished ? AppColors.successGreen : borderColor.withValues(alpha: 0.4),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    book.seriesOrder != null ? '#${formatNum(book.seriesOrder!)}' : '•',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w900,
-                                      color: isFinished ? AppColors.successGreen : inkColor,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-
-                                // Book Title & Sub-Progress
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        book.title,
-                                        style: TextStyle(
-                                          fontSize: 12.5,
-                                          fontWeight: FontWeight.w800,
-                                          color: inkColor,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 1),
-                                      Text(
-                                        book.totalUnits != null
-                                            ? '${formatNum(book.progress)} / ${formatNum(book.totalUnits!)} $unitLabel'
-                                            : '${formatNum(book.progress)} $unitLabel',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w600,
-                                          color: mutedInk,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                // Status Indicator Pill
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: getStatusColor(book.status).withValues(alpha: 0.15),
-                                    border: Border.all(color: getStatusColor(book.status), width: 1),
-                                  ),
-                                  child: Text(
-                                    book.status.toUpperCase(),
-                                    style: TextStyle(
-                                      fontSize: 8.5,
-                                      fontWeight: FontWeight.w900,
-                                      color: getStatusColor(book.status),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-
-                                // Quick Log Button
-                                GestureDetector(
-                                  onTap: () => widget.onLogProgress(book),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: cardBg,
-                                      border: Border.all(color: borderColor, width: 1.2),
-                                    ),
-                                    child: Icon(Icons.add_rounded, size: 14, color: inkColor),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ],
-              ],
+                  );
+                }),
+              ),
             ),
+
+          // 5. Bottom Series Progress Bar
+          LinearProgressIndicator(
+            value: seriesProgressPct.clamp(0.0, 1.0),
+            minHeight: 4,
+            backgroundColor: isDark ? Colors.white10 : AppColors.paperSurfaceHighest,
+            valueColor: AlwaysStoppedAnimation<Color>(accentColor),
           ),
         ],
       ),
     );
   }
 
-  Color getStatusColor(String status) {
+  Color _getStatusBg(String status, Color accentColor, bool isDark) {
     switch (status) {
-      case BookStatus.completed:
-        return AppColors.successGreen;
       case BookStatus.reading:
-        return AppColors.electricCobalt;
+        return accentColor;
+      case BookStatus.completed:
+        return const Color(0xFF10B981);
       case BookStatus.onHold:
-        return AppColors.warningAmber;
+        return const Color(0xFFF59E0B);
       case BookStatus.dropped:
         return AppColors.primaryRed;
       default:
-        return AppColors.inkMuted;
+        return isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHighest;
     }
+  }
+
+  Widget _buildCoverFallback(Book b, Color accentColor) {
+    return Container(
+      color: accentColor.withValues(alpha: 0.12),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.auto_stories_rounded, size: 18, color: accentColor),
+          const SizedBox(height: 2),
+          Text(
+            b.title.isNotEmpty ? b.title.substring(0, 1).toUpperCase() : '?',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: accentColor),
+          ),
+        ],
+      ),
+    );
   }
 }
