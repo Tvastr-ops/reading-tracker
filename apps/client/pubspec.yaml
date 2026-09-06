@@ -1,7 +1,7 @@
 name: reading_tracker_app
 description: "A minimal, beautiful, and tactile reading tracker."
 publish_to: 'none'
-version: 2.8.0+445
+version: 2.9.0+446
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -23,7 +23,7 @@ dependencies:
   window_manager: ^0.5.2
   package_info_plus: ^10.2.1
   path_provider: ^2.1.2
-  flutter_secure_storage: ^10.3.1
+  flutter_secure_storage: ^11.0.0
   local_auth: ^3.0.2
   crypto: ^3.0.5
   encrypt: ^5.0.3

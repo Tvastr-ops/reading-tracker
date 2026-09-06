@@ -5,6 +5,36 @@ All notable changes to the Paperback Reading Tracker ecosystem will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to the [Project Release Versioning Specification](.gemini/rules/versioning.md).
 
+## [2.9.0] - 2026-09-06
+
+### 🌐 Next.js Web App (v2.9.0)
+- **Modular Goodreads/StoryGraph-Caliber Book Detail Experience (`/books/[id]`)**:
+  - Re-architected book detail page into 8 specialized modular components (`BookHeroCard`, `BookReadingCockpit`, `BookSynopsisCard`, `BookPersonalNotesCard`, `BookSpecsCard`, `BookShelvesAndTagsCard`, `BookSeriesContinuityCard`, `BookJourneysLedger`).
+  - Added dedicated Reading Cockpit stepper (`-1`, `+1`, `+5`, `+10`) and progress quick-logging.
+  - Complete separation between public **Editorial Synopsis (`description`)** and private **Personal Notes & Reflections (`notes`)**.
+- **Clean Minimal Series Bundle Card (`SeriesStackCard.tsx`)**:
+  - Replaced 3D rotated deck with a clean neo-brutalist bundle card with active volume spotlight, status-coded horizontal volume chip switcher, overall series progress bar, and collapsible volume ledger.
+- **Search & Filter Parameter Parity**:
+  - Aligned author, series, tag, and shelf links with `useLibraryFilters` (`?q=`, `?tag=`, `?shelf=`).
+- **Security & Validation Hardening**:
+  - Protected `proxy.ts` against undefined session secrets, added SHA-256 pre-hashing for timing-safe password checks, and enforced upper bounds on ongoing works.
+
+### 📱 Mobile & Desktop Client (v2.9.0)
+- **Full-Screen Reader Cockpit (`book_detail_screen.dart`)**:
+  - Comprehensive reader cockpit for desktop and mobile with cover thumbnail, status badge, star rating, quick progress stepper, separate synopsis and notes cards, franchise timeline, and reading journeys ledger.
+  - Added full-page expand button to the Side Inspector panel.
+- **Clean Minimal Series Bundle Card (`series_stack_card.dart`)**:
+  - Zero 3D matrix rotation jitter or clipping.
+  - Features series header ribbon, active volume spotlight with 1-tap logging, horizontal volume chip carousel, and expandable volume breakdown.
+- **SQLite Schema Upgrade (`v7`)**:
+  - Added `description` column with seamless automatic SQLite migration and full remote upsert bindings.
+- **Sync Engine Hardening**:
+  - Fixed `sync_queue` crash on reading log deletions (`table_name: 'reading_log'`).
+  - Implemented batch chunking (batches of 40) for reading log remote queries to eliminate HTTP 414 ("URI Too Long") on large libraries.
+  - Added automatic fallback from `PATCH 404` to `POST /api/books` for restored/offline book records.
+- **Mobile Layout & Keyboard Safety**:
+  - Eliminated `RenderFlex` keyboard overflow errors in `QuickLogDialog` via responsive `BoxConstraints`.
+
 ## [2.8.0] - 2026-09-04
 
 ### 🌐 Next.js Web App (v2.8.0)
