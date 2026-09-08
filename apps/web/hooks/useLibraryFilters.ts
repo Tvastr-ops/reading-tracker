@@ -98,7 +98,14 @@ export function useLibraryFilters(books: Book[]) {
     if (savedRatingMode === 'stars' || savedRatingMode === 'decimal') {
       setRatingMode(savedRatingMode);
     }
-  }, []);
+    const savedSeriesStack = window.localStorage.getItem('groupBySeries');
+    if (savedSeriesStack !== null) {
+      const urlHasParam = new URLSearchParams(window.location.search).has('series');
+      if (!urlHasParam) {
+        setGroupBySeriesState(savedSeriesStack === 'true');
+      }
+    }
+  }, [setGroupBySeriesState]);
 
   const pageSize: number | 'all' =
     pageSizeParam === 'all' ? 'all' : parseInt(pageSizeParam, 10) || 50;
@@ -470,11 +477,23 @@ export function useLibraryFilters(books: Book[]) {
     },
     groupBySeries,
     setGroupBySeries: (g: boolean | ((prev: boolean) => boolean)) => {
-      setGroupBySeriesState(g);
+      setGroupBySeriesState((prev) => {
+        const next = typeof g === 'function' ? g(prev) : g;
+        try {
+          window.localStorage.setItem('groupBySeries', String(next));
+        } catch {}
+        return next;
+      });
       setCurrentPageState(1);
     },
     toggleGroupBySeries: () => {
-      setGroupBySeriesState((prev) => !prev);
+      setGroupBySeriesState((prev) => {
+        const next = !prev;
+        try {
+          window.localStorage.setItem('groupBySeries', String(next));
+        } catch {}
+        return next;
+      });
       setCurrentPageState(1);
     },
 
