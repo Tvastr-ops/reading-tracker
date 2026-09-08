@@ -110,7 +110,7 @@ export default function BookForm({
       });
       const json = await res.json();
       if (!res.ok || !json?.data) {
-        toast.error(json?.error || 'Could not extract metadata from this link');
+        toast.error(json?.error || 'Could not find metadata for this link or ID');
         return;
       }
       const data = json.data as ExtractedBookMetadata;
@@ -333,8 +333,8 @@ export default function BookForm({
                       <div className="relative flex-1">
                         <Link2 className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
                         <input
-                          type="url"
-                          placeholder="Paste novel or book link to auto-fill..."
+                          type="text"
+                          placeholder="Paste book link, ISBN (e.g. 978...), or ID (e.g. mb:1)..."
                           value={extractUrl}
                           onChange={(e) => setExtractUrl(e.target.value)}
                           onKeyDown={(e) => {

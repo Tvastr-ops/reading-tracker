@@ -2,8 +2,11 @@ import assert from 'node:assert';
 import { test } from 'node:test';
 import {
   isPrivateOrReservedHost,
+  normalizeIsbn,
+  normalizeMangaBakaId,
   parseAO3,
   parseMangaBakaSeries,
+  parseOpenLibraryBookJson,
   parseRoyalRoad,
   parseUniversalOpenGraph,
   validateTargetUrl,
@@ -174,4 +177,49 @@ test('Metadata Parser: Universal OpenGraph fallback', () => {
   assert.strictEqual(meta.author, 'Brandon Sanderson');
   assert.strictEqual(meta.cover_url, 'https://images.goodreads.com/kings.jpg');
   assert.strictEqual(meta.site_name, 'Goodreads');
+});
+
+test('Metadata Parser: normalizeIsbn validates and standardizes ISBN-10 and ISBN-13', () => {
+  assert.strictEqual(normalizeIsbn('0-8044-2957-X'), '080442957X');
+  assert.strictEqual(normalizeIsbn('0140328726'), '0140328726');
+  assert.strictEqual(normalizeIsbn('978-0-14-032872-1'), '9780140328721');
+  assert.strictEqual(normalizeIsbn('9780140328721'), '9780140328721');
+  assert.strictEqual(normalizeIsbn('isbn: 978-0-14-032872-1'), '9780140328721');
+  assert.strictEqual(normalizeIsbn('ISBN-13: 9780140328721'), '9780140328721');
+  assert.strictEqual(normalizeIsbn('invalid-123'), null);
+  assert.strictEqual(normalizeIsbn(''), null);
+});
+
+test('Metadata Parser: normalizeMangaBakaId extracts series numeric ID', () => {
+  assert.strictEqual(normalizeMangaBakaId('mb:84589'), '84589');
+  assert.strictEqual(normalizeMangaBakaId('mangabaka:12345'), '12345');
+  assert.strictEqual(normalizeMangaBakaId('mb84589'), '84589');
+  assert.strictEqual(normalizeMangaBakaId('other:123'), null);
+  assert.strictEqual(normalizeMangaBakaId(''), null);
+});
+
+test('Metadata Parser: parseOpenLibraryBookJson extracts book metadata accurately', () => {
+  const sampleData = {
+    title: 'Dune',
+    subtitle: 'The Graphic Novel, Book 1',
+    authors: [{ name: 'Frank Herbert' }, { name: 'Brian Herbert' }],
+    number_of_pages: 176,
+    cover: {
+      large: 'https://covers.openlibrary.org/b/id/10523456-L.jpg',
+    },
+    subjects: [{ name: 'Science Fiction' }, { name: 'Graphic Novels' }],
+    notes: 'A visual adaptation of the classic sci-fi novel.',
+  };
+
+  const meta = parseOpenLibraryBookJson(sampleData, '9781419731501');
+  assert.strictEqual(meta.title, 'Dune: The Graphic Novel, Book 1');
+  assert.strictEqual(meta.author, 'Frank Herbert, Brian Herbert');
+  assert.strictEqual(meta.total_units, 176);
+  assert.strictEqual(meta.unit_type, 'pages');
+  assert.strictEqual(meta.type, 'Novel');
+  assert.strictEqual(meta.cover_url, 'https://covers.openlibrary.org/b/id/10523456-L.jpg');
+  assert.strictEqual(meta.genre_tags, 'Science Fiction, Graphic Novels');
+  assert.strictEqual(meta.description, 'A visual adaptation of the classic sci-fi novel.');
+  assert.strictEqual(meta.source_link, 'https://openlibrary.org/isbn/9781419731501');
+  assert.strictEqual(meta.site_name, 'Open Library');
 });

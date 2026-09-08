@@ -491,3 +491,163 @@ export async function extractMetadataFromUrl(rawUrl: string): Promise<ExtractedB
 
   return result;
 }
+
+/**
+ * Normalizes an ISBN string (ISBN-10 or ISBN-13).
+ * Strips hyphens, spaces, and optional 'isbn:' prefix.
+ * Returns the cleaned ISBN if valid, or null otherwise.
+ */
+export function normalizeIsbn(input: string): string | null {
+  if (!input || typeof input !== 'string') return null;
+  const trimmed = input.trim();
+  const cleaned = trimmed.replace(/^isbn(?:-?1[03])?:?\s*/i, '').replace(/[-\s]/g, '');
+
+  // ISBN-10: 9 digits + 1 digit or 'X'
+  if (/^[0-9]{9}[0-9X]$/i.test(cleaned)) {
+    return cleaned.toUpperCase();
+  }
+
+  // ISBN-13: 13 digits starting with 978 or 979
+  if (/^(?:978|979)[0-9]{10}$/.test(cleaned)) {
+    return cleaned;
+  }
+
+  return null;
+}
+
+/**
+ * Normalizes a MangaBaka series ID (e.g. 'mb:123', 'mangabaka:123', 'mb123').
+ */
+export function normalizeMangaBakaId(input: string): string | null {
+  if (!input || typeof input !== 'string') return null;
+  const trimmed = input.trim();
+  const m = trimmed.match(/^(?:mb|mangabaka):?(\d+)$/i);
+  if (m?.[1]) return m[1];
+  return null;
+}
+
+/**
+ * Parses Open Library book JSON payload into ExtractedBookMetadata.
+ */
+export function parseOpenLibraryBookJson(
+  data: Record<string, unknown>,
+  isbn: string,
+): ExtractedBookMetadata {
+  let title = typeof data.title === 'string' ? data.title : '';
+  if (typeof data.subtitle === 'string' && data.subtitle) {
+    title = `${title}: ${data.subtitle}`;
+  }
+
+  let author = '';
+  if (Array.isArray(data.authors) && data.authors.length > 0) {
+    author = data.authors
+      .map((a: unknown) => {
+        if (typeof a === 'object' && a !== null && 'name' in a) {
+          return String((a as { name: string }).name);
+        }
+        return typeof a === 'string' ? a : '';
+      })
+      .filter(Boolean)
+      .join(', ');
+  }
+
+  let coverUrl = '';
+  if (typeof data.cover === 'object' && data.cover !== null) {
+    const c = data.cover as { large?: string; medium?: string; small?: string };
+    coverUrl = c.large || c.medium || c.small || '';
+  }
+
+  const pages = typeof data.number_of_pages === 'number' ? data.number_of_pages : null;
+
+  let genreTags = '';
+  if (Array.isArray(data.subjects) && data.subjects.length > 0) {
+    genreTags = data.subjects
+      .map((s: unknown) => {
+        if (typeof s === 'object' && s !== null && 'name' in s) {
+          return String((s as { name: string }).name);
+        }
+        return typeof s === 'string' ? s : '';
+      })
+      .filter(Boolean)
+      .slice(0, 6)
+      .join(', ');
+  }
+
+  let description = '';
+  if (typeof data.notes === 'string') {
+    description = data.notes;
+  } else if (Array.isArray(data.excerpts) && data.excerpts.length > 0) {
+    const firstExcerpt = data.excerpts[0];
+    if (typeof firstExcerpt === 'object' && firstExcerpt !== null && 'text' in firstExcerpt) {
+      description = String((firstExcerpt as { text: string }).text);
+    }
+  }
+
+  return {
+    title: cleanText(title),
+    author: cleanText(author),
+    description: cleanText(description),
+    cover_url: coverUrl,
+    source_link: `https://openlibrary.org/isbn/${isbn}`,
+    type: 'Novel',
+    unit_type: 'pages',
+    total_units: pages,
+    genre_tags: genreTags || undefined,
+    site_name: 'Open Library',
+  };
+}
+
+/**
+ * Universal metadata extractor: accepts URLs, ISBNs, or provider IDs (e.g. mb:123).
+ */
+export async function extractMetadata(rawInput: string): Promise<ExtractedBookMetadata> {
+  const trimmed = rawInput.trim();
+
+  // 1. ISBN Lookup (Open Library)
+  const isbn = normalizeIsbn(trimmed);
+  if (isbn) {
+    const res = await fetch(
+      `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`,
+      {
+        signal: AbortSignal.timeout(6000),
+        headers: {
+          'User-Agent': 'reading-tracker-personal-app/3.0',
+          Accept: 'application/json',
+        },
+      },
+    );
+    if (res.ok) {
+      const json = await res.json();
+      const key = `ISBN:${isbn}`;
+      if (json?.[key]) {
+        return parseOpenLibraryBookJson(json[key], isbn);
+      }
+    }
+    throw new Error(`No book metadata found for ISBN ${isbn}`);
+  }
+
+  // 2. MangaBaka direct series ID (e.g. mb:123)
+  const mbId = normalizeMangaBakaId(trimmed);
+  if (mbId) {
+    const res = await fetch(`https://api.mangabaka.org/v2/series/${mbId}`, {
+      signal: AbortSignal.timeout(5000),
+      headers: {
+        'User-Agent': 'reading-tracker-personal-app/3.0',
+        Accept: 'application/json',
+      },
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json?.data) {
+        return parseMangaBakaSeries(
+          json.data,
+          json.data.canonical_url || `https://mangabaka.org/series/${mbId}`,
+        );
+      }
+    }
+    throw new Error(`No series found on MangaBaka for ID ${mbId}`);
+  }
+
+  // 3. Target URL lookup (with SSRF protection)
+  return extractMetadataFromUrl(trimmed);
+}
