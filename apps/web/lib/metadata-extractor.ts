@@ -128,15 +128,42 @@ export function extractMetaTag(html: string, nameOrProperty: string): string | n
   return null;
 }
 
+export interface MangaBakaTitle {
+  language: string;
+  title: string;
+  is_primary?: boolean;
+}
+
+export interface MangaBakaSeriesData {
+  id?: number;
+  canonical_url?: string;
+  authors?: string[];
+  artists?: string[];
+  description?: string;
+  status?: string;
+  type?: string;
+  final_volume?: number | null;
+  total_chapters?: number | null;
+  titles?: MangaBakaTitle[];
+  cover?: {
+    x350?: string;
+    raw?: string;
+    x250?: string;
+  };
+}
+
 /**
  * Parses MangaBaka API series object into structured ExtractedBookMetadata.
  */
-export function parseMangaBakaSeries(data: any, originalUrl: string): ExtractedBookMetadata {
+export function parseMangaBakaSeries(
+  data: MangaBakaSeriesData,
+  originalUrl: string,
+): ExtractedBookMetadata {
   // Title: English title or primary title
   const titles = Array.isArray(data.titles) ? data.titles : [];
-  const enTitle = titles.find((t: any) => t.language === 'en')?.title;
-  const jaLatnTitle = titles.find((t: any) => t.language === 'ja-Latn')?.title;
-  const primaryTitle = titles.find((t: any) => t.is_primary)?.title;
+  const enTitle = titles.find((t) => t.language === 'en')?.title;
+  const jaLatnTitle = titles.find((t) => t.language === 'ja-Latn')?.title;
+  const primaryTitle = titles.find((t) => t.is_primary)?.title;
   const title = cleanText(
     enTitle ||
       jaLatnTitle ||

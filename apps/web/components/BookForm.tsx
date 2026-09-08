@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
+import type { ExtractedBookMetadata } from '@/lib/metadata-extractor';
 import {
   getDefaultUnitType,
   normalizeStatusTransition,
@@ -113,7 +113,7 @@ export default function BookForm({
         toast.error(json?.error || 'Could not extract metadata from this link');
         return;
       }
-      const data = json.data;
+      const data = json.data as ExtractedBookMetadata;
       setForm((prev) => ({
         ...prev,
         title: data.title || prev.title,

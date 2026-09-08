@@ -25,8 +25,8 @@ export const POST = withAuth(async (req: NextRequest) => {
   try {
     const metadata = await extractMetadataFromUrl(rawUrl);
     return NextResponse.json({ data: metadata });
-  } catch (err: any) {
-    const message = err?.message || 'Failed to extract metadata from this URL';
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to extract metadata from this URL';
     return NextResponse.json({ error: message }, { status: 422 });
   }
 });
