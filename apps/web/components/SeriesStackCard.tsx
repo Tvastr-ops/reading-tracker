@@ -1,7 +1,17 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { BookOpen, Edit3, Heart, Layers, MoreVertical, Sparkles, Trash2 } from 'lucide-react';
+import {
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  Edit3,
+  Heart,
+  Layers,
+  MoreVertical,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
 import Link from 'next/link';
 import type React from 'react';
 import { memo, useMemo, useState } from 'react';
@@ -225,38 +235,67 @@ export const SeriesStackCard = memo(function SeriesStackCard({
               <p className="mt-0.5 line-clamp-1 text-[11px] text-text-muted">{activeBook.author}</p>
             )}
 
-            {/* Interactive Volume Chips */}
+            {/* Interactive Volume Ribbon (Scales seamlessly from 2 to 100+ volumes with 0 CLS) */}
             {totalVolumes > 1 && (
-              <div
-                className="mt-2 flex flex-wrap items-center gap-1"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {sortedBooks.map((b, vIdx) => {
-                  const isCurrent = vIdx === activeIndex;
-                  const isVolCompleted = b.status === 'Completed';
-                  const isVolReading = b.status === 'Reading';
-                  const label = b.series_order != null ? `v${b.series_order}` : `v${vIdx + 1}`;
+              <div className="mt-2 flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                {totalVolumes > 6 && (
+                  <button
+                    type="button"
+                    aria-label="Previous volume"
+                    disabled={activeIndex === 0}
+                    onClick={() =>
+                      setSelectedVolIndex((prev) => Math.max(0, (prev ?? activeIndex) - 1))
+                    }
+                    className="flex h-6 w-5 shrink-0 items-center justify-center rounded border border-border bg-surface-raised text-text-muted hover:border-primary hover:text-text disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="h-3 w-3" />
+                  </button>
+                )}
 
-                  return (
-                    <button
-                      key={b.id}
-                      type="button"
-                      onClick={() => setSelectedVolIndex(vIdx)}
-                      className={`cursor-pointer rounded px-1.5 py-0.5 text-[9.5px] font-bold transition-all ${
-                        isCurrent
-                          ? 'border border-accent-color bg-accent-color text-accent-color-foreground shadow-xs'
-                          : isVolCompleted
-                            ? 'border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25 dark:text-emerald-400'
-                            : isVolReading
-                              ? 'border border-amber-500/30 bg-amber-500/15 text-amber-600 hover:bg-amber-500/25 dark:text-amber-400'
-                              : 'border border-border/60 bg-surface-raised text-text-muted hover:border-border hover:text-text'
-                      }`}
-                      title={`${b.title} (${b.status})`}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
+                <div className="no-scrollbar flex flex-1 items-center gap-1 overflow-x-auto py-0.5 scroll-smooth">
+                  {sortedBooks.map((b, vIdx) => {
+                    const isCurrent = vIdx === activeIndex;
+                    const isVolCompleted = b.status === 'Completed';
+                    const isVolReading = b.status === 'Reading';
+                    const label = b.series_order != null ? `v${b.series_order}` : `v${vIdx + 1}`;
+
+                    return (
+                      <button
+                        key={b.id}
+                        type="button"
+                        onClick={() => setSelectedVolIndex(vIdx)}
+                        className={`shrink-0 cursor-pointer rounded px-1.5 py-0.5 text-[9.5px] font-bold transition-all ${
+                          isCurrent
+                            ? 'border border-accent-color bg-accent-color text-accent-color-foreground shadow-xs'
+                            : isVolCompleted
+                              ? 'border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25 dark:text-emerald-400'
+                              : isVolReading
+                                ? 'border border-amber-500/30 bg-amber-500/15 text-amber-600 hover:bg-amber-500/25 dark:text-amber-400'
+                                : 'border border-border/60 bg-surface-raised text-text-muted hover:border-border hover:text-text'
+                        }`}
+                        title={`${b.title} (${b.status})`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {totalVolumes > 6 && (
+                  <button
+                    type="button"
+                    aria-label="Next volume"
+                    disabled={activeIndex === totalVolumes - 1}
+                    onClick={() =>
+                      setSelectedVolIndex((prev) =>
+                        Math.min(totalVolumes - 1, (prev ?? activeIndex) + 1),
+                      )
+                    }
+                    className="flex h-6 w-5 shrink-0 items-center justify-center rounded border border-border bg-surface-raised text-text-muted hover:border-primary hover:text-text disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronRight className="h-3 w-3" />
+                  </button>
+                )}
               </div>
             )}
           </div>
