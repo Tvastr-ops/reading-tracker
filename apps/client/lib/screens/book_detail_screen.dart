@@ -320,15 +320,37 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             tooltip: 'Log Progress',
             onPressed: _openQuickLog,
           ),
-          IconButton(
-            icon: Icon(Icons.edit_outlined, color: inkColor),
-            tooltip: 'Edit Details',
-            onPressed: _openEditDialog,
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline_rounded, color: AppColors.primaryRed),
-            tooltip: 'Trash Book',
-            onPressed: _deleteBook,
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert_rounded, color: inkColor),
+            tooltip: 'More Options',
+            color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+            shape: Border.all(color: borderColor, width: 1.5),
+            onSelected: (val) {
+              if (val == 'edit') _openEditDialog();
+              if (val == 'trash') _deleteBook();
+            },
+            itemBuilder: (ctx) => [
+              PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_outlined, size: 16, color: inkColor),
+                    const SizedBox(width: 8),
+                    Text('Edit Details', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: inkColor)),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'trash',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline_rounded, size: 16, color: AppColors.primaryRed),
+                    SizedBox(width: 8),
+                    Text('Trash Book', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: AppColors.primaryRed)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -880,31 +902,47 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Icon(Icons.rate_review_rounded, size: 16, color: accentColor),
-                  const SizedBox(width: 8),
-                  Text(
-                    'READER\'S PERSONAL NOTES & REVIEW',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.8,
-                      color: inkColor,
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(Icons.rate_review_rounded, size: 16, color: accentColor),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'READER\'S PERSONAL NOTES',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.8,
+                          color: inkColor,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               if (!_isEditingNotes)
-                GestureDetector(
-                  onTap: () => setState(() => _isEditingNotes = true),
-                  child: Text(
-                    'EDIT',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900,
-                      color: accentColor,
-                      letterSpacing: 0.5,
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _isEditingNotes = true),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: accentColor.withValues(alpha: 0.12),
+                        border: Border.all(color: accentColor.withValues(alpha: 0.4), width: 1),
+                      ),
+                      child: Text(
+                        'EDIT',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w900,
+                          color: accentColor,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -1113,20 +1151,24 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             children: [
               Icon(Icons.collections_bookmark_rounded, size: 16, color: accentColor),
               const SizedBox(width: 8),
-              Text(
-                'SERIES CONTINUITY & FRANCHISE (${_seriesSiblings.length} VOLUMES)',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.8,
-                  color: inkColor,
+              Expanded(
+                child: Text(
+                  'SERIES CONTINUITY (${_seriesSiblings.length} VOLUMES)',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.8,
+                    color: inkColor,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           SizedBox(
-            height: 140,
+            height: 160,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: _seriesSiblings.length,
@@ -1147,36 +1189,63 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                           );
                         },
                   child: Container(
-                    width: 96,
+                    width: 104,
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: isCurrent
-                          ? accentColor.withValues(alpha: 0.15)
+                          ? accentColor.withValues(alpha: 0.12)
                           : (isDark ? AppColors.darkSurface : AppColors.paperSurface),
                       border: Border.all(
                         color: isCurrent ? accentColor : borderColor,
                         width: isCurrent ? 2 : 1.5,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: borderColor,
+                          offset: const Offset(2, 2),
+                          blurRadius: 0,
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Cover Thumbnail
+                        Container(
+                          height: 76,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.black26 : Colors.black12,
+                            border: Border.all(color: borderColor.withValues(alpha: 0.5), width: 1),
+                          ),
+                          child: sibling.coverUrl != null && sibling.coverUrl!.isNotEmpty
+                              ? Image.network(
+                                  sibling.coverUrl!,
+                                  fit: BoxFit.cover,
+                                  cacheWidth: 200,
+                                  errorBuilder: (_, __, ___) => _buildCoverFallback(sibling, accentColor),
+                                )
+                              : _buildCoverFallback(sibling, accentColor),
+                        ),
+                        const SizedBox(height: 6),
+
+                        // Volume Badge & Title
                         Text(
                           'VOL #${sibling.seriesOrder != null ? formatNum(sibling.seriesOrder!) : (idx + 1)}',
                           style: TextStyle(
                             fontSize: 9.5,
                             fontWeight: FontWeight.w900,
-                            color: isCurrent ? accentColor : inkColor.withValues(alpha: 0.6),
+                            color: isCurrent ? accentColor : accentColor.withValues(alpha: 0.8),
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Expanded(
                           child: Text(
                             sibling.title,
-                            maxLines: 3,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: 10.5,
                               fontWeight: FontWeight.w800,
                               height: 1.15,
                               color: inkColor,
@@ -1186,9 +1255,9 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                         Text(
                           '${sibling.completionPercentage.toInt()}%',
                           style: TextStyle(
-                            fontSize: 10,
+                            fontSize: 9.5,
                             fontWeight: FontWeight.w900,
-                            color: isCurrent ? accentColor : inkColor.withValues(alpha: 0.7),
+                            color: isCurrent ? accentColor : inkColor.withValues(alpha: 0.6),
                           ),
                         ),
                       ],

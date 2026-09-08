@@ -128,7 +128,16 @@ class ExternalLinksRow extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(link.icon, size: 13, color: inkColor),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: Image.network(
+                    'https://www.google.com/s2/favicons?domain=${link.domain}&sz=32',
+                    width: 13,
+                    height: 13,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Icon(link.icon, size: 13, color: inkColor),
+                  ),
+                ),
                 const SizedBox(width: 5),
                 Text(
                   link.label,

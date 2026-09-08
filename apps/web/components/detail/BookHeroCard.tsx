@@ -26,6 +26,9 @@ export default function BookHeroCard({ book, onRatingChange }: BookHeroCardProps
           src={book.cover_url}
           title={book.title}
           alt={book.title}
+          fill
+          sizes="(max-width: 640px) 260px, 320px"
+          priority
           className="h-full w-full object-cover"
         />
       </div>

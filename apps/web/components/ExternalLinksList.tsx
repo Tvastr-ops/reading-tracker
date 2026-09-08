@@ -150,6 +150,8 @@ export default function ExternalLinksList({
     <div className={`flex flex-wrap items-center gap-2 ${className}`}>
       {links.map((link) => {
         const IconComponent = link.icon;
+        const faviconUrl = `https://www.google.com/s2/favicons?domain=${link.domain}&sz=32`;
+
         return (
           <a
             key={link.url}
@@ -158,7 +160,20 @@ export default function ExternalLinksList({
             rel="noopener noreferrer"
             className={`group inline-flex items-center gap-1.5 rounded-lg border-2 border-border bg-surface px-3 py-1.5 text-xs font-bold text-text shadow-[2px_2px_0px_var(--border)] transition-all duration-150 hover:-translate-y-0.5 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${link.colorClass}`}
           >
-            <IconComponent className="h-3.5 w-3.5 transition-transform group-hover:scale-110" />
+            <img
+              src={faviconUrl}
+              alt=""
+              width={14}
+              height={14}
+              loading="lazy"
+              className="h-3.5 w-3.5 shrink-0 rounded-xs object-contain transition-transform group-hover:scale-110"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                const fallback = e.currentTarget.nextElementSibling;
+                if (fallback) fallback.classList.remove('hidden');
+              }}
+            />
+            <IconComponent className="hidden h-3.5 w-3.5 shrink-0 transition-transform group-hover:scale-110" />
             <span>{link.label}</span>
             <ExternalLink className="h-3 w-3 opacity-60 transition-opacity group-hover:opacity-100" />
           </a>
