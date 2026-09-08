@@ -704,48 +704,55 @@ class _BookDetailPanelState extends State<BookDetailPanel> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Text(
-                                            j.journeyIndex == 1 ? 'Read #1 (Original)' : 'Read #${j.journeyIndex} (Re-read)',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w900,
-                                              color: isAct ? AppColors.electricCobalt : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-                                            ),
-                                          ),
-                                          if (isAct) ...[
-                                            const SizedBox(width: 6),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                              decoration: BoxDecoration(
-                                                color: AppColors.electricCobalt,
-                                                borderRadius: BorderRadius.circular(2),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Flexible(
+                                              child: Text(
+                                                j.journeyIndex == 1 ? 'Read #1 (Original)' : 'Read #${j.journeyIndex} (Re-read)',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w900,
+                                                  color: isAct ? AppColors.electricCobalt : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
                                               ),
-                                              child: const Text('CURRENT', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: Colors.white)),
                                             ),
+                                            if (isAct) ...[
+                                              const SizedBox(width: 6),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.electricCobalt,
+                                                  borderRadius: BorderRadius.circular(2),
+                                                ),
+                                                child: const Text('CURRENT', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: Colors.white)),
+                                              ),
+                                            ],
                                           ],
-                                        ],
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        '$startStr → $finishStr${durationStr != null ? " • $durationStr" : ""}${paceStr != null ? " • $paceStr" : ""}',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.6),
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '$startStr → $finishStr${durationStr != null ? " • $durationStr" : ""}${paceStr != null ? " • $paceStr" : ""}',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.6),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  if (j.rating != null && j.rating! > 0)
+                                  if (j.rating != null && j.rating! > 0) ...[
+                                    const SizedBox(width: 8),
                                     BrutalistBadge(
                                       label: '${formatNum(j.rating!)} ★',
                                       backgroundColor: const Color(0xFFFFB800),
                                       textColor: AppColors.inkBlack,
                                     ),
+                                  ],
                                 ],
                               ),
                             );

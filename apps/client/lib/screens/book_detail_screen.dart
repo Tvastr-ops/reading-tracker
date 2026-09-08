@@ -41,6 +41,29 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   bool _isLoadingLogs = true;
   bool _isEditingNotes = false;
   late TextEditingController _notesEditController;
+  final Map<String, bool> _expandedJourneys = {};
+  final Map<String, bool> _showAllLogsForJourney = {};
+  bool _showAllStandaloneLogs = false;
+
+  List<ReadingLogEntry> _getLogsForJourney(ReadingJourney j) {
+    return _logs.where((l) {
+      if (l.journeyId != null && l.journeyId!.isNotEmpty) {
+        return l.journeyId == j.id;
+      }
+      final logDate = DateTime.tryParse(l.loggedAt);
+      final jStart = DateTime.tryParse(j.dateStarted);
+      final jEnd = j.dateFinished != null ? DateTime.tryParse(j.dateFinished!) : null;
+      if (logDate != null && jStart != null) {
+        final afterStart = logDate.isAfter(jStart) || logDate.isAtSameMomentAs(jStart);
+        if (jEnd != null) {
+          final endOfDay = DateTime(jEnd.year, jEnd.month, jEnd.day, 23, 59, 59);
+          return afterStart && (logDate.isBefore(endOfDay) || logDate.isAtSameMomentAs(endOfDay));
+        }
+        return afterStart;
+      }
+      return _journeys.length == 1;
+    }).toList();
+  }
 
   @override
   void initState() {
@@ -1298,7 +1321,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Journeys Section
+          // Journeys Section with Nested/Collapsible Reading Sessions
           if (_journeys.isNotEmpty) ...[
             Row(
               children: [
@@ -1322,59 +1345,192 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               final finishStr = j.dateFinished != null ? formatDisplayDate(j.dateFinished!) : (isAct ? 'Active' : 'Finished');
               final durationStr = j.formattedDuration;
               final paceStr = j.formattedPace(_book.totalUnits, unitType: _book.unitType ?? 'pages');
+              final journeyLogs = _getLogsForJourney(j);
+              final isExpanded = _expandedJourneys[j.id] ?? (isAct || j == _journeys.first);
+              final showAll = _showAllLogsForJourney[j.id] ?? false;
+              final displayedLogs = showAll ? journeyLogs : journeyLogs.take(5).toList();
 
               return Container(
-                margin: const EdgeInsets.only(bottom: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                margin: const EdgeInsets.only(bottom: 8),
                 decoration: BoxDecoration(
                   color: isAct ? AppColors.electricCobalt.withValues(alpha: 0.08) : (isDark ? AppColors.darkSurface : AppColors.paperSurface),
                   border: Border.all(color: isAct ? AppColors.electricCobalt : borderColor, width: isAct ? 1.5 : 1.0),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          _expandedJourneys[j.id] = !isExpanded;
+                        });
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              j.journeyIndex == 1 ? 'Read #1 (Original)' : 'Read #${j.journeyIndex} (Re-read)',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w900,
-                                color: isAct ? AppColors.electricCobalt : inkColor,
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    isExpanded ? Icons.keyboard_arrow_down_rounded : Icons.keyboard_arrow_right_rounded,
+                                    size: 18,
+                                    color: inkColor.withValues(alpha: 0.6),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Flexible(
+                                              child: Text(
+                                                j.journeyIndex == 1 ? 'Read #1 (Original)' : 'Read #${j.journeyIndex} (Re-read)',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w900,
+                                                  color: isAct ? AppColors.electricCobalt : inkColor,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            if (isAct) ...[
+                                              const SizedBox(width: 6),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.electricCobalt,
+                                                  borderRadius: BorderRadius.circular(2),
+                                                ),
+                                                child: const Text('CURRENT', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: Colors.white)),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '$startStr → $finishStr${durationStr != null ? " • $durationStr" : ""}${paceStr != null ? " • $paceStr" : ""}${journeyLogs.isNotEmpty ? " • ${journeyLogs.length} ${journeyLogs.length == 1 ? "session" : "sessions"}" : ""}',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: inkColor.withValues(alpha: 0.6),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            if (isAct) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                decoration: BoxDecoration(
-                                  color: AppColors.electricCobalt,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                                child: const Text('CURRENT', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: Colors.white)),
+                            if (j.rating != null && j.rating! > 0) ...[
+                              const SizedBox(width: 8),
+                              BrutalistBadge(
+                                label: '${formatNum(j.rating!)} ★',
+                                backgroundColor: const Color(0xFFFFB800),
+                                textColor: AppColors.inkBlack,
                               ),
                             ],
                           ],
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '$startStr → $finishStr${durationStr != null ? " • $durationStr" : ""}${paceStr != null ? " • $paceStr" : ""}',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: inkColor.withValues(alpha: 0.6),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (j.rating != null && j.rating! > 0)
-                      BrutalistBadge(
-                        label: '${formatNum(j.rating!)} ★',
-                        backgroundColor: const Color(0xFFFFB800),
-                        textColor: AppColors.inkBlack,
                       ),
+                    ),
+                    if (isExpanded) ...[
+                      Divider(height: 1, color: borderColor.withValues(alpha: 0.2)),
+                      if (journeyLogs.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          child: Text(
+                            'No reading sessions recorded for this read.',
+                            style: TextStyle(fontSize: 10.5, fontStyle: FontStyle.italic, color: inkColor.withValues(alpha: 0.5)),
+                          ),
+                        )
+                      else ...[
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          itemCount: displayedLogs.length,
+                          separatorBuilder: (_, __) => Divider(color: borderColor.withValues(alpha: 0.15), height: 8),
+                          itemBuilder: (ctx, idx) {
+                            final log = displayedLogs[idx];
+                            final delta = (log.toProgress - (log.fromProgress ?? 0)).abs();
+                            final unitStr = _book.unitType ?? 'units';
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Text(
+                                              formatDisplayDate(log.loggedAt),
+                                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: inkColor),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                              decoration: BoxDecoration(
+                                                color: accentColor.withValues(alpha: 0.15),
+                                                border: Border.all(color: accentColor.withValues(alpha: 0.4), width: 1),
+                                              ),
+                                              child: Text(
+                                                '+${formatNum(delta)} $unitStr',
+                                                style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, color: accentColor),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        if (log.note != null && log.note!.isNotEmpty) ...[
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            log.note!,
+                                            style: TextStyle(fontSize: 10.5, color: inkColor.withValues(alpha: 0.7)),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                                    icon: Icon(Icons.close_rounded, size: 13, color: inkColor.withValues(alpha: 0.4)),
+                                    tooltip: 'Delete log',
+                                    onPressed: () => _confirmDeleteLog(log),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                        if (journeyLogs.length > 5)
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                _showAllLogsForJourney[j.id] = !showAll;
+                              });
+                            },
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              margin: const EdgeInsets.only(top: 2, bottom: 4),
+                              alignment: Alignment.center,
+                              child: Text(
+                                showAll ? '▴ SHOW FEWER SESSIONS' : '▾ SHOW ALL (${journeyLogs.length}) SESSIONS',
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
+                                  color: isAct ? AppColors.electricCobalt : inkColor.withValues(alpha: 0.7),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ],
                   ],
                 ),
               );
@@ -1382,86 +1538,131 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             const SizedBox(height: 14),
           ],
 
-          // Reading Logs Section
-          Row(
-            children: [
-              Icon(Icons.history_edu_rounded, size: 16, color: accentColor),
-              const SizedBox(width: 8),
-              Text(
-                'READING SESSION LOGS (${_logs.length})',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.8,
-                  color: inkColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          if (_isLoadingLogs)
-            const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator()))
-          else if (_logs.isEmpty)
-            Text(
-              'No reading session logs recorded yet.',
-              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: inkColor.withValues(alpha: 0.5)),
-            )
-          else
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _logs.length,
-              separatorBuilder: (_, __) => Divider(color: borderColor.withValues(alpha: 0.25), height: 12),
-              itemBuilder: (ctx, idx) {
-                final log = _logs[idx];
-                final delta = (log.toProgress - (log.fromProgress ?? 0)).abs();
-                final unitStr = _book.unitType ?? 'units';
+          // Standalone / Orphan Reading Logs Section (when not nested in journeys)
+          Builder(builder: (context) {
+            final standaloneLogs = _journeys.isEmpty
+                ? _logs
+                : _logs.where((l) => !_journeys.any((j) => _getLogsForJourney(j).contains(l))).toList();
 
-                return Row(
+            if (_journeys.isNotEmpty && standaloneLogs.isEmpty) {
+              return const SizedBox.shrink();
+            }
+
+            final showAll = _showAllStandaloneLogs;
+            final displayedStandalone = showAll ? standaloneLogs : standaloneLogs.take(5).toList();
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                formatDisplayDate(log.loggedAt),
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: inkColor),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: accentColor.withValues(alpha: 0.15),
-                                  border: Border.all(color: accentColor.withValues(alpha: 0.4), width: 1),
-                                ),
-                                child: Text(
-                                  '+${formatNum(delta)} $unitStr',
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: accentColor),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (log.note != null && log.note!.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              log.note!,
-                              style: TextStyle(fontSize: 11, color: inkColor.withValues(alpha: 0.7)),
-                            ),
-                          ],
-                        ],
+                    Icon(Icons.history_edu_rounded, size: 16, color: accentColor),
+                    const SizedBox(width: 8),
+                    Text(
+                      _journeys.isEmpty
+                          ? 'READING SESSION LOGS (${standaloneLogs.length})'
+                          : 'OTHER READING LOGS (${standaloneLogs.length})',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.8,
+                        color: inkColor,
                       ),
                     ),
-                    IconButton(
-                      icon: Icon(Icons.close_rounded, size: 14, color: inkColor.withValues(alpha: 0.5)),
-                      tooltip: 'Delete log',
-                      onPressed: () => _confirmDeleteLog(log),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                if (_isLoadingLogs)
+                  const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator()))
+                else if (standaloneLogs.isEmpty)
+                  Text(
+                    'No reading session logs recorded yet.',
+                    style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: inkColor.withValues(alpha: 0.5)),
+                  )
+                else ...[
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: displayedStandalone.length,
+                    separatorBuilder: (_, __) => Divider(color: borderColor.withValues(alpha: 0.25), height: 12),
+                    itemBuilder: (ctx, idx) {
+                      final log = displayedStandalone[idx];
+                      final delta = (log.toProgress - (log.fromProgress ?? 0)).abs();
+                      final unitStr = _book.unitType ?? 'units';
+
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      formatDisplayDate(log.loggedAt),
+                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: inkColor),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: accentColor.withValues(alpha: 0.15),
+                                        border: Border.all(color: accentColor.withValues(alpha: 0.4), width: 1),
+                                      ),
+                                      child: Text(
+                                        '+${formatNum(delta)} $unitStr',
+                                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: accentColor),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (log.note != null && log.note!.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    log.note!,
+                                    style: TextStyle(fontSize: 11, color: inkColor.withValues(alpha: 0.7)),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.close_rounded, size: 14, color: inkColor.withValues(alpha: 0.5)),
+                            tooltip: 'Delete log',
+                            onPressed: () => _confirmDeleteLog(log),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  if (standaloneLogs.length > 5) ...[
+                    const SizedBox(height: 6),
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          _showAllStandaloneLogs = !_showAllStandaloneLogs;
+                        });
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        alignment: Alignment.center,
+                        child: Text(
+                          showAll ? '▴ SHOW FEWER SESSIONS' : '▾ SHOW ALL (${standaloneLogs.length}) SESSIONS',
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                            color: accentColor,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
-                );
-              },
-            ),
+                ],
+              ],
+            );
+          }),
         ],
       ),
     );
