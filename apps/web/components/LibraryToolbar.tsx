@@ -41,7 +41,7 @@ export function LibraryToolbar() {
     viewMode,
     toggleViewMode,
     groupBySeries,
-    toggleGroupBySeries,
+    setGroupBySeries,
     statusFilter,
     isStatusActive,
     toggleStatusFilter,
@@ -152,27 +152,34 @@ export function LibraryToolbar() {
             </Button>
           ) : (
             <>
-              {/* Neo-Brutalist Grid / Table Switcher */}
+              {/* Neo-Brutalist Unified View Switcher (Grid | Table | Series) */}
               <div className="flex items-center border-2 border-border bg-surface p-1 shadow-[2px_2px_0px_var(--border)]">
+                {/* 1. Grid (Standard Ungrouped) */}
                 <button
                   type="button"
-                  onClick={() => handleToggleViewMode('grid')}
+                  onClick={() => {
+                    handleToggleViewMode('grid');
+                    setGroupBySeries(false);
+                  }}
                   className={cn(
                     'flex h-7 cursor-pointer items-center gap-1.5 px-3 font-black text-xs uppercase tracking-wider transition-all',
-                    viewMode === 'grid'
+                    viewMode === 'grid' && !groupBySeries
                       ? 'bg-accent-bg text-accent-text shadow-[1.5px_1.5px_0px_var(--border)]'
                       : 'text-text-muted hover:text-text',
                   )}
-                  title="Grid view"
+                  title="Grid view (All Books)"
                   aria-label="Grid view"
                 >
                   <LayoutGrid className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Grid</span>
                 </button>
 
+                {/* 2. Table */}
                 <button
                   type="button"
-                  onClick={() => handleToggleViewMode('table')}
+                  onClick={() => {
+                    handleToggleViewMode('table');
+                  }}
                   className={cn(
                     'flex h-7 cursor-pointer items-center gap-1.5 px-3 font-black text-xs uppercase tracking-wider transition-all',
                     viewMode === 'table'
@@ -185,27 +192,32 @@ export function LibraryToolbar() {
                   <List className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Table</span>
                 </button>
-              </div>
 
-              {/* Group by Series Stack Toggle */}
-              {viewMode === 'grid' && (
-                <Button
-                  variant="outline"
-                  size="sm"
+                {/* 3. Series Stacks */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleToggleViewMode('grid');
+                    setGroupBySeries(true);
+                  }}
                   className={cn(
-                    'h-9.5 border-2 border-border px-2.5 text-xs shadow-[2px_2px_0px_var(--border)] transition-all',
-                    groupBySeries
-                      ? 'bg-accent-bg text-accent-text font-black'
+                    'flex h-7 cursor-pointer items-center gap-1.5 px-3 font-black text-xs uppercase tracking-wider transition-all',
+                    viewMode === 'grid' && groupBySeries
+                      ? 'bg-accent-bg text-accent-text shadow-[1.5px_1.5px_0px_var(--border)]'
                       : 'text-text-muted hover:text-text',
                   )}
-                  onClick={toggleGroupBySeries}
-                  title={groupBySeries ? 'Ungroup Series Stacks' : 'Stack Series Books'}
-                  aria-label="Toggle Series Stacks"
+                  title="Series Stacks view"
+                  aria-label="Series Stacks view"
                 >
-                  <Layers className="h-3.5 w-3.5 sm:mr-1 text-amber-500" />
-                  <span className="hidden sm:inline font-bold uppercase">Series Stacks</span>
-                </Button>
-              )}
+                  <Layers
+                    className={cn(
+                      'h-3.5 w-3.5',
+                      viewMode === 'grid' && groupBySeries ? 'text-accent-text' : 'text-amber-500',
+                    )}
+                  />
+                  <span className="hidden sm:inline">Series</span>
+                </button>
+              </div>
 
               {/* Trash View Button */}
               <Button

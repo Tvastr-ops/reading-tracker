@@ -23,9 +23,9 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
   late double _currentProgress;
   num? _parentProgress;
   late TextEditingController _progressController;
-  late TextEditingController _parentProgressController;
   late TextEditingController _noteController;
   late FocusNode _dialogFocusNode;
+  late FocusNode _inputFocusNode;
 
   @override
   void initState() {
@@ -33,21 +33,21 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
     _currentProgress = widget.book.progress;
     _parentProgress = widget.book.parentProgress;
     _progressController = TextEditingController(
-      text: _currentProgress % 1 == 0 ? _currentProgress.toInt().toString() : _currentProgress.toString(),
-    );
-    _parentProgressController = TextEditingController(
-      text: _parentProgress != null ? (_parentProgress! % 1 == 0 ? _parentProgress!.toInt().toString() : _parentProgress!.toString()) : '',
+      text: _currentProgress % 1 == 0
+          ? _currentProgress.toInt().toString()
+          : _currentProgress.toString(),
     );
     _noteController = TextEditingController();
     _dialogFocusNode = FocusNode();
+    _inputFocusNode = FocusNode();
   }
 
   @override
   void dispose() {
     _progressController.dispose();
-    _parentProgressController.dispose();
     _noteController.dispose();
     _dialogFocusNode.dispose();
+    _inputFocusNode.dispose();
     super.dispose();
   }
 
@@ -59,13 +59,22 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
 
   void _increment(double amount) {
     setState(() {
-      _currentProgress += amount;
-      if (widget.book.totalUnits != null && _currentProgress > widget.book.totalUnits!) {
-        _currentProgress = widget.book.totalUnits!;
-      }
+      _currentProgress = (_currentProgress + amount).clamp(0.0, widget.book.totalUnits ?? 999999.0);
       _progressController.text = _currentProgress % 1 == 0
           ? _currentProgress.toInt().toString()
           : _currentProgress.toString();
+    });
+  }
+
+  void _incrementVolume(int delta) {
+    setState(() {
+      final currentVol = (_parentProgress ?? 1).toInt();
+      final newVol = (currentVol + delta).clamp(1, (widget.book.parentTotal ?? 9999).toInt());
+      _parentProgress = newVol;
+      if (delta > 0 && widget.book.totalUnits == null) {
+        _currentProgress = 0;
+        _progressController.text = '0';
+      }
     });
   }
 
@@ -78,13 +87,23 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
     final inputBg = details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white);
     final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
     final mutedInk = details?.inkMutedColor ?? (isDark ? Colors.white60 : AppColors.inkMuted);
+    final accentColor = details?.accentColor ?? Theme.of(context).colorScheme.primary;
     final unitLabel = getUnitLabel(widget.book.type, widget.book.unitType);
     final quickChips = getQuickChipOptions(widget.book.type);
+
+    final total = widget.book.totalUnits;
+    final pct = total != null && total > 0
+        ? ((_currentProgress / total) * 100).clamp(0.0, 100.0)
+        : null;
 
     final isMobile = MediaQuery.of(context).size.width < 600;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final screenHeight = MediaQuery.of(context).size.height;
-    final maxDialogHeight = (screenHeight - keyboardHeight - (isMobile ? 32 : 80)).clamp(240.0, 580.0);
+    final maxDialogHeight = (screenHeight - keyboardHeight - (isMobile ? 24 : 64)).clamp(280.0, 620.0);
+
+    final hasVolumes = widget.book.progressStructure != null &&
+        widget.book.progressStructure != 'single' &&
+        widget.book.progressStructure!.isNotEmpty;
 
     return KeyboardListener(
       focusNode: _dialogFocusNode,
@@ -104,10 +123,10 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
         elevation: 0,
         insetPadding: EdgeInsets.symmetric(
           horizontal: isMobile ? 16 : 32,
-          vertical: isMobile ? 16 : 24,
+          vertical: isMobile ? 12 : 24,
         ),
         child: Container(
-          constraints: BoxConstraints(maxWidth: 440, maxHeight: maxDialogHeight),
+          constraints: BoxConstraints(maxWidth: 460, maxHeight: maxDialogHeight),
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: dialogBg,
@@ -126,67 +145,249 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. Pinned Clean Header
+              // 1. Pinned Header with Book Thumbnail & Live Progress
               Container(
-                padding: const EdgeInsets.fromLTRB(18, 14, 12, 12),
+                padding: const EdgeInsets.fromLTRB(16, 14, 12, 12),
                 decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
                   border: Border(
                     bottom: BorderSide(
-                      color: borderColor.withValues(alpha: 0.20),
+                      color: borderColor.withValues(alpha: 0.25),
                       width: 1.5,
                     ),
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Cover Thumbnail
+                        Container(
+                          width: 36,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.darkSurface : Colors.white,
+                            border: Border.all(color: borderColor, width: 1.5),
+                          ),
+                          child: widget.book.coverUrl != null && widget.book.coverUrl!.isNotEmpty
+                              ? Image.network(
+                                  widget.book.coverUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => TypographicBookCover(
+                                    title: widget.book.title,
+                                    type: widget.book.type,
+                                  ),
+                                )
+                              : TypographicBookCover(
+                                  title: widget.book.title,
+                                  type: widget.book.type,
+                                ),
+                        ),
+                        const SizedBox(width: 12),
+
+                        // Title & Subtitle Info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: accentColor,
+                                      border: Border.all(color: borderColor, width: 1),
+                                    ),
+                                    child: const Text(
+                                      'QUICK LOG',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.white,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    widget.book.type.toUpperCase(),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      color: mutedInk,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                widget.book.title,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w900,
+                                  color: inkColor,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: Icon(Icons.close_rounded, size: 20, color: inkColor),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+
+                    // Progress Bar
+                    if (pct != null) ...[
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'LOG PROGRESS',
+                            '${_currentProgress % 1 == 0 ? _currentProgress.toInt() : _currentProgress} / ${total! % 1 == 0 ? total.toInt() : total} $unitLabel',
                             style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 15,
-                              letterSpacing: -0.2,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              fontFamily: 'monospace',
                               color: inkColor,
                             ),
                           ),
-                          const SizedBox(height: 2),
                           Text(
-                            widget.book.title,
+                            '${pct.toStringAsFixed(1)}%',
                             style: TextStyle(
-                              fontSize: 12,
-                              color: mutedInk,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'monospace',
+                              color: accentColor,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
-                    ),
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      icon: Icon(Icons.close_rounded, size: 20, color: inkColor),
-                      onPressed: () => Navigator.pop(context),
-                    ),
+                      const SizedBox(height: 4),
+                      Container(
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white12 : AppColors.paperSurfaceHighest,
+                          border: Border.all(color: borderColor.withValues(alpha: 0.4), width: 1),
+                        ),
+                        child: FractionallySizedBox(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: (pct / 100).clamp(0.0, 1.0),
+                          child: Container(color: accentColor),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
 
-              // 2. Scrollable Input Body
+              // 2. Scrollable Body
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Quick Increment Chips
+                      // Large Interactive Counter Box
                       Text(
-                        'QUICK INCREMENT',
+                        'CURRENT PROGRESS ($unitLabel)'.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                          color: inkColor,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: inputBg,
+                          border: Border.all(color: borderColor, width: 2.0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: borderColor,
+                              offset: const Offset(2, 2),
+                              blurRadius: 0,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            // -1 button
+                            GestureDetector(
+                              onTap: () => _increment(-1),
+                              child: Container(
+                                height: 34,
+                                width: 34,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+                                  border: Border.all(color: borderColor, width: 1.5),
+                                ),
+                                child: Icon(Icons.remove, size: 16, color: inkColor),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+
+                            // Editable Progress Field
+                            Expanded(
+                              child: TextField(
+                                controller: _progressController,
+                                focusNode: _inputFocusNode,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                  fontFamily: 'monospace',
+                                  color: inkColor,
+                                ),
+                                onChanged: (val) {
+                                  final numVal = double.tryParse(val);
+                                  if (numVal != null) {
+                                    setState(() => _currentProgress = numVal);
+                                  }
+                                },
+                                onSubmitted: (_) => _save(),
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+
+                            // +1 button
+                            GestureDetector(
+                              onTap: () => _increment(1),
+                              child: Container(
+                                height: 34,
+                                width: 34,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+                                  border: Border.all(color: borderColor, width: 1.5),
+                                ),
+                                child: Icon(Icons.add, size: 16, color: inkColor),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Quick Increment Chips (+1, +5, +10, +25...)
+                      Text(
+                        'QUICK ADVANCE',
                         style: TextStyle(
                           fontSize: 9.5,
                           fontWeight: FontWeight.w900,
@@ -194,27 +395,32 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
                           color: inkColor,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
+                        spacing: 6,
+                        runSpacing: 6,
                         children: quickChips.map((amt) {
                           return GestureDetector(
                             onTap: () => _increment(amt.toDouble()),
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
-                                color: inputBg,
-                                border: Border.all(
-                                  color: borderColor,
-                                  width: 1.5,
-                                ),
+                                color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+                                border: Border.all(color: borderColor, width: 1.5),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: borderColor,
+                                    offset: const Offset(1.5, 1.5),
+                                    blurRadius: 0,
+                                  ),
+                                ],
                               ),
                               child: Text(
-                                '+$amt $unitLabel',
+                                '+$amt',
                                 style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  fontFamily: 'monospace',
                                   color: inkColor,
                                 ),
                               ),
@@ -224,10 +430,10 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
                       ),
                       const SizedBox(height: 14),
 
-                      // Volume Stepper Row for multi-volume titles
-                      if (widget.book.progressStructure != 'single' || widget.book.parentProgress != null) ...[
+                      // Multi-Tier Volume Advance (if applicable)
+                      if (hasVolumes || widget.book.parentProgress != null) ...[
                         Text(
-                          'CURRENT VOLUME',
+                          'VOLUME / PART PROGRESS',
                           style: TextStyle(
                             fontSize: 9.5,
                             fontWeight: FontWeight.w900,
@@ -236,130 +442,57 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: inputBg,
-                                  border: Border.all(color: borderColor, width: 1.5),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () {
-                                        if ((_parentProgress ?? 1) > 1) {
-                                          setState(() {
-                                            _parentProgress = (_parentProgress ?? 1) - 1;
-                                            _parentProgressController.text = _parentProgress!.toString();
-                                          });
-                                        }
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: BoxDecoration(
-                                          color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
-                                          border: Border.all(color: borderColor.withValues(alpha: 0.4)),
-                                        ),
-                                        child: Icon(Icons.remove, size: 14, color: inkColor),
-                                      ),
-                                    ),
-                                    Text(
-                                      'Vol. ${_parentProgress?.toString() ?? "1"}${widget.book.parentTotal != null ? " / ${widget.book.parentTotal}" : ""}',
-                                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: inkColor),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _parentProgress = (_parentProgress ?? 0) + 1;
-                                          _parentProgressController.text = _parentProgress!.toString();
-                                          _currentProgress = 0;
-                                          _progressController.text = '0';
-                                        });
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: BoxDecoration(
-                                          color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
-                                          border: Border.all(color: borderColor.withValues(alpha: 0.4)),
-                                        ),
-                                        child: Icon(Icons.add, size: 14, color: inkColor),
-                                      ),
-                                    ),
-                                  ],
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: inputBg,
+                            border: Border.all(color: borderColor, width: 1.5),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              GestureDetector(
+                                onTap: () => _incrementVolume(-1),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? AppColors.darkSurface : AppColors.paperSurface,
+                                    border: Border.all(color: borderColor, width: 1),
+                                  ),
+                                  child: Icon(Icons.remove, size: 14, color: inkColor),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _parentProgress = (_parentProgress ?? 0) + 1;
-                                  _parentProgressController.text = _parentProgress!.toString();
-                                  _currentProgress = 0;
-                                  _progressController.text = '0';
-                                });
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: details?.accentColor ?? Theme.of(context).colorScheme.primary,
-                                  border: Border.all(color: borderColor, width: 1.5),
-                                ),
-                                child: const Text(
-                                  '+1 VOL',
-                                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900, color: Colors.white),
+                              Text(
+                                'Vol. ${_parentProgress ?? 1}${widget.book.parentTotal != null ? " / ${widget.book.parentTotal}" : ""}',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: inkColor,
                                 ),
                               ),
-                            ),
-                          ],
+                              GestureDetector(
+                                onTap: () => _incrementVolume(1),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: accentColor,
+                                    border: Border.all(color: borderColor, width: 1),
+                                  ),
+                                  child: const Text(
+                                    '+1 VOL',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 14),
                       ],
-
-                      // Exact Progress Input
-                      Text(
-                        'CURRENT PROGRESS ($unitLabel)'.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
-                          color: inkColor,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: inputBg,
-                          border: Border.all(
-                            color: borderColor,
-                            width: 1.5,
-                          ),
-                        ),
-                        child: TextField(
-                          controller: _progressController,
-                          autofocus: true,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: inkColor,
-                          ),
-                          onChanged: (val) {
-                            final numVal = double.tryParse(val);
-                            if (numVal != null) _currentProgress = numVal;
-                          },
-                          onSubmitted: (_) => _save(),
-                          decoration: InputDecoration(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                            border: InputBorder.none,
-                            hintStyle: TextStyle(color: mutedInk),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
 
                       // Session Notes Input
                       Text(
@@ -375,10 +508,7 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
                       Container(
                         decoration: BoxDecoration(
                           color: inputBg,
-                          border: Border.all(
-                            color: borderColor,
-                            width: 1.5,
-                          ),
+                          border: Border.all(color: borderColor, width: 1.5),
                         ),
                         child: TextField(
                           controller: _noteController,
@@ -390,9 +520,9 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
                           ),
                           onSubmitted: (_) => _save(),
                           decoration: InputDecoration(
-                            hintText: 'e.g. Read during commute...',
+                            hintText: 'e.g. Completed arc, exciting cliffhanger...',
                             hintStyle: TextStyle(fontSize: 11.5, color: mutedInk),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                             border: InputBorder.none,
                           ),
                         ),
@@ -402,13 +532,13 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
                 ),
               ),
 
-              // 3. Sticky Pinned Action Bar
+              // 3. Sticky Action Bar
               Container(
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
                 decoration: BoxDecoration(
                   border: Border(
                     top: BorderSide(
-                      color: borderColor.withValues(alpha: 0.20),
+                      color: borderColor.withValues(alpha: 0.25),
                       width: 1.5,
                     ),
                   ),
@@ -419,7 +549,7 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
                       backgroundColor: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurfaceHigh,
                       textColor: inkColor,
                       borderWidth: 1.5,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       onPressed: () => Navigator.pop(context),
                       child: Text(
                         'CANCEL',
@@ -429,9 +559,13 @@ class _QuickLogDialogState extends State<QuickLogDialog> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: BrutalistButton(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        backgroundColor: accentColor,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
                         onPressed: _save,
-                        child: const Text('SAVE PROGRESS', style: TextStyle(color: Colors.white, fontSize: 12)),
+                        child: const Text(
+                          'SAVE PROGRESS [ENTER]',
+                          style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900),
+                        ),
                       ),
                     ),
                   ],

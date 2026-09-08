@@ -33,6 +33,7 @@ import { getStatusConfig } from '@/lib/status';
 import { type Book, type ReadingJourney, STATUSES } from '@/lib/types';
 import { calculateReadingDuration, getLocalDateString } from '@/lib/utils';
 import CoverImage from './CoverImage';
+import ExternalLinksList from './ExternalLinksList';
 import { InteractiveStarRating } from './RatingInput';
 
 interface BookInspectorDrawerProps {
@@ -185,9 +186,9 @@ export default function BookInspectorDrawer({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
+        transition={{ duration: 0.18 }}
         onClick={onClose}
-        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]"
+        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] lg:bg-black/15 lg:backdrop-blur-none"
       />
 
       {/* 2. Slide-Over Panel (Desktop Right / Mobile Bottom Sheet) */}
@@ -200,7 +201,11 @@ export default function BookInspectorDrawer({
         exit={
           mounted && isDesktop ? { x: '100%', y: 0, opacity: 0 } : { y: '100%', x: 0, opacity: 0 }
         }
-        transition={{ type: 'spring', damping: 28, stiffness: 280, mass: 0.8 }}
+        transition={
+          mounted && isDesktop
+            ? { duration: 0.22, ease: [0.16, 1, 0.3, 1] }
+            : { type: 'spring', damping: 28, stiffness: 280, mass: 0.8 }
+        }
         drag={mounted && !isDesktop ? 'y' : false}
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={{ top: 0.05, bottom: 0.6 }}
@@ -348,19 +353,9 @@ export default function BookInspectorDrawer({
               </p>
 
               {draft.source_link && (
-                <a
-                  href={
-                    draft.source_link.startsWith('http')
-                      ? draft.source_link
-                      : `https://${draft.source_link}`
-                  }
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-600 hover:underline dark:text-amber-400"
-                >
-                  <span>Read Source</span>
-                  <ExternalLink className="h-3 w-3" />
-                </a>
+                <div className="pt-1.5">
+                  <ExternalLinksList sourceLink={draft.source_link} />
+                </div>
               )}
             </div>
           </div>

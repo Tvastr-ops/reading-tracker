@@ -333,9 +333,11 @@ class _BookEditDialogState extends State<BookEditDialog> {
     final dialogBg = details?.cardColor ?? (isDark ? AppColors.darkSurface : AppColors.paperBg);
     final inkColor = details?.inkColor ?? (isDark ? AppColors.darkInkWhite : AppColors.inkBlack);
     final isEditing = widget.book != null;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
     final screenHeight = MediaQuery.of(context).size.height;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final dialogHeight = (screenHeight - bottomInset - 48).clamp(380.0, screenHeight * 0.88);
+    final dialogHeight = (screenHeight - bottomInset - (isMobile ? 24 : 48)).clamp(360.0, screenHeight * 0.92);
 
     return KeyboardListener(
       focusNode: _dialogFocusNode,
@@ -353,7 +355,10 @@ class _BookEditDialogState extends State<BookEditDialog> {
       child: Dialog(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 12 : 24,
+          vertical: isMobile ? 12 : 24,
+        ),
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         child: Container(
           constraints: const BoxConstraints(maxWidth: 580),
@@ -610,51 +615,96 @@ class _BookEditDialogState extends State<BookEditDialog> {
                         ],
                         const SizedBox(height: 12),
 
-                        // Type & Status Row
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                   _buildFieldLabel('PUBLICATION TYPE', inkColor),
-                                  _buildDropdown(
-                                    value: _type,
-                                    items: PublicationTypes.all,
-                                    details: details,
-                                    borderColor: borderColor,
-                                    inkColor: inkColor,
-                                    onChanged: (val) {
-                                      if (val == null) return;
-                                      setState(() {
-                                        _type = val;
-                                        if (widget.book == null) {
-                                          _unitType = _getDefaultUnitType(val);
-                                        }
-                                      });
-                                    },
+                        // Status Selector Chips
+                        _buildFieldLabel('STATUS', inkColor),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: BookStatus.all.map((st) {
+                            final isSelected = _status == st;
+                            return GestureDetector(
+                              onTap: () => setState(() => _status = st),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? (details?.accentColor ?? Theme.of(context).colorScheme.primary)
+                                      : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                                  border: Border.all(
+                                    color: isSelected ? borderColor : borderColor.withValues(alpha: 0.4),
+                                    width: isSelected ? 2.0 : 1.2,
                                   ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _buildFieldLabel('STATUS', inkColor),
-                                  _buildDropdown(
-                                    value: _status,
-                                    items: BookStatus.all,
-                                    details: details,
-                                    borderColor: borderColor,
-                                    inkColor: inkColor,
-                                    onChanged: (val) => setState(() => _status = val!),
+                                  boxShadow: isSelected
+                                      ? [
+                                          BoxShadow(
+                                            color: borderColor,
+                                            offset: const Offset(1.5, 1.5),
+                                            blurRadius: 0,
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Text(
+                                  st.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                                    color: isSelected ? Colors.white : inkColor,
                                   ),
-                                ],
+                                ),
                               ),
-                            ),
-                          ],
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Publication Type Selector Chips
+                        _buildFieldLabel('PUBLICATION TYPE', inkColor),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: PublicationTypes.all.map((pt) {
+                            final isSelected = _type.toLowerCase() == pt.toLowerCase();
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _type = pt;
+                                  if (widget.book == null) {
+                                    _unitType = _getDefaultUnitType(pt);
+                                  }
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? (details?.accentColor ?? Theme.of(context).colorScheme.primary)
+                                      : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                                  border: Border.all(
+                                    color: isSelected ? borderColor : borderColor.withValues(alpha: 0.4),
+                                    width: isSelected ? 2.0 : 1.2,
+                                  ),
+                                  boxShadow: isSelected
+                                      ? [
+                                          BoxShadow(
+                                            color: borderColor,
+                                            offset: const Offset(1.5, 1.5),
+                                            blurRadius: 0,
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Text(
+                                  pt.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                                    color: isSelected ? Colors.white : inkColor,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
                         ),
                         const SizedBox(height: 18),
 
@@ -991,22 +1041,76 @@ class _BookEditDialogState extends State<BookEditDialog> {
                 ),
                 const SizedBox(height: 12),
 
-                // Cover URL & Search Button
-                _buildFieldLabel('COVER IMAGE URL', inkColor),
+                // Cover URL & Live Thumbnail Preview
+                _buildFieldLabel('COVER IMAGE', inkColor),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: _buildTextInput(_coverUrlController, 'https://...', details: details, borderColor: borderColor, inkColor: inkColor),
+                    Container(
+                      width: 46,
+                      height: 66,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkSurfaceHigh : AppColors.paperSurface,
+                        border: Border.all(color: borderColor, width: 1.5),
+                      ),
+                      child: _coverUrlController.text.trim().isNotEmpty
+                          ? Image.network(
+                              _coverUrlController.text.trim(),
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Icon(
+                                Icons.broken_image_rounded,
+                                size: 20,
+                                color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.5),
+                              ),
+                            )
+                          : Icon(
+                              Icons.menu_book_rounded,
+                              size: 20,
+                              color: (isDark ? AppColors.darkInkWhite : AppColors.inkBlack).withValues(alpha: 0.4),
+                            ),
                     ),
-                    const SizedBox(width: 8),
-                    BrutalistButton(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                      backgroundColor: borderColor,
-                      textColor: isDark ? Colors.black : Colors.white,
-                      onPressed: _isSearchingCover ? null : _searchCover,
-                      child: _isSearchingCover
-                          ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: isDark ? Colors.black : Colors.white))
-                          : Icon(Icons.image_search_rounded, size: 18, color: isDark ? Colors.black : Colors.white),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildTextInput(
+                            _coverUrlController,
+                            'https://... (Cover Image URL)',
+                            details: details,
+                            borderColor: borderColor,
+                            inkColor: inkColor,
+                            onChanged: (_) => setState(() {}),
+                          ),
+                          const SizedBox(height: 6),
+                          BrutalistButton(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            backgroundColor: borderColor,
+                            textColor: isDark ? Colors.black : Colors.white,
+                            onPressed: _isSearchingCover ? null : _searchCover,
+                            child: _isSearchingCover
+                                ? SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: isDark ? Colors.black : Colors.white,
+                                    ),
+                                  )
+                                : Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.auto_awesome_rounded, size: 13, color: isDark ? Colors.black : Colors.white),
+                                      const SizedBox(width: 4),
+                                      const Text(
+                                        'FETCH VIA OPEN LIBRARY',
+                                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -1400,50 +1504,6 @@ class _BookEditDialogState extends State<BookEditDialog> {
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           border: InputBorder.none,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDropdown({
-    required String value,
-    required List<String> items,
-    Map<String, String>? itemLabels,
-    required ValueChanged<String?> onChanged,
-    required AppThemeDetails? details,
-    required Color borderColor,
-    required Color inkColor,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dropdownBg = details?.cardHighColor ?? (isDark ? AppColors.darkSurfaceHigh : Colors.white);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: dropdownBg,
-        border: Border.all(color: borderColor, width: 1.5),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          dropdownColor: dropdownBg,
-          isExpanded: true,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: inkColor,
-          ),
-          iconEnabledColor: inkColor,
-          items: items.map((item) {
-            return DropdownMenuItem(
-              value: item,
-              child: Text(
-                itemLabels?[item] ?? item,
-                style: TextStyle(color: inkColor, fontWeight: FontWeight.w600),
-              ),
-            );
-          }).toList(),
-          onChanged: onChanged,
         ),
       ),
     );

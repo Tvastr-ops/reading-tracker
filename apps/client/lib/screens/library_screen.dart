@@ -335,7 +335,7 @@ class LibraryScreenState extends State<LibraryScreen> {
 
     switch (action) {
       case ContextMenuAction.edit:
-        _onBookClick(book, isWideScreen);
+        _openEditDialog(book);
         break;
       case ContextMenuAction.quickLog:
         _openQuickLog(book);
@@ -2038,16 +2038,18 @@ class LibraryScreenState extends State<LibraryScreen> {
   }) {
     final hasText = _searchQuery.isNotEmpty;
     final isFocusOrText = _isSearchExpanded || hasText;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobileNarrow = screenWidth < 560;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          // 1. Dynamic Unfolding Chinese Paper Scroll Search Bar
+          // 1. Dynamic Unfolding Search Bar
           Expanded(
-            flex: isFocusOrText ? 10 : 4,
+            flex: isFocusOrText ? 12 : (isMobileNarrow ? 6 : 4),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 250),
               curve: Curves.easeOutCubic,
               height: 42,
               decoration: BoxDecoration(
@@ -2070,7 +2072,9 @@ class LibraryScreenState extends State<LibraryScreen> {
                   Icon(
                     Icons.search_rounded,
                     size: 18,
-                    color: isFocusOrText ? accentColor : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                    color: isFocusOrText
+                        ? accentColor
+                        : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -2094,7 +2098,7 @@ class LibraryScreenState extends State<LibraryScreen> {
                         color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
                       ),
                       decoration: InputDecoration(
-                        hintText: isFocusOrText ? 'Search title, author...' : 'SEARCH',
+                        hintText: isFocusOrText ? 'Search title, author, series, #tag...' : 'SEARCH',
                         hintStyle: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
@@ -2107,26 +2111,26 @@ class LibraryScreenState extends State<LibraryScreen> {
                       ),
                     ),
                   ),
-                  if (hasText) ...[
+                  if (hasText || isFocusOrText) ...[
                     GestureDetector(
                       onTap: () {
                         _searchController.clear();
+                        _searchFocusNode.unfocus();
                         setState(() {
                           _searchQuery = '';
                           _isSearchExpanded = false;
                         });
-                        _searchFocusNode.unfocus();
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: Icon(
                           Icons.close_rounded,
-                          size: 16,
+                          size: 18,
                           color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
                         ),
                       ),
                     ),
-                  ] else if (!isFocusOrText) ...[
+                  ] else ...[
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Text(
@@ -2143,124 +2147,18 @@ class LibraryScreenState extends State<LibraryScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
-
-          // 2. Sort & Filter Pill (Animated smoothly)
-          AnimatedSize(
-            duration: const Duration(milliseconds: 280),
-            curve: Curves.easeOutCubic,
-            child: GestureDetector(
-              onTap: _openSortFilterSheet,
-              child: Container(
-                height: 42,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(
-                  color: isCustomFilterActive
-                      ? accentColor
-                      : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
-                  border: Border.all(color: borderColor, width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: borderColor,
-                      offset: AppTheme.shadowOffsetSm,
-                      blurRadius: 0,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.tune_rounded,
-                      size: 16,
-                      color: isCustomFilterActive
-                          ? Colors.white
-                          : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-                    ),
-                    if (!isFocusOrText) ...[
-                      const SizedBox(width: 4),
-                      Text(
-                        _getSortShortLabel(),
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
-                          color: isCustomFilterActive
-                              ? Colors.white
-                              : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ),
           const SizedBox(width: 6),
 
-          // 3. Direction Flip Button (▲ / ▼)
+          // 2. Sort & Filter Pill
           GestureDetector(
-            onTap: () => setState(() => _sortAscending = !_sortAscending),
+            onTap: _openSortFilterSheet,
             child: Container(
               height: 42,
-              width: 36,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
-                border: Border.all(color: borderColor, width: 1.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: borderColor,
-                    offset: AppTheme.shadowOffsetSm,
-                    blurRadius: 0,
-                  ),
-                ],
+              padding: EdgeInsets.symmetric(
+                horizontal: (!isMobileNarrow && !isFocusOrText) ? 10 : 8,
               ),
-              child: Icon(
-                _sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-                size: 16,
-                color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
-
-          // 4. View Mode Switcher
-          Container(
-            height: 42,
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
-              border: Border.all(color: borderColor, width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: borderColor,
-                  offset: AppTheme.shadowOffsetSm,
-                  blurRadius: 0,
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildViewModeIcon(Icons.view_agenda_rounded, LibraryViewMode.cards, 'Cards'),
-                _buildViewModeIcon(Icons.grid_view_rounded, LibraryViewMode.covers, 'Covers'),
-                _buildViewModeIcon(Icons.table_rows_rounded, LibraryViewMode.table, 'Table'),
-              ],
-            ),
-          ),
-          const SizedBox(width: 6),
-
-          // 5. Group by Series Toggle
-          GestureDetector(
-            onTap: () {
-              _themeService.setGroupBySeries(!_themeService.groupBySeries);
-              setState(() {});
-            },
-            child: Container(
-              height: 42,
-              width: 38,
-              alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: _themeService.groupBySeries
+                color: isCustomFilterActive
                     ? accentColor
                     : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
                 border: Border.all(color: borderColor, width: 1.5),
@@ -2272,18 +2170,126 @@ class LibraryScreenState extends State<LibraryScreen> {
                   ),
                 ],
               ),
-              child: Tooltip(
-                message: _themeService.groupBySeries ? 'Grouped by Series (ON)' : 'Group by Series (OFF)',
-                child: Icon(
-                  Icons.layers_rounded,
-                  size: 18,
-                  color: _themeService.groupBySeries
-                      ? Colors.white
-                      : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.tune_rounded,
+                    size: 16,
+                    color: isCustomFilterActive
+                        ? Colors.white
+                        : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                  ),
+                  if (!isMobileNarrow && !isFocusOrText) ...[
+                    const SizedBox(width: 4),
+                    Text(
+                      _getSortShortLabel(),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        color: isCustomFilterActive
+                            ? Colors.white
+                            : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
+
+          // Secondary Controls (Collapse gracefully on narrow screens when searching)
+          if (!isMobileNarrow || !isFocusOrText) ...[
+            const SizedBox(width: 6),
+
+            // 3. Direction Flip Button (▲ / ▼)
+            GestureDetector(
+              onTap: () => setState(() => _sortAscending = !_sortAscending),
+              child: Container(
+                height: 42,
+                width: 36,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                  border: Border.all(color: borderColor, width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: borderColor,
+                      offset: AppTheme.shadowOffsetSm,
+                      blurRadius: 0,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  _sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                  size: 16,
+                  color: isDark ? AppColors.darkInkWhite : AppColors.inkBlack,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+
+            // 4. View Mode Switcher
+            Container(
+              height: 42,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                border: Border.all(color: borderColor, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: borderColor,
+                    offset: AppTheme.shadowOffsetSm,
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildViewModeIcon(Icons.view_agenda_rounded, LibraryViewMode.cards, 'Cards'),
+                  _buildViewModeIcon(Icons.grid_view_rounded, LibraryViewMode.covers, 'Covers'),
+                  _buildViewModeIcon(Icons.table_rows_rounded, LibraryViewMode.table, 'Table'),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+
+            // 5. Group by Series Toggle
+            GestureDetector(
+              onTap: () {
+                _themeService.setGroupBySeries(!_themeService.groupBySeries);
+                setState(() {});
+              },
+              child: Container(
+                height: 42,
+                width: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: _themeService.groupBySeries
+                      ? accentColor
+                      : (isDark ? AppColors.darkSurfaceHigh : Colors.white),
+                  border: Border.all(color: borderColor, width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: borderColor,
+                      offset: AppTheme.shadowOffsetSm,
+                      blurRadius: 0,
+                    ),
+                  ],
+                ),
+                child: Tooltip(
+                  message: _themeService.groupBySeries ? 'Grouped by Series (ON)' : 'Group by Series (OFF)',
+                  child: Icon(
+                    Icons.layers_rounded,
+                    size: 18,
+                    color: _themeService.groupBySeries
+                        ? Colors.white
+                        : (isDark ? AppColors.darkInkWhite : AppColors.inkBlack),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
