@@ -21,7 +21,8 @@ GENERATED ALWAYS AS (
 CREATE INDEX IF NOT EXISTS idx_books_search_vector ON public.books USING gin(search_vector);
 
 -- 3. Create high-performance series aggregation view
-CREATE OR REPLACE VIEW public.v_series_overview AS
+CREATE OR REPLACE VIEW public.v_series_overview 
+WITH (security_invoker = true) AS
 SELECT
   b.series_name,
   count(b.id) AS total_books,

@@ -123,7 +123,8 @@ create index if not exists reading_log_book_idx on reading_log (book_id, logged_
 create index if not exists idx_reading_log_journey_id on reading_log (journey_id);
 
 -- High-performance series aggregation view (Migration v14)
-create or replace view public.v_series_overview as
+create or replace view public.v_series_overview
+with (security_invoker = true) as
 select
   b.series_name,
   count(b.id) as total_books,
