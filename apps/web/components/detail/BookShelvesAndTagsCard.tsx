@@ -35,9 +35,10 @@ export default function BookShelvesAndTagsCard({ book }: BookShelvesAndTagsCardP
               <Link
                 key={shelf}
                 href={`/library?shelf=${encodeURIComponent(shelf)}`}
-                className="rounded-md border-2 border-primary/50 bg-primary/10 px-2.5 py-1 text-xs font-black text-text shadow-[1.5px_1.5px_0px_var(--border)] transition-all hover:bg-primary/20 hover:text-primary active:translate-x-[0.5px] active:translate-y-[0.5px]"
+                className="inline-flex items-center gap-1 rounded-md border-2 border-primary/50 bg-primary/10 px-2.5 py-1 text-xs font-black text-text shadow-[1.5px_1.5px_0px_var(--border)] transition-all hover:bg-primary/20 hover:text-primary active:translate-x-[0.5px] active:translate-y-[0.5px]"
               >
-                ★ {shelf}
+                <span className="text-primary font-bold">★</span>
+                <span>{shelf}</span>
               </Link>
             ))}
           </div>
@@ -48,7 +49,7 @@ export default function BookShelvesAndTagsCard({ book }: BookShelvesAndTagsCardP
       {tagList.length > 0 && (
         <div className={shelves.length > 0 ? 'border-t border-border/40 pt-3' : ''}>
           <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-text-muted">
-            <Tag className="h-3.5 w-3.5" />
+            <Tag className="h-3.5 w-3.5 text-accent-color" />
             <span>Genres & Subjects</span>
           </div>
           <div className="mt-2.5 flex flex-wrap gap-1.5">
@@ -56,9 +57,10 @@ export default function BookShelvesAndTagsCard({ book }: BookShelvesAndTagsCardP
               <Link
                 key={tag}
                 href={`/library?tag=${encodeURIComponent(tag)}`}
-                className="rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-bold text-text shadow-[1.5px_1.5px_0px_var(--border)] transition-all hover:border-primary hover:text-primary active:translate-x-[0.5px] active:translate-y-[0.5px]"
+                className="inline-flex items-center gap-1 rounded-md border-2 border-border/80 bg-surface px-2.5 py-1 text-xs font-bold text-text shadow-[1.5px_1.5px_0px_var(--border)] transition-all hover:border-accent-color hover:bg-accent-color/10 hover:text-accent-color hover:shadow-[2px_2px_0px_var(--border)] active:translate-x-[0.5px] active:translate-y-[0.5px]"
               >
-                #{tag}
+                <span className="font-mono text-[11px] font-black text-accent-color">#</span>
+                <span>{tag}</span>
               </Link>
             ))}
           </div>

@@ -152,34 +152,27 @@ export function LibraryToolbar() {
             </Button>
           ) : (
             <>
-              {/* Neo-Brutalist Unified View Switcher (Grid | Table | Series) */}
+              {/* Neo-Brutalist Grid / Table Switcher */}
               <div className="flex items-center border-2 border-border bg-surface p-1 shadow-[2px_2px_0px_var(--border)]">
-                {/* 1. Grid (Standard Ungrouped) */}
                 <button
                   type="button"
-                  onClick={() => {
-                    handleToggleViewMode('grid');
-                    setGroupBySeries(false);
-                  }}
+                  onClick={() => handleToggleViewMode('grid')}
                   className={cn(
                     'flex h-7 cursor-pointer items-center gap-1.5 px-3 font-black text-xs uppercase tracking-wider transition-all',
-                    viewMode === 'grid' && !groupBySeries
+                    viewMode === 'grid'
                       ? 'bg-accent-bg text-accent-text shadow-[1.5px_1.5px_0px_var(--border)]'
                       : 'text-text-muted hover:text-text',
                   )}
-                  title="Grid view (All Books)"
+                  title="Grid view"
                   aria-label="Grid view"
                 >
                   <LayoutGrid className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Grid</span>
                 </button>
 
-                {/* 2. Table */}
                 <button
                   type="button"
-                  onClick={() => {
-                    handleToggleViewMode('table');
-                  }}
+                  onClick={() => handleToggleViewMode('table')}
                   className={cn(
                     'flex h-7 cursor-pointer items-center gap-1.5 px-3 font-black text-xs uppercase tracking-wider transition-all',
                     viewMode === 'table'
@@ -192,32 +185,36 @@ export function LibraryToolbar() {
                   <List className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Table</span>
                 </button>
+              </div>
 
-                {/* 3. Series Stacks */}
+              {/* Group by Series Stacks Toggle Button (Active in Grid mode) */}
+              {viewMode === 'grid' && (
                 <button
                   type="button"
-                  onClick={() => {
-                    handleToggleViewMode('grid');
-                    setGroupBySeries(true);
-                  }}
+                  onClick={() => setGroupBySeries((prev) => !prev)}
                   className={cn(
-                    'flex h-7 cursor-pointer items-center gap-1.5 px-3 font-black text-xs uppercase tracking-wider transition-all',
-                    viewMode === 'grid' && groupBySeries
-                      ? 'bg-accent-bg text-accent-text shadow-[1.5px_1.5px_0px_var(--border)]'
-                      : 'text-text-muted hover:text-text',
+                    'flex h-9.5 cursor-pointer items-center gap-1.5 border-2 border-border px-2.5 font-bold text-xs uppercase tracking-wider shadow-[2px_2px_0px_var(--border)] transition-all',
+                    groupBySeries
+                      ? 'bg-accent-bg text-accent-text font-black'
+                      : 'bg-surface text-text-muted hover:text-text',
                   )}
-                  title="Series Stacks view"
-                  aria-label="Series Stacks view"
+                  title={
+                    groupBySeries
+                      ? 'Ungroup Series Stacks (Show Individual Books)'
+                      : 'Group Books by Series'
+                  }
+                  aria-label="Toggle Series Stacks"
+                  aria-pressed={groupBySeries}
                 >
                   <Layers
                     className={cn(
                       'h-3.5 w-3.5',
-                      viewMode === 'grid' && groupBySeries ? 'text-accent-text' : 'text-amber-500',
+                      groupBySeries ? 'text-accent-text' : 'text-amber-500',
                     )}
                   />
-                  <span className="hidden sm:inline">Series</span>
+                  <span className="hidden sm:inline">Stacks</span>
                 </button>
-              </div>
+              )}
 
               {/* Trash View Button */}
               <Button

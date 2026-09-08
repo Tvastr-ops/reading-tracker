@@ -423,12 +423,16 @@ function BookGrid({
         return;
       }
 
-      if (e.detail === 2 && onFullEdit) {
-        onFullEdit(b);
+      if (e.shiftKey || e.altKey) {
+        if (onFullEdit) {
+          onFullEdit(b);
+        } else {
+          onEdit(b);
+        }
         return;
       }
 
-      // Instant 0ms response on single click
+      // Instant 0ms response on single click -> Quick Inspector
       onEdit(b);
     },
     [selectMode, onToggleSelect, onFullEdit, onEdit],

@@ -133,12 +133,21 @@ function BookTable({
       return;
     }
 
-    if (e.detail === 2 && onFullEdit) {
-      onFullEdit(b);
+    if (e.ctrlKey || e.metaKey) {
+      window.open(`/books/${b.id}`, '_blank');
       return;
     }
 
-    // Instant 0ms response on single click
+    if (e.shiftKey || e.altKey) {
+      if (onFullEdit) {
+        onFullEdit(b);
+      } else {
+        onEdit(b);
+      }
+      return;
+    }
+
+    // Instant 0ms response on single click -> Quick Inspector
     onEdit(b);
   };
 

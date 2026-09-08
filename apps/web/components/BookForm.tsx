@@ -6,9 +6,11 @@ import {
   BookOpen,
   Clock,
   Image as ImageIcon,
+  Link2,
   Loader2,
   RotateCcw,
   Search,
+  Sparkles,
   X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -93,6 +95,49 @@ export default function BookForm({
     { title: string; author: string | null; cover_url: string }[]
   >([]);
   const [coverSearching, setCoverSearching] = useState(false);
+  const [extractUrl, setExtractUrl] = useState('');
+  const [extracting, setExtracting] = useState(false);
+
+  async function handleExtractUrl() {
+    const raw = extractUrl.trim();
+    if (!raw) return;
+    setExtracting(true);
+    try {
+      const res = await fetch('/api/metadata/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: raw }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json?.data) {
+        toast.error(json?.error || 'Could not extract metadata from this link');
+        return;
+      }
+      const data = json.data;
+      setForm((prev) => ({
+        ...prev,
+        title: data.title || prev.title,
+        author: data.author || prev.author,
+        description: data.description || prev.description,
+        cover_url: data.cover_url || prev.cover_url,
+        source_link: data.source_link || prev.source_link || raw,
+        type: data.type || prev.type,
+        unit_type: data.unit_type || prev.unit_type,
+        total_units: data.total_units ?? prev.total_units,
+        latest_units: data.latest_units ?? prev.latest_units,
+        parent_total: data.parent_total ?? prev.parent_total,
+        progress_structure: data.progress_structure || prev.progress_structure,
+        is_ongoing: data.is_ongoing ?? prev.is_ongoing,
+        genre_tags: data.genre_tags || prev.genre_tags,
+      }));
+      toast.success(`Auto-filled details from ${data.site_name || 'link'}`);
+      setExtractUrl('');
+    } catch {
+      toast.error('Network error during auto-fill');
+    } finally {
+      setExtracting(false);
+    }
+  }
 
   const isDuplicate = useMemo(() => {
     const t = form.title.trim().toLowerCase();
@@ -281,6 +326,54 @@ export default function BookForm({
             <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">
               {/* TAB 1: GENERAL INFO */}
               <TabsContent value="general" className="mt-0 space-y-3.5">
+                {/* Minimalist 1-Line URL Auto-Fill Bar */}
+                {!initial?.id && (
+                  <div className="space-y-2.5">
+                    <div className="flex items-center gap-1.5 rounded-xl border-2 border-border/80 bg-surface/50 p-1.5 shadow-[1.5px_1.5px_0px_var(--border)]">
+                      <div className="relative flex-1">
+                        <Link2 className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
+                        <input
+                          type="url"
+                          placeholder="Paste novel or book link to auto-fill..."
+                          value={extractUrl}
+                          onChange={(e) => setExtractUrl(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleExtractUrl();
+                            }
+                          }}
+                          disabled={extracting}
+                          className="h-8 w-full rounded-lg border border-border/80 bg-card-bg pr-2.5 pl-8 text-xs font-medium text-text placeholder:text-text-muted/70 focus:border-accent-color focus:outline-none focus:ring-1 focus:ring-accent-color"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={extracting || !extractUrl.trim()}
+                        onClick={handleExtractUrl}
+                        className="h-8 shrink-0 gap-1 rounded-lg px-3 text-xs font-bold shadow-[1px_1px_0px_var(--border)]"
+                      >
+                        {extracting ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-3 w-3 text-amber-400" />
+                        )}
+                        <span>{extracting ? 'Extracting...' : 'Fill →'}</span>
+                      </Button>
+                    </div>
+
+                    <div className="relative flex items-center justify-center">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-border/40" />
+                      </div>
+                      <span className="relative bg-card-bg px-2 font-mono text-[9.5px] font-semibold uppercase tracking-wider text-text-muted/70">
+                        or enter details manually below
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3.5">
                   <div className="col-span-full">
                     <label className={labelClass}>Title *</label>

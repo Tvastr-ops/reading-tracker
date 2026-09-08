@@ -5,9 +5,10 @@ import Link from 'next/link';
 import CoverImage from '@/components/CoverImage';
 import ExternalLinksList from '@/components/ExternalLinksList';
 import { InteractiveStarRating } from '@/components/RatingInput';
+import { StatusBadge } from '@/components/StatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { type Book, STATUS_COLOR_VAR } from '@/lib/types';
+import type { Book } from '@/lib/types';
 
 interface BookHeroCardProps {
   book: Book;
@@ -64,26 +65,29 @@ export default function BookHeroCard({ book, onRatingChange }: BookHeroCardProps
 
       {/* Badges & Status Chips */}
       <div className="mt-5 flex flex-wrap items-center justify-center gap-1.5 border-t border-border/60 pt-4">
-        <Badge variant="outline" className="text-xs font-black uppercase">
-          {book.type}
-        </Badge>
         <Badge
           variant="outline"
-          className="text-xs font-black uppercase"
-          style={{
-            color: STATUS_COLOR_VAR[book.status] || 'var(--text)',
-            borderColor: STATUS_COLOR_VAR[book.status] || 'var(--border)',
-          }}
+          className="text-xs font-black uppercase shadow-[1.5px_1.5px_0px_var(--border)]"
         >
-          {book.status}
+          {book.type}
         </Badge>
+        <StatusBadge
+          status={book.status}
+          className="text-xs font-black uppercase shadow-[1.5px_1.5px_0px_var(--border)]"
+        />
         {book.is_ongoing && (
-          <Badge variant="outline" className="border-amber-500 text-xs font-bold text-amber-500">
+          <Badge
+            variant="outline"
+            className="border-amber-500 text-xs font-bold text-amber-500 shadow-[1.5px_1.5px_0px_var(--border)]"
+          >
             Ongoing Serial
           </Badge>
         )}
         {(book.reread_count ?? 0) > 0 && (
-          <Badge variant="secondary" className="text-xs font-bold">
+          <Badge
+            variant="secondary"
+            className="text-xs font-bold shadow-[1.5px_1.5px_0px_var(--border)]"
+          >
             {book.reread_count}x Re-read
           </Badge>
         )}

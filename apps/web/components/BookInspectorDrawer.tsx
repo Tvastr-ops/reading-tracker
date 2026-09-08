@@ -82,16 +82,33 @@ export default function BookInspectorDrawer({
     }
   }, [book?.id, book?.updated_at]);
 
-  // Keyboard Escape listener
+  // Keyboard listener: Escape to close, 'E' / 'e' to edit
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const activeTag = document.activeElement?.tagName?.toLowerCase();
+      const isInputActive =
+        activeTag === 'input' ||
+        activeTag === 'textarea' ||
+        activeTag === 'select' ||
+        (document.activeElement as HTMLElement)?.isContentEditable;
+
       if (e.key === 'Escape') {
         onClose();
+      } else if (
+        (e.key === 'e' || e.key === 'E') &&
+        !isInputActive &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey
+      ) {
+        e.preventDefault();
+        onClose();
+        if (book) onEdit(book);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [onClose, onEdit, book]);
 
   if (!book || !draft) return null;
 
@@ -248,15 +265,18 @@ export default function BookInspectorDrawer({
             </Link>
 
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              onClick={() => onEdit(book)}
-              className="h-8 gap-1 text-xs font-semibold"
-              title="Press E to edit"
+              onClick={() => {
+                onClose();
+                onEdit(book);
+              }}
+              className="h-8 gap-1.5 border-border font-bold text-xs shadow-[1.5px_1.5px_0px_var(--border)] transition-all hover:bg-accent-color/10 hover:text-accent-color"
+              title="Open full edit dialog (Press E)"
             >
               <Edit3 className="h-3.5 w-3.5" />
-              <span>Edit</span>
-              <kbd className="hidden font-mono text-[9px] font-semibold text-text-muted sm:inline">
+              <span>Edit Details</span>
+              <kbd className="hidden font-mono text-[9px] font-bold text-text-muted sm:inline">
                 [E]
               </kbd>
             </Button>
