@@ -513,15 +513,24 @@ String normalizeGenreTag(String rawTag) {
   }).join(' ');
 }
 
-/// Sanitizes a source or web link, auto-prepending `https://` if a valid domain is entered
-/// without a protocol (e.g. `goodreads.com/book/...` -> `https://goodreads.com/book/...`).
+/// Sanitizes source links, auto-prepending `https://` if entered without a protocol
+/// (e.g. `goodreads.com/book/...` -> `https://goodreads.com/book/...`).
+/// Handles multi-line entries (preserving line breaks) and trims extraneous whitespace.
 String sanitizeSourceLink(String? rawUrl) {
   if (rawUrl == null) return '';
   final trimmed = rawUrl.trim();
   if (trimmed.isEmpty) return '';
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-    return trimmed;
-  }
-  return 'https://$trimmed';
+
+  final lines = trimmed.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+  if (lines.isEmpty) return '';
+
+  final sanitized = lines.map((link) {
+    if (link.startsWith('http://') || link.startsWith('https://')) {
+      return link;
+    }
+    return 'https://$link';
+  });
+
+  return sanitized.join('\n');
 }
 

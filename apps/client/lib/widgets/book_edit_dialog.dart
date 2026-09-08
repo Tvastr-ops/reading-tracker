@@ -1344,10 +1344,11 @@ class _BookEditDialogState extends State<BookEditDialog> {
                 ),
                 const SizedBox(height: 12),
 
-                _buildFieldLabel('SOURCE / WEB LINK (OPTIONAL)', inkColor),
+                _buildFieldLabel('SOURCE / WEB LINKS (ONE PER LINE)', inkColor),
                 _buildTextInput(
                   _sourceLinkController,
-                  'e.g. royalroad.com, novelupdates.com, goodreads.com...',
+                  'e.g. royalroad.com/fiction/123\nnovelupdates.com/series/456...',
+                  maxLines: 3,
                   details: details,
                   borderColor: borderColor,
                   inkColor: inkColor,
@@ -1489,7 +1490,9 @@ class _BookEditDialogState extends State<BookEditDialog> {
         maxLines: maxLines,
         onChanged: onChanged,
         onFieldSubmitted: onFieldSubmitted,
-        keyboardType: isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
+        keyboardType: isNumber
+            ? const TextInputType.numberWithOptions(decimal: true)
+            : (maxLines > 1 ? TextInputType.multiline : TextInputType.text),
         validator: isRequired ? (val) => val == null || val.trim().isEmpty ? 'Required' : null : null,
         style: TextStyle(
           fontSize: 13,

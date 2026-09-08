@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  BookOpen,
   Check,
   ChevronLeft,
   Download,
@@ -361,9 +362,25 @@ export default function SettingsPage() {
         </CardHeader>
 
         <CardContent className="space-y-4 p-0">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Export Obsidian Vault */}
+            <a href="/api/export?format=obsidian" download className="block">
+              <Button
+                variant="outline"
+                className="h-auto w-full flex-col items-start gap-1 border-purple-500/40 bg-purple-500/5 p-3.5 text-left shadow-[2px_2px_0px_var(--border)] hover:border-purple-500/80 hover:bg-purple-500/10"
+              >
+                <div className="flex items-center gap-2 font-black text-xs uppercase text-purple-600 dark:text-purple-400">
+                  <BookOpen className="h-4 w-4 shrink-0 text-purple-600 dark:text-purple-400" />
+                  <span>Obsidian Vault</span>
+                </div>
+                <p className="text-[11px] text-text-muted font-normal">
+                  Turnkey .zip with notes, canvas & dashboards.
+                </p>
+              </Button>
+            </a>
+
             {/* Export JSON */}
-            <a href="/api/export" download className="block">
+            <a href="/api/export?format=json" download className="block">
               <Button
                 variant="outline"
                 className="h-auto w-full flex-col items-start gap-1 p-3.5 text-left shadow-[2px_2px_0px_var(--border)]"

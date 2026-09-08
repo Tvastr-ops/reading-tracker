@@ -981,12 +981,22 @@ export default function BookForm({
                   </div>
 
                   <div>
-                    <label className={labelClass}>Source / Website Link</label>
-                    <input
-                      className={inputClass}
+                    <div className="mb-1 flex items-center justify-between">
+                      <label className={labelClass}>Source / Website Links</label>
+                      <span className="text-[10px] text-text-muted">One link per line</span>
+                    </div>
+                    <textarea
+                      rows={2}
+                      className="w-full min-h-[58px] resize-y rounded-lg border border-border bg-card-bg px-3 py-2 text-sm leading-relaxed text-text transition-all focus:outline-none focus:ring-2 focus:ring-accent-color"
                       value={form.source_link || ''}
                       onChange={(e) => set('source_link', e.target.value)}
-                      placeholder="royalroad.com or reading web link"
+                      onKeyDown={(e) => {
+                        // Allow Enter to create new line; prevent form submit unless Ctrl/Cmd is pressed
+                        if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
+                          e.stopPropagation();
+                        }
+                      }}
+                      placeholder={`e.g. royalroad.com/fiction/123\nnovelupdates.com/series/456`}
                     />
                   </div>
 

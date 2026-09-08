@@ -138,6 +138,7 @@ export function LibraryView() {
           <>
             <BookTable
               books={paginatedBooks}
+              groupBySeries={groupBySeries}
               ratingMode={ratingMode}
               sortField={sortField}
               sortDir={sortDir}

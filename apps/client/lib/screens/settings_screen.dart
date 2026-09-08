@@ -956,52 +956,176 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _exportBackupDialog(bool isDark) {
+    final borderColor = isDark ? AppColors.darkInkWhite : AppColors.inkBlack;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         backgroundColor: isDark ? AppColors.darkSurface : AppColors.paperBg,
-        title: const Text('EXPORT BACKUP', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-        content: const Text(
-          'Choose the format to export your library:',
-          style: TextStyle(fontSize: 13),
+        title: const Text('EXPORT LIBRARY BACKUP', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+        content: SizedBox(
+          width: 420,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Choose an export format:',
+                style: TextStyle(fontSize: 12),
+              ),
+              const SizedBox(height: 14),
+
+              // 1. Obsidian Vault (.zip)
+              InkWell(
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final res = await BackupService.instance.saveObsidianVaultToFile();
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(res.message), duration: const Duration(seconds: 5)),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7C3AED), // Obsidian purple
+                    border: Border.all(color: borderColor, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(color: borderColor, offset: AppTheme.shadowOffsetSm, blurRadius: 0),
+                    ],
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.auto_stories_rounded, color: Colors.white, size: 22),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'OBSIDIAN VAULT (.ZIP)',
+                              style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, fontSize: 12),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Standalone vault with book notes, properties, canvas & dashboards.',
+                              style: TextStyle(color: Colors.white70, fontSize: 10),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded, color: Colors.white),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // 2. JSON (Full Backup)
+              InkWell(
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final res = await BackupService.instance.saveBackupToFile(isJson: true);
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(res.message), duration: const Duration(seconds: 4)),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    border: Border.all(color: borderColor, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(color: borderColor, offset: AppTheme.shadowOffsetSm, blurRadius: 0),
+                    ],
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.code_rounded, color: Colors.white, size: 22),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'JSON (FULL BACKUP)',
+                              style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, fontSize: 12),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Complete offline database with books, journeys & logs.',
+                              style: TextStyle(color: Colors.white70, fontSize: 10),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded, color: Colors.white),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // 3. CSV (Spreadsheet)
+              InkWell(
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final res = await BackupService.instance.saveBackupToFile(isJson: false);
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(res.message), duration: const Duration(seconds: 4)),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurfaceHigh : Colors.white,
+                    border: Border.all(color: borderColor, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(color: borderColor, offset: AppTheme.shadowOffsetSm, blurRadius: 0),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.table_chart_outlined, color: isDark ? Colors.white : AppColors.inkBlack, size: 22),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'CSV (SPREADSHEET)',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                color: isDark ? Colors.white : AppColors.inkBlack,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Spreadsheet-compatible library table.',
+                              style: TextStyle(
+                                color: isDark ? Colors.white70 : AppColors.inkMuted,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded, color: isDark ? Colors.white : AppColors.inkBlack),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('CANCEL', style: TextStyle(fontWeight: FontWeight.w800)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isDark ? AppColors.darkSurfaceHigh : Colors.grey[800],
-              foregroundColor: Colors.white,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-            ),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              final res = await BackupService.instance.saveBackupToFile(isJson: false);
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(res.message), duration: const Duration(seconds: 4)),
-              );
-            },
-            child: const Text('CSV (WEB COMPATIBLE)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Colors.white,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-            ),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              final res = await BackupService.instance.saveBackupToFile(isJson: true);
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(res.message), duration: const Duration(seconds: 4)),
-              );
-            },
-            child: const Text('JSON (FULL BACKUP)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
           ),
         ],
       ),

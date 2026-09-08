@@ -255,5 +255,16 @@ void main() {
       expect(normalizeGenreTag('post apocalyptic'), 'Post-Apocalyptic');
       expect(normalizeGenreTag('custom dark magic'), 'Custom Dark Magic');
     });
+
+    test('sanitizeSourceLink handles single and multi-line links with protocol prefixing', () {
+      expect(sanitizeSourceLink(null), '');
+      expect(sanitizeSourceLink('   '), '');
+      expect(sanitizeSourceLink('royalroad.com/fiction/123'), 'https://royalroad.com/fiction/123');
+      expect(sanitizeSourceLink('https://goodreads.com/book/show/1'), 'https://goodreads.com/book/show/1');
+      expect(
+        sanitizeSourceLink('royalroad.com/fiction/123\nhttps://novelupdates.com/series/456'),
+        'https://royalroad.com/fiction/123\nhttps://novelupdates.com/series/456',
+      );
+    });
   });
 }

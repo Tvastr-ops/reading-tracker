@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import '../models/book.dart';
 import '../models/reading_journey.dart';
 import 'database_helper.dart';
+import 'obsidian_exporter.dart';
 
 class BackupResult {
   final bool success;
@@ -148,6 +149,58 @@ class BackupService {
       return BackupResult(
         success: false,
         message: 'Failed to export backup: $e',
+      );
+    }
+  }
+
+  /// Generates a standalone, turnkey Obsidian Reading Vault (.zip) and saves to Downloads.
+  Future<BackupResult> saveObsidianVaultToFile() async {
+    try {
+      final books = await _dbHelper.getBooks();
+      final allJourneys = await _dbHelper.getAllReadingJourneys();
+      final allLogs = <ReadingLogEntry>[];
+
+      for (final book in books) {
+        final logs = await _dbHelper.getReadingLogs(book.id);
+        allLogs.addAll(logs);
+      }
+
+      final zipBytes = ObsidianExporter.generateVaultZip(
+        books: books,
+        journeys: allJourneys,
+        allLogs: allLogs,
+      );
+
+      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final filename = 'reading_vault_$timestamp.zip';
+
+      Directory? targetDir;
+      if (!kIsWeb) {
+        if (Platform.isAndroid) {
+          targetDir = Directory('/storage/emulated/0/Download');
+          if (!targetDir.existsSync()) {
+            targetDir = await getExternalStorageDirectory();
+          }
+        } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+          targetDir = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
+        } else {
+          targetDir = await getApplicationDocumentsDirectory();
+        }
+      }
+
+      targetDir ??= await getApplicationDocumentsDirectory();
+      final file = File('${targetDir.path}/$filename');
+      await file.writeAsBytes(zipBytes);
+
+      return BackupResult(
+        success: true,
+        message: 'Obsidian Vault (.zip) saved to ${file.path}',
+        exportPath: file.path,
+      );
+    } catch (e) {
+      return BackupResult(
+        success: false,
+        message: 'Failed to export Obsidian Vault: $e',
       );
     }
   }

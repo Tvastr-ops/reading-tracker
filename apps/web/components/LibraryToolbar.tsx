@@ -187,34 +187,32 @@ export function LibraryToolbar() {
                 </button>
               </div>
 
-              {/* Group by Series Stacks Toggle Button (Active in Grid mode) */}
-              {viewMode === 'grid' && (
-                <button
-                  type="button"
-                  onClick={() => setGroupBySeries((prev) => !prev)}
+              {/* Group by Series Stacks Toggle Button (Active in Grid & Table modes) */}
+              <button
+                type="button"
+                onClick={() => setGroupBySeries((prev) => !prev)}
+                className={cn(
+                  'flex h-9.5 cursor-pointer items-center gap-1.5 border-2 border-border px-2.5 font-bold text-xs uppercase tracking-wider shadow-[2px_2px_0px_var(--border)] transition-all',
+                  groupBySeries
+                    ? 'bg-accent-bg text-accent-text font-black'
+                    : 'bg-surface text-text-muted hover:text-text',
+                )}
+                title={
+                  groupBySeries
+                    ? 'Ungroup Series Stacks (Show Individual Books)'
+                    : 'Group Books by Series Stacks'
+                }
+                aria-label="Toggle Series Stacks"
+                aria-pressed={groupBySeries}
+              >
+                <Layers
                   className={cn(
-                    'flex h-9.5 cursor-pointer items-center gap-1.5 border-2 border-border px-2.5 font-bold text-xs uppercase tracking-wider shadow-[2px_2px_0px_var(--border)] transition-all',
-                    groupBySeries
-                      ? 'bg-accent-bg text-accent-text font-black'
-                      : 'bg-surface text-text-muted hover:text-text',
+                    'h-3.5 w-3.5',
+                    groupBySeries ? 'text-accent-text' : 'text-amber-500',
                   )}
-                  title={
-                    groupBySeries
-                      ? 'Ungroup Series Stacks (Show Individual Books)'
-                      : 'Group Books by Series'
-                  }
-                  aria-label="Toggle Series Stacks"
-                  aria-pressed={groupBySeries}
-                >
-                  <Layers
-                    className={cn(
-                      'h-3.5 w-3.5',
-                      groupBySeries ? 'text-accent-text' : 'text-amber-500',
-                    )}
-                  />
-                  <span className="hidden sm:inline">Stacks</span>
-                </button>
-              )}
+                />
+                <span className="hidden sm:inline">Stacks</span>
+              </button>
 
               {/* Trash View Button */}
               <Button
