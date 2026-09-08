@@ -1,15 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import {
-  BookOpen,
-  Edit3,
-  Heart,
-  Layers,
-  MoreVertical,
-  Sparkles,
-  Trash2,
-} from 'lucide-react';
+import { BookOpen, Edit3, Heart, Layers, MoreVertical, Sparkles, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import type React from 'react';
 import { memo, useMemo, useState } from 'react';
