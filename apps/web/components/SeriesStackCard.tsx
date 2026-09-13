@@ -266,7 +266,7 @@ export const SeriesStackCard = memo(function SeriesStackCard({
                         onClick={() => setSelectedVolIndex(vIdx)}
                         className={`shrink-0 cursor-pointer rounded px-1.5 py-0.5 text-[9.5px] font-bold transition-all ${
                           isCurrent
-                            ? 'border border-accent-color bg-accent-color text-accent-color-foreground shadow-xs'
+                            ? 'border border-border bg-accent-bg text-accent-text font-black shadow-xs'
                             : isVolCompleted
                               ? 'border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25 dark:text-emerald-400'
                               : isVolReading
