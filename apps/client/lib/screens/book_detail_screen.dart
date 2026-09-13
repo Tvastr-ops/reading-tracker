@@ -46,22 +46,36 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   bool _showAllStandaloneLogs = false;
 
   List<ReadingLogEntry> _getLogsForJourney(ReadingJourney j) {
+    // If the book has only one journey, all session logs belong to it unconditionally.
+    if (_journeys.length == 1) {
+      return _logs;
+    }
+
     return _logs.where((l) {
+      // 1. Direct match by journeyId
       if (l.journeyId != null && l.journeyId!.isNotEmpty) {
         return l.journeyId == j.id;
       }
-      final logDate = DateTime.tryParse(l.loggedAt);
-      final jStart = DateTime.tryParse(j.dateStarted);
-      final jEnd = j.dateFinished != null ? DateTime.tryParse(j.dateFinished!) : null;
-      if (logDate != null && jStart != null) {
-        final afterStart = logDate.isAfter(jStart) || logDate.isAtSameMomentAs(jStart);
-        if (jEnd != null) {
-          final endOfDay = DateTime(jEnd.year, jEnd.month, jEnd.day, 23, 59, 59);
+
+      // 2. Date-based matching in local time with start/end day bounds
+      final rawLogDate = DateTime.tryParse(l.loggedAt);
+      final rawJStart = DateTime.tryParse(j.dateStarted);
+      final rawJEnd = j.dateFinished != null ? DateTime.tryParse(j.dateFinished!) : null;
+
+      if (rawLogDate != null && rawJStart != null) {
+        final logDate = rawLogDate.toLocal();
+        final jStart = rawJStart.toLocal();
+        final startOfDay = DateTime(jStart.year, jStart.month, jStart.day);
+        final afterStart = logDate.isAfter(startOfDay) || logDate.isAtSameMomentAs(startOfDay);
+
+        if (rawJEnd != null) {
+          final jEnd = rawJEnd.toLocal();
+          final endOfDay = DateTime(jEnd.year, jEnd.month, jEnd.day, 23, 59, 59, 999);
           return afterStart && (logDate.isBefore(endOfDay) || logDate.isAtSameMomentAs(endOfDay));
         }
         return afterStart;
       }
-      return _journeys.length == 1;
+      return false;
     }).toList();
   }
 

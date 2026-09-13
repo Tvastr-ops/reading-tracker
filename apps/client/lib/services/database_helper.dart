@@ -790,12 +790,44 @@ class DatabaseHelper {
     );
     final all = result.map((json) => ReadingJourney.fromMap(json)).toList();
     final deduped = <ReadingJourney>[];
-    final seen = <int>{};
+    final seen = <int, String>{};
+    final duplicates = <String, String>{}; // stale duplicate id -> canonical id
+
     for (final j in all) {
-      if (seen.add(j.journeyIndex)) {
+      if (!seen.containsKey(j.journeyIndex)) {
+        seen[j.journeyIndex] = j.id;
         deduped.add(j);
+      } else {
+        duplicates[j.id] = seen[j.journeyIndex]!;
       }
     }
+
+    // Auto-heal duplicate journey rows and re-link reading logs to canonical journey ID
+    if (duplicates.isNotEmpty) {
+      for (final entry in duplicates.entries) {
+        await db.update(
+          'reading_log',
+          {'journey_id': entry.value},
+          where: 'journey_id = ?',
+          whereArgs: [entry.key],
+        );
+        await db.delete(
+          'reading_journeys',
+          where: 'id = ?',
+          whereArgs: [entry.key],
+        );
+      }
+    }
+
+    // If there is strictly one journey for this book, heal any unassigned or mismatched logs to it
+    if (deduped.length == 1) {
+      final canonicalId = deduped.first.id;
+      await db.rawUpdate(
+        'UPDATE reading_log SET journey_id = ? WHERE book_id = ? AND (journey_id IS NULL OR journey_id != ?)',
+        [canonicalId, bookId, canonicalId],
+      );
+    }
+
     return deduped;
   }
 

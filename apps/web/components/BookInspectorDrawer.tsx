@@ -205,7 +205,7 @@ export default function BookInspectorDrawer({
         exit={{ opacity: 0 }}
         transition={{ duration: 0.18 }}
         onClick={onClose}
-        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] lg:bg-black/15 lg:backdrop-blur-none"
+        className="fixed inset-0 z-40 bg-black/50 lg:bg-black/20"
       />
 
       {/* 2. Slide-Over Panel (Desktop Right / Mobile Bottom Sheet) */}
@@ -221,7 +221,7 @@ export default function BookInspectorDrawer({
         transition={
           mounted && isDesktop
             ? { duration: 0.22, ease: [0.16, 1, 0.3, 1] }
-            : { type: 'spring', damping: 28, stiffness: 280, mass: 0.8 }
+            : { duration: 0.24, ease: [0.32, 0.72, 0, 1] }
         }
         drag={mounted && !isDesktop ? 'y' : false}
         dragConstraints={{ top: 0, bottom: 0 }}
@@ -236,7 +236,7 @@ export default function BookInspectorDrawer({
             onClose();
           }
         }}
-        className="fixed inset-x-0 bottom-0 z-50 flex max-h-[88vh] flex-col overflow-hidden rounded-t-2xl border-t-2 border-border bg-card-bg shadow-2xl lg:inset-y-0 lg:right-0 lg:left-auto lg:h-screen lg:max-h-screen lg:w-[430px] lg:rounded-none lg:border-t-0 lg:border-l-2"
+        className="fixed inset-x-0 bottom-0 z-50 flex max-h-[88vh] flex-col overflow-hidden rounded-t-2xl border-t-2 border-border bg-card-bg shadow-2xl transform-gpu will-change-transform lg:inset-y-0 lg:right-0 lg:left-auto lg:h-screen lg:max-h-screen lg:w-[430px] lg:rounded-none lg:border-t-0 lg:border-l-2"
       >
         {/* Mobile Tactile Drag Bar */}
         <div className="flex shrink-0 cursor-grab touch-none select-none justify-center pt-3 pb-2 active:cursor-grabbing lg:hidden">

@@ -152,67 +152,70 @@ export function LibraryToolbar() {
             </Button>
           ) : (
             <>
-              {/* Neo-Brutalist Grid / Table Switcher */}
-              <div className="flex items-center border-2 border-border bg-surface p-1 shadow-[2px_2px_0px_var(--border)]">
-                <button
-                  type="button"
-                  onClick={() => handleToggleViewMode('grid')}
-                  className={cn(
-                    'flex h-7 cursor-pointer items-center gap-1.5 px-3 font-black text-xs uppercase tracking-wider transition-all',
-                    viewMode === 'grid'
-                      ? 'bg-accent-bg text-accent-text shadow-[1.5px_1.5px_0px_var(--border)]'
-                      : 'text-text-muted hover:text-text',
-                  )}
-                  title="Grid view"
-                  aria-label="Grid view"
-                >
-                  <LayoutGrid className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Grid</span>
-                </button>
+              {/* Left group: View Mode Switcher and Stacks button side-by-side */}
+              <div className="flex items-center gap-2">
+                {/* Neo-Brutalist Grid / Table Switcher */}
+                <div className="flex items-center border-2 border-border bg-surface p-1 shadow-[2px_2px_0px_var(--border)]">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleViewMode('grid')}
+                    className={cn(
+                      'flex h-7 cursor-pointer items-center gap-1.5 px-3 font-black text-xs uppercase tracking-wider transition-all',
+                      viewMode === 'grid'
+                        ? 'bg-accent-bg text-accent-text shadow-[1.5px_1.5px_0px_var(--border)]'
+                        : 'text-text-muted hover:text-text',
+                    )}
+                    title="Grid view"
+                    aria-label="Grid view"
+                  >
+                    <LayoutGrid className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Grid</span>
+                  </button>
 
+                  <button
+                    type="button"
+                    onClick={() => handleToggleViewMode('table')}
+                    className={cn(
+                      'flex h-7 cursor-pointer items-center gap-1.5 px-3 font-black text-xs uppercase tracking-wider transition-all',
+                      viewMode === 'table'
+                        ? 'bg-accent-bg text-accent-text shadow-[1.5px_1.5px_0px_var(--border)]'
+                        : 'text-text-muted hover:text-text',
+                    )}
+                    title="Table view"
+                    aria-label="Table view"
+                  >
+                    <List className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Table</span>
+                  </button>
+                </div>
+
+                {/* Group by Series Stacks Toggle Button (Distinct standalone button, side-by-side) */}
                 <button
                   type="button"
-                  onClick={() => handleToggleViewMode('table')}
+                  onClick={() => setGroupBySeries((prev) => !prev)}
                   className={cn(
-                    'flex h-7 cursor-pointer items-center gap-1.5 px-3 font-black text-xs uppercase tracking-wider transition-all',
-                    viewMode === 'table'
-                      ? 'bg-accent-bg text-accent-text shadow-[1.5px_1.5px_0px_var(--border)]'
-                      : 'text-text-muted hover:text-text',
+                    'flex h-9.5 cursor-pointer items-center gap-1.5 border-2 border-border px-2.5 font-bold text-xs uppercase tracking-wider shadow-[2px_2px_0px_var(--border)] transition-all',
+                    groupBySeries
+                      ? 'bg-accent-bg text-accent-text font-black'
+                      : 'bg-surface text-text-muted hover:text-text',
                   )}
-                  title="Table view"
-                  aria-label="Table view"
+                  title={
+                    groupBySeries
+                      ? 'Ungroup Series Stacks (Show Individual Books)'
+                      : 'Group Books by Series Stacks'
+                  }
+                  aria-label="Toggle Series Stacks"
+                  aria-pressed={groupBySeries}
                 >
-                  <List className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Table</span>
+                  <Layers
+                    className={cn(
+                      'h-3.5 w-3.5',
+                      groupBySeries ? 'text-accent-text' : 'text-amber-500',
+                    )}
+                  />
+                  <span className="hidden sm:inline">Stacks</span>
                 </button>
               </div>
-
-              {/* Group by Series Stacks Toggle Button (Active in Grid & Table modes) */}
-              <button
-                type="button"
-                onClick={() => setGroupBySeries((prev) => !prev)}
-                className={cn(
-                  'flex h-9.5 cursor-pointer items-center gap-1.5 border-2 border-border px-2.5 font-bold text-xs uppercase tracking-wider shadow-[2px_2px_0px_var(--border)] transition-all',
-                  groupBySeries
-                    ? 'bg-accent-bg text-accent-text font-black'
-                    : 'bg-surface text-text-muted hover:text-text',
-                )}
-                title={
-                  groupBySeries
-                    ? 'Ungroup Series Stacks (Show Individual Books)'
-                    : 'Group Books by Series Stacks'
-                }
-                aria-label="Toggle Series Stacks"
-                aria-pressed={groupBySeries}
-              >
-                <Layers
-                  className={cn(
-                    'h-3.5 w-3.5',
-                    groupBySeries ? 'text-accent-text' : 'text-amber-500',
-                  )}
-                />
-                <span className="hidden sm:inline">Stacks</span>
-              </button>
 
               {/* Trash View Button */}
               <Button
